@@ -1,5 +1,31 @@
 # Changelog — NeoST
 
+## 2026-11-18 — Web : save-states, TOS déposé, capture d'écran
+
+Trois fonctions de la copie `ajfarrell75/atarist1` (septembre 2026, frontend web), réécrites
+sur la page actuelle : leur diff partait de la 0.6.1 et ne s'appliquait plus.
+
+- **Save-states** : bouton *Save state* (fichier `neost-<machine>-<date>.state`) ; déposer le
+  fichier sur l'écran restaure. L'en-tête est validé avant de toucher à la session (machine,
+  RAM, ROM exacte, CRC) et le refus dit pourquoi. Pendant un blit HOG garé (JSPI), la
+  sauvegarde est refusée avec le motif du cœur, la restauration attend le déroulement de
+  l'instruction, comme un changement de ROM. Les disquettes ne sont pas dans l'état, comme
+  sur le bureau.
+- **TOS déposé** : une image `.img/.rom/.tos/.bin` déposée sur l'écran est chargée par le même
+  chemin que le menu ROM, rejoint le menu et ne quitte pas la page. `Bus::loadTos` accepte
+  n'importe quelle image (ROM de diagnostic) : 1 000 octets nuls passaient, basculaient le STE
+  en ST et le laissaient mort. Le dépôt exige donc l'en-tête TOS (`$60`, vérifié sur TOS 1.00
+  à 4.04 et EmuTOS). Changer de machine ou de RAM prévient que la ROM déposée sera perdue.
+- **Capture** : bouton *Screenshot*, PNG de la vue affichée (recadrage du zoom adaptatif
+  compris), pixels doublés comme à l'écran. Pendant un blit garé, elle attend la trame close
+  suivante.
+- Défaut trouvé en route, dans ce lot : un tampon de 64 Ko sur la pile wasm (64 Ko par
+  défaut sous Emscripten) écrasait des globales, et le changement de ROM suivant mourait
+  dans `std::ifstream` (« null function »). Lecture dans le tas.
+- Banc : scénario `saves` de `tools/check_web_jspi.mjs`, vert sous Chrome 157 et Firefox 160
+  (aller-retour d'état à l'octet, refus CRC / autre ROM / ROM invalide, cas du blit garé) ;
+  suite complète verte sous Chrome.
+
 ## 2026-11-16 — Fuzz côté invité : registres d'E/S, NAT et modem
 
 - Fuzz des registres d'E/S sous ASan + UBSan : du code 68000 aléatoire, lancé à chaque

@@ -23,6 +23,10 @@
 //               FramePacer::kMaxCatchUp) ; sans, elle tombe à celle du rAF ;
 //    ordres   : reset, changement de ROM et de moniteur en plein blit (différés jusqu'au
 //               déroulement de l'instruction garée), puis second blit mené à terme ;
+//    saves    : save-state, capture et ROM déposée par le chemin de la page (boutons,
+//               DragEvent) ; aller-retour d'état à l'octet ; refus (CRC, autre ROM,
+//               ROM invalide) ; en plein blit, sauvegarde refusée, capture différée à
+//               la trame close suivante, restauration au déroulement de l'instruction ;
 //    ?fiber=0 : pas de JSPI, le blit d'un seul tenant (un tour rAF de plusieurs secondes) ;
 //    exception : la page le dit et reste vivante, la machine s'arrête, et le bouton
 //               Reset la relance (parked_ remis).
@@ -543,6 +547,124 @@ async function main() {
         if (timed(s, 60, `${what}: second blit at ${hz} Hz`))
           check(near(s.fps, hz), `${what}: second blit at ${hz} Hz`);
       }
+    }
+    if (want('saves')) {
+      // Save-states téléchargeables, ROM locale et capture (web/shell.html) : par le
+      // vrai chemin de la page — boutons cliqués, fichiers déposés sur l'écran par un
+      // DragEvent —, les rappels du cœur enveloppés pour garder les octets (les
+      // originaux sont appelés : le téléchargement part aussi). Puis pendant un blit
+      // garé : sauvegarde refusée, capture différée, restauration appliquée au
+      // déroulement de l'instruction.
+      await loadPage(cdp, base, '?machine=ste', {});
+      await sleep(2500);                                 // EmuTOS jusqu'au bureau
+      await cdp.ev(`(() => {
+        window.__sv = { saved: [], loaded: [], shots: [] };
+        const s = window.neostOnStateSaved, l = window.neostOnStateLoaded, c = window.neostOnScreenshot;
+        window.neostOnStateSaved = (b) => { __sv.saved.push(b); s(b); };
+        window.neostOnStateLoaded = (ok, why) => { __sv.loaded.push([ok, why]); l(ok, why); };
+        window.neostOnScreenshot = (px, w, h) => {
+          let lit = 0; for (let i = 0; i < px.length; i += 4) if (px[i] | px[i + 1] | px[i + 2]) lit++;
+          __sv.shots.push({ w, h, lit, at: performance.now() }); c(px, w, h); };
+        window.__drop = (name, bytes) => {
+          const dt = new DataTransfer(); dt.items.add(new File([bytes], name));
+          document.getElementById('bezel').dispatchEvent(
+            new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+        };
+        return 1; })()`);
+      const status = () => cdp.ev("document.getElementById('status').textContent");
+      const waitFor = async (expr, ms = 5000) => {
+        const t0 = Date.now();
+        while (!(await cdp.ev(expr)) && Date.now() - t0 < ms) await sleep(25);
+        return cdp.ev(expr);
+      };
+
+      await cdp.ev("document.getElementById('btnSaveState').click()");
+      const size = await cdp.ev('__sv.saved.length ? __sv.saved[0].length : 0');
+      const st1 = await status();
+      console.log(`[web-jspi] saves: state of ${size} bytes, status "${st1}"`);
+      check(size > 1 << 20 && /^State saved: neost-ste-\d{8}-\d{6}\.state/.test(st1),
+            'Save state button: state delivered and downloaded');
+      // Aller-retour à l'octet, sans trame entre les deux (un seul appel synchrone).
+      const same = await cdp.ev(`(() => {
+        const a = __sv.saved[0];
+        Module.FS.writeFile('/tmp/rt.state', a);
+        if (Module.ccall('neost_load_state', 'number', ['string'], ['/tmp/rt.state']) !== 1) return 'refused';
+        Module.ccall('neost_save_state', 'number', [], []);
+        const b = __sv.saved[__sv.saved.length - 1];
+        return a.length === b.length && a.every((v, i) => v === b[i]); })()`);
+      check(same === true, 'load then save: byte-identical state (round trip)');
+      await sleep(1000);
+      await cdp.ev("__drop('slot.state', __sv.saved[0])");
+      await waitFor('__sv.loaded.length >= 2');
+      const st2 = await status();
+      check(/^State restored: slot\.state/.test(st2), `dropped .state restored ("${st2}")`);
+      await cdp.ev(`(() => { const b = __sv.saved[0].slice(); b[b.length - 100] ^= 0x55;
+        __drop('bad.state', b); return 1; })()`);
+      await waitFor(`/refused/.test(document.getElementById('status').textContent)`);
+      const st3 = await status();
+      check(/^State refused: .*corrupt.*machine untouched/.test(st3), `corrupt .state refused ("${st3}")`);
+
+      await cdp.ev("document.getElementById('btnScreenshot').click()");
+      await waitFor('__sv.shots.length >= 1');
+      // L'encodage PNG (toBlob) est asynchrone : son statut arrivait parfois après celui
+      // de l'étape suivante, et l'écrasait.
+      await waitFor(`/^Screenshot saved/.test(document.getElementById('status').textContent)`, 10000);
+      const shot = await cdp.ev('__sv.shots[0]');
+      console.log(`[web-jspi] saves: screenshot ${JSON.stringify(shot)}`);
+      check(shot && shot.w >= 600 && Math.abs(shot.w / shot.h - 1.6) < 0.2 && shot.lit > 1000,
+            'Screenshot button: display-sized PNG of the desktop');
+
+      // ROM déposée : chemin /userroms, menu, boot à froid ; puis un état d'une autre ROM.
+      await cdp.ev(`__drop('MyTos.IMG', Module.FS.readFile('/roms/etos256fr.img'))`);
+      await waitFor(`/ROM:/.test(document.getElementById('status').textContent)`);
+      const rom = await cdp.ev(`[document.getElementById('romSel').value,
+        document.getElementById('romSel').selectedOptions[0].textContent,
+        document.getElementById('status').textContent]`);
+      console.log(`[web-jspi] saves: dropped ROM ${JSON.stringify(rom)}`);
+      check(rom[0] === '/userroms/MyTos.img' && /MyTos\.IMG \(yours\)/.test(rom[1]) &&
+            /^ROM: MyTos\.IMG/.test(rom[2]), 'dropped TOS image: loaded, listed, cold boot');
+      await cdp.ev(`__drop('junk.rom', new Uint8Array(1000))`);
+      await waitFor(`/Not a TOS/.test(document.getElementById('status').textContent)`);
+      check(/^Not a TOS image: junk\.rom/.test(await status()) &&
+            (await cdp.ev("document.getElementById('romSel').value")) === '/userroms/MyTos.img',
+            'dropped junk ROM: refused, previous ROM kept');
+      await cdp.ev("__drop('slot.state', __sv.saved[0])");
+      await waitFor(`/refused/.test(document.getElementById('status').textContent)`);
+      const st4 = await status();
+      check(/^State refused: .*(ROM|TOS)/.test(st4), `state of another ROM refused ("${st4}")`);
+
+      // Pendant un blit garé.
+      await sleep(2500);
+      cdp.logs.length = 0;
+      await cdp.ev("document.getElementById('btnSaveState').click()");
+      const preBlit = await cdp.ev('__sv.saved.length - 1');
+      await writeDisk(cdp, disk);
+      await mount(cdp, 1);
+      const t0 = Date.now();
+      while ((await parkedCount(cdp)) < 30 && Date.now() - t0 < 30000) await sleep(20);
+      const mid = await cdp.ev(`(() => {
+        const n = __sv.saved.length, shots = __sv.shots.length;
+        const r = Module.ccall('neost_save_state', 'number', [], []);
+        const err = Module.ccall('neost_state_error', 'string', [], []);
+        Module.ccall('neost_screenshot', null, [], []);
+        return { r, err, saved: __sv.saved.length - n, shotNow: __sv.shots.length - shots, shots }; })()`);
+      await waitFor(`__sv.shots.length > ${mid.shots}`);
+      const late = await cdp.ev(`__sv.shots.length - ${mid.shots}`);
+      console.log(`[web-jspi] saves mid-blit: ${JSON.stringify(mid)}, screenshots after: ${late}`);
+      check(mid.r === 0 && mid.saved === 0 && /blitter/.test(mid.err), 'mid-blit save: refused with its reason');
+      check(mid.shotNow === 0 && late === 1, 'mid-blit screenshot: deferred to the next closed frame');
+      const [n0, tc] = await cdp.ev(`(() => { const n = __jt.parked.length, t = performance.now();
+        Module.FS.writeFile('/tmp/pre.state', __sv.saved[${preBlit}]);
+        Module.ccall('neost_load_state', 'number', ['string'], ['/tmp/pre.state']);
+        return [n, t]; })()`);
+      await sleep(1000);
+      const lateFrames = await cdp.ev(`__jt.parked.filter((t) => t > ${tc}).length`);
+      const ld = await cdp.ev('__sv.loaded[__sv.loaded.length - 1]');
+      console.log(`[web-jspi] saves: state loaded at parked frame ${n0}: ${JSON.stringify(ld)}, ` +
+                  `${lateFrames} parked frame(s) after it`);
+      if (verbose) console.log(cdp.logs.join('\n'));
+      check(logsHave(/parked instruction abandoned/) && ld && ld[0] === 1 && lateFrames === 0,
+            'mid-blit load: applied once the parked instruction unwinds');
     }
     if (want('fiber0')) {
       const jspi = await loadPage(cdp, base, '?machine=ste&fiber=0', {});

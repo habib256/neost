@@ -2378,6 +2378,11 @@ Ces fonctionnalités **n'existent pas dans Hatari** (extensions assumées, consi
 
 - **Explorateur de bitmaps** (2026-11-12, débogueur, `core/BitmapView`) : RAM en 1/2/4 plans, palette
   courante ou gris, zoom ×1-×8, suit l'écran (base vidéo, résolution, largeur STE) ; lecture sans effet de bord.
+- **Web : save-states, ROM locale, capture** (2026-11-18) : *Save state* télécharge un `.state`, déposé
+  sur l'écran il restaure (en-tête validé avant, refus motivé ; pendant un blit garé, sauvegarde refusée
+  et restauration au déroulement de l'instruction). Une image TOS déposée (en-tête `$60` exigé) reste
+  dans la page et rejoint le menu ROM. *Screenshot* : PNG de la vue affichée. Banc `check_web_jspi.mjs
+  --only saves` (Chrome, Firefox). Idée reprise de la copie `ajfarrell75/atarist1`.
 - **Dongles sur les trois frontends** (2026-11-12) : pages du web et d'Android, format `dongles.cfg` partagé.
   **Anneau MIDI** réglable dans la page MIDI du GUI (`midi_net=`).
 - **Capture souris accessible sans bouton central (2026-08-15)** : clic molette ou

@@ -490,6 +490,44 @@ void whenUnparked(std::function<void()> order) {
 
 void presentFrame();
 
+// --- Capture d'écran ---------------------------------------------------------
+// La vue de la dernière trame AFFICHÉE (cadrage du zoom adaptatif compris), posée par
+// presentFrame : la capture rend ce que l'utilisateur voit, pas le buffer entier.
+int  g_viewX = 0, g_viewY = 0, g_viewW = 0, g_viewH = 0;
+bool g_shotPending = false;      // demandée pendant une instruction garée
+std::vector<uint8_t> g_shotRgba;
+
+// Copie la vue en RGBA, à la taille d'affichage (displaySize : pixels doublés en basse
+// résolution, lignes doublées en moyenne) pour garder le ratio de l'écran, puis la remet
+// à la page. À n'appeler que sur une trame close : entre deux tours de boucle, ou dans
+// presentFrame. Pendant une instruction garée, le Shifter dessine déjà la trame suivante.
+void deliverScreenshot() {
+    g_shotPending = false;
+    const Shifter& sh = g_machine->shifter;
+    const int w = sh.width(), h = sh.height();
+    // Bornes défensives : la résolution a pu changer depuis la dernière vue posée.
+    const int vx = std::max(0, std::min(g_viewX, w - 1)), vy = std::max(0, std::min(g_viewY, h - 1));
+    const int vw = std::max(1, std::min(g_viewW > 0 ? g_viewW : w, w - vx));
+    const int vh = std::max(1, std::min(g_viewH > 0 ? g_viewH : h, h - vy));
+    int dw = 0, dh = 0;
+    displaySize(vw, vh, dw, dh);
+    g_shotRgba.resize(std::size_t(dw) * std::size_t(dh) * 4u);
+    const uint32_t* px = sh.pixels();
+    uint8_t* o = g_shotRgba.data();
+    for (int y = 0; y < dh; ++y) {
+        const uint32_t* row = px + std::size_t(vy + y * vh / dh) * std::size_t(w) + vx;
+        for (int x = 0; x < dw; ++x) {
+            const uint32_t c = row[x * vw / dw];          // ARGB8888 → R, G, B, A
+            *o++ = uint8_t(c >> 16); *o++ = uint8_t(c >> 8); *o++ = uint8_t(c); *o++ = 0xFF;
+        }
+    }
+    EM_ASM({
+        if (window.neostOnScreenshot)
+            window.neostOnScreenshot(HEAPU8.slice($0, $0 + $1 * $2 * 4), $1, $2);
+    }, g_shotRgba.data(), dw, dh);
+    std::vector<uint8_t>().swap(g_shotRgba);             // ~2 Mo : rendus au tas
+}
+
 // Exécute les trames dues (0, 1 ou plus) ; rend leur nombre.
 int runDueFrames() {
     // CADENCE : sur le TEMPS ÉMULÉ, pas sur requestAnimationFrame.
@@ -562,7 +600,12 @@ void presentFrame() {
         u0 = float(visX) / float(w);   u1 = float(visX + visW) / float(w);
         v0 = float(visTop) / float(h); v1 = float(visTop + visH) / float(h);
         viewW = visW; viewH = visH;
+        g_viewX = visX; g_viewY = visTop;
+    } else {
+        g_viewX = 0; g_viewY = 0;
     }
+    g_viewW = viewW; g_viewH = viewH;
+    if (g_shotPending) deliverScreenshot();
     // En plein écran, le canvas appartient à Emscripten (taille écran) : le poser
     // nous-mêmes déclencherait un bras de fer à chaque trame. Le ratio est garanti
     // par le viewport de drawScreen, pas par le canvas.
@@ -910,6 +953,93 @@ EMSCRIPTEN_KEEPALIVE int neost_get_cart_key() { return g_machine ? int(g_machine
 EMSCRIPTEN_KEEPALIVE int neost_get_port_device(int port) {
     if (!g_machine || port < 0 || port >= int(PortDevices::Port::Count)) return 0;
     return int(g_machine->ports.at(PortDevices::Port(port)));
+}
+
+// --- Save-states téléchargeables ----------------------------------------------
+// Le bureau a un slot fichier (F5/F7) ; le navigateur n'a pas de disque durable : la
+// page télécharge l'état en fichier .state et le recharge par dépôt sur l'écran. Rien ne
+// quitte la machine de l'utilisateur. Idée reprise de la copie ajfarrell75/atarist1
+// (2026-09-05), réécrite sur les garde-fous actuels (instruction garée, en-tête validé).
+// L'état ne contient PAS les disquettes (comme sur le bureau) : il faut la même image
+// dans A: — elle vit dans la page, et disparaît au rechargement.
+static std::string g_stateError;   // motif du dernier refus, en anglais (interface)
+
+// Motif du dernier refus de neost_save_state / neost_load_state.
+EMSCRIPTEN_KEEPALIVE const char* neost_state_error() { return g_stateError.c_str(); }
+
+// Sérialise la machine et remet les octets à la page (window.neostOnStateSaved), qui
+// en fait un téléchargement. Rend 1 si l'état est livré, 0 sinon (motif :
+// neost_state_error). Refusé pendant un blit HOG garé (Machine::kParkedReason) : la
+// trame n'est pas close, il n'y a pas d'état cohérent à prendre.
+EMSCRIPTEN_KEEPALIVE int neost_save_state() {
+    g_stateError.clear();
+    if (!g_machine) { g_stateError = "The machine is not running"; return 0; }
+    g_machine->lastStateError_.clear();
+    std::vector<uint8_t> st;
+    if (!g_machine->saveState(st)) {
+        g_stateError = g_machine->lastStateError().empty() ? "Cannot serialize the machine"
+                                                           : g_machine->lastStateError();
+        return 0;
+    }
+    EM_ASM({
+        if (window.neostOnStateSaved) window.neostOnStateSaved(HEAPU8.slice($0, $0 + $1));
+    }, st.data(), int(st.size()));
+    return 1;
+}
+
+// Restaure un état que la page a écrit dans le FS virtuel (fichier supprimé ensuite).
+// L'en-tête (machine, RAM, ROM exacte, cartouche, dongles, CRC) est validé AVANT de
+// toucher à la session : un état refusé laisse la machine intacte. Rend 0 si refusé
+// (motif : neost_state_error), 1 si accepté — appliqué tout de suite, ou à la fin du
+// déroulement d'une instruction garée (comme un changement de ROM : l'état remplace
+// tout, l'instruction coupée ne compte plus). Le résultat de l'application arrive par
+// window.neostOnStateLoaded(ok, motif).
+EMSCRIPTEN_KEEPALIVE int neost_load_state(const char* path) {
+    g_stateError.clear();
+    if (!g_machine || !path) { g_stateError = "The machine is not running"; return 0; }
+    // Lu d'un bloc dans le tas : pas de tampon sur la pile. La pile d'Emscripten fait
+    // 64 Ko par défaut, et un tampon de 64 Ko y écrasait les globales voisines (mesuré :
+    // le changement de ROM suivant mourait dans le constructeur de std::ifstream).
+    std::vector<uint8_t> data;
+    if (std::FILE* f = std::fopen(path, "rb")) {
+        if (std::fseek(f, 0, SEEK_END) == 0) {
+            const long n = std::ftell(f);
+            if (n > 0 && n <= 64L * 1024 * 1024 && std::fseek(f, 0, SEEK_SET) == 0) {
+                data.resize(std::size_t(n));
+                if (std::fread(data.data(), 1, data.size(), f) != data.size()) data.clear();
+            }
+        }
+        std::fclose(f);
+    }
+    std::remove(path);
+    if (data.empty()) { g_stateError = "Cannot read the state file"; return 0; }
+    g_machine->lastStateError_.clear();
+    if (!g_machine->stateHeaderOk(data.data(), data.size())) {
+        g_stateError = g_machine->lastStateError().empty() ? "Not a NeoST state file"
+                                                           : g_machine->lastStateError();
+        return 0;
+    }
+    whenUnparked([d = std::move(data)] {
+        g_machine->lastStateError_.clear();
+        const bool ok = g_machine->loadState(d.data(), d.size());
+        const std::string why = ok ? std::string() : g_machine->lastStateError();
+        std::printf("[state] load %s%s%s\n", ok ? "OK" : "FAILED", ok ? "" : " : ", why.c_str());
+        announceDriveA();
+        EM_ASM({
+            if (window.neostOnStateLoaded) window.neostOnStateLoaded($0, UTF8ToString($1));
+        }, ok ? 1 : 0, why.c_str());
+    });
+    return 1;
+}
+
+// Capture de la vue affichée, livrée par window.neostOnScreenshot(rgba, w, h). Entre
+// deux tours de boucle, la dernière trame close est encore dans le Shifter : capture
+// immédiate. Instruction garée : le Shifter dessine déjà la trame suivante, la capture
+// attend donc la prochaine trame présentée.
+EMSCRIPTEN_KEEPALIVE void neost_screenshot() {
+    if (!g_machine) return;
+    if (g_machine->parkedInInstruction()) g_shotPending = true;
+    else deliverScreenshot();
 }
 
 } // extern "C"

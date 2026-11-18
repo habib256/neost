@@ -198,6 +198,15 @@
     </fieldset>
 
     <fieldset>
+      <legend>Saves</legend>
+      <div class="row">
+        <button id="btnSaveState" title="Download the whole machine (CPU, RAM, chips) as a .state file. Floppies are not inside: keep the same image in A:.">⤓ Save state</button>
+        <button id="btnScreenshot" title="Download what the screen shows as a PNG">⤓ Screenshot</button>
+        <span class="badge wrap" title="A .state restores only on the same machine, RAM size and ROM image. A TOS image (.img/.rom/.tos/.bin) stays in this page: nothing is uploaded, and it is gone when the page reloads.">drop a .state on the screen to restore it · drop a TOS image to boot it</span>
+      </div>
+    </fieldset>
+
+    <fieldset>
       <legend>Display &amp; peripherals</legend>
       <div class="row">
         <button id="btnMono" class="toggle" title="Toggle color monitor (low/medium res) ↔ monochrome (high res) — triggers a reset">Screen: Color</button>
@@ -256,7 +265,9 @@
       <li><b>USB pads</b>: detected automatically — first pad on port 1, second on port 0. The <b>dead zone</b> slider only affects analog sticks, not the D-pad.</li>
       <li><b>Reset</b>: a <b>cold</b> reset (power-cycle) — ST-RAM is wiped and TOS boots from scratch, which is also what "Mount A: + Reset" and <kbd>Shift</kbd>+drop do.</li>
       <li><b>Keys the browser would take</b> (F1–F12, arrows, Space, Page Up/Down, Ctrl/Alt+letter) go to the ST while the screen has the focus or the mouse is captured: click the screen first.</li>
-      <li><b>Game floppies</b>: "Mount A: + Reset" switches to a <b>real TOS</b> when one is available (EmuTOS boots system floppies only) — TOS 2.06 on STE/Mega STE, TOS 1.0x on ST. <b>This build bundles EmuTOS alone</b>, which is free software; original Atari TOS ROMs are not ours to ship. Most commercial games therefore need you to add one to <code>/roms</code> and pick it above. The bundled <b>demos</b> boot fine on EmuTOS.</li>
+      <li><b>Game floppies</b>: "Mount A: + Reset" switches to a <b>real TOS</b> when one is available (EmuTOS boots system floppies only) — TOS 2.06 on STE/Mega STE, TOS 1.0x on ST. <b>This build bundles EmuTOS alone</b>, which is free software; original Atari TOS ROMs are not ours to ship. Most commercial games therefore need your own TOS image: <b>drop it on the screen</b> (<code>.img</code> / <code>.rom</code> / <code>.tos</code> / <code>.bin</code>). It is loaded in this page only — never uploaded — joins the ROM list and boots cold; a TOS 1.04 or older turns an STE back into an ST, as on the desktop. The bundled <b>demos</b> boot fine on EmuTOS.</li>
+      <li><b>Save states</b>: <b>⤓ Save state</b> downloads the whole machine (CPU, RAM, every chip) as a <code>.state</code> file; drop it on the screen to come back to that instant. It restores only on the same machine model, RAM size and exact ROM image, and the floppies are not inside it: put the same image back in A: first (after a reload, drop it again).</li>
+      <li><b>Screenshot</b>: saves what the screen shows — the cropped picture when Auto zoom is on — as a PNG, low resolution pixels doubled to keep the screen's shape.</li>
       <li><b>Drag and drop</b>: drop a <code>.st</code> / <code>.msa</code> / <code>.dim</code> / <code>.stx</code> / <code>.ipf</code> image onto the screen to <b>insert</b> it in A: without a reset — that is how you swap to "disk 2" mid-game. Hold <kbd>Shift</kbd> while dropping to mount it <b>and reboot</b>.</li>
       <li><b>Your floppies live in this page only</b>: what the ST writes to them (saved games…) is lost when the page is closed or reloaded. <b>⤓ Download A:</b> saves the floppy in A: with its writes (for <code>.stx</code>/<code>.ipf</code>, which are never rewritten, it saves the <code>.wd1772</code> file that holds the writes — Hatari reads it too).</li>
       <li><b>Machine &amp; RAM</b>: fixed when the machine is built → changing them reloads the page (URL parameters <code>?machine=</code> and <code>?mem=</code>, shareable). You are asked first when a floppy of yours is in use.</li>
@@ -308,19 +319,24 @@
     // demande confirmation dès que la machine tourne ou qu'une disquette a été
     // déposée (le navigateur n'affiche la question qu'après une interaction réelle
     // avec la page). `leaving` = départ voulu, déjà confirmé (changement de machine).
-    var session = { live: false, userDisk: false, leaving: false };
+    var session = { live: false, userDisk: false, userRom: false, leaving: false };
     window.addEventListener('beforeunload', function (e) {
-      if (session.leaving || !(session.live || session.userDisk)) return;
+      if (session.leaving || !(session.live || session.userDisk || session.userRom)) return;
       e.preventDefault();
       e.returnValue = '';                 // requis par Chrome et Safari
     });
     // Rechargement voulu (changement de machine ou de RAM) : confirm() si une
     // disquette de l'utilisateur est en jeu, puisque ses écritures seraient perdues.
+    // Une ROM déposée vit aussi dans MEMFS seulement (session.userRom) : on prévient.
     function confirmReload(what) {
-      if (session.userDisk &&
-          !window.confirm('Changing the ' + what + ' reloads the page: the floppies you dropped, ' +
-                          'and everything the ST wrote to them, will be lost.\n\n' +
-                          'Use "Download A:" first to keep them. Reload anyway?'))
+      var lost = [];
+      if (session.userDisk) lost.push('the floppies you dropped, and everything the ST wrote to them');
+      if (session.userRom)  lost.push('the TOS image you dropped (drop it again after the reload)');
+      if (lost.length &&
+          !window.confirm('Changing the ' + what + ' reloads the page: ' + lost.join(', and ') +
+                          ' will be gone.\n\n' +
+                          (session.userDisk ? 'Use "Download A:" first to keep the floppy. ' : '') +
+                          'Reload anyway?'))
         return false;
       session.leaving = true;
       return true;
@@ -994,7 +1010,7 @@
       if (noRealTos)
         Module.setStatus('Mounted: ' + displayName +
                          ' — WARNING: only EmuTOS is bundled, and it boots system floppies only. ' +
-                         'A game floppy usually needs an original Atari TOS: add one to /roms and pick it above.');
+                         'A game floppy usually needs an original Atari TOS: drop your TOS image on the screen.');
       else
         setStatusOk('Mounted: ' + displayName + note);
     }
@@ -1115,8 +1131,146 @@
       reader.readAsArrayBuffer(file);
     }
 
+    // ===== ROM locale, save-states, capture =====================================
+    // Repris de la copie ajfarrell75/atarist1 (2026-09-05/06), réécrit sur la page
+    // actuelle : tout passe par le dépôt sur l'écran, comme les disquettes, et rien ne
+    // quitte le navigateur (pas d'envoi, pas de stockage persistant).
+
+    // Nom de fichier local : caractères de contrôle et séparateurs neutralisés (même
+    // règle, et même piège Emscripten du caractère nul, que mountLocalFile).
+    function safeBase(name, extLen, fallback) {
+      return name.slice(0, name.length - extLen)
+                 .replace(/[\/\\]|[^ -￿]/g, '_').slice(0, 120) || fallback;
+    }
+    function stamp() {
+      var d = new Date();
+      function p(n) { return (n < 10 ? '0' : '') + n; }
+      return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' +
+             p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
+    }
+    function downloadBlob(blob, name) {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+    }
+    function readLocalFile(file, onBytes) {
+      var reader = new FileReader();
+      reader.onerror = function () { Module.setStatus('Cannot read file: ' + file.name); };
+      reader.onload = function () { onBytes(new Uint8Array(reader.result)); };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // ROM déposée : écrite sous /userroms (jamais par-dessus une ROM embarquée), chargée
+    // par neost_load_tos — mêmes gardes que le menu (taille validée par le cœur, ancienne
+    // ROM gardée sur échec, profil ST/STE ajusté, boot à froid) — puis ajoutée au menu.
+    function loadLocalRom(file) {
+      var m = /\.(img|rom|tos|bin)$/i.exec(file.name);
+      // La plus grosse ROM qu'accepte le cœur fait 512 Ko : au-delà, mauvais fichier.
+      if (file.size > 1024 * 1024) { Module.setStatus('File too large for a TOS image: ' + file.name); return; }
+      readLocalFile(file, function (data) {
+        // Bus::loadTos accepte n'importe quelle image (ROM de diagnostic, homebrew) :
+        // un fichier de zéros déposé par erreur passait, basculait la machine en ST et
+        // la laissait morte. Le dépôt exige donc un en-tête TOS.
+        // [C] En-tête TOS, octet 0 = $60 (BRA.S vers le code de reset) : vérifié sur les
+        // ROM TOS 1.00 à 4.04 et EmuTOS 192/256 Ko. La taille, elle, ne trie rien : des
+        // dumps réels font un octet de plus ou de moins (196 607, 262 145).
+        if (data.length < 64 * 1024 || data[0] !== 0x60) {
+          Module.setStatus('Not a TOS image: ' + file.name + ' (no TOS header) — machine untouched.');
+          return;
+        }
+        var path = '/userroms/' + safeBase(file.name, m[0].length, 'tos') + '.' + m[1].toLowerCase();
+        try {
+          try { Module.FS.mkdir('/userroms'); } catch (e) { /* déjà là */ }
+          Module.FS.writeFile(path, data);
+        } catch (e) { Module.setStatus('Cannot store the ROM (' + e + ')'); return; }
+        if (!callLoadTos(path)) {
+          try { Module.FS.unlink(path); } catch (e) {}
+          Module.setStatus('Not a usable TOS image: ' + file.name + ' — previous ROM kept, machine untouched.');
+          return;
+        }
+        var sel = document.getElementById('romSel');
+        var opt = Array.prototype.find.call(sel.options, function (o) { return o.value === path; });
+        if (!opt) {
+          opt = document.createElement('option');
+          opt.value = path;
+          opt.textContent = file.name + ' (yours)';
+          sel.appendChild(opt);
+        }
+        sel.value = path;
+        romPrev = path;
+        romUserChosen = true;
+        session.userRom = true;
+        setStatusOk('ROM: ' + file.name + ' — cold boot. It stays in this page only.');
+        focusScreen();
+      });
+    }
+
+    // Sauvegarde : le cœur sérialise et rappelle neostOnStateSaved avec les octets.
+    window.neostOnStateSaved = function (bytes) {
+      var name = 'neost-' + machineParam + '-' + stamp() + '.state';
+      downloadBlob(new Blob([bytes], { type: 'application/octet-stream' }), name);
+      setStatusOk('State saved: ' + name + ' — drop it on the screen to come back here.');
+    };
+    document.getElementById('btnSaveState').addEventListener('click', function () {
+      if (ready && Module.ccall('neost_save_state', 'number', [], []) !== 1)
+        Module.setStatus('Save refused: ' + Module.ccall('neost_state_error', 'string', [], []));
+      focusScreen();
+    });
+
+    // Restauration : l'en-tête est validé tout de suite (refus = machine intacte) ;
+    // l'état s'applique ensuite, au besoin après un blit garé, et le cœur rappelle
+    // neostOnStateLoaded avec le verdict.
+    var stateName = '';
+    window.neostOnStateLoaded = function (ok, why) {
+      if (ok) setStatusOk('State restored: ' + stateName);
+      else    Module.setStatus('State refused: ' + (why || 'inconsistent file') + ' — session state kept.');
+    };
+    function loadLocalState(file) {
+      // Borne de Machine::loadStateFile : RAM (≤ 4 Mo) + puces, 64 Mo est très large.
+      if (file.size > 64 * 1024 * 1024) { Module.setStatus('File too large for a state: ' + file.name); return; }
+      readLocalFile(file, function (data) {
+        var path = '/tmp/neost-drop.state';      // supprimé par neost_load_state
+        try { Module.FS.writeFile(path, data); }
+        catch (e) { Module.setStatus('Cannot store the state (' + e + ')'); return; }
+        stateName = file.name;
+        if (Module.ccall('neost_load_state', 'number', ['string'], [path]) !== 1)
+          Module.setStatus('State refused: ' + Module.ccall('neost_state_error', 'string', [], []) +
+                           ' — machine untouched.');
+        focusScreen();
+      });
+    }
+
+    // Capture : le cœur rend la vue affichée en RGBA, à la taille d'affichage.
+    window.neostOnScreenshot = function (rgba, w, h) {
+      var c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(rgba.buffer), w, h), 0, 0);
+      var name = 'neost-' + stamp() + '.png';
+      c.toBlob(function (blob) {
+        if (!blob) { Module.setStatus('Cannot encode the screenshot.'); return; }
+        downloadBlob(blob, name);
+        setStatusOk('Screenshot saved: ' + name + ' (' + w + '×' + h + ')');
+      }, 'image/png');
+    };
+    document.getElementById('btnScreenshot').addEventListener('click', function () {
+      if (ready) Module.ccall('neost_screenshot', null, [], []);
+      focusScreen();
+    });
+
+    // Un dépôt sur l'écran : disquette, ROM ou état, selon l'extension.
+    function dropLocalFile(file, withReset) {
+      if (!file || !ready) return;
+      if (/\.(st|msa|dim|stx|ipf)$/i.test(file.name)) mountLocalFile(file, withReset);
+      else if (/\.(img|rom|tos|bin)$/i.test(file.name)) loadLocalRom(file);
+      else if (/\.state$/i.test(file.name)) loadLocalState(file);
+      else Module.setStatus('Unrecognized file: ' + file.name +
+                            ' (floppy .st/.msa/.dim/.stx/.ipf, TOS .img/.rom/.tos/.bin, or .state)');
+    }
+
     // (Le sélecteur de fichier « Open a file… » a été retiré : le glisser-déposer
-    // ci-dessous fait la même chose et se passe d'un bouton. mountLocalFile reste
+    // ci-dessous fait la même chose et se passe d'un bouton. dropLocalFile reste
     // le chemin commun — c'est lui que le drop appelle.)
 
     // Glisser-déposer d'une image disquette directement sur l'écran.
@@ -1137,7 +1291,7 @@
       bezel.addEventListener('drop', function (e) {
         // Dépôt simple = insertion à chaud ; Maj+dépôt = montage + reset.
         if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length)
-          mountLocalFile(e.dataTransfer.files[0], e.shiftKey);
+          dropLocalFile(e.dataTransfer.files[0], e.shiftKey);
       });
     })();
   </script>

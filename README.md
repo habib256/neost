@@ -19,8 +19,8 @@ the [Hatari](https://www.hatari-emu.org/) reference.*
 ### 👉 **[habib256.github.io/neost](https://habib256.github.io/neost/)**
 
 The same emulation core, compiled to WebAssembly. Pick a ROM, mount a floppy, flip
-between colour and mono, or **drag your own `.st` onto the screen**. No download, no
-account, no build.
+between colour and mono, or **drag your own `.st` onto the screen** — or your own TOS image.
+Save the whole machine to a file and drop it back later. No download, no account, no build.
 
 ## Why you might like it
 
