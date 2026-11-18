@@ -27,6 +27,9 @@
 //               DragEvent) ; aller-retour d'état à l'octet ; refus (CRC, autre ROM,
 //               ROM invalide) ; en plein blit, sauvegarde refusée, capture différée à
 //               la trame close suivante, restauration au déroulement de l'instruction ;
+//    touch    : souris, joystick et clavier tactiles par de vrais événements tactiles
+//               (CDP, Chrome seul) ; curseur GEM amené sur la barre de menus ;
+//               repli plein écran « immersif » sans l'API (Safari sur iPhone) ;
 //    ?fiber=0 : pas de JSPI, le blit d'un seul tenant (un tour rAF de plusieurs secondes) ;
 //    exception : la page le dit et reste vivante, la machine s'arrête, et le bouton
 //               Reset la relance (parked_ remis).
@@ -319,6 +322,10 @@ class Bidi {
 // -----------------------------------------------------------------------------
 async function loadPage(cdp, base, query, cfg) {
   const ident = await cdp.addInit(probeSource(cfg));
+  // Départ voulu (comme un changement de machine dans la page) : après une vraie
+  // interaction (événements tactiles CDP), la garde beforeunload de la page ouvrirait une
+  // boîte de dialogue invisible, et la navigation resterait bloquée.
+  try { await cdp.ev("typeof session !== 'undefined' && (session.leaving = true)"); } catch {}
   cdp.logs.length = 0;
   await cdp.navigate(`${base}/index.html${query}`);
   let ok = false;
@@ -665,6 +672,153 @@ async function main() {
       if (verbose) console.log(cdp.logs.join('\n'));
       check(logsHave(/parked instruction abandoned/) && ld && ld[0] === 1 && lateFrames === 0,
             'mid-blit load: applied once the parked instruction unwinds');
+    }
+    if (want('touch') && browser !== 'chrome') {
+      console.log('[web-jspi] touch: SKIP (needs CDP Input.dispatchTouchEvent, Chrome only)');
+    } else if (want('touch')) {
+      // Commandes tactiles (web/shell.html) : de vrais événements tactiles (CDP), et les
+      // appels de la page au cœur relevés par enveloppe des exports (ccall les résout à
+      // l'appel). Puis un effet de bout en bout : le curseur GEM amené sur la barre de
+      // menus ouvre un menu d'EmuTOS, visible à la capture.
+      await loadPage(cdp, base, '?machine=ste', {});
+      await sleep(2500);
+      await cdp.ev(`(() => {
+        window.__tc = [];
+        ['neost_touch_mouse', 'neost_touch_tap', 'neost_touch_buttons', 'neost_set_touch_joystick',
+         'neost_key_event'].forEach((n) => {
+          const f = Module['_' + n];
+          Module['_' + n] = (...a) => { const r = f(...a); __tc.push([n, ...a, r]); return r; };
+        });
+        window.__lit = [];
+        const c = window.neostOnScreenshot;
+        // Plus longue suite de pixels blancs sur une ligne, sous la barre de menus (lignes ST
+        // 10-19 à la taille d'affichage) : le fond du bureau est tramé, seul le cadre du menu
+        // déroulé « Desk » d'EmuTOS y pose une longue suite blanche.
+        window.neostOnScreenshot = (px, w, h) => {
+          let best = 0;
+          for (let y = 20; y < 40; y++) for (let x = 0, run = 0; x < w; x++) {
+            const i = (y * w + x) * 4;
+            run = px[i] + px[i + 1] + px[i + 2] > 600 ? run + 1 : 0;
+            if (run > best) best = run; }
+          __lit.push(best); };
+        return 1; })()`);
+      const calls = async (name) => cdp.ev(`__tc.filter((c) => c[0] === '${name}').map((c) => c.slice(1))`);
+      const clear = () => cdp.ev('(__tc.length = 0, 1)');
+      const touch = (type, pts) => cdp.send('Input.dispatchTouchEvent',
+        { type, touchPoints: pts.map(([x, y], i) => ({ x, y, id: i + 1 })) });
+      const rect = (id) => cdp.ev(`(() => { const r = document.getElementById('${id}').getBoundingClientRect();
+        return [r.left, r.top, r.width, r.height]; })()`);
+      const shotLit = async () => {
+        const n = await cdp.ev('__lit.length');
+        await cdp.ev("Module.ccall('neost_screenshot', null, [], [])");
+        const t0 = Date.now();
+        while ((await cdp.ev('__lit.length')) === n) {
+          if (Date.now() - t0 > 10000) throw new Error('touch: no screenshot delivered within 10 s');
+          await sleep(20);
+        }
+        return cdp.ev('__lit[__lit.length - 1]');
+      };
+
+      await cdp.ev("document.getElementById('btnTouchMouse').click()");
+      const [cl, ct, cw, chh] = await rect('canvas');
+      const cx = cl + cw / 2, cy = ct + chh / 2;
+      await clear();
+      await touch('touchStart', [[cx, cy]]);
+      for (let i = 1; i <= 10; i++) await touch('touchMove', [[cx + i * 20, cy]]);
+      await touch('touchEnd', []);
+      const mv = await calls('neost_touch_mouse');
+      const sx = mv.reduce((s, c) => s + c[0], 0), sy = mv.reduce((s, c) => s + c[1], 0);
+      const want200 = 200 * 900 / cw;
+      console.log(`[web-jspi] touch: drag 200 px on a ${cw.toFixed(0)} px canvas -> ` +
+                  `${mv.length} moves, dx ${sx}, dy ${sy} (expected ${want200.toFixed(1)})`);
+      check(Math.abs(sx - want200) <= 1 && sy === 0 && (await calls('neost_touch_tap')).length === 0,
+            'touch mouse: drag = relative move at the APK scale, no click');
+      await clear();
+      await touch('touchStart', [[cx, cy]]);
+      await touch('touchEnd', []);
+      await sleep(200);                              // le maintien de 4 trames s'écoule
+      await touch('touchStart', [[cx, cy], [cx + 60, cy]]);
+      await touch('touchEnd', []);
+      const taps = await calls('neost_touch_tap');
+      console.log(`[web-jspi] touch: taps ${JSON.stringify(taps)}`);
+      check(taps.length === 2 && taps[0][0] === 0 && taps[0][1] === 1 && taps[1][0] === 1 && taps[1][1] === 1,
+            'touch mouse: tap = left click, two-finger tap = right click');
+      // Bout en bout : le curseur part en haut à gauche (barre de menus d'EmuTOS). Le bureau
+      // n'est là qu'après l'écran d'accueil d'EmuTOS, immobile plusieurs secondes : on attend
+      // que l'image CHANGE (le bureau remplace l'accueil), puis qu'elle se stabilise.
+      const welcome = await shotLit();
+      let before = welcome;
+      for (let i = 0, same = 0; i < 60 && (before === welcome || same < 3); i++) {
+        await sleep(500);
+        const lit = await shotLit();
+        same = lit === before ? same + 1 : 0;
+        before = lit;
+      }
+      await touch('touchStart', [[cx, cy]]);
+      for (let i = 1; i <= 40; i++) await touch('touchMove', [[cx - i * 8, cy - i * 6]]);
+      await touch('touchEnd', []);
+      await touch('touchStart', [[cx, cy]]);
+      for (let i = 1; i <= 6; i++) await touch('touchMove', [[cx + i * 5, cy]]);   // sur « Desk »
+      await touch('touchEnd', []);
+      await sleep(600);
+      const after = await shotLit();
+      console.log(`[web-jspi] touch: longest white run under the menu bar: before ${before} px, after the drag ${after} px`);
+      check(before < 100 && after >= 150, 'touch mouse end to end: GEM cursor reaches the menu bar, a menu drops');
+
+      await cdp.ev("document.getElementById('btnTouchJoy').click()");
+      const [pl, pt, pw] = await rect('joyPad');
+      const pcx = pl + pw / 2, pcy = pt + pw / 2, r = pw / 2 * 0.8;
+      await clear();
+      await touch('touchStart', [[pcx + r, pcy]]);
+      await touch('touchMove', [[pcx + r * 0.7, pcy + r * 0.7]]);
+      await touch('touchMove', [[pcx, pcy - r]]);
+      await touch('touchMove', [[pcx - r * 0.7, pcy - r * 0.7]]);
+      await touch('touchMove', [[pcx + 2, pcy]]);
+      await touch('touchEnd', []);
+      const [fl, ft, fw, fh] = await rect('joyFire');
+      await touch('touchStart', [[fl + fw / 2, ft + fh / 2]]);
+      await touch('touchEnd', []);
+      await cdp.ev("(() => { const s = document.getElementById('joyPortSel'); s.value = '0'; " +
+                   "s.dispatchEvent(new Event('change')); return 1; })()");
+      await touch('touchStart', [[pcx - r, pcy]]);
+      await touch('touchEnd', []);
+      const joy = (await calls('neost_set_touch_joystick')).map((c) => `${c[0].toString(16)}@${c[1]}`);
+      console.log(`[web-jspi] touch: joystick ${joy.join(' ')}`);
+      check(joy.join(' ') === '8@1 a@1 1@1 5@1 0@1 80@1 0@1 0@0 4@0 0@0',   // 0@0 : état renvoyé au changement de port
+            'touch joystick: eight sectors, dead zone, FIRE, port from the Joystick box');
+
+      await cdp.ev("document.getElementById('btnKbd').click()");
+      const keyRect = (sc) => cdp.ev(`(() => { const b = [...document.querySelectorAll('#kbdOverlay button')]
+        .find((x) => +x.dataset.sc === ${sc}); const r = b.getBoundingClientRect();
+        return [r.left + r.width / 2, r.top + r.height / 2, b.textContent, getComputedStyle(b).display]; })()`);
+      await clear();
+      const sh = await keyRect(0x2A), a = await keyRect(0x1E), iso = await keyRect(0x60);
+      await touch('touchStart', [[sh[0], sh[1]]]); await touch('touchEnd', []);
+      await touch('touchStart', [[a[0], a[1]]]); await touch('touchEnd', []);
+      const ks = (await calls('neost_key_event')).map((c) => `${c[0].toString(16)}${c[1] ? '+' : '-'}`);
+      console.log(`[web-jspi] touch: keys ${ks.join(' ')}; label of $1E "${a[2]}", ISO key ${iso[3]}`);
+      check(ks.join(' ') === '2a+ 1e+ 1e- 2a-' && a[2] === 'A' && iso[3] === 'none',
+            'ST keyboard: sticky Shift released after the next key; US TOS labels, no ISO key');
+      await loadTos(cdp, '/roms/etos256fr.img');
+      await cdp.ev("neostKbdRelabel()");             // ce que fait callLoadTos sur la page
+      const fr = [await keyRect(0x10), await keyRect(0x1E), await keyRect(0x60)];
+      console.log(`[web-jspi] touch: French TOS: $10 "${fr[0][2]}", $1E "${fr[1][2]}", ISO ${fr[2][3]}`);
+      check(fr[0][2] === 'A' && fr[1][2] === 'Q' && fr[2][3] !== 'none',
+            'ST keyboard: AZERTY labels and ISO key under a French TOS');
+
+      // Plein écran sans API (Safari sur iPhone) : repli immersif, barre flottante, sortie.
+      const imm = await cdp.ev(`(() => {
+        const b = document.getElementById('bezel');
+        b.requestFullscreen = undefined; b.webkitRequestFullscreen = undefined;
+        document.getElementById('btnFullscreen').click();
+        const r = b.getBoundingClientRect();
+        const on = [b.classList.contains('immersive'), getComputedStyle(document.getElementById('fsBar')).display,
+                    Math.round(r.width) === innerWidth && Math.round(r.height) === innerHeight];
+        document.getElementById('fsExit').click();
+        return on.concat([b.classList.contains('immersive')]); })()`);
+      console.log(`[web-jspi] touch: immersive fallback ${JSON.stringify(imm)}`);
+      check(imm[0] === true && imm[1] === 'flex' && imm[2] === true && imm[3] === false,
+            'full screen without the API: immersive fallback covers the window, ✕ leaves');
     }
     if (want('fiber0')) {
       const jspi = await loadPage(cdp, base, '?machine=ste&fiber=0', {});

@@ -68,6 +68,78 @@
     }
     #bezel:fullscreen { border-radius: 0; }
     #bezel:fullscreen #canvas { width: 100%; height: 100%; object-fit: contain; }
+    /* Plein écran « immersif » : repli CSS quand l'élément ne peut pas passer en plein
+       écran (Safari sur iPhone n'a pas l'API pour un autre élément qu'une vidéo). */
+    #bezel.immersive {
+      position: fixed; inset: 0; z-index: 50; border-radius: 0; border: 0;
+      width: 100vw; height: 100vh; height: 100dvh;
+    }
+    #bezel.immersive #canvas { width: 100%; height: 100%; max-height: none; object-fit: contain; }
+    html.immersive, html.immersive body { overflow: hidden; }
+    /* Barre flottante du plein écran : clavier, joystick, sortie (pas d'Échap sur iOS). */
+    #fsBar {
+      display: none; position: absolute; z-index: 60; gap: 0.4rem;
+      top: max(0.6rem, env(safe-area-inset-top)); right: max(0.6rem, env(safe-area-inset-right));
+    }
+    #bezel:fullscreen #fsBar, #bezel.immersive #fsBar { display: flex; }
+    #fsBar button { background: rgba(34,34,43,0.75); padding: 0.35rem 0.6rem; }
+
+    /* --- Commandes tactiles (dans #bezel : visibles aussi en plein écran) ---- */
+    .touchui { touch-action: none; user-select: none; -webkit-user-select: none;
+               -webkit-touch-callout: none; }
+    .touchbtn {
+      background: rgba(34,34,43,0.55); color: var(--text); border: 1px solid rgba(120,120,140,0.6);
+      border-radius: 10px; font-size: 0.9rem; font-weight: 600;
+    }
+    .touchbtn.down { background: rgba(87,217,163,0.55); }
+    #mouseBtns { display: none; }
+    #mouseBtns.open { display: block; }
+    /* Ancrés à l'écran (#bezel, position: relative), pas à la fenêtre : en fenêtré, au
+       milieu de la fenêtre ils tombaient sur les contrôles de la page. */
+    #mouseBtns button {
+      position: absolute; z-index: 55; top: 50%; transform: translateY(-50%);
+      width: 3.6rem; height: min(5.5rem, 45%);
+    }
+    /* Immersif avec clavier ou joystick ouvert : l'image monte en haut, les commandes
+       occupent le bas. (Le vrai plein écran dessine l'image lui-même, centrée.) */
+    html.overlays #bezel.immersive #canvas { object-position: 50% 0; }
+    #mouseL { left: max(0.5rem, env(safe-area-inset-left)); }
+    #mouseR { right: max(0.5rem, env(safe-area-inset-right)); }
+    #joyOverlay {
+      display: none; position: fixed; z-index: 55; left: 0; right: 0;
+      bottom: calc(var(--kbd-h, 0px) + max(0.8rem, env(safe-area-inset-bottom)));
+      padding: 0 max(1rem, env(safe-area-inset-left)) 0 max(1rem, env(safe-area-inset-right));
+      justify-content: space-between; align-items: flex-end; pointer-events: none;
+    }
+    #joyOverlay.open { display: flex; }
+    #joyPad {
+      position: relative; width: 9rem; height: 9rem; border-radius: 50%; pointer-events: auto;
+      background: rgba(34,34,43,0.45); border: 2px solid rgba(120,120,140,0.6);
+    }
+    #joyKnob {
+      position: absolute; left: 50%; top: 50%; width: 3.4rem; height: 3.4rem; margin: -1.7rem;
+      border-radius: 50%; background: rgba(200,200,215,0.55); pointer-events: none;
+    }
+    #joyBtns { display: flex; gap: 0.7rem; align-items: flex-end; pointer-events: auto; }
+    #joyBtns button { width: 4.6rem; height: 4.6rem; border-radius: 50%; }
+    #joyFire { width: 5.6rem !important; height: 5.6rem !important; }
+    #kbdOverlay {
+      display: none; position: fixed; z-index: 56; left: 0; right: 0; bottom: 0;
+      padding: 0.3rem max(0.3rem, env(safe-area-inset-right)) max(0.3rem, env(safe-area-inset-bottom))
+               max(0.3rem, env(safe-area-inset-left));
+      background: rgba(26,26,33,0.88); border-top: 1px solid var(--border);
+    }
+    #kbdOverlay.open { display: block; }
+    .krow { display: flex; gap: 0.18rem; margin: 0.18rem auto; max-width: 980px; }
+    .krow button {
+      flex: 1 1 0; min-width: 0; padding: 0.55rem 0; font-size: clamp(0.6rem, 2.6vw, 0.85rem);
+      background: #2a2a33; border: 1px solid #3a3a46; border-bottom-width: 3px; border-radius: 5px;
+      overflow: hidden; white-space: nowrap;
+    }
+    .krow button.down, .krow button.armed { background: var(--on); border-color: #3f7a5c; }
+    /* Sélecteurs de fichier : seulement là où l'on ne peut pas déposer un fichier. */
+    .touch-only { display: none !important; }
+    html.touch .touch-only { display: inline-block !important; }
 
     /* Barre d'état sous l'écran : statut + badge machine + plein écran */
     #screenbar {
@@ -152,6 +224,25 @@
   <div id="monitor">
     <div id="bezel">
       <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()" onauxclick="event.preventDefault()"></canvas>
+      <!-- Tout ce qui suit est DANS #bezel, l'élément mis en plein écran : hors de lui,
+           rien ne s'affiche en plein écran. -->
+      <div id="fsBar">
+        <button type="button" id="fsKbd" title="Atari ST keyboard">⌨ Keyboard</button>
+        <button type="button" id="fsJoy" title="Touch joystick">Joystick</button>
+        <button type="button" id="fsExit" title="Leave full screen">✕</button>
+      </div>
+      <div id="mouseBtns" class="touchui">
+        <button type="button" class="touchbtn" id="mouseL" title="Left mouse button, held">L</button>
+        <button type="button" class="touchbtn" id="mouseR" title="Right mouse button, held">R</button>
+      </div>
+      <div id="joyOverlay" class="touchui">
+        <div id="joyPad" title="Joystick: slide your finger, eight directions"><div id="joyKnob"></div></div>
+        <div id="joyBtns">
+          <button type="button" class="touchbtn" id="joySpace" title="Space bar">SPACE</button>
+          <button type="button" class="touchbtn" id="joyFire" title="Fire">FIRE</button>
+        </div>
+      </div>
+      <div id="kbdOverlay" class="touchui" aria-label="Atari ST keyboard"></div>
     </div>
     <div id="screenbar">
       <span id="status">Loading the WebAssembly module…</span>
@@ -192,6 +283,10 @@
         <select id="diskSel" title="Bundled floppy image"></select>
         <button id="btnMount" class="primary" title="Mount in A: and reboot">Mount A: + Reset</button>
         <button id="btnMountB" title="Mount the selected floppy in drive B (no reset)">→ B:</button>
+        <label class="file touch-only" for="fileBoot" title="Pick a floppy image on this device, mount it in A: and reboot">Boot floppy…</label>
+        <input type="file" id="fileBoot">
+        <label class="file touch-only" for="fileInsert" title="Pick a floppy image and insert it in A: without a reset (disk 2 mid-game)">Insert floppy…</label>
+        <input type="file" id="fileInsert">
         <button id="btnDownloadA" disabled title="Save the floppy in drive A: to your computer, with everything the ST wrote to it. Writes only live in this page: they are lost when it is closed or reloaded.">⤓ Download A:</button>
         <span class="badge wrap" title="Drop a .st / .msa / .dim / .stx / .ipf file on the screen: it goes into A: without a reset (swap disks mid-game). Hold Shift while dropping to mount it and reboot.">or drop a floppy on the screen (Shift = + Reset)</span>
       </div>
@@ -202,6 +297,8 @@
       <div class="row">
         <button id="btnSaveState" title="Download the whole machine (CPU, RAM, chips) as a .state file. Floppies are not inside: keep the same image in A:.">⤓ Save state</button>
         <button id="btnScreenshot" title="Download what the screen shows as a PNG">⤓ Screenshot</button>
+        <label class="file touch-only" for="fileOpen" title="Pick a .state to restore, or a TOS image to boot">Open state / TOS…</label>
+        <input type="file" id="fileOpen">
         <span class="badge wrap" title="A .state restores only on the same machine, RAM size and ROM image. A TOS image (.img/.rom/.tos/.bin) stays in this page: nothing is uploaded, and it is gone when the page reloads.">drop a .state on the screen to restore it · drop a TOS image to boot it</span>
       </div>
     </fieldset>
@@ -241,6 +338,15 @@
       </div>
     </fieldset>
 
+    <fieldset>
+      <legend>Touch</legend>
+      <div class="row">
+        <button id="btnTouchMouse" class="toggle" title="Drag a finger on the screen to move the ST mouse; tap = left click, two-finger tap = right click; L and R buttons hold a button">Touch mouse: off</button>
+        <button id="btnTouchJoy" class="toggle" title="Eight-direction pad, FIRE and SPACE, on the port picked in the Joystick box">Touch joystick: off</button>
+        <button id="btnKbd" class="toggle" title="On-screen Atari ST keyboard; Shift, Ctrl and Alt stay down until the next key">ST keyboard: off</button>
+      </div>
+    </fieldset>
+
     <fieldset id="dongleBox">
       <legend>Dongles</legend>
       <!-- Peuplé au démarrage depuis le cœur (neost_cart_key_label, neost_port_device_label) :
@@ -267,6 +373,7 @@
       <li><b>Keys the browser would take</b> (F1–F12, arrows, Space, Page Up/Down, Ctrl/Alt+letter) go to the ST while the screen has the focus or the mouse is captured: click the screen first.</li>
       <li><b>Game floppies</b>: "Mount A: + Reset" switches to a <b>real TOS</b> when one is available (EmuTOS boots system floppies only) — TOS 2.06 on STE/Mega STE, TOS 1.0x on ST. <b>This build bundles EmuTOS alone</b>, which is free software; original Atari TOS ROMs are not ours to ship. Most commercial games therefore need your own TOS image: <b>drop it on the screen</b> (<code>.img</code> / <code>.rom</code> / <code>.tos</code> / <code>.bin</code>). It is loaded in this page only — never uploaded — joins the ROM list and boots cold; a TOS 1.04 or older turns an STE back into an ST, as on the desktop. The bundled <b>demos</b> boot fine on EmuTOS.</li>
       <li><b>Save states</b>: <b>⤓ Save state</b> downloads the whole machine (CPU, RAM, every chip) as a <code>.state</code> file; drop it on the screen to come back to that instant. It restores only on the same machine model, RAM size and exact ROM image, and the floppies are not inside it: put the same image back in A: first (after a reload, drop it again).</li>
+      <li><b>Touch screens</b>: <b>Touch mouse</b> (on by default on phones and tablets) turns the screen into a touchpad — drag to move, tap to click, tap with two fingers for a right click; hold <b>L</b> or <b>R</b> to keep a button down (dragging in GEM). <b>Touch joystick</b>: slide your finger on the pad (eight directions), <b>FIRE</b> and <b>SPACE</b> on the right, plugged into the port picked in the Joystick box. <b>ST keyboard</b>: Atari ST keys sent as they are; <b>Shift</b>, <b>Ctrl</b> and <b>Alt</b> stay down until the next key (tap again to release). Letters are labelled for the TOS language (AZERTY under a French TOS, QWERTZ under a German one). In full screen, the buttons at the top right open the keyboard and the joystick, and <b>✕</b> leaves. On a touch device, the <b>Boot floppy…</b>, <b>Insert floppy…</b> and <b>Open state / TOS…</b> buttons replace dropping a file.</li>
       <li><b>Screenshot</b>: saves what the screen shows — the cropped picture when Auto zoom is on — as a PNG, low resolution pixels doubled to keep the screen's shape.</li>
       <li><b>Drag and drop</b>: drop a <code>.st</code> / <code>.msa</code> / <code>.dim</code> / <code>.stx</code> / <code>.ipf</code> image onto the screen to <b>insert</b> it in A: without a reset — that is how you swap to "disk 2" mid-game. Hold <kbd>Shift</kbd> while dropping to mount it <b>and reboot</b>.</li>
       <li><b>Your floppies live in this page only</b>: what the ST writes to them (saved games…) is lost when the page is closed or reloaded. <b>⤓ Download A:</b> saves the floppy in A: with its writes (for <code>.stx</code>/<code>.ipf</code>, which are never rewritten, it saves the <code>.wd1772</code> file that holds the writes — Hatari reads it too).</li>
@@ -455,6 +562,7 @@
       if (rewindOn) Module.ccall('neost_set_rewind', null, ['number'], [1]);   // basculé avant la fin du chargement
       if (window.neostApplyJoyDeadzone) neostApplyJoyDeadzone();   // zone morte du curseur
       initDongles();     // page Dongles : peuple les listes, rebranche le choix gardé
+      if (window.neostKbdRelabel) neostKbdRelabel();   // clavier à l'écran : pays du TOS
     };
 
     // ===== Dongles ==============================================================
@@ -828,7 +936,9 @@
     function callMountB(p)  { if (ready) Module.ccall('neost_mount_disk_b', null, ['string'], [p]); }
     // Rend true si la ROM est chargée ; false = machine inchangée (ancienne ROM).
     function callLoadTos(p) {
-      return ready && Module.ccall('neost_load_tos', 'number', ['string'], [p]) === 1;
+      var ok = ready && Module.ccall('neost_load_tos', 'number', ['string'], [p]) === 1;
+      if (ok && window.neostKbdRelabel) neostKbdRelabel();   // pays du nouveau TOS
+      return ok;
     }
     function joyPort()      { return parseInt(document.getElementById('joyPortSel').value, 10) || 0; }
     function callKbdJoy(on) { if (ready) Module.ccall('neost_set_kbd_joystick', null, ['number', 'number'], [on ? 1 : 0, joyPort()]); }
@@ -866,20 +976,49 @@
       focusScreen();
     });
 
-    // Plein écran sur le bezel (le canvas s'y étire en conservant le ratio).
-    document.getElementById('btnFullscreen').addEventListener('click', function () {
+    // Plein écran sur le bezel (le canvas s'y étire en conservant le ratio). Safari sur
+    // iPhone n'a pas l'API pour un autre élément qu'une vidéo, et l'iPad seulement sous
+    // préfixe : repli « immersif » en CSS (le bezel couvre la fenêtre). Le cœur n'est
+    // alors pas prévenu : il garde la main sur la taille du canvas, et le zoom adaptatif
+    // (actif par défaut) cadre l'image comme en plein écran.
+    function fsElement() { return document.fullscreenElement || document.webkitFullscreenElement || null; }
+    function isFullscreen() {
+      return !!fsElement() || document.getElementById('bezel').classList.contains('immersive');
+    }
+    function setImmersive(on) {
+      document.getElementById('bezel').classList.toggle('immersive', on);
+      document.documentElement.classList.toggle('immersive', on);
+    }
+    function enterFullscreen() {
       var bezel = document.getElementById('bezel');
-      if (document.fullscreenElement) document.exitFullscreen();
-      else if (bezel.requestFullscreen) bezel.requestFullscreen();
+      var req = bezel.requestFullscreen || bezel.webkitRequestFullscreen;
+      if (!req) { setImmersive(true); return; }
+      try {
+        var p = req.call(bezel);
+        if (p && p.catch) p.catch(function () { setImmersive(true); });
+      } catch (e) { setImmersive(true); }
+    }
+    function leaveFullscreen() {
+      if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitFullscreenElement && document.webkitExitFullscreen) document.webkitExitFullscreen();
+      setImmersive(false);
+    }
+    document.getElementById('btnFullscreen').addEventListener('click', function () {
+      if (isFullscreen()) leaveFullscreen(); else enterFullscreen();
       document.getElementById('canvas').focus();
+    });
+    document.getElementById('fsExit').addEventListener('click', function () {
+      leaveFullscreen();
+      focusScreen();
     });
     // Plein écran ⇒ ZOOM ADAPTATIF côté cœur (cadrage sur la zone active, comme
     // le mode borne du bureau ; cadre entier dès qu'une démo ouvre les bordures).
     // L'écouteur couvre AUSSI la sortie par Échap, que le bouton ne voit pas.
-    document.addEventListener('fullscreenchange', function () {
-      if (ready) Module.ccall('neost_set_fullscreen', null, ['number'],
-                              [document.fullscreenElement ? 1 : 0]);
-    });
+    function onFullscreenChange() {
+      if (ready) Module.ccall('neost_set_fullscreen', null, ['number'], [fsElement() ? 1 : 0]);
+    }
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
     // Changer de ROM/TOS dans le menu = chargement + reset À FROID (choix explicite).
     // Échec (fichier illisible, taille invalide) : le cœur garde l'ancienne ROM et ne
@@ -1269,9 +1408,300 @@
                             ' (floppy .st/.msa/.dim/.stx/.ipf, TOS .img/.rom/.tos/.bin, or .state)');
     }
 
-    // (Le sélecteur de fichier « Open a file… » a été retiré : le glisser-déposer
-    // ci-dessous fait la même chose et se passe d'un bouton. dropLocalFile reste
-    // le chemin commun — c'est lui que le drop appelle.)
+    // Le sélecteur de fichier « Open a file… » a été retiré du bureau : le glisser-
+    // déposer ci-dessous fait la même chose. Un téléphone ne dépose pas de fichier : les
+    // sélecteurs reviennent là seulement (classe touch-only), et passent par les mêmes
+    // chemins que le dépôt. Pas d'attribut accept : iOS grise les extensions qu'il ne
+    // connaît pas (.st, .state) ; le tri par extension se fait ici.
+    var isTouchDevice = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+    if (isTouchDevice) document.documentElement.classList.add('touch');
+    [['fileBoot', function (f) { mountLocalFile(f, true); }],
+     ['fileInsert', function (f) { mountLocalFile(f, false); }],
+     ['fileOpen', function (f) { dropLocalFile(f, false); }]].forEach(function (p) {
+      document.getElementById(p[0]).addEventListener('change', function () {
+        var f = this.files[0];
+        this.value = '';                       // re-choisir le même fichier redéclenche
+        if (f && ready) p[1](f);
+      });
+    });
+
+    // ===== Commandes tactiles ===================================================
+    // Grammaire de l'APK Android (src/android/main_android.cpp, handleTouch) ; idée de
+    // départ : la copie ajfarrell75/atarist1. Le cœur tient les clics et les bits brefs
+    // (neost_touch_tap, neost_set_touch_joystick) : la page ne compte pas les trames.
+
+    // Bouton de la page tenu par un doigt : appui/relâchement, capture du pointeur
+    // (le doigt peut glisser hors du bouton sans le relâcher).
+    function holdButton(el, onDown, onUp) {
+      var held = null;
+      el.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        if (held !== null) return;
+        held = e.pointerId;
+        try { el.setPointerCapture(e.pointerId); } catch (x) {}
+        el.classList.add('down');
+        onDown();
+      });
+      function up(e) {
+        if (e.pointerId !== held) return;
+        held = null;
+        el.classList.remove('down');
+        onUp();
+      }
+      el.addEventListener('pointerup', up);
+      el.addEventListener('pointercancel', up);
+      el.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    }
+    function setToggle(btn, on, label) {
+      btn.textContent = label + ': ' + (on ? 'on' : 'off');
+      btn.classList.toggle('on', on);
+      // Clavier ou joystick ouvert : l'image immersive se range en haut (cf. CSS).
+      document.documentElement.classList.toggle('overlays',
+        document.getElementById('kbdOverlay').classList.contains('open') ||
+        document.getElementById('joyOverlay').classList.contains('open'));
+    }
+
+    // --- Souris : l'écran entier sert de pavé tactile ---------------------------
+    var tm = { on: false, pts: {}, count: 0, mover: null, peak: 0, start: 0,
+               travel: 0, remX: 0, remY: 0, cancelled: false };
+    // Échelle de l'APK (kTouchSpeed = 900 unités ST par largeur d'écran) : un glissé
+    // sur toute la largeur du canvas parcourt ~2,8 écrans basse résolution.
+    var kTouchSpeed = 900, kTapMaxMs = 250, kTapMaxTravel = 0.02;
+    function setTouchMouse(on) {
+      tm.on = on;
+      tm.pts = {}; tm.count = 0; tm.mover = null;
+      canvasEl.style.touchAction = on ? 'none' : '';
+      document.getElementById('mouseBtns').classList.toggle('open', on);
+      setToggle(document.getElementById('btnTouchMouse'), on, 'Touch mouse');
+      if (!on && ready) Module.ccall('neost_touch_buttons', null, ['number', 'number'], [0, 0]);
+    }
+    canvasEl.addEventListener('pointerdown', function (e) {
+      if (!tm.on || e.pointerType !== 'touch') return;
+      e.preventDefault();
+      try { canvasEl.setPointerCapture(e.pointerId); } catch (x) {}
+      canvasEl.focus();                         // un clavier physique suit
+      if (!tm.pts[e.pointerId]) tm.count++;
+      tm.pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+      if (tm.count === 1) {                     // début du geste
+        tm.start = performance.now(); tm.travel = 0; tm.peak = 0; tm.cancelled = false;
+      }
+      if (tm.count > tm.peak) tm.peak = tm.count;
+      if (tm.mover === null) tm.mover = e.pointerId;
+    });
+    canvasEl.addEventListener('pointermove', function (e) {
+      var p = tm.pts[e.pointerId];
+      if (!tm.on || !p) return;
+      e.preventDefault();
+      // Chaque doigt se diffe contre SA position : l'écart entre deux doigts ne devient
+      // jamais un saut de souris (constat de l'APK).
+      var dx = e.clientX - p.x, dy = e.clientY - p.y;
+      p.x = e.clientX; p.y = e.clientY;
+      if (e.pointerId !== tm.mover) return;     // seul le doigt pilote déplace
+      var w = canvasEl.clientWidth || 1;
+      tm.travel += (Math.abs(dx) + Math.abs(dy)) / w;
+      // Même unité sur les deux axes (la largeur) ; reste fractionnaire gardé, sinon un
+      // doigt lent n'avance jamais.
+      tm.remX += dx * kTouchSpeed / w;
+      tm.remY += dy * kTouchSpeed / w;
+      var mx = Math.trunc(tm.remX), my = Math.trunc(tm.remY);
+      tm.remX -= mx; tm.remY -= my;
+      if ((mx || my) && ready) Module.ccall('neost_touch_mouse', null, ['number', 'number'], [mx, my]);
+    });
+    function touchEnd(e) {
+      if (!tm.pts[e.pointerId]) return;
+      delete tm.pts[e.pointerId];
+      tm.count--;
+      if (e.type === 'pointercancel') tm.cancelled = true;
+      if (e.pointerId === tm.mover) {           // relais à un doigt restant, sans saut
+        var ids = Object.keys(tm.pts);
+        tm.mover = ids.length ? +ids[0] : null;
+      }
+      if (tm.count > 0) return;                 // geste pas fini
+      var tap = !tm.cancelled && performance.now() - tm.start <= kTapMaxMs && tm.travel <= kTapMaxTravel;
+      if (tap && ready) Module.ccall('neost_touch_tap', 'number', ['number'], [tm.peak >= 2 ? 1 : 0]);
+      tm.mover = null; tm.remX = 0; tm.remY = 0;
+    }
+    canvasEl.addEventListener('pointerup', touchEnd);
+    canvasEl.addEventListener('pointercancel', touchEnd);
+    (function () {
+      var l = false, r = false;
+      function send() {
+        if (ready) Module.ccall('neost_touch_buttons', null, ['number', 'number'], [l ? 1 : 0, r ? 1 : 0]);
+      }
+      holdButton(document.getElementById('mouseL'), function () { l = true; send(); },
+                                                    function () { l = false; send(); });
+      holdButton(document.getElementById('mouseR'), function () { r = true; send(); },
+                                                    function () { r = false; send(); });
+    })();
+    document.getElementById('btnTouchMouse').addEventListener('click', function () {
+      setTouchMouse(!tm.on);
+      focusScreen();
+    });
+    setTouchMouse(isTouchDevice);               // par défaut sur téléphone et tablette
+
+    // --- Joystick : pavé 8 directions, FEU, ESPACE -----------------------------
+    (function () {
+      var overlay = document.getElementById('joyOverlay');
+      var pad = document.getElementById('joyPad'), knob = document.getElementById('joyKnob');
+      var dir = 0, fire = false, padId = null, sent = -1;
+      // Secteurs de 45° autour de l'axe droit, sens horaire (y écran vers le bas).
+      var SECTORS = [0x08, 0x08 | 0x02, 0x02, 0x04 | 0x02, 0x04, 0x04 | 0x01, 0x01, 0x08 | 0x01];
+      function send() {
+        var bits = dir | (fire ? 0x80 : 0);
+        if (bits === sent || !ready) return;
+        sent = bits;
+        Module.ccall('neost_set_touch_joystick', null, ['number', 'number'], [bits, joyPort()]);
+      }
+      function track(e) {
+        var r = pad.getBoundingClientRect();
+        var rad = r.width / 2;
+        var dx = (e.clientX - (r.left + rad)) / rad, dy = (e.clientY - (r.top + rad)) / rad;
+        var d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 0.25) dir = 0;                 // zone morte centrale
+        else dir = SECTORS[(Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) + 8) % 8];
+        var k = Math.min(d, 1) / (d || 1);
+        knob.style.transform = 'translate(' + (dx * k * rad * 0.6) + 'px,' + (dy * k * rad * 0.6) + 'px)';
+        send();
+      }
+      pad.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        if (padId !== null) return;
+        padId = e.pointerId;
+        try { pad.setPointerCapture(e.pointerId); } catch (x) {}
+        track(e);
+      });
+      pad.addEventListener('pointermove', function (e) { if (e.pointerId === padId) track(e); });
+      function padUp(e) {
+        if (e.pointerId !== padId) return;
+        padId = null; dir = 0; knob.style.transform = '';
+        send();
+      }
+      pad.addEventListener('pointerup', padUp);
+      pad.addEventListener('pointercancel', padUp);
+      pad.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+      holdButton(document.getElementById('joyFire'), function () { fire = true; send(); },
+                                                     function () { fire = false; send(); });
+      holdButton(document.getElementById('joySpace'), function () { kbdSend(0x39, true); },
+                                                      function () { kbdSend(0x39, false); });
+      window.neostSetTouchJoy = function (on) {
+        overlay.classList.toggle('open', on);
+        if (!on) { dir = 0; fire = false; padId = null; knob.style.transform = ''; send(); }
+        setToggle(document.getElementById('btnTouchJoy'), on, 'Touch joystick');
+      };
+      // Le port suit la boîte Joystick : renvoyer l'état sur le nouveau port.
+      document.getElementById('joyPortSel').addEventListener('change', function () {
+        sent = -1; send();
+      });
+    })();
+    document.getElementById('btnTouchJoy').addEventListener('click', function () {
+      neostSetTouchJoy(!document.getElementById('joyOverlay').classList.contains('open'));
+      focusScreen();
+    });
+    document.getElementById('fsJoy').addEventListener('click', function () {
+      neostSetTouchJoy(!document.getElementById('joyOverlay').classList.contains('open'));
+    });
+
+    // --- Clavier ST à l'écran ----------------------------------------------------
+    function kbdSend(sc, down) {
+      if (ready) Module.ccall('neost_key_event', null, ['number', 'number'], [sc, down ? 1 : 0]);
+    }
+    (function () {
+      var overlay = document.getElementById('kbdOverlay');
+      // [libellé, scancode ST, largeur relative, 'mod' = modificateur collant]. Scancodes
+      // de l'IKBD (Atari ST, F1-F10 seulement : pas de F11/F12 sur un ST). Libellés US ;
+      // les lettres suivent le pays du TOS (LABELS plus bas).
+      var ROWS = [
+        [['F1', 0x3B], ['F2', 0x3C], ['F3', 0x3D], ['F4', 0x3E], ['F5', 0x3F], ['F6', 0x40],
+         ['F7', 0x41], ['F8', 0x42], ['F9', 0x43], ['F10', 0x44], ['Help', 0x62, 1.3], ['Undo', 0x61, 1.3]],
+        [['Esc', 0x01], ['1', 0x02], ['2', 0x03], ['3', 0x04], ['4', 0x05], ['5', 0x06], ['6', 0x07],
+         ['7', 0x08], ['8', 0x09], ['9', 0x0A], ['0', 0x0B], ['-', 0x0C], ['=', 0x0D], ['`', 0x29],
+         ['⌫', 0x0E, 1.4]],
+        [['Tab', 0x0F, 1.4], ['Q', 0x10], ['W', 0x11], ['E', 0x12], ['R', 0x13], ['T', 0x14], ['Y', 0x15],
+         ['U', 0x16], ['I', 0x17], ['O', 0x18], ['P', 0x19], ['[', 0x1A], [']', 0x1B], ['Del', 0x53, 1.2]],
+        [['Ctrl', 0x1D, 1.6, 'mod'], ['A', 0x1E], ['S', 0x1F], ['D', 0x20], ['F', 0x21], ['G', 0x22],
+         ['H', 0x23], ['J', 0x24], ['K', 0x25], ['L', 0x26], [';', 0x27], ["'", 0x28], ['\\', 0x2B],
+         ['Return', 0x1C, 1.8]],
+        [['Shift', 0x2A, 1.8, 'mod'], ['<', 0x60], ['Z', 0x2C], ['X', 0x2D], ['C', 0x2E], ['V', 0x2F],
+         ['B', 0x30], ['N', 0x31], ['M', 0x32], [',', 0x33], ['.', 0x34], ['/', 0x35], ['Shift', 0x36, 1.8, 'mod']],
+        [['Alt', 0x38, 1.4, 'mod'], ['Caps', 0x3A, 1.3], ['Space', 0x39, 5], ['Ins', 0x52], ['Home', 0x47],
+         ['←', 0x4B], ['↑', 0x48], ['↓', 0x50], ['→', 0x4D]]
+      ];
+      // [C] Pays du TOS (mot os_conf à $1C >> 1, cf. neost_tos_country) ; positions des
+      // lettres et de la ponctuation d'après les tables symboliques de gui/StKeysSymbolic.cpp
+      // ([D] Hatari sdl/keymap.c @ f0736b24) : FR AZERTY, DE et CZ QWERTZ. Les autres pays
+      // gardent les libellés US. La touche ISO ($60) n'existe pas sur un clavier US.
+      var LABELS = {
+        1:  { 0x15: 'Z', 0x2C: 'Y' },
+        2:  { 0x10: 'A', 0x11: 'Z', 0x1E: 'Q', 0x27: 'M', 0x2C: 'W', 0x32: ',', 0x33: ';',
+              0x34: ':', 0x35: '=', 0x0C: ')', 0x0D: '-', 0x1A: '^' },
+        15: { 0x15: 'Z', 0x2C: 'Y' }
+      };
+      var keys = [], armed = {};
+      function releaseMods() {
+        Object.keys(armed).forEach(function (sc) {
+          kbdSend(+sc, false);
+          armed[sc].classList.remove('armed');
+        });
+        armed = {};
+      }
+      ROWS.forEach(function (row) {
+        var div = document.createElement('div');
+        div.className = 'krow';
+        row.forEach(function (k) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.style.flexGrow = k[2] || 1;
+          b.dataset.sc = k[1];
+          b.dataset.us = k[0];
+          keys.push(b);
+          if (k[3] === 'mod') {
+            // Collant : un tap l'enfonce, la touche suivante (ou un second tap) le relâche.
+            b.addEventListener('pointerdown', function (e) {
+              e.preventDefault();
+              if (armed[k[1]]) { kbdSend(k[1], false); b.classList.remove('armed'); delete armed[k[1]]; }
+              else { kbdSend(k[1], true); b.classList.add('armed'); armed[k[1]] = b; }
+            });
+            b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+          } else {
+            // Tenue tant que le doigt est posé : la répétition est celle du TOS.
+            holdButton(b, function () { kbdSend(k[1], true); },
+                          function () { kbdSend(k[1], false); releaseMods(); });
+          }
+          div.appendChild(b);
+        });
+        overlay.appendChild(div);
+      });
+      window.neostKbdRelabel = function () {
+        var c = ready ? Module.ccall('neost_tos_country', 'number', [], []) : -1;
+        var map = LABELS[c] || {};
+        keys.forEach(function (b) {
+          var sc = +b.dataset.sc;
+          b.textContent = map[sc] || b.dataset.us;
+          if (sc === 0x60) b.style.display = (c === 0 || c < 0) ? 'none' : '';
+        });
+      };
+      neostKbdRelabel();
+      function setOpen(on) {
+        overlay.classList.toggle('open', on);
+        if (!on) releaseMods();
+        else neostKbdRelabel();
+        // Le joystick tactile se pose au-dessus du clavier.
+        document.documentElement.style.setProperty('--kbd-h', on ? overlay.offsetHeight + 'px' : '0px');
+        setToggle(document.getElementById('btnKbd'), on, 'ST keyboard');
+      }
+      window.neostSetKbd = setOpen;
+      window.addEventListener('resize', function () {
+        if (overlay.classList.contains('open'))
+          document.documentElement.style.setProperty('--kbd-h', overlay.offsetHeight + 'px');
+      });
+    })();
+    document.getElementById('btnKbd').addEventListener('click', function () {
+      neostSetKbd(!document.getElementById('kbdOverlay').classList.contains('open'));
+      focusScreen();
+    });
+    document.getElementById('fsKbd').addEventListener('click', function () {
+      neostSetKbd(!document.getElementById('kbdOverlay').classList.contains('open'));
+    });
 
     // Glisser-déposer d'une image disquette directement sur l'écran.
     (function () {

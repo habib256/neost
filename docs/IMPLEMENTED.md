@@ -2378,6 +2378,10 @@ Ces fonctionnalités **n'existent pas dans Hatari** (extensions assumées, consi
 
 - **Explorateur de bitmaps** (2026-11-12, débogueur, `core/BitmapView`) : RAM en 1/2/4 plans, palette
   courante ou gris, zoom ×1-×8, suit l'écran (base vidéo, résolution, largeur STE) ; lecture sans effet de bord.
+- **Web : commandes tactiles** (2026-11-18) : souris (pavé, tap, tap à deux doigts, L/R tenus), joystick
+  8 directions + FEU/ESPACE, clavier ST à l'écran (libellés selon le pays du TOS), repli plein écran
+  immersif pour Safari sur iPhone, sélecteurs de fichier sur appareil tactile. Grammaire de l'APK.
+  Banc `check_web_jspi.mjs --only touch`. ⚠ Jamais essayé sur un vrai téléphone.
 - **Web : save-states, ROM locale, capture** (2026-11-18) : *Save state* télécharge un `.state`, déposé
   sur l'écran il restaure (en-tête validé avant, refus motivé ; pendant un blit garé, sauvegarde refusée
   et restauration au déroulement de l'instruction). Une image TOS déposée (en-tête `$60` exigé) reste

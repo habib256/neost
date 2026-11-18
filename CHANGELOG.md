@@ -1,5 +1,30 @@
 # Changelog — NeoST
 
+## 2026-11-18 — Web : commandes tactiles et plein écran sur iPhone
+
+Deuxième lot repris de la copie `ajfarrell75/atarist1`, réécrit sur la grammaire de l'APK
+Android (`handleTouch`) plutôt que sur la leur.
+
+- **Souris tactile** (active d'office sur téléphone et tablette) : l'écran sert de pavé,
+  glisser = mouvement relatif à l'échelle de l'APK (900 unités par largeur), reste
+  fractionnaire gardé, chaque doigt diffé contre sa propre position ; tap = clic gauche,
+  tap à deux doigts = clic droit, boutons L et R tenus pour glisser dans GEM. Le clic d'un
+  tap est tenu 4 trames par le cœur (`neost_touch_tap`) : l'IKBD ne lit l'état des boutons
+  qu'à la VBL.
+- **Joystick tactile** : un pavé 8 directions où le doigt glisse sans se lever (zone morte
+  centrale), FEU et ESPACE, sur le port de la boîte Joystick, OR-é avec les manettes. Un
+  appui bref est vu au moins une trame.
+- **Clavier ST à l'écran** : scancodes de l'IKBD (F1-F10, pas de F11/F12 qu'aucun ST n'a),
+  Shift/Ctrl/Alt collants, libellés des lettres selon le pays du TOS (AZERTY sous TOS FR,
+  QWERTZ sous TOS DE/CZ, touche ISO hors US). Par `Machine::keyEvent`.
+- **Plein écran sans l'API** (Safari sur iPhone) : repli « immersif » en CSS ; barre
+  flottante (clavier, joystick, sortie) dans le plein écran, réel ou immersif.
+- **Sélecteurs de fichier** sur appareil tactile seulement (*Boot floppy…*, *Insert
+  floppy…*, *Open state / TOS…*) : on n'y dépose pas de fichier.
+- Banc : scénario `touch` de `tools/check_web_jspi.mjs` (événements tactiles CDP, Chrome) :
+  échelle du glissé, taps, curseur GEM amené sur la barre de menus d'EmuTOS jusqu'à
+  dérouler « Desk », 8 secteurs du pavé, port, Shift collant, libellés FR, repli immersif.
+
 ## 2026-11-18 — Web : save-states, TOS déposé, capture d'écran
 
 Trois fonctions de la copie `ajfarrell75/atarist1` (septembre 2026, frontend web), réécrites

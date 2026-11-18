@@ -20,7 +20,8 @@ the [Hatari](https://www.hatari-emu.org/) reference.*
 
 The same emulation core, compiled to WebAssembly. Pick a ROM, mount a floppy, flip
 between colour and mono, or **drag your own `.st` onto the screen** — or your own TOS image.
-Save the whole machine to a file and drop it back later. No download, no account, no build.
+Save the whole machine to a file and drop it back later. On a phone or a tablet, the screen
+becomes a touchpad, with a touch joystick and an Atari ST keyboard. No download, no account, no build.
 
 ## Why you might like it
 

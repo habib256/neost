@@ -92,6 +92,31 @@ bool   g_autoZoom = true;
 bool   g_mouseCaptured = false;
 double g_lastMx = 0, g_lastMy = 0;
 
+// --- Commandes tactiles (page web) --------------------------------------------
+// Même grammaire que l'APK Android (main_android.cpp, handleTouch) : glisser = souris
+// relative, tap = clic. Un clic se TIENT quelques trames : Ikbd::mouseEvent écrase
+// l'état des boutons et le paquet souris ne part qu'à la VBL, donc un appui relâché
+// dans la même trame ne produit aucun clic (constat de l'APK, recette de la borne).
+constexpr int kTapHoldFrames = 4;
+bool    g_touchL = false, g_touchR = false;   // boutons tenus (boutons de la page)
+int     g_tapHold = 0;                        // trames de clic de tap restantes
+bool    g_tapRight = false;
+// Joystick tactile : état tenu + bits « vus au moins une trame » (un tap bref de FEU
+// relâché entre deux relevés ne serait jamais lu par l'IKBD).
+uint8_t g_touchJoy = 0, g_touchJoyLatch = 0;
+int     g_touchJoyPort = 1;
+
+bool touchLeft()  { return g_touchL || (g_tapHold > 0 && !g_tapRight); }
+bool touchRight() { return g_touchR || (g_tapHold > 0 && g_tapRight); }
+
+// Après chaque trame émulée : le tap se relâche au bout de son maintien, les bits
+// tactiles brefs ont été vus.
+void touchFrameDone() {
+    g_touchJoyLatch = 0;
+    if (g_tapHold > 0 && --g_tapHold == 0)
+        g_machine->mouseEvent(0, 0, touchLeft(), touchRight());
+}
+
 // Signe des deltas souris → IKBD (identique au frontend natif, cf. main.cpp).
 constexpr int MOUSE_X_SIGN = +1;
 constexpr int MOUSE_Y_SIGN = +1;
@@ -451,6 +476,8 @@ void pollHostInput() {
     {
         uint8_t joy0 = 0, joy1 = 0;
         stjoy::compose(g_window, g_kbdJoy, g_kbdJoyPort, g_joyDeadzone, joy0, joy1);
+        const uint8_t touch = g_touchJoy | g_touchJoyLatch;   // joystick tactile, OR-é
+        (g_touchJoyPort == 0 ? joy0 : joy1) |= touch;
         g_machine->ikbd.setJoystick(joy0, joy1);
         g_machine->bus.setStePadInput(joy0, joy1);   // joypads STE ($FF9200/02)
     }
@@ -548,6 +575,7 @@ int runDueFrames() {
     const double nowMs = emscripten_get_now();
     return g_framePacer.runDue(nowMs, [] {
         g_machine->runFrame();
+        touchFrameDone();
         // Instruction garée déroulée (ordre de la page reçu pendant un blit HOG) :
         // l'état est celui d'une instruction coupée, l'ordre différé le remplace.
         if (applyDeferred()) return g_machine->frameCycles();
@@ -710,6 +738,7 @@ EMSCRIPTEN_KEEPALIVE void neost_web_tick() {
 // la suspension) : comme la fin du lambda de runDueFrames puis presentFrame. Le retour
 // arrière ne prend pas d'instantané d'une instruction garée (Rewind::onFrame l'ignore).
 EMSCRIPTEN_KEEPALIVE void neost_web_parked_frame() {
+    touchFrameDone();
     produceAudioFrame();
     g_framePacer.advance(g_machine->frameCycles());
     presentFrame();
@@ -1040,6 +1069,59 @@ EMSCRIPTEN_KEEPALIVE void neost_screenshot() {
     if (!g_machine) return;
     if (g_machine->parkedInInstruction()) g_shotPending = true;
     else deliverScreenshot();
+}
+
+// --- Commandes tactiles --------------------------------------------------------
+// Souris, joystick et clavier à l'écran de la page (web/shell.html), sur le modèle de
+// l'APK Android. Idée de départ : la copie ajfarrell75/atarist1 (2026-09-06/14).
+
+// Mouvement relatif (unités IKBD, déjà mises à l'échelle par la page), boutons tenus.
+EMSCRIPTEN_KEEPALIVE void neost_touch_mouse(int dx, int dy) {
+    if (g_machine && (dx || dy))
+        g_machine->mouseEvent(dx * MOUSE_X_SIGN, dy * MOUSE_Y_SIGN, touchLeft(), touchRight());
+}
+
+// Boutons de souris TENUS par la page (glisser-déposer GEM, tir maintenu).
+EMSCRIPTEN_KEEPALIVE void neost_touch_buttons(int left, int right) {
+    if (!g_machine) return;
+    g_touchL = left != 0;
+    g_touchR = right != 0;
+    g_machine->mouseEvent(0, 0, touchLeft(), touchRight());
+}
+
+// Clic d'un tap, tenu kTapHoldFrames trames puis relâché par touchFrameDone. Refusé
+// (0) tant que le précédent court : un second tap dans le maintien l'écraserait, et le
+// relâchement attendu ne viendrait jamais (constat de l'APK). Rend 1 si posé.
+EMSCRIPTEN_KEEPALIVE int neost_touch_tap(int right) {
+    if (!g_machine || g_tapHold > 0) return 0;
+    g_tapRight = right != 0;
+    g_tapHold  = kTapHoldFrames;
+    g_machine->mouseEvent(0, 0, touchLeft(), touchRight());
+    return 1;
+}
+
+// Touche du clavier à l'écran : scancode ST « make » (1..$72), appui ou relâchement.
+// Par Machine::keyEvent, comme le clavier physique (un clavier USB NetUSBee suit).
+EMSCRIPTEN_KEEPALIVE void neost_key_event(int scancode, int down) {
+    if (!g_machine || scancode <= 0 || scancode > 0x72) return;
+    g_machine->keyEvent(uint8_t(scancode), down != 0);
+}
+
+// Joystick tactile : bits IKBD (haut $01, bas $02, gauche $04, droite $08, feu $80)
+// sur le port `port` (0 ou 1), OR-és avec les manettes et le joystick clavier.
+EMSCRIPTEN_KEEPALIVE void neost_set_touch_joystick(int bits, int port) {
+    g_touchJoy = uint8_t(bits) & (stjoy::UP | stjoy::DOWN | stjoy::LEFT | stjoy::RIGHT | stjoy::FIRE);
+    g_touchJoyLatch |= g_touchJoy;
+    g_touchJoyPort = (port == 0) ? 0 : 1;
+}
+
+// Pays du TOS chargé (mot os_conf à $1C >> 1, codes de tos.h : 0 US, 1 DE, 2 FR…), pour
+// les libellés du clavier à l'écran ; -1 si l'en-tête manque. Même lecture que
+// stkeys::setCountryFromTos.
+EMSCRIPTEN_KEEPALIVE int neost_tos_country() {
+    if (!g_machine || g_machine->bus.rom.size() < 0x1E) return -1;
+    const auto& r = g_machine->bus.rom;
+    return ((r[0x1C] << 8) | r[0x1D]) >> 1;
 }
 
 } // extern "C"
