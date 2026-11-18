@@ -389,6 +389,13 @@ redondantes (`Shifter::recordSyncWrite`, `VideoGlue.cpp:329` ≙ `ShifterFrame.F
 - **V3, réserve** · ouvert · basse — le cas décisif (la DERNIÈRE ligne `lpf_-1` change de
   fréquence) n'est établi que par lecture des gardes, jamais mesuré ; la ligne raccourcie
   observée est la 34.
+- **Haute résolution sur moniteur couleur : trame noire** · ouvert [F] · basse · 2026-11-18 —
+  une trame qui démarre en résolution 2 avec un moniteur couleur est présentée NOIRE (`Shifter.cpp`,
+  `finishFrame`) ; synchros, compteur vidéo et lignes restent ceux du mode mono, que le GLUE produit
+  quel que soit le moniteur ([B] ST-4081 f. 10, MDE0/MDE1). Hatari rend ces lignes en basse
+  résolution avec la palette (`video.c:3734 @ f0736b24`, repli qu'il juge lui-même incertain).
+  Ni l'un ni l'autre n'est mesuré : tranché par le schéma des sorties RGB du Shifter ou une capture
+  sur moniteur couleur. Exhibiteur : chargements de Transbeauce 2.
 - **[B14 (6ᵉ p.)] Capture `lineSnap_` et comptage palette actifs en monochrome** · ouvert ·
   basse — Hatari saute la haute résolution ; surcoût pur, rendu inchangé.
 

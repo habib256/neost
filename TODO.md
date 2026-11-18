@@ -109,11 +109,10 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 
 ### 3.1 GLUE, MMU, Shifter — vidéo et bus
 
-- **Haute résolution sur moniteur couleur** · P3 ⭘ · [F] — Transbeauce 2 passe `$FF8260` à 2
-  pendant son chargement (~4,5 s, trames 1085-1310 après Espace à 1000) : NeoST rend l'image mono
-  640×400, Hatari une trame basse presque noire. Sur le fer, un moniteur couleur ne se cale pas sur
-  le 71 Hz. Tranche : la fiche ou le schéma du Shifter (sorties RGB en mode mono), puis une passe sur
-  les démos qui l'utilisent. Recette : CHANGELOG du 2026-11-18.
+- **Haute résolution sur moniteur couleur : l'image réelle** · P3 ⏸ source · [F] — depuis le 2026-11-18,
+  NeoST présente noire une trame démarrée en résolution 2 sur moniteur couleur (synchros 71 Hz hors
+  plage), Hatari la rend en basse résolution. Tranche : le schéma des sorties RGB du Shifter, ou une
+  capture sur un moniteur couleur. → `docs/HATARI_DIVERGENCES.md` § 2.
 - **Plan mémoire : bus ouvert** · P3 ⏸ source · [F] — trois valeurs selon la zone (`$00` fenêtre
   ROM, dernier mot sur banque RAM vide, `$FF` cartouche et octets pairs du MFP) ; MAME rend `$FF`
   partout. L'attente MFP d'un accès du blitter n'est pas facturée au CPU. Tranche : une lecture

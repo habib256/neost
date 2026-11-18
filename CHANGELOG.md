@@ -1,5 +1,18 @@
 # Changelog — NeoST
 
+## 2026-11-18 — Haute résolution sur moniteur couleur : trame noire
+
+- Transbeauce 2 passe en résolution 2 pendant ses chargements (~4,5 s). NeoST montrait alors
+  l'image mono 640×400 en noir et blanc, sur un moniteur couleur qui ne lit pas la broche mono et
+  ne se cale pas sur des synchros à 35,7 kHz. Une trame démarrée en haute résolution avec un
+  moniteur couleur est désormais présentée noire (`Shifter::finishFrame`).
+- Rien d'autre ne change : le GLUE produit les synchros mono quel que soit le moniteur ([B] ST-4081
+  f. 10), donc cadence 71 Hz, compteur vidéo et lignes rendues restent ceux du mode mono, et la
+  géométrie du cadre est inchangée. Moniteur mono : intact (bureau EmuTOS vérifié).
+- [F] restant : ce que portent les broches RGB en mode mono et ce que montre un vrai SC1224 qui
+  décroche. Hatari rend ces lignes en basse résolution (repli qu'il juge incertain) : écart
+  ouvert, `HATARI_DIVERGENCES.md` § 2.
+
 ## 2026-11-18 — Web : huit démos, chacune dans sa configuration
 
 - La page en ligne propose une boîte **Demos** : un choix recharge la page avec la machine,
@@ -39,7 +52,7 @@
   left-off. Les cas 13/9/5/1 (scroll 4 px) gardent leurs valeurs, faute d'exhibiteur.
 - Transbeauce 2, autres constats : intro et écran des boules identiques à Hatari, aucun plantage
   sur 12 000 trames ; pendant le chargement, la démo passe en haute résolution sur moniteur
-  couleur et NeoST montre l'image mono là où Hatari reste presque noir (ouvert, cf. TODO).
+  couleur et NeoST montre l'image mono là où Hatari reste presque noir (traité plus haut).
 
 ## 2026-11-18 — Web : commandes tactiles et plein écran sur iPhone
 

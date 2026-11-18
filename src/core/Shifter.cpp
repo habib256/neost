@@ -8,6 +8,7 @@
 #include "core/Shifter.hpp"
 #include "core/Bus.hpp"
 #include "core/Cpu68k.hpp"
+#include "io/Mfp.hpp"
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
@@ -633,7 +634,27 @@ void Shifter::finishFrame() {
     // basse extrapolaient déjà exactement ce stride (mêmes valeurs qu'avant).
     while (vc_.lineY < curAH_) endVideoLine();
 
-    if (frameMode_ == Mode::High) return;                      // mono : ni spec512 ni bordures
+    if (frameMode_ == Mode::High) {                            // mono : ni spec512 ni bordures
+        // Haute résolution sur MONITEUR COULEUR (Transbeauce 2 le fait pendant ses
+        // chargements, ~4,5 s). Le GLUE tient sa propre copie de la résolution et produit
+        // les synchros du mode mono quel que soit le moniteur ([B] ST-4081 feuille 10 :
+        // latches MDE0/MDE1 PA033/PA024 ; [D] Hatari video.c:5310 @ f0736b24, « resolution
+        // register is stored in both the GLUE and the SHIFTER ») : la trame tourne donc
+        // bien à 71 Hz, et le compteur vidéo comme les lignes rendues plus haut restent
+        // ceux du mode mono. Mais l'image mono sort sur la broche MONO, que le moniteur
+        // couleur ne lit pas, et ses synchros (35,7 kHz) sont hors de sa plage : il n'a
+        // pas d'image exploitable. On présente donc une trame NOIRE, à la géométrie mono
+        // pour que le cadre ne change pas de forme.
+        // [F] Ce que portent les broches RGB du Shifter en mode mono, et ce que montre un
+        // vrai SC1224 qui décroche (noir, image qui roule ?), reste inconnu. Tranché par :
+        // le schéma des sorties du Shifter, ou une capture sur un moniteur couleur.
+        // ≠ Hatari (grade D) : il rend ces lignes en BASSE résolution avec la palette, un
+        // repli qu'il commente lui-même comme incertain (video.c:3734 @ f0736b24) ; sur
+        // Transbeauce 2 cela donne une image presque noire.
+        if (bus_.mfp && bus_.mfp->colorMonitor())
+            std::fill(frame_.begin(), frame_.end(), 0xFF000000u);
+        return;
+    }
 
     // Rejoue la machine Glue sur les écritures freq/res datées → état d'affichage
     // par scanline + bordures haut/bas (détection de retrait). Bon marché si aucun
