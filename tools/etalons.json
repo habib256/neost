@@ -1352,7 +1352,7 @@
    "frame": 4000,
    "crop": "buffer_noled",
    "max_diff_px": 0,
-   "ref_kind": "snapshot",
+   "ref_kind": "hatari",
    "scancodes_at": [
     [
      1000,
@@ -1376,9 +1376,10 @@
      57
     ]
    ],
-   "ref_note": "Snapshot NeoST du 2026-11-15, référence de non-régression uniquement. Écart Hatari persistant (15–17 %), cause non tranchée. Capture du menu/scroller seulement; les écrans Spectrum 512 restent à parcourir. Aucune preuve de fidélité matérielle.",
+   "ref_note": "Oracle Hatari depuis le 2026-11-18 (était un snapshot NeoST du 2026-11-15). L'écart persistant de 15–17 % était le retrait gauche STANDARD (glue::LEFT_OFF, shift −4) rendu 4 px trop à gauche : même algèbre qu'A40, exhibée par le menu de Transbeauce 2 (cf. Shifter.cpp, cas −4). Corrigé, compare_titles donne 0,0 % ; la trame Hatari retenue est identique à la capture NeoST. Grade D : d'accord avec Hatari, pas une preuve matérielle. Ancienne note : Snapshot NeoST du 2026-11-15, référence de non-régression uniquement. Écart Hatari persistant (15–17 %), cause non tranchée. Capture du menu/scroller seulement; les écrans Spectrum 512 restent à parcourir. Aucune preuve de fidélité matérielle.",
    "rom_note": "TOS Atari privé fourni par utilisateur, jamais versionné. Migration EmuTOS non validée pour cette scène.",
-   "media_sha256": "15dcce51236aeb0eedbeb33e05f263bc4318cc4b0de61a3d8dbaa334eb089e7d"
+   "media_sha256": "15dcce51236aeb0eedbeb33e05f263bc4318cc4b0de61a3d8dbaa334eb089e7d",
+   "oracle_scan": 90
   },
   {
    "id": "suretrip49_tunnel",
@@ -1393,10 +1394,11 @@
    "frame": 16000,
    "crop": "buffer_noled",
    "max_diff_px": 0,
-   "ref_kind": "snapshot",
-   "ref_note": "Snapshot NeoST du 2026-11-15, référence de non-régression uniquement. Tunnel vert divergent de 33,45 % à 16000 contre Hatari, malgré quatre scènes précédentes exactes. Le README de cette version party signale un défaut possible des plans/couleurs. Ne pas remplacer cette référence par Hatari sans établir la cause.",
+   "ref_kind": "hatari",
+   "ref_note": "Oracle Hatari depuis le 2026-11-18 (était un snapshot NeoST du 2026-11-15). L'écart de 33,45 % sur le tunnel vert était le retrait gauche STANDARD (glue::LEFT_OFF, shift −4) rendu 4 px trop à gauche : même algèbre qu'A40, exhibée par le menu de Transbeauce 2 (cf. Shifter.cpp, cas −4). Corrigé, compare_titles donne 0,0 % ; la trame Hatari retenue est identique à la capture NeoST. Grade D : d'accord avec Hatari, pas une preuve matérielle. Ancienne note : Snapshot NeoST du 2026-11-15, référence de non-régression uniquement. Tunnel vert divergent de 33,45 % à 16000 contre Hatari, malgré quatre scènes précédentes exactes. Le README de cette version party signale un défaut possible des plans/couleurs. Ne pas remplacer cette référence par Hatari sans établir la cause.",
    "rom_note": "TOS Atari privé fourni par utilisateur, jamais versionné. Migration EmuTOS non validée pour cette scène.",
-   "media_sha256": "34769915f950e33f8405f6a871fe318288cb6a9efbc4d209e3dd0bee71d8411a"
+   "media_sha256": "34769915f950e33f8405f6a871fe318288cb6a9efbc4d209e3dd0bee71d8411a",
+   "oracle_scan": 90
   },
   {
    "id": "loste_sowatt_st",
@@ -1493,8 +1495,8 @@
    "frame": 2400,
    "crop": "buffer_noled",
    "max_diff_px": 0,
-   "ref_kind": "snapshot",
-   "ref_note": "Snapshot NeoST du 2026-11-15, référence de non-régression uniquement. Disquette AUTO dérivée, exécutable et fichiers de données inchangés. Le BPB de la MSA source annonce zéro secteur réservé; la disquette dérivée utilise un FAT12 standard. La source originale est conservée dans Downloads. Lancement sans cartouche virtuelle; référence reposée sur cette image. Espace à la trame 2020 active le défilement ; capture à 2400 après correction de la GLUE live. Géométrie matérielle non certifiée.",
+   "ref_kind": "hatari",
+   "ref_note": "Oracle Hatari depuis le 2026-11-18 (était un snapshot NeoST du 2026-11-15). L'écart de l'écran en défilement était le retrait gauche STANDARD (glue::LEFT_OFF, shift −4) rendu 4 px trop à gauche : même algèbre qu'A40, exhibée par le menu de Transbeauce 2 (cf. Shifter.cpp, cas −4). Corrigé, compare_titles donne 0,0 % ; la trame Hatari retenue est identique à la capture NeoST. Grade D : d'accord avec Hatari, pas une preuve matérielle. Ancienne note : Snapshot NeoST du 2026-11-15, référence de non-régression uniquement. Disquette AUTO dérivée, exécutable et fichiers de données inchangés. Le BPB de la MSA source annonce zéro secteur réservé; la disquette dérivée utilise un FAT12 standard. La source originale est conservée dans Downloads. Lancement sans cartouche virtuelle; référence reposée sur cette image. Espace à la trame 2020 active le défilement ; capture à 2400 après correction de la GLUE live. Géométrie matérielle non certifiée.",
    "rom_note": "TOS Atari privé fourni par utilisateur, jamais versionné. Migration EmuTOS non validée pour cette scène.",
    "media_sha256": "66cddb66b17dc8edf9df9217cf5021130020b213e721312f74291594c0786ed4",
    "scancodes_at": [
@@ -1503,7 +1505,15 @@
      "39"
     ]
    ],
-   "key_hold": 8
+   "key_hold": 8,
+   "oracle_scan": 90,
+   "oracle_keys": [
+    [
+     2020,
+     2028,
+     57
+    ]
+   ]
   },
   {
    "id": "shforstv_ste",

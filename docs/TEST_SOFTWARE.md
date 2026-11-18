@@ -399,11 +399,11 @@ Ika et shforstv démarrent sans disque dur virtuel; exécutables inchangés.
 |---|---|---|
 | Blue Period | `blue_period` | Effet observé identique à Hatari, grade D ; retour visuel utilisateur positif dans NeoST le 2026-11-15 |
 | Infinite Live of the Blitter | `infinite_live_blitter` | Capture isolée identique à Hatari, grade D ; utilisateur signale un nuage de points suspect et un clignotement du scroll final, à investiguer ; EmuTOS revient au bureau |
-| The Overscan Demos | `overscan_demos` | Snapshot menu/scroller, écart Hatari non tranché |
-| Suretrip 49% | `suretrip49_tunnel` | Snapshot du tunnel divergent ; défaut possible signalé dans le README party |
+| The Overscan Demos | `overscan_demos` | Menu/scroller identique à Hatari (oracle depuis le 2026-11-18, grade D) : l'écart de 15–17 % était le retrait gauche standard rendu 4 px à gauche |
+| Suretrip 49% | `suretrip49_tunnel` | Tunnel identique à Hatari (oracle depuis le 2026-11-18, grade D) : l'écart de 33,45 % était le même décalage de 4 px |
 | The LoSTE Screens | `loste_sowatt_st`, `loste_newyear_ste` | Fullscreens atteints sous TOS Atari, comparaison Hatari non tranchée ; EmuTOS bloque le chargement |
 | Ika I Compofylla | `ika_compofylla` | Motifs busdisplay et scroll après correction de l’historique CPU ; snapshot, phase matérielle à confirmer |
-| shforstv | `shforstv` | Snapshot forêt en mouvement depuis disquette AUTO ; Espace à 2020, capture à 2400 |
+| shforstv | `shforstv` | Forêt en mouvement depuis disquette AUTO, identique à Hatari (oracle depuis le 2026-11-18, grade D) ; Espace à 2020, capture à 2400 |
 | Punish Your Machine | `punish_your_machine` | Crédits du menu seulement ; parties techniques non couvertes |
 
 Un snapshot vert signifie uniquement « comportement inchangé », même lorsque le

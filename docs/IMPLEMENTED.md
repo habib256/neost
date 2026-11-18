@@ -556,6 +556,8 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   end-to-end L/D (`tools/make_overscan_lr.py`, impulsion hi-res par ligne) : NeoST ET Hatari
   ouvrent les bordures latérales (oracle `video_border_h` : « detect remove left/right »). Le rendu
   applique `DisplayPixelShift` (décalage 4 px du retrait gauche ; no-op si 0 → écrans normaux
+  — ⚠ depuis le 2026-11-18, le retrait gauche standard se rend à `shEff = 0` dans le repère d'A40 ;
+  le −4 en faisait sortir toute image plein écran 4 px à gauche, cf. CASE_STUDIES)
   inchangés). Raffinements restants (WS3, med-res overscan, blank lines, pixel-perfect L/D,
   scrolling Cuddly) → cf. TODO §Bordures.
 - **spec512 — boot du diaporama étalon** : `spectrum_512_auto_diapo.st` (SPSLIDE8 dans `\AUTO\`)

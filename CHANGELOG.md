@@ -1,5 +1,26 @@
 # Changelog — NeoST
 
+## 2026-11-18 — Plein écran : le retrait gauche standard sortait 4 px à gauche
+
+- **Défaut** : sur une ligne au retrait gauche standard (`glue::LEFT_OFF`, shift −4), le rendu
+  appliquait le décalage d'Hatari par-dessus un repère qui le compte déjà, la faute qu'A40 avait
+  corrigée pour le retrait MED de Closure. Toute image plein écran sortait 4 px trop à gauche.
+  `Shifter.cpp` : `shEff = 0` et 4 colonnes de queue à l'index 0 (algèbre d'A40, [D] Hatari
+  `video.c` @ f0736b24).
+- **Exhibiteur** : Transbeauce 2 (menu principal, testé à la demande de l'auteur), image entière
+  à 4 px de l'oracle et exacte une fois décalée : 60,79 % → 0,0 %. Même cause pour deux écarts
+  restés sans explication : The Overscan Demos (15–17 % → 0,0 %) et Suretrip 49 % (33,45 % →
+  0,0 %), plus shforstv (0,0 %).
+- **Étalons** : les 42 `hatari` restent verts. `overscan_demos`, `suretrip49_tunnel` et `shforstv`
+  passent de snapshot à oracle Hatari (trame retenue à l'égalité exacte, `oracle_scan` 90) ; les
+  snapshots `loste_sowatt_st`, `loste_newyear_ste`, `ika_compofylla` et `shforstv_ste` sont
+  reposés (décalage de 4 px, rien d'autre). Échelle : 45 `hatari`, 15 `snapshot`.
+- Reste `[F]` : le repère suppose le même retard pipeline après DE sur lignes normales et
+  left-off. Les cas 13/9/5/1 (scroll 4 px) gardent leurs valeurs, faute d'exhibiteur.
+- Transbeauce 2, autres constats : intro et écran des boules identiques à Hatari, aucun plantage
+  sur 12 000 trames ; pendant le chargement, la démo passe en haute résolution sur moniteur
+  couleur et NeoST montre l'image mono là où Hatari reste presque noir (ouvert, cf. TODO).
+
 ## 2026-11-18 — Web : commandes tactiles et plein écran sur iPhone
 
 Deuxième lot repris de la copie `ajfarrell75/atarist1`, réécrit sur la grammaire de l'APK

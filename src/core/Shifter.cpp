@@ -1144,11 +1144,12 @@ void Shifter::renderGlueFrame() {
         // A40 : 4 px de décalage sur TOUTE l'image (oracle 64,08 % → 1,81 %, puis
         // 0,02 % avec la règle de queue ci-dessous). Balayage ±6 px et ±3 o autour :
         // aucun autre couple ne descend sous 53 %, l'optimum est isolé.
-        // ⚠ Les cas 13/9/5/1 (scroll « hardware » ST Cnx) et le −4 du left-off
-        // standard gardent leurs valeurs : la même algèbre les dit décalés de 4 px
-        // (resp. 8), mais AUCUN étalon ne les exhibe — Closure ne produit ces
-        // masques que sur des lignes BLANK (rendues à l'index 0, cf. lineBlank) et
-        // jamais avec shift 13/9/5/1. Sans exhibiteur mesuré, on ne règle pas.
+        // ⚠ Les cas 13/9/5/1 (scroll « hardware » ST Cnx) gardent leurs valeurs : la
+        // même algèbre les dit décalés de 4 px, mais AUCUN étalon ne les exhibe —
+        // Closure ne produit ces masques que sur des lignes BLANK (rendues à l'index 0,
+        // cf. lineBlank) et jamais avec shift 13/9/5/1. Sans exhibiteur mesuré, on ne
+        // règle pas. Le −4 du left-off standard, lui, a trouvé le sien (2026-11-18,
+        // Transbeauce 2) : l'algèbre s'y vérifie, cf. le cas −4 ci-dessous.
         int shEff = shift;
         // Queue de ligne SANS SOURCE. Le tampon d'Hatari fait SCREENBYTES_LINE, soit
         // exactement la largeur du buffer : décalé de `scrollFinal` pixels vers la
@@ -1170,7 +1171,25 @@ void Shifter::renderGlueFrame() {
                              blankTailFrom = W - 8;       // |scrollFinal| = 8
                          }
                          break;
-                default: break;                    // −4 : left-off standard, non mesuré
+                // Retrait gauche STANDARD (impulsion hi/lo, sans scroll 4 px). Même algèbre
+                // qu'A40 : Hatari VideoOffset −2, scrollFinal −4 ([D] video.c:3969 et 4280-4303
+                // @ f0736b24) → medSrcBytes 0, shEff = 4 + (−4) = 0, et les 4 dernières
+                // colonnes sans source à l'index 0. L'ancien −4 recopiait le scroll d'Hatari
+                // par-dessus un ancrage qui le compte déjà : TOUTE l'image d'un plein écran
+                // sortait 4 px à gauche. Exhibiteur mesuré (2026-11-18) : menu principal de
+                // Transbeauce 2 (243 lignes bm=011), image entière à 4 px de l'oracle, exacte
+                // une fois décalée. Modèle au cycle : le DE d'une ligne left-off ouvre au cycle
+                // 4 et le repère vaut x = cyc − 8, donc le pixel p sort en x = p − 4, là où
+                // Hatari le pose ; le −4 en faisait x = p − 8.
+                // [F] Repère du faisceau supposé commun aux lignes normales et left-off (même
+                // retard pipeline après DE) ; tranché par : une capture réelle d'un écran mêlant
+                // lignes normales et plein écran sous un même motif vertical.
+                case -4: if (bm & glue::LEFT_OFF) {
+                             shEff = 0;
+                             blankTailFrom = W - 4;       // |scrollFinal| = 4
+                         }
+                         break;
+                default: break;
             }
         }
         // Retrait gauche court du STE (left+2) en basse résolution, sans le mode 336 px.
