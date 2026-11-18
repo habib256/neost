@@ -293,6 +293,15 @@
     </fieldset>
 
     <fieldset>
+      <legend>Demos</legend>
+      <div class="row">
+        <select id="demoSel" title="Demoscene productions bundled with this page, each started in the machine, RAM and TOS it was checked with"></select>
+        <button id="btnDemo" class="primary" title="Rebuild the machine for this demo (reloads the page) and boot it">Run demo</button>
+      </div>
+      <div id="demoInfo" class="keyhint"></div>
+    </fieldset>
+
+    <fieldset>
       <legend>Saves</legend>
       <div class="row">
         <button id="btnSaveState" title="Download the whole machine (CPU, RAM, chips) as a .state file. Floppies are not inside: keep the same image in A:.">⤓ Save state</button>
@@ -372,6 +381,7 @@
       <li><b>Reset</b>: a <b>cold</b> reset (power-cycle) — ST-RAM is wiped and TOS boots from scratch, which is also what "Mount A: + Reset" and <kbd>Shift</kbd>+drop do.</li>
       <li><b>Keys the browser would take</b> (F1–F12, arrows, Space, Page Up/Down, Ctrl/Alt+letter) go to the ST while the screen has the focus or the mouse is captured: click the screen first.</li>
       <li><b>Game floppies</b>: "Mount A: + Reset" switches to a <b>real TOS</b> when one is available (EmuTOS boots system floppies only) — TOS 2.06 on STE/Mega STE, TOS 1.0x on ST. <b>This build bundles EmuTOS alone</b>, which is free software; original Atari TOS ROMs are not ours to ship. Most commercial games therefore need your own TOS image: <b>drop it on the screen</b> (<code>.img</code> / <code>.rom</code> / <code>.tos</code> / <code>.bin</code>). It is loaded in this page only — never uploaded — joins the ROM list and boots cold; a TOS 1.04 or older turns an STE back into an ST, as on the desktop. The bundled <b>demos</b> boot fine on EmuTOS.</li>
+      <li><b>Demos</b>: pick one and press <b>Run demo</b>. The page reloads with the machine, the RAM and the TOS that demo was checked with — EmuTOS at 50 Hz, since these productions were written for PAL screens — and boots straight into it. The demos that do not run under EmuTOS are not offered here.</li>
       <li><b>Save states</b>: <b>⤓ Save state</b> downloads the whole machine (CPU, RAM, every chip) as a <code>.state</code> file; drop it on the screen to come back to that instant. It restores only on the same machine model, RAM size and exact ROM image, and the floppies are not inside it: put the same image back in A: first (after a reload, drop it again).</li>
       <li><b>Touch screens</b>: <b>Touch mouse</b> (on by default on phones and tablets) turns the screen into a touchpad — drag to move, tap to click, tap with two fingers for a right click; hold <b>L</b> or <b>R</b> to keep a button down (dragging in GEM). <b>Touch joystick</b>: slide your finger on the pad (eight directions), <b>FIRE</b> and <b>SPACE</b> on the right, plugged into the port picked in the Joystick box. <b>ST keyboard</b>: Atari ST keys sent as they are; <b>Shift</b>, <b>Ctrl</b> and <b>Alt</b> stay down until the next key (tap again to release). Letters are labelled for the TOS language (AZERTY under a French TOS, QWERTZ under a German one). In full screen, the buttons at the top right open the keyboard and the joystick, and <b>✕</b> leaves. On a touch device, the <b>Boot floppy…</b>, <b>Insert floppy…</b> and <b>Open state / TOS…</b> buttons replace dropping a file.</li>
       <li><b>Screenshot</b>: saves what the screen shows — the cropped picture when Auto zoom is on — as a PNG, low resolution pixels doubled to keep the screen's shape.</li>
@@ -460,6 +470,54 @@
     var urlParams = new URLSearchParams(location.search);
     var machineParam = urlParams.get('machine') || 'st';
     var memParam = urlParams.get('mem') || '1m';
+
+    // ===== Démos embarquées ======================================================
+    // Chacune démarre dans la configuration où elle a été JOUÉE sous EmuTOS (le seul TOS
+    // du bundle public), le 2026-11-18 : machine, RAM et EmuTOS FR — 50 Hz, car ces démos
+    // sont écrites pour le PAL ; l'EmuTOS US par défaut de la page tourne à 60 Hz et
+    // déchirerait leurs plein écrans. Machine et RAM se fixent à la construction : choisir
+    // une démo recharge la page avec ?machine=&mem=&demo=, et la ROM et la disquette
+    // passent en argv (Module.arguments → main de main_web.cpp), la machine bootant
+    // directement dessus. Les démos qui ne tournent pas sous EmuTOS ne sont PAS ici
+    // (Infinite Live of the Blitter, The LoSTE Screens ; Punish Your Machine non vérifié
+    // au-delà de son menu) — cf. CMakeLists.txt, NEOST_WEB_CATALOG_DEMOS.
+    var DEMOS = [
+      { id: 'cuddly', title: 'The Cuddly Demos — The Carebears', file: '/disks/cuddly_demos.msa',
+        machine: 'st', mem: '512k', rom: '/roms/etos192fr.img' },
+      { id: 'nocooper', title: 'No Cooper — 1984', file: '/disks/nocooper.msa',
+        machine: 'st', mem: '1m', rom: '/roms/etos192fr.img' },
+      { id: 'closure', title: 'Closure — Sync', file: '/disks/closure.msa',
+        machine: 'st', mem: '1m', rom: '/roms/etos192fr.img' },
+      { id: 'overscan', title: 'The Overscan Demos — Paulo Simoes', file: '/disks/overscan_demos.st',
+        machine: 'st', mem: '1m', rom: '/roms/etos192fr.img', hint: 'Press Space to go on (twice).' },
+      { id: 'suretrip', title: 'Suretrip 49% — Checkpoint', file: '/disks/suretrip49.msa',
+        machine: 'st', mem: '1m', rom: '/roms/etos192fr.img' },
+      { id: 'ika', title: 'Ika I Compofylla — Newline', file: '/disks/ika_compofylla.st',
+        machine: 'st', mem: '1m', rom: '/roms/etos192fr.img' },
+      { id: 'shforstv', title: 'shforstv — Paulo Simoes', file: '/disks/shforstv.st',
+        machine: 'st', mem: '1m', rom: '/roms/etos192fr.img', hint: 'Press Space to start the scrolling.' },
+      { id: 'blueperiod', title: 'Blue Period — Paradox (STE)', file: '/disks/blue_period.st',
+        machine: 'ste', mem: '2m', rom: '/roms/etos256fr.img' }
+    ];
+    function findDemo(id) {
+      for (var i = 0; i < DEMOS.length; i++) if (DEMOS[i].id === id) return DEMOS[i];
+      return null;
+    }
+    function demoUrl(d) {
+      var p = new URLSearchParams(location.search);
+      p.set('machine', d.machine); p.set('mem', d.mem); p.set('demo', d.id);
+      return '?' + p.toString();
+    }
+    // La démo demandée ne vaut que dans SA configuration : une URL retouchée à la main
+    // (autre machine ou RAM) est ramenée à la bonne avant que le module ne démarre.
+    var demo = findDemo(urlParams.get('demo'));
+    var demoArgs = null;
+    if (demo && (machineParam !== demo.machine || memParam !== demo.mem)) {
+      location.replace(demoUrl(demo));
+      demo = null;
+    } else if (demo) {
+      demoArgs = [demo.rom, demo.file];
+    }
     var isSteFamily = (machineParam === 'ste' || machineParam === 'megaste');
 
     var MACHINE_LABELS = { st: 'ST', megast: 'Mega ST', ste: 'STE', megaste: 'Mega STE' };
@@ -538,6 +596,8 @@
       return {};
     };
     Module.setStatus('Loading the WebAssembly module…');
+    // Démo demandée : ROM et disquette en argv (main de main_web.cpp), lus au boot.
+    if (demoArgs) Module.arguments = demoArgs;
 
     function setStatusOk(text) {
       if (statusEl) { statusEl.textContent = text; statusEl.className = 'ok'; }
@@ -552,10 +612,15 @@
       // Peuple les menus depuis le FS virtuel : montre exactement ce qui a été
       // embarqué (tout en local, EmuTOS+diskA pour le déploiement libre). La ROM
       // présélectionnée suit la machine : EmuTOS 256 Ko (STE/Mega STE) ou 192 Ko.
-      populateSelect('diskSel', '/disks', /\.(st|msa|dim|stx|ipf)$/i, '/disks/diskA.st');
+      populateSelect('diskSel', '/disks', /\.(st|msa|dim|stx|ipf)$/i, demo ? demo.file : '/disks/diskA.st');
       populateSelect('romSel', '/roms', /\.(img|rom|tos|bin)$/i,
-                     isSteFamily ? '/roms/etos256us.img' : '/roms/etos192us.img');
+                     demo ? demo.rom : isSteFamily ? '/roms/etos256us.img' : '/roms/etos192us.img');
       romPrev = document.getElementById('romSel').value;
+      if (demo) {
+        // La ROM de la démo est un choix : « Mount A: + Reset » ne doit pas la remplacer.
+        romUserChosen = true;
+        setStatusOk('Demo: ' + demo.title + (demo.hint ? ' — ' + demo.hint : ''));
+      }
       driveLoad();       // crée l'AudioContext + précharge les WAV de bruits de lecteur
       audioStart();      // branche la sortie son de la machine (YM2149 + DMA STE)
       if (window.neostApplyVolume) neostApplyVolume();   // volume initial du curseur
@@ -954,6 +1019,7 @@
       sel.addEventListener('change', function () {
         if (!confirmReload('machine')) { sel.value = machineParam; focusScreen(); return; }
         var p = new URLSearchParams(location.search);
+        p.delete('demo');                 // un choix à la main quitte la config de la démo
         p.set('machine', sel.value);
         location.search = p.toString();   // recharge avec le modèle choisi
       });
@@ -966,6 +1032,7 @@
       sel.addEventListener('change', function () {
         if (!confirmReload('RAM size')) { sel.value = memParam; focusScreen(); return; }
         var p = new URLSearchParams(location.search);
+        p.delete('demo');                 // un choix à la main quitte la config de la démo
         p.set('mem', sel.value);
         location.search = p.toString();   // recharge avec la taille choisie
       });
@@ -1269,6 +1336,31 @@
       };
       reader.readAsArrayBuffer(file);
     }
+
+    // ===== Démos : liste et lancement ===========================================
+    (function () {
+      var sel = document.getElementById('demoSel');
+      var info = document.getElementById('demoInfo');
+      DEMOS.forEach(function (d) {
+        var o = document.createElement('option');
+        o.value = d.id; o.textContent = d.title;
+        sel.appendChild(o);
+      });
+      if (demo) sel.value = demo.id;
+      function describe() {
+        var d = findDemo(sel.value);
+        if (!d) { info.textContent = ''; return; }
+        info.textContent = 'Atari ' + (MACHINE_LABELS[d.machine] || d.machine) + ' · ' +
+          (MEM_LABELS[d.mem] || d.mem) + ' · EmuTOS 50 Hz' + (d.hint ? ' — ' + d.hint : '');
+      }
+      sel.addEventListener('change', function () { describe(); focusScreen(); });
+      describe();
+      document.getElementById('btnDemo').addEventListener('click', function () {
+        var d = findDemo(sel.value);
+        if (!d || !confirmReload('demo')) { focusScreen(); return; }
+        location.search = demoUrl(d);      // recharge : machine, RAM, ROM et disquette de la démo
+      });
+    })();
 
     // ===== ROM locale, save-states, capture =====================================
     // Repris de la copie ajfarrell75/atarist1 (2026-09-05/06), réécrit sur la page

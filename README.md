@@ -19,7 +19,8 @@ the [Hatari](https://www.hatari-emu.org/) reference.*
 ### 👉 **[habib256.github.io/neost](https://habib256.github.io/neost/)**
 
 The same emulation core, compiled to WebAssembly. Pick a ROM, mount a floppy, flip
-between colour and mono, or **drag your own `.st` onto the screen** — or your own TOS image.
+between colour and mono, **run one of the bundled demos** in the machine it was made for, or
+**drag your own `.st` onto the screen** — or your own TOS image.
 Save the whole machine to a file and drop it back later. On a phone or a tablet, the screen
 becomes a touchpad, with a touch joystick and an Atari ST keyboard. No download, no account, no build.
 

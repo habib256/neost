@@ -71,14 +71,28 @@ covered by the GPL — each remains the work and the property of its authors:
 | `nocooper.msa`        | No Cooper           | 1984               | 1989 |
 | `closure.msa`         | Closure             | Sync               |      |
 
+The web page (WebAssembly build) also offers five more, all checked under EmuTOS in the
+configuration the page gives them:
+
+| File                  | Production          | Authors            | Year |
+|-----------------------|---------------------|--------------------|------|
+| `overscan_demos.st`   | The Overscan Demos  | Paulo Simoes, Carlos Dias |  |
+| `suretrip49.msa`      | Suretrip 49%        | Checkpoint         |      |
+| `ika_compofylla.st`   | Ika I Compofylla    | Newline            |      |
+| `shforstv.st`         | shforstv            | Paulo Simoes       | 2006 |
+| `blue_period.st`      | Blue Period         | Paradox            |      |
+
+`ika_compofylla.st`, `shforstv.st` and `blue_period.st` are FAT12 containers holding the
+original program unmodified in `AUTO\` (see `disks/etalons/demos/README.txt`).
+
 They are included as freely-distributed demoscene works — productions released to be
 copied and shown, and archived as such (Fujiology, Demozoo, pouet.net). NeoST
 redistributes them unmodified and makes no claim on them. **Rights holders who would
 rather not be in this package only have to say so** — open an issue at
 https://github.com/habib256/neost and they will be removed from the next release.
 
-They double as pixel-exact test material: these three are among the references that
-pin NeoST's Shifter (all four borders open, med-res overscan, fine rasters).
+They double as pixel-exact test material: all of them are references of the test suite
+that pin NeoST's Shifter (all four borders open, med-res overscan, fine rasters, sync scrolling).
 
 Cubase Lite (`disks/cubase_lite.st`)
 -------------------------------------

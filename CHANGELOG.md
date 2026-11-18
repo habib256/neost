@@ -1,5 +1,25 @@
 # Changelog — NeoST
 
+## 2026-11-18 — Web : huit démos, chacune dans sa configuration
+
+- La page en ligne propose une boîte **Demos** : un choix recharge la page avec la machine,
+  la RAM et le TOS de la démo (`?machine=&mem=&demo=`), ROM et disquette passées en argv
+  (`Module.arguments` → `main` de `main_web.cpp`) : la machine est construite et boote
+  directement dessus, sans changement de ROM à chaud.
+- **EmuTOS FR (50 Hz) pour toutes** : ces démos sont écrites pour le PAL, et l'EmuTOS US par
+  défaut de la page tourne à 60 Hz. Cela vaut aussi pour les trois démos déjà embarquées
+  (Cuddly Demos, No Cooper, Closure), qu'on ne pouvait lancer que sur l'EmuTOS US.
+- **Cinq démos de plus**, chacune jouée sous EmuTOS dans sa configuration avant d'entrer :
+  The Overscan Demos, Suretrip 49 %, Ika I Compofylla, shforstv (ST 1 Mo), Blue Period
+  (STE 2 Mo). **Écartées** : Infinite Live of the Blitter (retour au bureau sous EmuTOS),
+  The LoSTE Screens (bloqué sur LOADING), Punish Your Machine (menu atteint, parties non
+  vérifiées). Paquets bureau inchangés : on y pose son propre TOS.
+- Bundle web : 7,6 Mo de données. Noms sans espaces, copies faites au configure
+  (`NEOST_WEB_CATALOG_DEMOS`), `THIRD-PARTY.txt` complété.
+- Banc : scénario `demos` de `tools/check_web_jspi.mjs` sur le bundle de production
+  (`NEOST_WEB_FREE_ONLY`) — pour chaque démo, ROM, disquette, machine et RAM relues au
+  journal du cœur, écran autre que le bureau d'EmuTOS ; bouton *Run demo*.
+
 ## 2026-11-18 — Plein écran : le retrait gauche standard sortait 4 px à gauche
 
 - **Défaut** : sur une ligne au retrait gauche standard (`glue::LEFT_OFF`, shift −4), le rendu

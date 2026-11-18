@@ -2380,6 +2380,9 @@ Ces fonctionnalités **n'existent pas dans Hatari** (extensions assumées, consi
 
 - **Explorateur de bitmaps** (2026-11-12, débogueur, `core/BitmapView`) : RAM en 1/2/4 plans, palette
   courante ou gris, zoom ×1-×8, suit l'écran (base vidéo, résolution, largeur STE) ; lecture sans effet de bord.
+- **Web : démos embarquées** (2026-11-18) : huit démos, chacune lancée dans la configuration où elle
+  a été jouée sous EmuTOS FR (machine, RAM, 50 Hz) par `?demo=` + argv ; écartées celles qui n'y
+  tournent pas. Banc `check_web_jspi.mjs --only demos`.
 - **Web : commandes tactiles** (2026-11-18) : souris (pavé, tap, tap à deux doigts, L/R tenus), joystick
   8 directions + FEU/ESPACE, clavier ST à l'écran (libellés selon le pays du TOS), repli plein écran
   immersif pour Safari sur iPhone, sélecteurs de fichier sur appareil tactile. Grammaire de l'APK.

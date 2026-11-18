@@ -27,6 +27,8 @@
 //               DragEvent) ; aller-retour d'état à l'octet ; refus (CRC, autre ROM,
 //               ROM invalide) ; en plein blit, sauvegarde refusée, capture différée à
 //               la trame close suivante, restauration au déroulement de l'instruction ;
+//    demos    : chaque démo embarquée dans sa configuration (ROM, disquette, machine,
+//               RAM au journal du cœur ; écran autre que le bureau EmuTOS), bouton Run demo ;
 //    touch    : souris, joystick et clavier tactiles par de vrais événements tactiles
 //               (CDP, Chrome seul) ; curseur GEM amené sur la barre de menus ;
 //               repli plein écran « immersif » sans l'API (Safari sur iPhone) ;
@@ -672,6 +674,64 @@ async function main() {
       if (verbose) console.log(cdp.logs.join('\n'));
       check(logsHave(/parked instruction abandoned/) && ld && ld[0] === 1 && lateFrames === 0,
             'mid-blit load: applied once the parked instruction unwinds');
+    }
+    if (want('demos')) {
+      // Démos embarquées (table DEMOS de web/shell.html) : chacune dans SA configuration,
+      // comme la page la lance. Contrôles : le cœur a bien chargé la ROM, la disquette, la
+      // machine et la RAM de la démo (journal), et après son temps de démarrage l'écran
+      // montre autre chose que le bureau d'EmuTOS (une démo qui rend la main retombe au
+      // bureau vert) ou qu'un écran uni. Bundle de production attendu (NEOST_WEB_FREE_ONLY).
+      await loadPage(cdp, base, '', {});
+      const demos = await cdp.ev('DEMOS');
+      // Secondes avant la capture : le premier écran parlant de chaque démo (relevé au headless).
+      const wait = { suretrip: 35, blueperiod: 35 };
+      for (const d of demos) {
+        await loadPage(cdp, base, `?machine=${d.machine}&mem=${d.mem}&demo=${d.id}`, {});
+        const page = await cdp.ev(`[document.getElementById('romSel').value, driveA,
+          document.getElementById('status').textContent]`);
+        const logs = cdp.logs.join('\n');
+        await sleep((wait[d.id] || 20) * 1000);
+        const shot = await cdp.ev(`new Promise((res) => {
+          const prev = window.neostOnScreenshot;
+          window.neostOnScreenshot = (px, w, h) => {
+            window.neostOnScreenshot = prev;
+            const n = w * h, cols = new Set(); let green = 0;
+            for (let i = 0; i < px.length; i += 4) {
+              cols.add((px[i] << 16) | (px[i + 1] << 8) | px[i + 2]);
+              if (px[i] > 100 && px[i + 1] > 200 && px[i + 2] > 100 && px[i] < 160 && px[i + 2] < 160) green++;
+            }
+            res({ colors: cols.size, green: green / n });
+          };
+          Module.ccall('neost_screenshot', null, [], []);
+        })`);
+        const machTxt = `machine: ${d.machine} | RAM: ${d.mem}`;
+        const ok = page[0] === d.rom && page[1] === d.file && /^Demo: /.test(page[2])
+          && logs.includes(`TOS loaded: ${d.rom}`) && logs.includes(`drive A: ${d.file}`)
+          && logs.includes(machTxt);
+        console.log(`[web-jspi] demos: ${d.id.padEnd(10)} ${d.machine}/${d.mem} ` +
+                    `${d.rom.split('/').pop()}  ${shot.colors} colours, ` +
+                    `${(shot.green * 100).toFixed(0)} % desktop green`);
+        if (verbose && !ok) console.log(page, logs.split('\n').filter((l) => /TOS|drive A|machine/.test(l)));
+        check(ok, `demo ${d.id}: booted with its ROM, disk, machine and RAM`);
+        check(shot.colors >= 2 && shot.green < 0.3, `demo ${d.id}: running, not the EmuTOS desktop`);
+      }
+      // Le bouton : il recharge la page dans la configuration de la démo choisie.
+      await loadPage(cdp, base, '', {});
+      await cdp.ev("(() => { const s = document.getElementById('demoSel'); s.value = 'blueperiod'; " +
+                   "s.dispatchEvent(new Event('change')); document.getElementById('btnDemo').click(); return 1; })()");
+      let url = '';
+      for (let i = 0; i < 100; i++) {
+        await sleep(100);
+        // L'ancienne page a déjà ready = true : attendre la NOUVELLE (URL de la démo).
+        try {
+          if (await cdp.ev("/demo=/.test(location.search) && typeof ready !== 'undefined' && ready === true")) {
+            url = await cdp.ev('location.search'); break;
+          }
+        } catch {}
+      }
+      console.log(`[web-jspi] demos: Run demo button -> ${url}`);
+      check(/machine=ste/.test(url) && /mem=2m/.test(url) && /demo=blueperiod/.test(url),
+            'Run demo button: reloads with the demo configuration');
     }
     if (want('touch') && browser !== 'chrome') {
       console.log('[web-jspi] touch: SKIP (needs CDP Input.dispatchTouchEvent, Chrome only)');

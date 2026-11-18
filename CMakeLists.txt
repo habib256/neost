@@ -712,6 +712,32 @@ if(EMSCRIPTEN)
             get_filename_component(demo_name "${item}" NAME)
             neost_web_preload("${item}" "/disks/${demo_name}")
         endforeach()
+        # Démos du catalogue d'étalons (2026-11-18), web SEULEMENT : chacune a été jouée sous
+        # EmuTOS FR (le seul TOS du bundle public) dans la configuration que la page lui
+        # applique (web/shell.html, table DEMOS : machine, RAM, EmuTOS 50 Hz). Celles qui
+        # n'y tournent pas restent dehors : Infinite Live of the Blitter (retour au bureau),
+        # The LoSTE Screens (bloqué sur LOADING), Punish Your Machine (parties du menu non
+        # vérifiées). Les paquets bureau n'en ont pas besoin : on y pose son propre TOS.
+        # Les noms sources ont des espaces, que « SHELL:--preload-file » découperait : copie
+        # au configure sous un nom simple, embarquée depuis le dossier de build.
+        set(NEOST_WEB_CATALOG_DEMOS
+            "Blue Period - Paradox (STE 2MB).st|blue_period.st"
+            "Suretrip 49 percent - Checkpoint (ST 1MB).msa|suretrip49.msa"
+            "The Overscan Demos - Paulo Simoes (ST 1MB).st|overscan_demos.st"
+            "Ika I Compofylla - Newline (ST 1MB).st|ika_compofylla.st"
+            "shforstv - Paulo Simoes (ST 1MB).st|shforstv.st")
+        foreach(entry IN LISTS NEOST_WEB_CATALOG_DEMOS)
+            string(REPLACE "|" ";" pair "${entry}")
+            list(GET pair 0 demo_src)
+            list(GET pair 1 demo_dst)
+            set(demo_path "${CMAKE_SOURCE_DIR}/disks/etalons/demos/${demo_src}")
+            if(NOT EXISTS "${demo_path}")
+                message(FATAL_ERROR "WASM : démo à embarquer absente : ${demo_path}")
+            endif()
+            configure_file("${demo_path}" "${CMAKE_BINARY_DIR}/webdemos/${demo_dst}" COPYONLY)
+            target_link_options(neost-web PRIVATE
+                "SHELL:--preload-file ${CMAKE_BINARY_DIR}/webdemos/${demo_dst}@/disks/${demo_dst}")
+        endforeach()
     else()
         target_link_options(neost-web PRIVATE
             "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/roms@/roms"
