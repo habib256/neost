@@ -1,5 +1,15 @@
 # Changelog — NeoST
 
+## 2026-11-18 — Icône : le logo de la page web
+
+- L'icône des paquets (`.app`/`.dmg`, AppImage, APK Android) reprend le logo de l'en-tête de la
+  page web, les cinq barres inclinées (variante « C3 »), sur une dalle sombre façon écran :
+  halo, scanlines, liseré. Elle remplace le « ST » en pixels verts.
+- `packaging/make_icon.py` la génère sans police (résultat identique sur toute machine) :
+  `neost.png` en 512×512, plafond de linuxdeploy et du 256@2x de l'`.icns`, et les cinq
+  `mipmap-*/ic_launcher.png` d'Android.
+- La page web gagne un favicon SVG, le même dessin.
+
 ## 2026-11-18 — Haute résolution sur moniteur couleur : trame noire
 
 - Transbeauce 2 passe en résolution 2 pendant ses chargements (~4,5 s). NeoST montrait alors
