@@ -4,27 +4,28 @@
 
 ## Key Concepts
 
-- **Kind** (9 connections) — `tests/ipf_image_logic.cpp`
-- **BAD_DATA_CRC** (1 connections) — `tests/ipf_image_logic.cpp`
-- **BAD_ID_CRC** (1 connections) — `tests/ipf_image_logic.cpp`
-- **DELETED** (1 connections) — `tests/ipf_image_logic.cpp`
-- **NO_DAM** (1 connections) — `tests/ipf_image_logic.cpp`
-- **NORMAL** (1 connections) — `tests/ipf_image_logic.cpp`
-- **WEAK** (1 connections) — `tests/ipf_image_logic.cpp`
+- **testMfpInternalLoopback()** (7 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **mfp_internal_loopback_logic.cpp** (7 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **Checks** (4 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **.equal()** (2 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **main()** (2 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **count** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **failures** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
 
 ## Relationships
 
-- [Community 183](Community_183.md) (2 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 319](Community_319.md) (2 shared connections)
 
 ## Source Files
 
-- `tests/ipf_image_logic.cpp`
+- `tests/mfp_internal_loopback_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 15 (94%)
+- INFERRED: 1 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

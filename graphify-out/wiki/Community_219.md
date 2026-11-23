@@ -1,6 +1,6 @@
 # Community 219
 
-> 46 nodes
+> 42 nodes
 
 ## Key Concepts
 
@@ -8,10 +8,7 @@
 - **BlitRig** (11 connections) — `tests/selftest_logic.cpp`
 - **IkbdRig** (11 connections) — `tests/selftest_logic.cpp`
 - **SndRig** (11 connections) — `tests/selftest_logic.cpp`
-- **testFdcTruthTable()** (9 connections) — `tests/selftest_logic.cpp`
-- **testBlitterTruthTable()** (7 connections) — `tests/selftest_logic.cpp`
 - **.send()** (4 connections) — `tests/selftest_logic.cpp`
-- **.counter()** (4 connections) — `tests/selftest_logic.cpp`
 - **Scheduler** (4 connections)
 - **.setDmaAddr()** (3 connections) — `tests/selftest_logic.cpp`
 - **.run()** (3 connections) — `tests/selftest_logic.cpp`
@@ -25,28 +22,28 @@
 - **.setEnd()** (2 connections) — `tests/selftest_logic.cpp`
 - **.setStart()** (2 connections) — `tests/selftest_logic.cpp`
 - **Mfp** (2 connections)
-- **Le pixel : une écriture du CPU, la trame qui sort** (2 connections) — `docs/STCPU_BENCH.md`
 - **.BlitRig()** (1 connections) — `tests/selftest_logic.cpp`
 - **.FdcRig()** (1 connections) — `tests/selftest_logic.cpp`
 - **.IkbdRig()** (1 connections) — `tests/selftest_logic.cpp`
-- *... and 21 more nodes in this community*
+- **.SndRig()** (1 connections) — `tests/selftest_logic.cpp`
+- **blit** (1 connections) — `tests/selftest_logic.cpp`
+- **bus** (1 connections) — `tests/selftest_logic.cpp`
+- **sched** (1 connections) — `tests/selftest_logic.cpp`
+- *... and 17 more nodes in this community*
 
 ## Relationships
 
-- [Community 252](Community_252.md) (19 shared connections)
+- [Community 41](Community_41.md) (17 shared connections)
 - [Community 419](Community_419.md) (1 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
-- [Community 226](Community_226.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/STCPU_BENCH.md`
 - `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 73 (96%)
-- INFERRED: 3 (4%)
+- EXTRACTED: 62 (98%)
+- INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

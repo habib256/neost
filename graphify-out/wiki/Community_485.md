@@ -1,27 +1,33 @@
 # Community 485
 
-> 2 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **Le MIDI Windows rejoint macOS et Linux — backend winmm (2026-08-31)** (4 connections) — `CHANGELOG.md`
-- **Quatre bugs d'outillage que Windows a mis au jour** (2 connections) — `CHANGELOG.md`
+- **WrittenTrack.hpp** (7 connections) — `src/io/WrittenTrack.hpp`
+- **parse()** (5 connections) — `src/io/WrittenTrack.cpp`
+- **WrittenTrack.cpp** (4 connections) — `src/io/WrittenTrack.cpp`
+- **crc16()** (2 connections) — `src/io/WrittenTrack.cpp`
+- **Sector** (1 connections)
 
 ## Relationships
 
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 214](Community_214.md) (1 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 51](Community_51.md) (1 shared connections)
+- [Community 149](Community_149.md) (1 shared connections)
+- [Community 63](Community_63.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
-- [Community 173](Community_173.md) (1 shared connections)
+- [Community 436](Community_436.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
+- `src/io/WrittenTrack.cpp`
+- `src/io/WrittenTrack.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 2 (40%)
-- INFERRED: 3 (60%)
+- EXTRACTED: 13 (93%)
+- INFERRED: 1 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

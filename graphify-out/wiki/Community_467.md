@@ -1,27 +1,30 @@
 # Community 467
 
-> 5 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **15. E/S : imprimante, joypads, joysticks — `Machine.cpp`, `StePads.hpp`, `JoystickInput.hpp` ↔ `psg.c`, `printer.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Refermés** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **testGemdosDriveMapping()** (5 connections) — `tests/gemdos_drive_mapping_logic.cpp`
+- **Checks** (4 connections) — `tests/gemdos_drive_mapping_logic.cpp`
+- **.equal()** (2 connections) — `tests/gemdos_drive_mapping_logic.cpp`
+- **main()** (2 connections) — `tests/gemdos_drive_mapping_logic.cpp`
+- **count** (1 connections) — `tests/gemdos_drive_mapping_logic.cpp`
+- **failures** (1 connections) — `tests/gemdos_drive_mapping_logic.cpp`
 
 ## Relationships
 
-- [Community 397](Community_397.md) (1 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 177](Community_177.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
+- `tests/gemdos_drive_mapping_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 9 (90%)
+- INFERRED: 1 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

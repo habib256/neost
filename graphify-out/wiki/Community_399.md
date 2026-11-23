@@ -1,43 +1,38 @@
 # Community 399
 
-> 14 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **stblitter_bench.cpp** (12 connections) — `tools/stblitter_bench.cpp`
-- **stcpu_bench.cpp** (11 connections) — `tools/stcpu_bench.cpp`
-- **cerrno** (5 connections)
-- **verilated** (4 connections)
-- **halfCycle()** (3 connections) — `tools/stblitter_bench.cpp`
-- **observe()** (3 connections) — `tools/stblitter_bench.cpp`
-- **main()** (3 connections) — `tools/stcpu_bench.cpp`
-- **main()** (2 connections) — `tools/stblitter_bench.cpp`
-- **ramWord()** (2 connections) — `tools/stblitter_bench.cpp`
-- **tick()** (2 connections) — `tools/stcpu_bench.cpp`
-- **unsignedArg()** (2 connections) — `tools/stcpu_bench.cpp`
-- **climits** (1 connections)
-- **vstblitter_bench_top** (1 connections)
-- **vstcpu_bench_top** (1 connections)
+- **Syntax** (8 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **.setDasmSyntax()** (4 connections) — `extern/moira/Moira/Moira.h`
+- **.NeostMoira()** (4 connections) — `src/core/Cpu68k.cpp`
+- **GNU** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **GNU_MIT** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **MOIRA** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **MOIRA_MIT** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **MUSASHI** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (6 shared connections)
-- [Community 287](Community_287.md) (5 shared connections)
-- [Community 383](Community_383.md) (1 shared connections)
-- [Community 36](Community_36.md) (1 shared connections)
-- [Community 83](Community_83.md) (1 shared connections)
-- [Community 65](Community_65.md) (1 shared connections)
-- [Community 272](Community_272.md) (1 shared connections)
+- [Community 131](Community_131.md) (1 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
+- [Community 314](Community_314.md) (1 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
+- [Community 9](Community_9.md) (1 shared connections)
+- [Community 150](Community_150.md) (1 shared connections)
+- [Community 299](Community_299.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/stblitter_bench.cpp`
-- `tools/stcpu_bench.cpp`
+- `extern/moira/Moira/Moira.h`
+- `extern/moira/Moira/MoiraTypes.h`
+- `src/core/Cpu68k.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 34 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 11 (79%)
+- INFERRED: 3 (21%)
 - AMBIGUOUS: 0 (0%)
 
 ---

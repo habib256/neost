@@ -1947,6 +1947,12 @@ montage sont suivis, même modèle de confiance qu'Hatari (2026-07-12).
 Tranchés par le vrai TOS exécuté (banc `tools/run_gemdos_ab.py`, TOS 1.04, 2.06, EmuTOS) et
 [C] EmuTOS `proc.c @ 5679730f` ; Hatari [D] `gemdos.c`.
 
+- **Détection des lecteurs d'un dossier hôte** · convention de montage · 2026-11-23 —
+  NeoST réserve le montage multilettres aux sous-dossiers C..Z. Un fichier
+  ordinaire d'une lettre fait partie d'un lecteur simple, comme un dossier à
+  entrées cachées seules. [D] Hatari `gemdos.c:667-714 @ f0736b24` teste seulement
+  les noms et peut ne monter aucun lecteur pour ces dossiers. Garde :
+  `tests/gemdos_drive_mapping_logic.cpp`.
 - **Fforce vers un handle du TOS sous redirection hôte** · voulu [C] · basse · 2026-11-12 — NeoST
   fait trancher le TOS (la cartouche lui relance l'appel, comme pour Pexec) et ne défait la
   redirection que s'il accepte ; un EIHNDL la laisse en place. Hatari `gemdos.c @ f0736b24` la

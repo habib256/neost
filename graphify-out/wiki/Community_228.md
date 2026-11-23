@@ -1,6 +1,6 @@
 # Community 228
 
-> 42 nodes
+> 41 nodes
 
 ## Key Concepts
 
@@ -18,7 +18,6 @@
 - **readAsset()** (5 connections) — `src/android/main_android.cpp`
 - **readSmallFile()** (5 connections) — `src/android/main_android.cpp`
 - **Machine** (5 connections)
-- **injectClick()** (4 connections) — `src/android/main_android.cpp`
 - **saveRomChoice()** (4 connections) — `src/android/main_android.cpp`
 - **stScancodeForSdl()** (4 connections) — `src/android/main_android.cpp`
 - **fileSize()** (3 connections) — `src/android/main_android.cpp`
@@ -29,22 +28,23 @@
 - **readPad()** (3 connections) — `src/android/main_android.cpp`
 - **Pilotage externe : menu, spécification du protocole, recherche d'adresses (2026-09-05)** (3 connections) — `CHANGELOG.md`
 - **audioCallback()** (2 connections) — `src/android/main_android.cpp`
-- *... and 17 more nodes in this community*
+- **cancelPendingInput()** (2 connections) — `src/android/main_android.cpp`
+- *... and 16 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (10 shared connections)
+- [Community 4](Community_4.md) (12 shared connections)
+- [Community 114](Community_114.md) (7 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
 - [Community 298](Community_298.md) (6 shared connections)
-- [Community 287](Community_287.md) (6 shared connections)
-- [Community 114](Community_114.md) (5 shared connections)
 - [Community 51](Community_51.md) (3 shared connections)
 - [Community 99](Community_99.md) (2 shared connections)
 - [Community 430](Community_430.md) (2 shared connections)
-- [Community 138](Community_138.md) (2 shared connections)
-- [Community 227](Community_227.md) (1 shared connections)
-- [Community 55](Community_55.md) (1 shared connections)
+- [Community 291](Community_291.md) (2 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
+- [Community 449](Community_449.md) (1 shared connections)
+- [Community 325](Community_325.md) (1 shared connections)
 - [Community 472](Community_472.md) (1 shared connections)
-- [Community 452](Community_452.md) (1 shared connections)
 
 ## Source Files
 
@@ -54,7 +54,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 117 (89%)
+- EXTRACTED: 116 (89%)
 - INFERRED: 14 (11%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,6 +1,6 @@
 # Community 99
 
-> 38 nodes
+> 37 nodes
 
 ## Key Concepts
 
@@ -25,26 +25,26 @@
 - **cartKeyLabel()** (4 connections) — `src/io/DongleTable.cpp`
 - **Model** (4 connections)
 - **KeyEntry** (3 connections) — `src/io/DongleTable.cpp`
-- **neost_cart_key_label()** (3 connections) — `src/web/main_web.cpp`
 - **Device** (2 connections)
 - **Model** (2 connections)
 - **defaultDongleTable()** (1 connections) — `src/io/DongleTable.cpp`
-- *... and 13 more nodes in this community*
+- **Model** (1 connections)
+- *... and 12 more nodes in this community*
 
 ## Relationships
 
-- [Community 51](Community_51.md) (14 shared connections)
-- [Community 4](Community_4.md) (6 shared connections)
-- [Community 68](Community_68.md) (4 shared connections)
-- [Community 287](Community_287.md) (3 shared connections)
-- [Community 150](Community_150.md) (3 shared connections)
+- [Community 51](Community_51.md) (12 shared connections)
+- [Community 4](Community_4.md) (7 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 68](Community_68.md) (3 shared connections)
 - [Community 228](Community_228.md) (2 shared connections)
-- [Community 298](Community_298.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 419](Community_419.md) (2 shared connections)
+- [Community 188](Community_188.md) (2 shared connections)
+- [Community 150](Community_150.md) (2 shared connections)
 - [Community 1](Community_1.md) (1 shared connections)
 - [Community 138](Community_138.md) (1 shared connections)
 - [Community 214](Community_214.md) (1 shared connections)
-- [Community 355](Community_355.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
@@ -54,11 +54,10 @@
 - `src/io/DongleTable.cpp`
 - `src/io/DongleTable.hpp`
 - `src/io/PortDevices.hpp`
-- `src/web/main_web.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 99 (95%)
+- EXTRACTED: 97 (95%)
 - INFERRED: 5 (5%)
 - AMBIGUOUS: 0 (0%)
 

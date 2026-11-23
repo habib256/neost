@@ -599,27 +599,21 @@ static bool determineMaxPartitions(const std::string& dir, int& maxDrives) {
         std::fprintf(stderr, "[gemdos] cannot access: %s\n", dir.c_str());
         return false;
     }
-    int count = 0, last = 0;
-    bool multi = true;
-    struct dirent* e;
-    std::vector<std::string> names;
-    while ((e = readdir(d))) names.push_back(e->d_name);
-    closedir(d);
-    count = (int)names.size();
-    if (count <= 2) {                                // « . » et « .. » seuls
-        last = 1; multi = false;
-    } else {
-        last = 0;
-        for (auto& n : names) {
-            char letter = (char)toupper((unsigned char)n[0]);
-            if (!letter || letter == '.') continue;
-            if (letter < 'C' || letter > 'Z' || n[1]) { last = 1; multi = false; break; }
-            letter = letter - 'C' + 1;
-            if (letter > last) last = letter;
+    int last = 0;
+    while (const auto* entry = readdir(d)) {
+        const char* name = entry->d_name;
+        if (!name[0] || name[0] == '.') continue;
+        const char letter = (char)toupper((unsigned char)name[0]);
+        // Un fichier ordinaire d'une lettre fait partie d'un lecteur simple.
+        if (letter < 'C' || letter > 'Z' || name[1] || !dirExists(dir + PATHSEP + name)) {
+            last = 0;
+            break;
         }
+        last = std::max(last, letter - 'C' + 1);
     }
-    maxDrives = (last > 24) ? 24 : last;
-    return multi;
+    closedir(d);
+    maxDrives = last ? last : 1;  // dossier vide ou ne contenant que des fichiers cachés
+    return last > 0;
 }
 
 uint32_t GemdosHd::driveMask() const {
@@ -2829,6 +2823,12 @@ std::string GemdosHd::normalizeAutoStartProgram(const std::string& name) {
         return {};
     } else {
         prg = "C:\\" + upperAtari(name);
+    }
+    // « @ » termine le champ du #Z. Une fin de ligne le coupe avant la fin du nom.
+    if (prg.size() <= 3 || prg.back() == '\\' || prg.find(':', 2) != std::string::npos
+        || prg.find_first_of("@/\r\n") != std::string::npos) {
+        std::fprintf(stderr, "[gemdos] autostart path rejected: invalid INF program name\n");
+        return {};
     }
     return prg;
 }

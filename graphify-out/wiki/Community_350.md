@@ -18,7 +18,7 @@
 ## Relationships
 
 - [Community 186](Community_186.md) (2 shared connections)
-- [Community 258](Community_258.md) (2 shared connections)
+- [Community 39](Community_39.md) (2 shared connections)
 - [Community 203](Community_203.md) (2 shared connections)
 - [Community 88](Community_88.md) (1 shared connections)
 - [Community 9](Community_9.md) (1 shared connections)

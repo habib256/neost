@@ -23,9 +23,8 @@
 - [Community 37](Community_37.md) (11 shared connections)
 - [Community 434](Community_434.md) (8 shared connections)
 - [Community 453](Community_453.md) (7 shared connections)
-- [Community 102](Community_102.md) (5 shared connections)
+- [Community 102](Community_102.md) (6 shared connections)
 - [Community 218](Community_218.md) (1 shared connections)
-- [Community 287](Community_287.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
 - [Community 461](Community_461.md) (1 shared connections)
 

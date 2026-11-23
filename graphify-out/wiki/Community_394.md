@@ -1,6 +1,6 @@
 # Community 394
 
-> 29 nodes
+> 27 nodes
 
 ## Key Concepts
 
@@ -12,12 +12,10 @@
 - **AndroidRom** (5 connections) — `src/android/AndroidRoms.hpp`
 - **pickMachineForTos()** (5 connections) — `src/core/TosChoice.cpp`
 - **machineIsMega()** (4 connections) — `src/core/MachineType.hpp`
-- **Terminal sobre ; la page ROM choisit le modèle (2026-11-13)** (4 connections) — `CHANGELOG.md`
 - **.claimsRtc()** (3 connections) — `src/core/Bus.hpp`
 - **versionRank()** (3 connections) — `src/core/TosChoice.cpp`
 - **system_error** (3 connections)
 - **.machineType()** (2 connections) — `src/core/Machine.hpp`
-- **fadeStereo()** (2 connections) — `src/core/Pacing.hpp`
 - **Fidélité matérielle, suite : capacité ACSI et verrou RX SCC (2026-10-19)** (2 connections) — `CHANGELOG.md`
 - **Inventaire des hypothèses ST dans le code (2026-11-10)** (2 connections) — `CHANGELOG.md`
 - **file** (1 connections) — `src/android/AndroidRoms.hpp`
@@ -29,22 +27,24 @@
 - **Ste** (1 connections) — `src/core/MachineType.hpp`
 - **size_t** (1 connections)
 - **country** (1 connections) — `src/core/TosChoice.hpp`
-- *... and 4 more nodes in this community*
+- **emuTos** (1 connections) — `src/core/TosChoice.hpp`
+- **ntsc** (1 connections) — `src/core/TosChoice.hpp`
+- *... and 2 more nodes in this community*
 
 ## Relationships
 
-- [Community 138](Community_138.md) (5 shared connections)
+- [Community 325](Community_325.md) (7 shared connections)
 - [Community 4](Community_4.md) (5 shared connections)
-- [Community 55](Community_55.md) (3 shared connections)
-- [Community 130](Community_130.md) (3 shared connections)
+- [Community 10](Community_10.md) (3 shared connections)
+- [Community 160](Community_160.md) (3 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
 - [Community 14](Community_14.md) (2 shared connections)
-- [Community 10](Community_10.md) (2 shared connections)
-- [Community 396](Community_396.md) (2 shared connections)
 - [Community 186](Community_186.md) (2 shared connections)
-- [Community 170](Community_170.md) (2 shared connections)
-- [Community 214](Community_214.md) (2 shared connections)
+- [Community 291](Community_291.md) (2 shared connections)
+- [Community 449](Community_449.md) (2 shared connections)
+- [Community 288](Community_288.md) (2 shared connections)
+- [Community 328](Community_328.md) (2 shared connections)
 - [Community 192](Community_192.md) (2 shared connections)
-- [Community 325](Community_325.md) (2 shared connections)
 
 ## Source Files
 
@@ -53,14 +53,13 @@
 - `src/core/Bus.hpp`
 - `src/core/Machine.hpp`
 - `src/core/MachineType.hpp`
-- `src/core/Pacing.hpp`
 - `src/core/TosChoice.cpp`
 - `src/core/TosChoice.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 69 (83%)
-- INFERRED: 14 (17%)
+- EXTRACTED: 67 (85%)
+- INFERRED: 12 (15%)
 - AMBIGUOUS: 0 (0%)
 
 ---

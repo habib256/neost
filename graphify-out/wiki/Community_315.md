@@ -1,16 +1,19 @@
 # Community 315
 
-> 18 nodes
+> 23 nodes
 
 ## Key Concepts
 
 - **UsbDevice.cpp** (23 connections) — `src/io/UsbDevice.cpp`
 - **.transfer()** (7 connections) — `src/io/UsbDevice.hpp`
 - **.bulk()** (7 connections) — `src/io/UsbDevice.hpp`
+- **.parseSpec()** (7 connections) — `src/io/UsbDevice.hpp`
 - **.report()** (6 connections) — `src/io/UsbDevice.hpp`
+- **.netUsbeeApply()** (5 connections) — `src/gui/App.hpp`
 - **setup_** (5 connections) — `src/io/UsbDevice.hpp`
 - **.control()** (4 connections) — `src/io/UsbDevice.hpp`
 - **.scsi()** (4 connections) — `src/io/UsbDevice.hpp`
+- **.attach()** (4 connections) — `src/io/UsbDevice.hpp`
 - **.descriptor()** (4 connections) — `src/io/UsbDevice.hpp`
 - **.serialize()** (3 connections) — `src/io/UsbDevice.hpp`
 - **Result** (3 connections)
@@ -21,27 +24,33 @@
 - **.reset()** (2 connections) — `src/io/UsbDevice.hpp`
 - **be32()** (2 connections) — `src/io/UsbDevice.cpp`
 - **put32()** (2 connections) — `src/io/UsbDevice.cpp`
+- **Kind** (2 connections)
+- **string** (2 connections)
 - **StateArchive** (1 connections)
 
 ## Relationships
 
-- [Community 22](Community_22.md) (13 shared connections)
-- [Community 287](Community_287.md) (5 shared connections)
-- [Community 176](Community_176.md) (4 shared connections)
-- [Community 471](Community_471.md) (2 shared connections)
-- [Community 264](Community_264.md) (1 shared connections)
-- [Community 419](Community_419.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 22](Community_22.md) (15 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 264](Community_264.md) (4 shared connections)
+- [Community 138](Community_138.md) (2 shared connections)
+- [Community 419](Community_419.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 1](Community_1.md) (1 shared connections)
+- [Community 117](Community_117.md) (1 shared connections)
+- [Community 214](Community_214.md) (1 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
 
 ## Source Files
 
+- `src/gui/App.hpp`
 - `src/io/UsbDevice.cpp`
 - `src/io/UsbDevice.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 46 (85%)
-- INFERRED: 8 (15%)
+- EXTRACTED: 58 (87%)
+- INFERRED: 9 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

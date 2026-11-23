@@ -1,6 +1,6 @@
 # Community 95
 
-> 26 nodes
+> 27 nodes
 
 ## Key Concepts
 
@@ -21,6 +21,7 @@
 - **.updateSeek()** (11 connections) — `src/io/Fdc.hpp`
 - **.updateStep()** (11 connections) — `src/io/Fdc.hpp`
 - **.updateFloppyDensity()** (10 connections) — `src/io/Fdc.hpp`
+- **.bufferSize()** (9 connections) — `src/io/Fdc.hpp`
 - **.nextIndexCycles()** (7 connections) — `src/io/Fdc.hpp`
 - **.bufferReset()** (7 connections) — `src/io/Fdc.hpp`
 - **.verifyTrack()** (6 connections) — `src/io/Fdc.hpp`
@@ -28,18 +29,16 @@
 - **.canHandleDensity()** (5 connections) — `src/io/Fdc.hpp`
 - **.bufferReadByte()** (4 connections) — `src/io/Fdc.hpp`
 - **.bufferReadTiming()** (4 connections) — `src/io/Fdc.hpp`
-- **.serialize()** (3 connections) — `src/io/Fdc.hpp`
-- *... and 1 more nodes in this community*
+- *... and 2 more nodes in this community*
 
 ## Relationships
 
-- [Community 12](Community_12.md) (25 shared connections)
-- [Community 149](Community_149.md) (23 shared connections)
-- [Community 121](Community_121.md) (23 shared connections)
-- [Community 24](Community_24.md) (18 shared connections)
+- [Community 149](Community_149.md) (28 shared connections)
+- [Community 12](Community_12.md) (26 shared connections)
+- [Community 24](Community_24.md) (16 shared connections)
+- [Community 121](Community_121.md) (16 shared connections)
+- [Community 170](Community_170.md) (6 shared connections)
 - [Community 412](Community_412.md) (5 shared connections)
-- [Community 78](Community_78.md) (1 shared connections)
-- [Community 31](Community_31.md) (1 shared connections)
 
 ## Source Files
 
@@ -47,8 +46,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 47 (26%)
-- INFERRED: 137 (74%)
+- EXTRACTED: 48 (25%)
+- INFERRED: 141 (75%)
 - AMBIGUOUS: 0 (0%)
 
 ---

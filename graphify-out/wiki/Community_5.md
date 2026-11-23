@@ -1,6 +1,6 @@
 # Community 5
 
-> 96 nodes
+> 99 nodes
 
 ## Key Concepts
 
@@ -10,7 +10,10 @@
 - **.liveTop()** (3 connections) — `src/core/Shifter.hpp`
 - **.setLiveFrameClock()** (3 connections) — `src/core/Shifter.hpp`
 - **.snapLiveTop()** (3 connections) — `src/core/Shifter.hpp`
+- **.lineBytes()** (2 connections) — `src/core/Shifter.hpp`
+- **.lineStoppedOver()** (2 connections) — `src/core/Shifter.hpp`
 - **.liveHeight()** (2 connections) — `src/core/Shifter.hpp`
+- **.scrollAdvance()** (2 connections) — `src/core/Shifter.hpp`
 - **.setBeamClock()** (2 connections) — `src/core/Shifter.hpp`
 - **.setHblShorten()** (2 connections) — `src/core/Shifter.hpp`
 - **.setLineGeom()** (2 connections) — `src/core/Shifter.hpp`
@@ -26,25 +29,22 @@
 - **.lineCount()** (1 connections) — `src/core/Shifter.hpp`
 - **.lineStart()** (1 connections) — `src/core/Shifter.hpp`
 - **.lineStartCount()** (1 connections) — `src/core/Shifter.hpp`
-- **.lineState()** (1 connections) — `src/core/Shifter.hpp`
-- **.lineWidthWords()** (1 connections) — `src/core/Shifter.hpp`
-- **.liveLine()** (1 connections) — `src/core/Shifter.hpp`
-- *... and 71 more nodes in this community*
+- *... and 74 more nodes in this community*
 
 ## Relationships
 
-- [Community 88](Community_88.md) (32 shared connections)
+- [Community 88](Community_88.md) (27 shared connections)
+- [Community 359](Community_359.md) (14 shared connections)
 - [Community 205](Community_205.md) (9 shared connections)
-- [Community 170](Community_170.md) (8 shared connections)
-- [Community 288](Community_288.md) (6 shared connections)
-- [Community 396](Community_396.md) (3 shared connections)
-- [Community 328](Community_328.md) (2 shared connections)
-- [Community 359](Community_359.md) (2 shared connections)
-- [Community 124](Community_124.md) (2 shared connections)
+- [Community 288](Community_288.md) (8 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 396](Community_396.md) (2 shared connections)
+- [Community 119](Community_119.md) (2 shared connections)
+- [Community 258](Community_258.md) (1 shared connections)
 - [Community 270](Community_270.md) (1 shared connections)
-- [Community 287](Community_287.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
 - [Community 235](Community_235.md) (1 shared connections)
+- [Community 328](Community_328.md) (1 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
 
 ## Source Files
 
@@ -52,8 +52,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 170 (99%)
-- INFERRED: 1 (1%)
+- EXTRACTED: 172 (99%)
+- INFERRED: 2 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

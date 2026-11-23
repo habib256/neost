@@ -1,10 +1,9 @@
 # Community 294
 
-> 17 nodes
+> 16 nodes
 
 ## Key Concepts
 
-- **stx_raw_track_wrap_logic.cpp** (26 connections) — `tests/stx_raw_track_wrap_logic.cpp`
 - **Scenario** (11 connections) — `tests/stx_raw_track_wrap_logic.cpp`
 - **writeImage()** (9 connections) — `tests/stx_raw_track_wrap_logic.cpp`
 - **updateExpected()** (7 connections) — `tests/stx_raw_track_wrap_logic.cpp`
@@ -24,9 +23,8 @@
 
 ## Relationships
 
-- [Community 70](Community_70.md) (12 shared connections)
-- [Community 102](Community_102.md) (9 shared connections)
-- [Community 287](Community_287.md) (8 shared connections)
+- [Community 102](Community_102.md) (15 shared connections)
+- [Community 70](Community_70.md) (6 shared connections)
 
 ## Source Files
 
@@ -34,7 +32,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 58 (100%)
+- EXTRACTED: 41 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

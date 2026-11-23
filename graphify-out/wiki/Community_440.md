@@ -1,37 +1,36 @@
 # Community 440
 
-> 12 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **opendst_memdiff.py** (9 connections) — `tools/opendst_memdiff.py`
-- **main()** (7 connections) — `tools/opendst_memdiff.py`
-- **Server** (6 connections) — `tools/opendst_memdiff.py`
-- **runs()** (3 connections) — `tools/opendst_memdiff.py`
-- **.cmd()** (3 connections) — `tools/opendst_memdiff.py`
-- **.dump()** (3 connections) — `tools/opendst_memdiff.py`
-- **parse_hex()** (2 connections) — `tools/opendst_memdiff.py`
-- **read_word()** (2 connections) — `tools/opendst_memdiff.py`
-- **.close()** (2 connections) — `tools/opendst_memdiff.py`
-- **.__init__()** (1 connections) — `tools/opendst_memdiff.py`
-- **Image mémoire [start, start+length) par tranches de 4 Ko.** (1 connections) — `tools/opendst_memdiff.py`
-- **Adresses triées → plages contiguës [(début, fin)].** (1 connections) — `tools/opendst_memdiff.py`
+- **.setDestinations()** (14 connections) — `src/audio/MidiOutHost.hpp`
+- **.destinations()** (8 connections) — `src/audio/MidiOutHost.hpp`
+- **displayName()** (5 connections) — `src/audio/MidiOutHost.cpp`
+- **uniqueId()** (5 connections) — `src/audio/MidiOutHost.cpp`
+- **MIDIObjectRef** (2 connections)
+- **string** (2 connections)
+- **size_t** (1 connections)
 
 ## Relationships
 
-- [Community 26](Community_26.md) (2 shared connections)
-- [Community 227](Community_227.md) (2 shared connections)
-- [Community 189](Community_189.md) (1 shared connections)
-- [Community 18](Community_18.md) (1 shared connections)
+- [Community 42](Community_42.md) (10 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 214](Community_214.md) (1 shared connections)
+- [Community 220](Community_220.md) (1 shared connections)
+- [Community 200](Community_200.md) (1 shared connections)
+- [Community 213](Community_213.md) (1 shared connections)
+- [Community 175](Community_175.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/opendst_memdiff.py`
+- `src/audio/MidiOutHost.cpp`
+- `src/audio/MidiOutHost.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 20 (74%)
+- INFERRED: 7 (26%)
 - AMBIGUOUS: 0 (0%)
 
 ---

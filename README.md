@@ -26,6 +26,8 @@ becomes a touchpad, with a touch joystick and an Atari ST keyboard. No download,
 
 #### GEMDOS drives for pages embedding NeoST
 
+Download the current web bundle and serve the extracted files from your web server. [WebAssembly ZIP](https://habib256.github.io/neost/NeoST-web-wasm.zip)
+
 Once NeoST has started, populate the WebAssembly file system with `Module.FS`.
 For example, with `programBytes` holding a TOS executable:
 
@@ -44,8 +46,9 @@ to write-protect the entire mount. Read guest files back with `Module.FS.readFil
 The page can copy them out before reloading to preserve them.
 
 A successful mount or unmount (`null` directory) cold-boots the machine. The
-mount call returns `1` when accepted and `0` for an invalid directory. An accepted
-order can be deferred while a JSPI instruction is suspended. Autostart returns
+mount call returns `1` on success or when queued during a suspended JSPI
+instruction, and `0` on immediate failure. If a queued mount fails, NeoST logs
+the failure and cold-boots with the previous mount. Autostart returns
 `1` for an accepted path and `0` for an invalid one. Pass `null` to clear it.
 The setting takes effect on the next cold boot and requires EmuTOS or TOS 1.04+.
 

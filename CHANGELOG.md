@@ -7,6 +7,9 @@
   son démontage passent par un démarrage à froid, après la fin d'une instruction
   suspendue par JSPI. Le TOS initialise la cartouche GEMDOS existante et son
   bureau lance le programme configuré via l'INF virtuel.
+- Le banc couvre le repli sans JSPI, la protection en écriture et le retrait
+  d'un dossier pendant un montage différé. Le ZIP web est téléchargeable
+  directement depuis GitHub Pages.
 
 ## 2026-11-18 — Icône : le logo de la page web
 

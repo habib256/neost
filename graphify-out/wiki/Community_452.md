@@ -1,70 +1,55 @@
 # Community 452
 
-> 25 nodes
+> 22 nodes
 
 ## Key Concepts
 
-- **Machine.hpp** (57 connections) — `src/core/Machine.hpp`
-- **memory** (23 connections)
 - **cpu_stop_irq_logic.cpp** (10 connections) — `tests/cpu_stop_irq_logic.cpp`
-- **gemdos_snapshot_logic.cpp** (10 connections) — `tests/gemdos_snapshot_logic.cpp`
-- **machine_fdc_media_vbl_logic.cpp** (9 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
-- **machine_timer_b_aer_logic.cpp** (9 connections) — `tests/machine_timer_b_aer_logic.cpp`
-- **Ne2000.hpp** (8 connections) — `src/io/Ne2000.hpp`
-- **desktop_mouse_logic.cpp** (6 connections) — `tests/desktop_mouse_logic.cpp`
-- **ikbd_monitor_machine_logic.cpp** (6 connections) — `tests/ikbd_monitor_machine_logic.cpp`
-- **machine_mfp_tx_logic.cpp** (6 connections) — `tests/machine_mfp_tx_logic.cpp`
-- **machine_midi_logic.cpp** (6 connections) — `tests/machine_midi_logic.cpp`
-- **mmu_logic.cpp** (6 connections) — `tests/mmu_logic.cpp`
+- **testMfpClock()** (6 connections) — `tests/mfp_clock_logic.cpp`
+- **word** (6 connections) — `tools/gstmcu_bench.cpp`
 - **Result** (5 connections) — `tests/cpu_stop_irq_logic.cpp`
 - **runProbe()** (5 connections) — `tests/cpu_stop_irq_logic.cpp`
-- **MmuGlue.hpp** (5 connections) — `src/core/MmuGlue.hpp`
-- **machine_scc_logic.cpp** (5 connections) — `tests/machine_scc_logic.cpp`
+- **testFdcTiming()** (5 connections) — `tests/fdc_timing_logic.cpp`
+- **duration()** (5 connections) — `tests/ste_cmap_slot_logic.cpp`
+- **mfp_clock_logic.cpp** (5 connections) — `tests/mfp_clock_logic.cpp`
+- **Checks** (4 connections) — `tests/fdc_timing_logic.cpp`
 - **probeRom()** (4 connections) — `tests/cpu_stop_irq_logic.cpp`
 - **testCpuStopIrq()** (3 connections) — `tests/cpu_stop_irq_logic.cpp`
-- **testIkbdMonitorMachine()** (3 connections) — `tests/ikbd_monitor_machine_logic.cpp`
-- **testMachineScc()** (3 connections) — `tests/machine_scc_logic.cpp`
-- **main()** (2 connections) — `tests/ikbd_monitor_machine_logic.cpp`
-- **main()** (2 connections) — `tests/machine_scc_logic.cpp`
+- **.execute()** (3 connections) — `tests/fdc_timing_logic.cpp`
+- **testSteCmapSlot()** (3 connections) — `tests/ste_cmap_slot_logic.cpp`
+- **.MegaSteRig()** (2 connections) — `tests/blitter_rmw_logic.cpp`
+- **.equal()** (2 connections) — `tests/fdc_timing_logic.cpp`
+- **main()** (2 connections) — `tests/fdc_timing_logic.cpp`
+- **main()** (2 connections) — `tests/mfp_clock_logic.cpp`
 - **halted** (2 connections) — `tests/cpu_stop_irq_logic.cpp`
 - **array** (1 connections)
 - **data** (1 connections) — `tests/cpu_stop_irq_logic.cpp`
+- **count** (1 connections) — `tests/fdc_timing_logic.cpp`
+- **failures** (1 connections) — `tests/fdc_timing_logic.cpp`
 
 ## Relationships
 
-- [Community 287](Community_287.md) (27 shared connections)
-- [Community 102](Community_102.md) (25 shared connections)
-- [Community 4](Community_4.md) (25 shared connections)
-- [Community 252](Community_252.md) (6 shared connections)
-- [Community 125](Community_125.md) (4 shared connections)
-- [Community 46](Community_46.md) (3 shared connections)
-- [Community 91](Community_91.md) (2 shared connections)
-- [Community 383](Community_383.md) (2 shared connections)
-- [Community 176](Community_176.md) (2 shared connections)
-- [Community 58](Community_58.md) (2 shared connections)
-- [Community 89](Community_89.md) (2 shared connections)
-- [Community 234](Community_234.md) (2 shared connections)
+- [Community 102](Community_102.md) (12 shared connections)
+- [Community 41](Community_41.md) (7 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 132](Community_132.md) (1 shared connections)
+- [Community 192](Community_192.md) (1 shared connections)
+- [Community 394](Community_394.md) (1 shared connections)
+- [Community 272](Community_272.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Machine.hpp`
-- `src/core/MmuGlue.hpp`
-- `src/io/Ne2000.hpp`
+- `tests/blitter_rmw_logic.cpp`
 - `tests/cpu_stop_irq_logic.cpp`
-- `tests/desktop_mouse_logic.cpp`
-- `tests/gemdos_snapshot_logic.cpp`
-- `tests/ikbd_monitor_machine_logic.cpp`
-- `tests/machine_fdc_media_vbl_logic.cpp`
-- `tests/machine_mfp_tx_logic.cpp`
-- `tests/machine_midi_logic.cpp`
-- `tests/machine_scc_logic.cpp`
-- `tests/machine_timer_b_aer_logic.cpp`
-- `tests/mmu_logic.cpp`
+- `tests/fdc_timing_logic.cpp`
+- `tests/mfp_clock_logic.cpp`
+- `tests/ste_cmap_slot_logic.cpp`
+- `tools/gstmcu_bench.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 153 (97%)
-- INFERRED: 4 (3%)
+- EXTRACTED: 42 (81%)
+- INFERRED: 10 (19%)
 - AMBIGUOUS: 0 (0%)
 
 ---

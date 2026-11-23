@@ -1,6 +1,6 @@
 # Community 12
 
-> 85 nodes
+> 83 nodes
 
 ## Key Concepts
 
@@ -9,9 +9,7 @@
 - **Bus** (3 connections) — `src/io/Fdc.hpp`
 - **Mfp** (3 connections) — `src/io/Fdc.hpp`
 - **YM2149** (3 connections) — `src/io/Fdc.hpp`
-- **.sidesPerDisk()** (2 connections) — `src/io/Fdc.hpp`
 - **.attachUltraSatan()** (2 connections) — `src/io/Fdc.hpp`
-- **.inserted()** (2 connections) — `src/io/Fdc.hpp`
 - **.setScheduler()** (2 connections) — `src/io/Fdc.hpp`
 - **.setSoundSink()** (2 connections) — `src/io/Fdc.hpp`
 - **function** (2 connections)
@@ -29,20 +27,21 @@
 - **.noteStxWriteForTest()** (1 connections) — `src/io/Fdc.hpp`
 - **.onVbl()** (1 connections) — `src/io/Fdc.hpp`
 - **.sectorsPerTrack()** (1 connections) — `src/io/Fdc.hpp`
-- *... and 60 more nodes in this community*
+- **.setDiskHostWriteBack()** (1 connections) — `src/io/Fdc.hpp`
+- **.setDmaFixture()** (1 connections) — `src/io/Fdc.hpp`
+- *... and 58 more nodes in this community*
 
 ## Relationships
 
-- [Community 24](Community_24.md) (33 shared connections)
-- [Community 95](Community_95.md) (25 shared connections)
-- [Community 121](Community_121.md) (20 shared connections)
-- [Community 149](Community_149.md) (17 shared connections)
+- [Community 24](Community_24.md) (30 shared connections)
+- [Community 95](Community_95.md) (26 shared connections)
+- [Community 149](Community_149.md) (22 shared connections)
+- [Community 121](Community_121.md) (15 shared connections)
+- [Community 170](Community_170.md) (7 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
 - [Community 412](Community_412.md) (5 shared connections)
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 31](Community_31.md) (4 shared connections)
-- [Community 78](Community_78.md) (3 shared connections)
+- [Community 78](Community_78.md) (2 shared connections)
 - [Community 103](Community_103.md) (1 shared connections)
-- [Community 287](Community_287.md) (1 shared connections)
 
 ## Source Files
 
@@ -50,7 +49,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 202 (100%)
+- EXTRACTED: 200 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

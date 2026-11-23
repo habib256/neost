@@ -35,8 +35,8 @@
 
 - [Community 16](Community_16.md) (12 shared connections)
 - [Community 314](Community_314.md) (8 shared connections)
-- [Community 141](Community_141.md) (7 shared connections)
-- [Community 64](Community_64.md) (3 shared connections)
+- [Community 141](Community_141.md) (6 shared connections)
+- [Community 64](Community_64.md) (4 shared connections)
 - [Community 9](Community_9.md) (2 shared connections)
 - [Community 54](Community_54.md) (2 shared connections)
 - [Community 33](Community_33.md) (2 shared connections)

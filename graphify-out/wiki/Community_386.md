@@ -1,42 +1,32 @@
 # Community 386
 
-> 11 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **Quartz** (9 connections) — `src/core/Pacing.hpp`
-- **.resolveQuartz()** (9 connections) — `src/core/Machine.hpp`
-- **.loadStateFile()** (5 connections) — `src/core/Machine.hpp`
-- **.saveStateFile()** (4 connections) — `src/core/Machine.hpp`
-- **string** (4 connections)
-- **.setClocks()** (3 connections) — `src/core/Machine.hpp`
-- **parseQuartz()** (2 connections) — `src/core/Pacing.hpp`
-- **setQuartzGlobal()** (2 connections) — `src/core/Pacing.hpp`
-- **Pal** (1 connections) — `src/core/Pacing.hpp`
-- **Q32042** (1 connections) — `src/core/Pacing.hpp`
-- **Q32216** (1 connections) — `src/core/Pacing.hpp`
+- **Banc différentiel Moira ↔ fx68k — le 68000 nu contre le RTL** (9 connections) — `docs/FX68K_BENCH.md`
+- **État (2026-11-03)** (2 connections) — `docs/FX68K_BENCH.md`
+- **Autovecteur par VPA et E-clock (2026-11-04)** (1 connections) — `docs/FX68K_BENCH.md`
+- **Bus prêté à un DMA, BR/BG (2026-11-11)** (1 connections) — `docs/FX68K_BENCH.md`
+- **Ce qui manque au banc** (1 connections) — `docs/FX68K_BENCH.md`
+- **Comment** (1 connections) — `docs/FX68K_BENCH.md`
+- **La date limite d'IPL, confrontée dans NeoST (2026-11-04)** (1 connections) — `docs/FX68K_BENCH.md`
+- **Pourquoi** (1 connections) — `docs/FX68K_BENCH.md`
 
 ## Relationships
 
-- [Community 138](Community_138.md) (4 shared connections)
-- [Community 160](Community_160.md) (4 shared connections)
-- [Community 10](Community_10.md) (4 shared connections)
-- [Community 287](Community_287.md) (3 shared connections)
-- [Community 182](Community_182.md) (2 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
-- [Community 298](Community_298.md) (1 shared connections)
-- [Community 394](Community_394.md) (1 shared connections)
-- [Community 170](Community_170.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
+- [Community 141](Community_141.md) (1 shared connections)
+- [Community 30](Community_30.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Machine.hpp`
-- `src/core/Pacing.hpp`
+- `docs/FX68K_BENCH.md`
 
 ## Audit Trail
 
-- EXTRACTED: 27 (87%)
-- INFERRED: 4 (13%)
+- EXTRACTED: 9 (90%)
+- INFERRED: 1 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

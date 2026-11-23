@@ -1,6 +1,6 @@
 # Community 113
 
-> 21 nodes
+> 22 nodes
 
 ## Key Concepts
 
@@ -10,6 +10,7 @@
 - **.init()** (4 connections) — `src/audio/DriveSound.hpp`
 - **.motorStop()** (4 connections) — `src/audio/DriveSound.hpp`
 - **.onEvent()** (4 connections) — `src/audio/DriveSound.hpp`
+- **sockShutdown()** (4 connections) — `src/net/Socket.cpp`
 - **.setEnabled()** (3 connections) — `src/audio/DriveSound.hpp`
 - **.mix()** (2 connections) — `src/audio/DriveSound.hpp`
 - **.~DriveSound()** (2 connections) — `src/audio/DriveSound.hpp`
@@ -29,21 +30,22 @@
 ## Relationships
 
 - [Community 4](Community_4.md) (4 shared connections)
-- [Community 60](Community_60.md) (1 shared connections)
+- [Community 60](Community_60.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
 - [Community 175](Community_175.md) (1 shared connections)
-- [Community 101](Community_101.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 287](Community_287.md) (1 shared connections)
+- [Community 463](Community_463.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
 - `src/audio/DriveSound.cpp`
 - `src/audio/DriveSound.hpp`
+- `src/net/Socket.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 33 (87%)
-- INFERRED: 5 (13%)
+- EXTRACTED: 35 (85%)
+- INFERRED: 6 (15%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -13,7 +13,7 @@
 
 - [Community 6](Community_6.md) (3 shared connections)
 - [Community 215](Community_215.md) (1 shared connections)
-- [Community 124](Community_124.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
 
 ## Source Files
 

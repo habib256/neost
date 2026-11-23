@@ -36,11 +36,11 @@
 - [Community 268](Community_268.md) (11 shared connections)
 - [Community 282](Community_282.md) (3 shared connections)
 - [Community 141](Community_141.md) (2 shared connections)
-- [Community 287](Community_287.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
 - [Community 285](Community_285.md) (2 shared connections)
 - [Community 57](Community_57.md) (1 shared connections)
 - [Community 314](Community_314.md) (1 shared connections)
-- [Community 333](Community_333.md) (1 shared connections)
+- [Community 182](Community_182.md) (1 shared connections)
 
 ## Source Files
 

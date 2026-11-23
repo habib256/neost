@@ -1,12 +1,11 @@
 # Community 376
 
-> 19 nodes
+> 18 nodes
 
 ## Key Concepts
 
 - **Rig** (16 connections) — `tests/ikbd_sci_framing_logic.cpp`
 - **testIkbdSciFraming()** (10 connections) — `tests/ikbd_sci_framing_logic.cpp`
-- **testMidiBreak()** (5 connections) — `tests/midi_break_logic.cpp`
 - **index()** (3 connections) — `tests/ikbd_sci_framing_logic.cpp`
 - **.cr()** (3 connections) — `tests/ikbd_sci_framing_logic.cpp`
 - **tick()** (3 connections) — `tests/ikbd_sci_framing_logic.cpp`
@@ -26,19 +25,17 @@
 
 ## Relationships
 
-- [Community 287](Community_287.md) (6 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
 - [Community 41](Community_41.md) (4 shared connections)
-- [Community 252](Community_252.md) (2 shared connections)
 
 ## Source Files
 
 - `tests/ikbd_sci_framing_logic.cpp`
-- `tests/midi_break_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 31 (91%)
-- INFERRED: 3 (9%)
+- EXTRACTED: 28 (93%)
+- INFERRED: 2 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

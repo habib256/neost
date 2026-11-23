@@ -1,32 +1,38 @@
 # Community 369
 
-> 8 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **CLAUDE.md** (7 connections) — `CLAUDE.md`
-- **Disquettes & ROM** (2 connections) — `CLAUDE.md`
-- **⭐ Méthode imposée (ordre strict)** (2 connections) — `CLAUDE.md`
-- **Où trouver quoi** (2 connections) — `CLAUDE.md`
-- **Build & run** (1 connections) — `CLAUDE.md`
-- **Conventions non négociables** (1 connections) — `CLAUDE.md`
-- **Les grades de preuve — à écrire dans le code** (1 connections) — `CLAUDE.md`
-- **Tester = le headless (outil n°1)** (1 connections) — `CLAUDE.md`
+- **run_selftests.py** (14 connections) — `tools/run_selftests.py`
+- **run_one()** (7 connections) — `tools/run_selftests.py`
+- **ensure_rom_asset()** (5 connections) — `tools/run_selftests.py`
+- **run_timed()** (5 connections) — `tools/run_selftests.py`
+- **is_untracked()** (4 connections) — `tools/run_selftests.py`
+- **main()** (4 connections) — `tools/run_selftests.py`
+- **rom_is_free()** (3 connections) — `tools/run_selftests.py`
+- **load_manifest()** (2 connections) — `tools/run_selftests.py`
+- **parse_verdicts()** (2 connections) — `tools/run_selftests.py`
+- **Vrai si git ne versionne PAS `path` (étalon gitignoré). Sans git (archive…** (1 connections) — `tools/run_selftests.py`
+- **EmuTOS (`roms/etos*.img`) est livré avec le dépôt : son absence est une casse.…** (1 connections) — `tools/run_selftests.py`
 
 ## Relationships
 
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 138](Community_138.md) (1 shared connections)
-- [Community 394](Community_394.md) (1 shared connections)
+- [Community 18](Community_18.md) (5 shared connections)
+- [Community 26](Community_26.md) (2 shared connections)
+- [Community 227](Community_227.md) (2 shared connections)
+- [Community 20](Community_20.md) (1 shared connections)
+- [Community 34](Community_34.md) (1 shared connections)
+- [Community 173](Community_173.md) (1 shared connections)
 
 ## Source Files
 
-- `CLAUDE.md`
+- `tools/run_selftests.py`
 
 ## Audit Trail
 
-- EXTRACTED: 8 (80%)
-- INFERRED: 2 (20%)
+- EXTRACTED: 29 (97%)
+- INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

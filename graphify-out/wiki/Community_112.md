@@ -1,6 +1,6 @@
 # Community 112
 
-> 12 nodes
+> 13 nodes
 
 ## Key Concepts
 
@@ -8,6 +8,7 @@
 - **Prochains travaux de précision** (6 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
 - **Audit de cartographie Hatari ↔ NeoST — tables du 2026-07-08 (archive)** (3 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
 - **Commentaires code (signalés au passage)** (2 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
+- **P4 — Audio (registre-exactitude et chaîne STE)** (2 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
 - **✗ Candidats réfutés (mémo anti-faux-positifs)** (1 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
 - **CHANGELOG.md** (1 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
 - **DEV.md** (1 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
@@ -21,8 +22,8 @@
 
 - [Community 232](Community_232.md) (1 shared connections)
 - [Community 160](Community_160.md) (1 shared connections)
+- [Community 325](Community_325.md) (1 shared connections)
 - [Community 221](Community_221.md) (1 shared connections)
-- [Community 138](Community_138.md) (1 shared connections)
 
 ## Source Files
 
@@ -30,8 +31,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 14 (93%)
-- INFERRED: 1 (7%)
+- EXTRACTED: 14 (88%)
+- INFERRED: 2 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

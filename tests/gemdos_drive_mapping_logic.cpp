@@ -98,6 +98,18 @@ int testGemdosDriveMapping() {
         }
     }
     {
+        const fs::path hidden = root / "hidden", oneLetterFile = root / "one-letter-file";
+        fs::create_directory(hidden);
+        fs::create_directory(oneLetterFile);
+        std::ofstream(hidden / ".metadata") << "host";
+        std::ofstream(oneLetterFile / "D") << "host";
+        Rig rig;
+        check.equal("dossier avec fichier caché", rig.gemdos.setDirectory(hidden.string()), true);
+        check.equal("dossier caché mappé sur C", rig.gemdos.driveMask(), 1u << 2);
+        check.equal("fichier d'une lettre", rig.gemdos.setDirectory(oneLetterFile.string()), true);
+        check.equal("fichier d'une lettre dans C", rig.read(rig.open("C:\\D")), 'h');
+    }
+    {
         Rig rig;
         check.equal("montage avant ACSI", rig.gemdos.setDirectory(simple.string()), true);
         rig.partitions = 2;

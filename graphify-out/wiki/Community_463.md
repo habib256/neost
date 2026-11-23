@@ -4,27 +4,29 @@
 
 ## Key Concepts
 
-- **** (9 connections) — `src/io/StePads.hpp`
-- **DOWN** (1 connections) — `src/io/StePads.hpp`
-- **FIRE** (1 connections) — `src/io/StePads.hpp`
-- **LEFT** (1 connections) — `src/io/StePads.hpp`
-- **RIGHT** (1 connections) — `src/io/StePads.hpp`
-- **UP** (1 connections) — `src/io/StePads.hpp`
+- **FdcSound** (10 connections) — `src/io/Fdc.hpp`
+- **Index** (1 connections) — `src/io/Fdc.hpp`
+- **MotorOff** (1 connections) — `src/io/Fdc.hpp`
+- **MotorOn** (1 connections) — `src/io/Fdc.hpp`
+- **Seek** (1 connections) — `src/io/Fdc.hpp`
+- **Step** (1 connections) — `src/io/Fdc.hpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 106](Community_106.md) (1 shared connections)
+- [Community 113](Community_113.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 101](Community_101.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/StePads.hpp`
+- `src/io/Fdc.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 8 (80%)
+- INFERRED: 2 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---

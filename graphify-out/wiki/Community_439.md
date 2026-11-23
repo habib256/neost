@@ -1,36 +1,29 @@
 # Community 439
 
-> 12 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **check_hog_park.py** (10 connections) — `tools/check_hog_park.py`
-- **hog_prg()** (8 connections) — `tools/check_hog_park.py`
-- **main()** (7 connections) — `tools/check_hog_park.py`
-- **run()** (5 connections) — `tools/check_hog_park.py`
-- **hashes()** (2 connections) — `tools/check_hog_park.py`
-- **Path** (2 connections)
-- **mvb()** (1 connections) — `tools/check_hog_park.py`
-- **mvl()** (1 connections) — `tools/check_hog_park.py`
-- **mvw()** (1 connections) — `tools/check_hog_park.py`
-- **check()** (1 connections) — `tools/check_hog_park.py`
-- **CompletedProcess** (1 connections)
-- **PRG superviseur : blit HOG xcount×ycount mots, puis compteur en $600.** (1 connections) — `tools/check_hog_park.py`
+- **Server** (8 connections) — `tools/opendst_explore.py`
+- **.cmd()** (4 connections) — `tools/opendst_explore.py`
+- **.fields()** (3 connections) — `tools/opendst_explore.py`
+- **.close()** (2 connections) — `tools/opendst_explore.py`
+- **.tail()** (2 connections) — `tools/opendst_explore.py`
+- **.__init__()** (1 connections) — `tools/opendst_explore.py`
+- **Le serveur NeoST au bout d'un tuyau : une commande, une réponse.** (1 connections) — `tools/opendst_explore.py`
+- **Réponse « frame=… screen=… ram=… nom=0x… » → dictionnaire.** (1 connections) — `tools/opendst_explore.py`
 
 ## Relationships
 
-- [Community 18](Community_18.md) (5 shared connections)
-- [Community 3](Community_3.md) (2 shared connections)
 - [Community 227](Community_227.md) (2 shared connections)
-- [Community 189](Community_189.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/check_hog_park.py`
+- `tools/opendst_explore.py`
 
 ## Audit Trail
 
-- EXTRACTED: 25 (100%)
+- EXTRACTED: 12 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

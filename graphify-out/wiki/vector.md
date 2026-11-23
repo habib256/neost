@@ -2,7 +2,7 @@
 
 > God node · 368 connections · `src/core/Cpu68k.hpp`
 
-**Community:** [Community 287](Community_287.md)
+**Community:** [Community 102](Community_102.md)
 
 ## Connections by Relation
 

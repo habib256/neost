@@ -1,6 +1,6 @@
 # Community 27
 
-> 66 nodes
+> 67 nodes
 
 ## Key Concepts
 
@@ -29,22 +29,22 @@
 - **.addMfpWaitCycles()** (3 connections) — `src/core/Cpu68k.hpp`
 - **.disassemble()** (3 connections) — `src/core/Cpu68k.hpp`
 - **.core()** (3 connections) — `src/core/Cpu68k.hpp`
-- *... and 41 more nodes in this community*
+- *... and 42 more nodes in this community*
 
 ## Relationships
 
-- [Community 247](Community_247.md) (16 shared connections)
-- [Community 9](Community_9.md) (11 shared connections)
+- [Community 247](Community_247.md) (17 shared connections)
 - [Community 102](Community_102.md) (10 shared connections)
+- [Community 9](Community_9.md) (10 shared connections)
 - [Community 66](Community_66.md) (8 shared connections)
 - [Community 299](Community_299.md) (8 shared connections)
-- [Community 138](Community_138.md) (6 shared connections)
+- [Community 138](Community_138.md) (4 shared connections)
 - [Community 459](Community_459.md) (3 shared connections)
 - [Community 135](Community_135.md) (3 shared connections)
-- [Community 205](Community_205.md) (3 shared connections)
-- [Community 55](Community_55.md) (2 shared connections)
-- [Community 298](Community_298.md) (2 shared connections)
-- [Community 314](Community_314.md) (2 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 205](Community_205.md) (2 shared connections)
+- [Community 88](Community_88.md) (2 shared connections)
+- [Community 419](Community_419.md) (2 shared connections)
 
 ## Source Files
 
@@ -53,7 +53,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 198 (89%)
+- EXTRACTED: 199 (89%)
 - INFERRED: 25 (11%)
 - AMBIGUOUS: 0 (0%)
 

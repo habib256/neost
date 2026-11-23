@@ -1,11 +1,12 @@
 # Community 226
 
-> 10 nodes
+> 11 nodes
 
 ## Key Concepts
 
 - **Banc CPU + GSTMCU — ce que le 68000 voit du faisceau** (9 connections) — `docs/STCPU_BENCH.md`
 - **Audit contradictoire de la chaîne VBL (2026-11-05)** (3 connections) — `docs/STCPU_BENCH.md`
+- **Le pixel : une écriture du CPU, la trame qui sort** (2 connections) — `docs/STCPU_BENCH.md`
 - **Résultat (2026-11-04)** (2 connections) — `docs/STCPU_BENCH.md`
 - **Audit du témoin VBL (2026-11-04)** (1 connections) — `docs/STCPU_BENCH.md`
 - **Ce que ça ne dit pas** (1 connections) — `docs/STCPU_BENCH.md`
@@ -17,8 +18,8 @@
 
 ## Relationships
 
-- [Community 431](Community_431.md) (1 shared connections)
-- [Community 219](Community_219.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 - [Community 247](Community_247.md) (1 shared connections)
 
 ## Source Files
@@ -27,8 +28,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 11 (92%)
-- INFERRED: 1 (8%)
+- EXTRACTED: 11 (85%)
+- INFERRED: 2 (15%)
 - AMBIGUOUS: 0 (0%)
 
 ---

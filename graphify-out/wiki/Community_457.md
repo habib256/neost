@@ -1,29 +1,32 @@
 # Community 457
 
-> 5 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **12. CPU 68000 et intégration — `Cpu68k.cpp`, `extern/moira` ↔ `cpu/newcpu.c`, `gencpu.c`, `hatari-glue.c`** (6 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Verrous du cœur : verdicts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **make_vblank_test.py** (8 connections) — `tools/make_vblank_test.py`
+- **w()** (5 connections) — `tools/make_vblank_test.py`
+- **bra()** (4 connections) — `tools/make_vblank_test.py`
+- **delay()** (4 connections) — `tools/make_vblank_test.py`
+- **relative()** (3 connections) — `tools/make_vblank_test.py`
+- **label()** (2 connections) — `tools/make_vblank_test.py`
+- **Disquette libre : retrait bas PAL et VBlank, ancrés par VBL/STOP. on :…** (1 connections) — `tools/make_vblank_test.py`
 
 ## Relationships
 
-- [Community 9](Community_9.md) (1 shared connections)
-- [Community 397](Community_397.md) (1 shared connections)
-- [Community 221](Community_221.md) (1 shared connections)
+- [Community 3](Community_3.md) (2 shared connections)
+- [Community 21](Community_21.md) (1 shared connections)
+- [Community 299](Community_299.md) (1 shared connections)
+- [Community 227](Community_227.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
+- `tools/make_vblank_test.py`
 
 ## Audit Trail
 
-- EXTRACTED: 6 (86%)
-- INFERRED: 1 (14%)
+- EXTRACTED: 14 (88%)
+- INFERRED: 2 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

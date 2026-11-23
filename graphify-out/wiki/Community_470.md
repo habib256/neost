@@ -4,28 +4,33 @@
 
 ## Key Concepts
 
-- **.willExecute()** (8 connections) — `src/core/Cpu68k.cpp`
-- **.didExecute()** (7 connections) — `src/core/Cpu68k.cpp`
-- **Mode** (2 connections)
-- **Size** (2 connections)
-- **trapObserver** (2 connections) — `src/core/Cpu68k.cpp`
+- **MmuGlue** (7 connections) — `src/core/MmuGlue.hpp`
+- **Architecture** (7 connections) — `DEV.md`
+- **.read8()** (1 connections) — `src/core/MmuGlue.hpp`
+- **.write8()** (1 connections) — `src/core/MmuGlue.hpp`
+- **memConfig_** (1 connections) — `src/core/MmuGlue.hpp`
 
 ## Relationships
 
-- [Community 9](Community_9.md) (5 shared connections)
-- [Community 0](Community_0.md) (2 shared connections)
-- [Community 64](Community_64.md) (2 shared connections)
+- [Community 14](Community_14.md) (1 shared connections)
+- [Community 10](Community_10.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 - [Community 247](Community_247.md) (1 shared connections)
-- [Community 66](Community_66.md) (1 shared connections)
+- [Community 103](Community_103.md) (1 shared connections)
+- [Community 20](Community_20.md) (1 shared connections)
+- [Community 63](Community_63.md) (1 shared connections)
+- [Community 396](Community_396.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Cpu68k.cpp`
+- `DEV.md`
+- `src/core/MmuGlue.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (94%)
-- INFERRED: 1 (6%)
+- EXTRACTED: 7 (54%)
+- INFERRED: 6 (46%)
 - AMBIGUOUS: 0 (0%)
 
 ---

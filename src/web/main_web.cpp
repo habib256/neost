@@ -502,18 +502,33 @@ bool applyDeferred() {
     return true;
 }
 
-void whenUnparked(std::function<void()> order) {
-    if (g_machine->requestParkedAbort()) { g_deferred.push_back(std::move(order)); return; }
+bool replaceWhenUnparked(std::function<bool()> order) {
+    if (g_machine->requestParkedAbort()) {
+        g_deferred.push_back([order = std::move(order)] {
+            // L'instruction coupée exige un reset même si le support a disparu
+            // entre l'appel de la page et l'application de l'ordre.
+            if (!order()) g_machine->hardReset();
+        });
+        return true;
+    }
     // Trame en échec (exception remontée jusqu'à la page, cf. neost_jspi_start_loop) :
     // les ordres différés qu'elle n'a pas appliqués passent d'abord, dans l'ordre.
-    applyDeferred();
-    order();
+    const bool deferred = applyDeferred();
+    const bool applied = order();
     // L'état est remplacé : une boucle arrêtée sur une trame en échec repart.
-    EM_ASM({
+    if (deferred || applied) EM_ASM({
         if (Module.neostHalted) {
             Module.neostHalted = false;
             if (Module.onFrameResumed) Module.onFrameResumed();
         }
+    });
+    return applied;
+}
+
+void whenUnparked(std::function<void()> order) {
+    replaceWhenUnparked([order = std::move(order)] {
+        order();
+        return true;
     });
 }
 
@@ -859,8 +874,8 @@ EMSCRIPTEN_KEEPALIVE void neost_mount_disk_b(const char* path) {
 
 // Dossier du système de fichiers virtuel (Module.FS). Le montage et le reset
 // à froid sont indivisibles côté invité, même si une instruction est garée.
-// Renvoie 1 si l'ordre est accepté, 0 si le chemin ne désigne pas un dossier.
-// Un refus du montage effectif conserve le montage précédent.
+// Renvoie 1 si l'ordre est appliqué ou différé, 0 si le montage est refusé
+// aussitôt. Un échec différé redémarre sur le montage précédent.
 EMSCRIPTEN_KEEPALIVE int neost_set_gemdos(const char* dir, int writeProtect) {
     if (!g_machine) return 0;
     std::string path;
@@ -873,15 +888,15 @@ EMSCRIPTEN_KEEPALIVE int neost_set_gemdos(const char* dir, int writeProtect) {
         }
         path = absolute.string();
     }
-    whenUnparked([path = std::move(path), readOnly = writeProtect != 0] {
+    return replaceWhenUnparked([path = std::move(path), readOnly = writeProtect != 0] {
         auto& gemdos = g_machine->gemdos;
         if (path.empty()) gemdos.unmount();
-        else if (!gemdos.setDirectory(path)) return;
+        else if (!gemdos.setDirectory(path)) return false;
         gemdos.setWriteProtect(readOnly);
         g_rewind.clear();
         coldBoot();
+        return true;
     });
-    return 1;
 }
 
 // Prépare le chemin Atari pour le prochain démarrage à froid. Vide/NULL efface

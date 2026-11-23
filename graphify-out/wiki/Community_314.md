@@ -1,6 +1,6 @@
 # Community 314
 
-> 35 nodes
+> 33 nodes
 
 ## Key Concepts
 
@@ -15,8 +15,6 @@
 - **.setCAAR()** (5 connections) — `extern/moira/Moira/Moira.h`
 - **.setModel()** (5 connections) — `extern/moira/Moira/Moira.h`
 - **Moira::createJumpTable()** (5 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
-- **.setMasterMode()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **.setSupervisorFlags()** (4 connections) — `extern/moira/Moira/Moira.h`
 - **.createJumpTable()** (4 connections) — `extern/moira/Moira/Moira.h`
 - **Mode** (4 connections)
 - **.hasCPI()** (3 connections) — `extern/moira/Moira/Moira.h`
@@ -29,22 +27,24 @@
 - **Moira::Moira()** (2 connections) — `extern/moira/Moira/Moira.cpp`
 - **Moira::readA()** (2 connections) — `extern/moira/Moira/Moira.cpp`
 - **Moira::readD()** (2 connections) — `extern/moira/Moira/Moira.cpp`
-- *... and 10 more nodes in this community*
+- **Moira::readR()** (2 connections) — `extern/moira/Moira/Moira.cpp`
+- **Moira::writeA()** (2 connections) — `extern/moira/Moira/Moira.cpp`
+- *... and 8 more nodes in this community*
 
 ## Relationships
 
-- [Community 16](Community_16.md) (20 shared connections)
-- [Community 141](Community_141.md) (9 shared connections)
+- [Community 16](Community_16.md) (15 shared connections)
+- [Community 141](Community_141.md) (11 shared connections)
 - [Community 166](Community_166.md) (8 shared connections)
+- [Community 64](Community_64.md) (5 shared connections)
 - [Community 326](Community_326.md) (4 shared connections)
-- [Community 64](Community_64.md) (3 shared connections)
 - [Community 0](Community_0.md) (3 shared connections)
 - [Community 2](Community_2.md) (3 shared connections)
-- [Community 333](Community_333.md) (3 shared connections)
-- [Community 299](Community_299.md) (3 shared connections)
-- [Community 57](Community_57.md) (3 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 131](Community_131.md) (3 shared connections)
 - [Community 27](Community_27.md) (2 shared connections)
-- [Community 287](Community_287.md) (2 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 299](Community_299.md) (2 shared connections)
 
 ## Source Files
 
@@ -54,8 +54,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 111 (85%)
-- INFERRED: 19 (15%)
+- EXTRACTED: 109 (87%)
+- INFERRED: 16 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -744,6 +744,12 @@ jobs:
       #     systématique sur main (et des rebases à répétition pour le mainteneur).
       # Un `cmake --build build-web --target neost-web` local régénère wasm/ pour
       # qui veut la démo hors ligne ; le dossier est désormais gitignoré.
+      - name: Ajouter le ZIP téléchargeable au site
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          NEOST_VERSION: ${{ needs.version.outputs.neost_version }}
+        run: cp "dist/NeoST-$NEOST_VERSION-web-wasm.zip" wasm/NeoST-web-wasm.zip
+
       - name: Déposer le bundle comme artefact Pages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3

@@ -1,11 +1,12 @@
 # Community 154
 
-> 17 nodes
+> 18 nodes
 
 ## Key Concepts
 
 - **Rig** (11 connections) — `tests/dmasound_microwire_timing_logic.cpp`
 - **testDmaSoundMicrowireTiming()** (8 connections) — `tests/dmasound_microwire_timing_logic.cpp`
+- **dmasound_microwire_timing_logic.cpp** (8 connections) — `tests/dmasound_microwire_timing_logic.cpp`
 - **Checks** (4 connections) — `tests/dmasound_microwire_timing_logic.cpp`
 - **.equal()** (2 connections) — `tests/dmasound_microwire_timing_logic.cpp`
 - **main()** (2 connections) — `tests/dmasound_microwire_timing_logic.cpp`
@@ -24,9 +25,9 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
@@ -34,7 +35,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 23 (96%)
+- EXTRACTED: 27 (96%)
 - INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 

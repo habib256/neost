@@ -1,6 +1,6 @@
 # Community 9
 
-> 42 nodes
+> 43 nodes
 
 ## Key Concepts
 
@@ -19,32 +19,32 @@
 - **.latchDb()** (9 connections) — `src/core/Cpu68k.cpp`
 - **.read8()** (9 connections) — `src/core/Cpu68k.cpp`
 - **.udsDone()** (8 connections) — `src/core/Cpu68k.cpp`
+- **.willExecute()** (8 connections) — `src/core/Cpu68k.cpp`
 - **u8** (8 connections)
+- **.didExecute()** (7 connections) — `src/core/Cpu68k.cpp`
 - **.willAccessBus()** (7 connections) — `src/core/Cpu68k.cpp`
 - **.write16()** (7 connections) — `src/core/Cpu68k.cpp`
 - **.write8()** (7 connections) — `src/core/Cpu68k.cpp`
 - **.alignRamBus()** (6 connections) — `src/core/Cpu68k.cpp`
-- **.readIrqUserVector()** (6 connections) — `src/core/Cpu68k.cpp`
 - **.latchDb8()** (5 connections) — `src/core/Cpu68k.cpp`
 - **.read16OnReset()** (5 connections) — `src/core/Cpu68k.cpp`
 - **.superNow()** (5 connections) — `src/core/Cpu68k.cpp`
-- **.getSR()** (4 connections) — `src/io/GemdosHd.hpp`
-- *... and 17 more nodes in this community*
+- *... and 18 more nodes in this community*
 
 ## Relationships
 
-- [Community 27](Community_27.md) (11 shared connections)
+- [Community 247](Community_247.md) (11 shared connections)
+- [Community 27](Community_27.md) (10 shared connections)
 - [Community 299](Community_299.md) (9 shared connections)
-- [Community 247](Community_247.md) (8 shared connections)
-- [Community 470](Community_470.md) (5 shared connections)
 - [Community 16](Community_16.md) (5 shared connections)
-- [Community 66](Community_66.md) (3 shared connections)
-- [Community 130](Community_130.md) (3 shared connections)
+- [Community 66](Community_66.md) (4 shared connections)
+- [Community 141](Community_141.md) (3 shared connections)
 - [Community 36](Community_36.md) (2 shared connections)
-- [Community 141](Community_141.md) (2 shared connections)
-- [Community 258](Community_258.md) (2 shared connections)
+- [Community 39](Community_39.md) (2 shared connections)
+- [Community 0](Community_0.md) (2 shared connections)
+- [Community 64](Community_64.md) (2 shared connections)
 - [Community 166](Community_166.md) (2 shared connections)
-- [Community 333](Community_333.md) (2 shared connections)
+- [Community 130](Community_130.md) (2 shared connections)
 
 ## Source Files
 
@@ -57,8 +57,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 135 (74%)
-- INFERRED: 47 (26%)
+- EXTRACTED: 141 (76%)
+- INFERRED: 45 (24%)
 - AMBIGUOUS: 0 (0%)
 
 ---

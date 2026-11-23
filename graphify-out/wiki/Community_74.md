@@ -1,10 +1,11 @@
 # Community 74
 
-> 31 nodes
+> 33 nodes
 
 ## Key Concepts
 
 - **Rig** (27 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **testStxReadAddressCrc()** (10 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **readAddress()** (8 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **.reg()** (6 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **Checks** (5 connections) — `tests/stx_read_address_crc_logic.cpp`
@@ -15,6 +16,7 @@
 - **.armIndex()** (3 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **.finish()** (3 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **.select()** (3 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **main()** (2 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **.address()** (2 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **.advance()** (2 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **.irq()** (2 connections) — `tests/stx_read_address_crc_logic.cpp`
@@ -27,13 +29,12 @@
 - **Fdc** (1 connections)
 - **Mfp** (1 connections)
 - **Scheduler** (1 connections)
-- **YM2149** (1 connections)
-- **bus** (1 connections) — `tests/stx_read_address_crc_logic.cpp`
-- *... and 6 more nodes in this community*
+- *... and 8 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (9 shared connections)
+- [Community 102](Community_102.md) (8 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
@@ -41,8 +42,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 52 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 57 (98%)
+- INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -601,8 +601,9 @@ async function main() {
       };
       await loadPage(cdp, base, '?machine=st&mem=1m', {});
       await prepare();
-      check(await cdp.ev(String.raw`__auto('C:\\WRITE.PRG') === 1 && __auto('DIR\\BAD.PRG') === 0`),
-            'GEMDOS: invalid autostart path leaves the pending program intact');
+      check(await cdp.ev(String.raw`${startProgram} === 1 &&
+        ['DIR\\BAD.PRG', 'C:\\', 'C:\\BAD@.PRG', 'C:\\BAD\n.PRG'].every(p => __auto(p) === 0)`),
+            'GEMDOS: invalid autostart paths leave the pending program intact');
       check(await cdp.ev(`__hd('/missing') === 0 && __hd('/hd/C/WRITE.PRG') === 0`),
             'GEMDOS: rejects a missing path and a regular file');
       check(await cdp.ev("__hd('/hd') === 1"), 'GEMDOS: accepts a C:/D: mount and cold boot');
@@ -623,6 +624,24 @@ async function main() {
         while (frame && (await parkedCount(cdp)) <= frame && Date.now() < deadline) await sleep(20);
         check(frame && (await parkedCount(cdp)) > frame && !logsHave(/parked instruction abandoned/),
               'GEMDOS: staging autostart leaves a parked blit running');
+
+        // Simule une page qui retire le dossier après avoir mis le montage en
+        // file. Le reset de repli doit ressortir un second blit de la disquette.
+        const failedAt = await cdp.ev(`(() => {
+          if (!(${isParked})) return 0;
+          const count = __jt.parked.length;
+          Module.FS.mkdir('/vanishing');
+          const accepted = __hd('/vanishing');
+          Module.FS.rmdir('/vanishing');
+          return accepted === 1 ? count : 0;
+        })()`);
+        const retryDeadline = Date.now() + 30000;
+        const missingFolder = /folder not found or not a folder: \/vanishing/;
+        while (failedAt && (!logsHave(missingFolder) || (await parkedCount(cdp)) <= failedAt)
+               && Date.now() < retryDeadline) await sleep(50);
+        check(failedAt && logsHave(missingFolder) && (await parkedCount(cdp)) > failedAt,
+              'GEMDOS: a vanished queued folder leaves the machine able to cold boot');
+
         // Réinsère la disquette de la page pour que le prochain boot atteigne le GEM.
         check(await cdp.ev(`(${isParked}) &&
           Module.ccall('neost_mount_disk', 'number', ['string', 'number'], ['/disks/diskA.st', 0]) === 1 &&

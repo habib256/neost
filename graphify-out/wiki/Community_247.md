@@ -1,6 +1,6 @@
 # Community 247
 
-> 17 nodes
+> 18 nodes
 
 ## Key Concepts
 
@@ -9,6 +9,7 @@
 - **.updateIpl()** (8 connections) — `src/core/Cpu68k.hpp`
 - **.raiseHbl()** (8 connections) — `src/core/Cpu68k.hpp`
 - **.raiseVbl()** (7 connections) — `src/core/Cpu68k.hpp`
+- **.readIrqUserVector()** (6 connections) — `src/core/Cpu68k.cpp`
 - **recomputePinNextDue()** (6 connections) — `src/core/Cpu68k.cpp`
 - **.armHblPinAt()** (5 connections) — `src/core/Cpu68k.hpp`
 - **.stoppedState()** (5 connections) — `src/core/Cpu68k.cpp`
@@ -24,18 +25,18 @@
 
 ## Relationships
 
-- [Community 27](Community_27.md) (16 shared connections)
-- [Community 9](Community_9.md) (8 shared connections)
+- [Community 27](Community_27.md) (17 shared connections)
+- [Community 9](Community_9.md) (11 shared connections)
 - [Community 392](Community_392.md) (2 shared connections)
 - [Community 215](Community_215.md) (2 shared connections)
+- [Community 67](Community_67.md) (2 shared connections)
+- [Community 299](Community_299.md) (2 shared connections)
 - [Community 203](Community_203.md) (2 shared connections)
-- [Community 397](Community_397.md) (1 shared connections)
+- [Community 484](Community_484.md) (1 shared connections)
 - [Community 441](Community_441.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
 - [Community 226](Community_226.md) (1 shared connections)
-- [Community 470](Community_470.md) (1 shared connections)
-- [Community 299](Community_299.md) (1 shared connections)
-- [Community 330](Community_330.md) (1 shared connections)
+- [Community 21](Community_21.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
 
 ## Source Files
 
@@ -45,8 +46,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 53 (77%)
-- INFERRED: 16 (23%)
+- EXTRACTED: 57 (77%)
+- INFERRED: 17 (23%)
 - AMBIGUOUS: 0 (0%)
 
 ---

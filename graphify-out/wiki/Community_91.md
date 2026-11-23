@@ -1,6 +1,6 @@
 # Community 91
 
-> 47 nodes
+> 48 nodes
 
 ## Key Concepts
 
@@ -11,6 +11,7 @@
 - **InputCallbacks.cpp** (11 connections) — `src/gui/InputCallbacks.cpp`
 - **StKeysSymbolic.cpp** (7 connections) — `src/gui/StKeysSymbolic.cpp`
 - **compileShaderProgram()** (6 connections) — `src/gui/OpenGLShader.cpp`
+- **testStKeysCountries()** (6 connections) — `tests/selftest_logic.cpp`
 - **GlHeaders.hpp** (6 connections) — `src/gui/GlHeaders.hpp`
 - **scancodeFor()** (5 connections) — `src/gui/StKeys.cpp`
 - **GlslDialect** (4 connections) — `src/gui/OpenGLShader.cpp`
@@ -28,23 +29,21 @@
 - **mouseReachesSt()** (3 connections) — `src/gui/InputCallbacks.cpp`
 - **onMouseButton()** (3 connections) — `src/gui/InputCallbacks.cpp`
 - **compileOne()** (3 connections) — `src/gui/OpenGLShader.cpp`
-- **setCountryFromTos()** (3 connections) — `src/gui/StKeysSymbolic.cpp`
-- *... and 22 more nodes in this community*
+- *... and 23 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (21 shared connections)
-- [Community 287](Community_287.md) (10 shared connections)
+- [Community 4](Community_4.md) (23 shared connections)
+- [Community 102](Community_102.md) (11 shared connections)
 - [Community 43](Community_43.md) (4 shared connections)
 - [Community 204](Community_204.md) (4 shared connections)
 - [Community 214](Community_214.md) (3 shared connections)
-- [Community 252](Community_252.md) (3 shared connections)
-- [Community 452](Community_452.md) (2 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
 - [Community 124](Community_124.md) (2 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
 - [Community 224](Community_224.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
 - [Community 281](Community_281.md) (1 shared connections)
+- [Community 68](Community_68.md) (1 shared connections)
 
 ## Source Files
 
@@ -60,10 +59,11 @@
 - `src/gui/StKeys.cpp`
 - `src/gui/StKeysSymbolic.cpp`
 - `src/gui/StbImage.cpp`
+- `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 117 (94%)
+- EXTRACTED: 120 (94%)
 - INFERRED: 8 (6%)
 - AMBIGUOUS: 0 (0%)
 

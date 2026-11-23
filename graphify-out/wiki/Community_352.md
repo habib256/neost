@@ -35,9 +35,9 @@
 - [Community 218](Community_218.md) (1 shared connections)
 - [Community 171](Community_171.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
-- [Community 258](Community_258.md) (1 shared connections)
+- [Community 39](Community_39.md) (1 shared connections)
 - [Community 186](Community_186.md) (1 shared connections)
-- [Community 396](Community_396.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
 
 ## Source Files
 

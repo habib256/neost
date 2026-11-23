@@ -1,6 +1,6 @@
 # Community 301
 
-> 16 nodes
+> 14 nodes
 
 ## Key Concepts
 
@@ -12,9 +12,7 @@
 - **.mmioTableSize()** (5 connections) — `src/core/Bus.hpp`
 - **.steVpaVoidWait()** (5 connections) — `src/core/Bus.hpp`
 - **.mmioTableDisjoint()** (4 connections) — `src/core/Bus.hpp`
-- **.ioAccessWidth()** (4 connections) — `src/core/Bus.hpp`
 - **size_t** (4 connections)
-- **.wrPsg()** (3 connections) — `src/core/Bus.hpp`
 - **Le Bus** (3 connections) — `DEV.md`
 - **Bus::Bus()** (2 connections) — `src/core/Bus.cpp`
 - **hi** (1 connections) — `src/core/Bus.hpp`
@@ -23,9 +21,9 @@
 
 ## Relationships
 
-- [Community 14](Community_14.md) (10 shared connections)
-- [Community 58](Community_58.md) (10 shared connections)
-- [Community 252](Community_252.md) (2 shared connections)
+- [Community 58](Community_58.md) (9 shared connections)
+- [Community 14](Community_14.md) (8 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
 - [Community 203](Community_203.md) (2 shared connections)
 - [Community 186](Community_186.md) (2 shared connections)
 - [Community 247](Community_247.md) (1 shared connections)
@@ -38,8 +36,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 31 (67%)
-- INFERRED: 15 (33%)
+- EXTRACTED: 28 (68%)
+- INFERRED: 13 (32%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,38 +1,41 @@
 # Community 349
 
-> 13 nodes
+> 16 nodes
 
 ## Key Concepts
 
-- **impl_** (16 connections) — `src/core/EmuFiber.hpp`
-- **pthread_t** (1 connections)
-- **condition_variable** (1 connections)
-- **mutex** (1 connections)
-- **size_t** (1 connections)
-- **cv** (1 connections) — `src/core/EmuFiber.cpp`
-- **fiber** (1 connections) — `src/core/EmuFiber.cpp`
-- **fiberTurn** (1 connections) — `src/core/EmuFiber.cpp`
-- **host** (1 connections) — `src/core/EmuFiber.cpp`
-- **m** (1 connections) — `src/core/EmuFiber.cpp`
-- **mapBytes** (1 connections) — `src/core/EmuFiber.cpp`
-- **quit** (1 connections) — `src/core/EmuFiber.cpp`
-- **ucontext_t** (1 connections)
+- **run_spec512_truth.py** (16 connections) — `tools/run_spec512_truth.py`
+- **main()** (13 connections) — `tools/run_spec512_truth.py`
+- **Fat** (6 connections) — `tools/run_spec512_truth.py`
+- **finish_results()** (5 connections) — `tools/run_spec512_truth.py`
+- **screen_area()** (4 connections) — `tools/run_spec512_truth.py`
+- **decode_spc()** (3 connections) — `tools/run_spec512_truth.py`
+- **decode_spu()** (3 connections) — `tools/run_spec512_truth.py`
+- **.read()** (3 connections) — `tools/run_spec512_truth.py`
+- **.walk()** (3 connections) — `tools/run_spec512_truth.py`
+- **read_ppm()** (3 connections) — `tools/run_spec512_truth.py`
+- **render()** (3 connections) — `tools/run_spec512_truth.py`
+- **Path** (2 connections)
+- **.__init__()** (1 connections) — `tools/run_spec512_truth.py`
+- **Couleur RVB 3 bits par pixel (une valeur par composante), décalée de `shift`…** (1 connections) — `tools/run_spec512_truth.py`
+- **Comparer uniquement les machines exécutées, sans masquer leurs régressions.** (1 connections) — `tools/run_spec512_truth.py`
+- **FAT12 d'une disquette .ST, en lecture.** (1 connections) — `tools/run_spec512_truth.py`
 
 ## Relationships
 
-- [Community 59](Community_59.md) (2 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 173](Community_173.md) (6 shared connections)
+- [Community 18](Community_18.md) (6 shared connections)
+- [Community 3](Community_3.md) (3 shared connections)
+- [Community 227](Community_227.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/EmuFiber.cpp`
-- `src/core/EmuFiber.hpp`
+- `tools/run_spec512_truth.py`
 
 ## Audit Trail
 
-- EXTRACTED: 16 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 40 (95%)
+- INFERRED: 2 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

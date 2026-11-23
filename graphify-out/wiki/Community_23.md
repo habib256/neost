@@ -19,7 +19,7 @@
 
 ## Relationships
 
-- [Community 287](Community_287.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 - [Community 121](Community_121.md) (1 shared connections)
 - [Community 63](Community_63.md) (1 shared connections)
 
