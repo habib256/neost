@@ -1,63 +1,59 @@
 # Community 10
 
-> 123 nodes
+> 96 nodes
 
 ## Key Concepts
 
 - **Machine** (155 connections) — `src/core/Machine.hpp`
-- **.installSchedulerCallbacks()** (11 connections) — `src/core/Machine.hpp`
-- **.beginFrame_()** (8 connections) — `src/core/Machine.hpp`
-- **.stepInstruction()** (8 connections) — `src/core/Machine.hpp`
-- **.armTbiEdge()** (6 connections) — `src/core/Machine.hpp`
-- **.retargetTimerB()** (6 connections) — `src/core/Machine.hpp`
-- **.finalizeFrame_()** (6 connections) — `src/core/Machine.hpp`
 - **string** (6 connections)
-- **.timerBEdgeCycle()** (5 connections) — `src/core/Machine.hpp`
-- **.tbiLevelAt()** (5 connections) — `src/core/Machine.hpp`
-- **.onTbiPulseMode()** (5 connections) — `src/core/Machine.hpp`
-- **.onTimerB()** (5 connections) — `src/core/Machine.hpp`
-- **.onVbl()** (5 connections) — `src/core/Machine.hpp`
-- **.runFrameBody_()** (5 connections) — `src/core/Machine.hpp`
-- **.rollFrameInInstruction_()** (5 connections) — `src/core/Machine.hpp`
-- **.desktopMouseMove()** (4 connections) — `src/core/Machine.hpp`
-- **.onTbiEdge()** (4 connections) — `src/core/Machine.hpp`
-- **machineIsMega()** (4 connections) — `src/core/MachineType.hpp`
-- **A34 — un seul modèle d'exécution, et les 83 verrous du cœur sont enfin classés (2026-08-28)** (4 connections) — `CHANGELOG.md`
-- **.desktopMousePosition()** (3 connections) — `src/core/Machine.hpp`
-- **.mouseEvent()** (3 connections) — `src/core/Machine.hpp`
-- **.onRender()** (3 connections) — `src/core/Machine.hpp`
-- **.claimsRtc()** (3 connections) — `src/core/Bus.hpp`
-- **.enableNetUsbee()** (3 connections) — `src/core/Machine.hpp`
-- **TOS 2.06 : la VBL écrase le contexte sur la pile temporaire (2026-11-04)** (3 connections) — `docs/CASE_STUDIES.md`
-- *... and 98 more nodes in this community*
+- **.disableEtherNec()** (2 connections) — `src/core/Machine.hpp`
+- **.disableNetUsbee()** (2 connections) — `src/core/Machine.hpp`
+- **.loadCart()** (2 connections) — `src/core/Machine.hpp`
+- **.loadDisk()** (2 connections) — `src/core/Machine.hpp`
+- **.loadDiskB()** (2 connections) — `src/core/Machine.hpp`
+- **.loadTos()** (2 connections) — `src/core/Machine.hpp`
+- **.setDongle()** (2 connections) — `src/core/Machine.hpp`
+- **.setPrinterFile()** (2 connections) — `src/core/Machine.hpp`
+- **.disableUltraSatan()** (1 connections) — `src/core/Machine.hpp`
+- **.ejectCart()** (1 connections) — `src/core/Machine.hpp`
+- **.enableUltraSatan()** (1 connections) — `src/core/Machine.hpp`
+- **.frameCycles()** (1 connections) — `src/core/Machine.hpp`
+- **.frameFiber()** (1 connections) — `src/core/Machine.hpp`
+- **.frameRelCycle()** (1 connections) — `src/core/Machine.hpp`
+- **.netUsbeeEnabled()** (1 connections) — `src/core/Machine.hpp`
+- **.pressPortButton()** (1 connections) — `src/core/Machine.hpp`
+- **.ultraSatanEnabled()** (1 connections) — `src/core/Machine.hpp`
+- **Isp1160** (1 connections)
+- **Ne2000** (1 connections)
+- **Blitter** (1 connections)
+- **Bus** (1 connections)
+- **Cpu68k** (1 connections)
+- **DmaSound** (1 connections)
+- *... and 71 more nodes in this community*
 
 ## Relationships
 
-- [Community 55](Community_55.md) (21 shared connections)
-- [Community 102](Community_102.md) (20 shared connections)
-- [Community 182](Community_182.md) (14 shared connections)
-- [Community 67](Community_67.md) (5 shared connections)
-- [Community 394](Community_394.md) (3 shared connections)
-- [Community 443](Community_443.md) (2 shared connections)
-- [Community 130](Community_130.md) (2 shared connections)
+- [Community 160](Community_160.md) (22 shared connections)
+- [Community 55](Community_55.md) (14 shared connections)
+- [Community 182](Community_182.md) (9 shared connections)
+- [Community 386](Community_386.md) (4 shared connections)
+- [Community 394](Community_394.md) (2 shared connections)
+- [Community 430](Community_430.md) (1 shared connections)
+- [Community 20](Community_20.md) (1 shared connections)
 - [Community 150](Community_150.md) (1 shared connections)
 - [Community 51](Community_51.md) (1 shared connections)
 - [Community 59](Community_59.md) (1 shared connections)
+- [Community 452](Community_452.md) (1 shared connections)
 - [Community 105](Community_105.md) (1 shared connections)
-- [Community 386](Community_386.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/CASE_STUDIES.md`
-- `src/core/Bus.hpp`
 - `src/core/Machine.hpp`
-- `src/core/MachineType.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 189 (81%)
-- INFERRED: 43 (19%)
+- EXTRACTED: 162 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

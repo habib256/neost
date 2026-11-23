@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
+#include <filesystem>
 #include <functional>
 #include <string>
 #include <vector>
@@ -40,6 +41,7 @@
 namespace {
 
 Machine* g_machine = nullptr;            // carte mère (allouée dans main)
+std::string g_autoStartProgram;           // configuration du prochain démarrage à froid
 // Retour arrière, éteint par défaut comme sur le bureau. Budget réduit : l'anneau vit
 // dans le tas WebAssembly, qui ne rend jamais la mémoire au navigateur.
 Rewind g_rewind;
@@ -515,6 +517,19 @@ void whenUnparked(std::function<void()> order) {
     });
 }
 
+void coldBoot() {
+    // La cartouche GEMDOS se monte hors exécution, avant que le TOS n'en lance
+    // le C-INIT. Le bureau TOS lira ensuite son INF et lancera le programme.
+    auto& gemdos = g_machine->gemdos;
+    if (g_autoStartProgram != gemdos.autoStartProgram()
+        || (!g_autoStartProgram.empty() && !gemdos.active())) {
+        if (g_autoStartProgram.empty()) gemdos.clearAutoStart();
+        else gemdos.setAutoStart(g_autoStartProgram);
+        g_rewind.clear();  // changement de la cartouche ou de l'INF de boot
+    }
+    g_machine->hardReset();
+}
+
 void presentFrame();
 
 // --- Capture d'écran ---------------------------------------------------------
@@ -764,7 +779,7 @@ EMSCRIPTEN_KEEPALIVE void neost_reset() {
 // web était le seul frontend à ne pas l'exposer, alors même que son bouton
 // s'annonçait « Cold reset of the machine ».
 EMSCRIPTEN_KEEPALIVE void neost_hard_reset() {
-    if (g_machine) whenUnparked([] { g_machine->hardReset(); });
+    if (g_machine) whenUnparked(coldBoot);
 }
 
 // Charge une autre ROM TOS (déjà présente dans le FS virtuel) et redémarre À FROID,
@@ -799,7 +814,7 @@ EMSCRIPTEN_KEEPALIVE int neost_load_tos(const char* path) {
         // À FROID : un reset() à chaud gardait la RAM de l'ancien OS et son
         // « memvalid » — le nouveau TOS faisait un boot court sur des variables
         // système qui ne sont pas les siennes.
-        g_machine->hardReset();
+        coldBoot();
     });
     return 1;
 }
@@ -832,7 +847,7 @@ EMSCRIPTEN_KEEPALIVE int neost_mount_disk(const char* path, int reset) {
     // reqHardReset). Un reset à chaud laisse la RAM de la session précédente et
     // son « memvalid » : le TOS saute le boot complet, et une démo chargée par
     // dessus les restes d'une autre peut démarrer de travers.
-    if (reset) whenUnparked([] { g_machine->hardReset(); });
+    if (reset) whenUnparked(coldBoot);
     return 1;
 }
 
@@ -840,6 +855,47 @@ EMSCRIPTEN_KEEPALIVE int neost_mount_disk(const char* path, int reset) {
 EMSCRIPTEN_KEEPALIVE void neost_mount_disk_b(const char* path) {
     if (!g_machine || !path) return;
     g_machine->fdc.loadImage(path, 1);
+}
+
+// Dossier du système de fichiers virtuel (Module.FS). Le montage et le reset
+// à froid sont indivisibles côté invité, même si une instruction est garée.
+// Renvoie 1 si l'ordre est accepté, 0 si le chemin ne désigne pas un dossier.
+// Un refus du montage effectif conserve le montage précédent.
+EMSCRIPTEN_KEEPALIVE int neost_set_gemdos(const char* dir, int writeProtect) {
+    if (!g_machine) return 0;
+    std::string path;
+    if (dir && *dir) {
+        std::error_code error;
+        const auto absolute = std::filesystem::absolute(dir, error);
+        if (error || !std::filesystem::is_directory(absolute, error)) {
+            std::fprintf(stderr, "[web] GEMDOS folder not found: %s\n", dir);
+            return 0;
+        }
+        path = absolute.string();
+    }
+    whenUnparked([path = std::move(path), readOnly = writeProtect != 0] {
+        auto& gemdos = g_machine->gemdos;
+        if (path.empty()) gemdos.unmount();
+        else if (!gemdos.setDirectory(path)) return;
+        gemdos.setWriteProtect(readOnly);
+        g_rewind.clear();
+        coldBoot();
+    });
+    return 1;
+}
+
+// Prépare le chemin Atari pour le prochain démarrage à froid. Vide/NULL efface
+// la demande. À ce stade, la cartouche et l'INF de la session restent intacts.
+EMSCRIPTEN_KEEPALIVE int neost_set_autostart(const char* program) {
+    if (!g_machine) return 0;
+    if (!program || !*program) {
+        g_autoStartProgram.clear();
+        return 1;
+    }
+    auto normalized = GemdosHd::normalizeAutoStartProgram(program);
+    if (normalized.empty()) return 0;
+    g_autoStartProgram = std::move(normalized);
+    return 1;
 }
 
 // Émulation joystick au clavier (flèches + Alt droit) : enabled != 0 active,

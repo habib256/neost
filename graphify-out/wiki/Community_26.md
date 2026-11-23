@@ -1,6 +1,6 @@
 # Community 26
 
-> 70 nodes
+> 67 nodes
 
 ## Key Concepts
 
@@ -29,37 +29,35 @@
 - **mouse_events()** (6 connections) — `tools/title_cmd.py`
 - **swap_copy()** (6 connections) — `tools/title_cmd.py`
 - **Path** (6 connections)
-- *... and 45 more nodes in this community*
+- *... and 42 more nodes in this community*
 
 ## Relationships
 
-- [Community 18](Community_18.md) (61 shared connections)
+- [Community 18](Community_18.md) (48 shared connections)
+- [Community 227](Community_227.md) (18 shared connections)
 - [Community 207](Community_207.md) (16 shared connections)
-- [Community 227](Community_227.md) (16 shared connections)
+- [Community 173](Community_173.md) (13 shared connections)
+- [Community 189](Community_189.md) (9 shared connections)
+- [Community 273](Community_273.md) (8 shared connections)
 - [Community 34](Community_34.md) (7 shared connections)
-- [Community 160](Community_160.md) (7 shared connections)
-- [Community 151](Community_151.md) (7 shared connections)
-- [Community 273](Community_273.md) (5 shared connections)
+- [Community 30](Community_30.md) (5 shared connections)
 - [Community 49](Community_49.md) (4 shared connections)
-- [Community 173](Community_173.md) (4 shared connections)
-- [Community 30](Community_30.md) (4 shared connections)
-- [Community 301](Community_301.md) (3 shared connections)
+- [Community 146](Community_146.md) (4 shared connections)
+- [Community 151](Community_151.md) (4 shared connections)
 - [Community 165](Community_165.md) (2 shared connections)
 
 ## Source Files
 
 - `docs/CASE_STUDIES.md`
-- `packaging/make_icon.py`
 - `tools/check_compare_titles.py`
 - `tools/compare_sound.py`
 - `tools/compare_titles.py`
-- `tools/probe_video_load.py`
 - `tools/title_cmd.py`
 - `tools/trace_tos206_boot.py`
 
 ## Audit Trail
 
-- EXTRACTED: 298 (96%)
+- EXTRACTED: 295 (96%)
 - INFERRED: 11 (4%)
 - AMBIGUOUS: 0 (0%)
 

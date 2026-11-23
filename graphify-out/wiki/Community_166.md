@@ -1,20 +1,25 @@
 # Community 166
 
-> 40 nodes
+> 45 nodes
 
 ## Key Concepts
 
 - **MoiraDataflow_cpp.h** (29 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
 - **u32** (15 connections)
+- **.getSR()** (10 connections) — `extern/moira/Moira/Moira.h`
 - **Moira::makeFrame()** (9 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **.readFC()** (6 connections) — `extern/moira/Moira/Moira.h`
 - **.setFC()** (6 connections) — `extern/moira/Moira/Moira.h`
 - **.getIRD()** (6 connections) — `extern/moira/Moira/Moira.h`
 - **Moira::read()** (6 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
 - **Moira::write()** (6 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
 - **Moira::execLink()** (6 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
+- **u8** (6 connections)
 - **Mode** (6 connections)
 - **Size** (6 connections)
 - **isPrgMode()** (5 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **.getCCR()** (4 connections) — `extern/moira/Moira/Moira.h`
+- **.setCCR()** (4 connections) — `extern/moira/Moira/Moira.h`
 - **didReachWatchpoint()** (4 connections) — `extern/moira/Moira/Moira.h`
 - **.getPC()** (4 connections) — `extern/moira/Moira/Moira.h`
 - **willAccessBus()** (4 connections) — `extern/moira/Moira/Moira.h`
@@ -24,23 +29,20 @@
 - **Moira::undoAn()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
 - **Moira::undoAnPD()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
 - **Moira::undoAnPI()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::updateAn()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::updateAnPD()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::updateAnPI()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::writeM()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::baseDispWords()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- *... and 15 more nodes in this community*
+- *... and 20 more nodes in this community*
 
 ## Relationships
 
-- [Community 16](Community_16.md) (7 shared connections)
-- [Community 64](Community_64.md) (7 shared connections)
-- [Community 314](Community_314.md) (5 shared connections)
+- [Community 16](Community_16.md) (12 shared connections)
+- [Community 314](Community_314.md) (8 shared connections)
+- [Community 141](Community_141.md) (7 shared connections)
+- [Community 64](Community_64.md) (3 shared connections)
+- [Community 9](Community_9.md) (2 shared connections)
+- [Community 54](Community_54.md) (2 shared connections)
 - [Community 33](Community_33.md) (2 shared connections)
 - [Community 57](Community_57.md) (2 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
-- [Community 54](Community_54.md) (1 shared connections)
-- [Community 58](Community_58.md) (1 shared connections)
+- [Community 333](Community_333.md) (1 shared connections)
+- [Community 299](Community_299.md) (1 shared connections)
 
 ## Source Files
 
@@ -51,8 +53,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 77 (78%)
-- INFERRED: 22 (22%)
+- EXTRACTED: 91 (75%)
+- INFERRED: 30 (25%)
 - AMBIGUOUS: 0 (0%)
 
 ---

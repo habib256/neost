@@ -408,7 +408,7 @@ static std::string physicalCanon(const std::string& path);
 // -----------------------------------------------------------------------------
 GemdosHd::GemdosHd(Bus& bus, Cpu68k& cpu) : bus_(bus), cpu_(cpu) {}
 
-GemdosHd::~GemdosHd() { clearAllFileHandles(); closeInfOverride(infFile_); }
+GemdosHd::~GemdosHd() { clearAllFileHandles(); clearInfOverride(); }
 
 bool GemdosHd::setDirectory(const std::string& hostDir) {
     if (!dirExists(hostDir)) {
@@ -467,6 +467,7 @@ void GemdosHd::installSystemCart() {
 void GemdosHd::unmount() {
     if (!active_) return;
     clearAllFileHandles();
+    clearInfOverride();
     for (auto& d : emudrives_) { d.used = false; d.driveNumber = -1; d.hdEmuDir.clear(); }
     nDrives_ = 0;
     mountedDirectory_.clear();
@@ -2808,8 +2809,8 @@ static std::string upperAtari(const std::string& s) {
     return out;
 }
 
-bool GemdosHd::setAutoStart(const std::string& name) {
-    if (name.empty()) return false;
+std::string GemdosHd::normalizeAutoStartProgram(const std::string& name) {
+    if (name.empty()) return {};
     std::string prg;
     const char drive = (char)std::toupper((unsigned char)name[0]);
     if (drive >= 'A' && drive <= 'Z' && name.size() > 1 && name[1] == ':') {
@@ -2817,7 +2818,7 @@ bool GemdosHd::setAutoStart(const std::string& name) {
         if (name.size() < 3 || name[2] != '\\') {
             if (slash != std::string::npos) {          // A:DIR\NAME.PRG refusé
                 std::fprintf(stderr, "[gemdos] autostart path rejected (no '\\' after the drive): %s\n", name.c_str());
-                return false;
+                return {};
             }
             prg = upperAtari(name.substr(0, 2)) + "\\" + upperAtari(name.substr(2));
         } else {
@@ -2825,13 +2826,24 @@ bool GemdosHd::setAutoStart(const std::string& name) {
         }
     } else if (name.find('\\') != std::string::npos) {
         std::fprintf(stderr, "[gemdos] autostart path rejected (path without a drive): %s\n", name.c_str());
-        return false;
+        return {};
     } else {
         prg = "C:\\" + upperAtari(name);
     }
-    autoPrg_ = prg;
+    return prg;
+}
+
+bool GemdosHd::setAutoStart(const std::string& name) {
+    std::string prg = normalizeAutoStartProgram(name);
+    if (prg.empty()) return false;
+    autoPrg_ = std::move(prg);
     if (!active_) installSystemCart();   // interception GEMDOS sans lecteur (AUTOSTART_INTERCEPT)
     return true;
+}
+
+void GemdosHd::clearAutoStart() {
+    autoPrg_.clear();
+    if (active_ && mountedDirectory_.empty()) unmount();
 }
 
 bool GemdosHd::infNameMatches(const std::string& name) const {
@@ -2859,7 +2871,7 @@ bool GemdosHd::closeInfOverride(FILE* fp) {
     return true;
 }
 
-void GemdosHd::createInfOverride() {
+void GemdosHd::clearInfOverride() {
     if (infFile_) {                      // pas refermé par le TOS au boot précédent
         // Fermeture INCONDITIONNELLE : closeInfOverride ne fait que rembobiner au premier
         // Fclose d'EmuTOS, et le tmpfile (FILE + descripteur) fuyait à chaque reset.
@@ -2869,6 +2881,10 @@ void GemdosHd::createInfOverride() {
     }
     infFile_ = nullptr;
     infCloses_ = 0;
+}
+
+void GemdosHd::createInfOverride() {
+    clearInfOverride();
     if (autoPrg_.empty()) return;
     const uint16_t tos = bus_.tosVersion;
     const bool emuTos = romIsEmuTos();

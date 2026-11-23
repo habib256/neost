@@ -1,31 +1,22 @@
 # Community 411
 
-> 17 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **Blitter et IRQ MegaSTE : contrôle des domaines d'horloge** (10 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
 - **Décomposition de l'écart global (2026-10-19)** (9 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Audit indépendant et expériences causales** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Borne de durée** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Correctif NeoST indépendant** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
 - **Correction du préfetch appuyée par le microcode matériel** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
 - **Expérience de préfetch dans une copie temporaire de Moira** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
 - **Expérience IACK en domaine bus (2026-10-19)** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
 - **Expérience PRE_START dans Hatari temporaire** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Horloge des cycles internes après IACK** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
 - **Mesures avant expériences supplémentaires** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
 - **Partie dominante : IACK → handler** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Protocole** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
 - **Remplissage du cache après invalidation DMA (2026-10-19)** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
 - **Reproduction et preuves** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Reproduire** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Résultats observés au pin** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
 
 ## Relationships
 
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 393](Community_393.md) (1 shared connections)
+- [Community 429](Community_429.md) (1 shared connections)
 
 ## Source Files
 
@@ -33,7 +24,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 18 (100%)
+- EXTRACTED: 9 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

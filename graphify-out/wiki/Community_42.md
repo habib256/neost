@@ -1,6 +1,6 @@
 # Community 42
 
-> 81 nodes
+> 78 nodes
 
 ## Key Concepts
 
@@ -11,7 +11,6 @@
 - **.closeDestinations()** (9 connections) — `src/audio/MidiOutHost.hpp`
 - **.destinations()** (8 connections) — `src/audio/MidiOutHost.hpp`
 - **.synthAvailable()** (6 connections) — `src/audio/MidiOutHost.hpp`
-- **.portAvailable()** (6 connections) — `src/audio/MidiOutHost.hpp`
 - **.releasePort_()** (6 connections) — `src/audio/MidiOutHost.hpp`
 - **.midiOutApply()** (6 connections) — `src/gui/App.hpp`
 - **.available()** (5 connections) — `src/audio/MidiOutHost.hpp`
@@ -29,35 +28,35 @@
 - **.openVirtualPort()** (4 connections) — `src/audio/MidiOutHost.hpp`
 - **.closeVirtualPort()** (4 connections) — `src/audio/MidiOutHost.hpp`
 - **.anchor()** (4 connections) — `src/audio/MidiOutHost.hpp`
-- *... and 56 more nodes in this community*
+- **.sendSysEx_()** (4 connections) — `src/audio/MidiOutHost.hpp`
+- *... and 53 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (8 shared connections)
 - [Community 200](Community_200.md) (8 shared connections)
+- [Community 4](Community_4.md) (7 shared connections)
+- [Community 214](Community_214.md) (6 shared connections)
 - [Community 287](Community_287.md) (5 shared connections)
-- [Community 214](Community_214.md) (4 shared connections)
 - [Community 220](Community_220.md) (4 shared connections)
 - [Community 105](Community_105.md) (3 shared connections)
-- [Community 451](Community_451.md) (3 shared connections)
-- [Community 325](Community_325.md) (3 shared connections)
-- [Community 130](Community_130.md) (3 shared connections)
+- [Community 451](Community_451.md) (2 shared connections)
+- [Community 325](Community_325.md) (2 shared connections)
 - [Community 175](Community_175.md) (2 shared connections)
 - [Community 138](Community_138.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 130](Community_130.md) (2 shared connections)
+- [Community 185](Community_185.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
-- `src/audio/MidiMessageParser.hpp`
 - `src/audio/MidiOutHost.cpp`
 - `src/audio/MidiOutHost.hpp`
 - `src/gui/App.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 159 (78%)
-- INFERRED: 44 (22%)
+- EXTRACTED: 151 (79%)
+- INFERRED: 41 (21%)
 - AMBIGUOUS: 0 (0%)
 
 ---

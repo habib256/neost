@@ -1,6 +1,6 @@
 # main()
 
-> God node · 185 connections · `tests/selftest_logic.cpp`
+> God node · 186 connections · `tests/selftest_logic.cpp`
 
 **Community:** [Community 252](Community_252.md)
 
@@ -27,7 +27,7 @@
 - testAcsiWriteDestination() `INFERRED`
 - testFdcWrittenMarks() `INFERRED`
 - testFdcSectorSizeSwitch() `INFERRED`
-- *…and 164 more `calls` connection(s) not listed (lowest-degree first to go)*
+- *…and 165 more `calls` connection(s) not listed (lowest-degree first to go)*
 
 ### contains
 - selftest_logic.cpp `EXTRACTED`

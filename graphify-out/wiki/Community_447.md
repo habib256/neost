@@ -1,37 +1,29 @@
 # Community 447
 
-> 10 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **Parser** (15 connections) — `src/audio/MidiMessageParser.hpp`
-- **.reset()** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **size_t** (1 connections)
-- **data_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **got_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **inSysex_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **kMaxSysex** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **needed_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **status_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **sysex_** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **Port** (8 connections) — `src/io/PortDevices.hpp`
+- **CartButton** (1 connections) — `src/io/PortDevices.hpp`
+- **Count** (1 connections) — `src/io/PortDevices.hpp`
+- **Joy0** (1 connections) — `src/io/PortDevices.hpp`
+- **Joy1** (1 connections) — `src/io/PortDevices.hpp`
+- **Printer** (1 connections) — `src/io/PortDevices.hpp`
+- **Rs232** (1 connections) — `src/io/PortDevices.hpp`
 
 ## Relationships
 
-- [Community 44](Community_44.md) (1 shared connections)
-- [Community 185](Community_185.md) (1 shared connections)
-- [Community 287](Community_287.md) (1 shared connections)
-- [Community 42](Community_42.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 51](Community_51.md) (2 shared connections)
 
 ## Source Files
 
-- `src/audio/MidiMessageParser.hpp`
+- `src/io/PortDevices.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (93%)
-- INFERRED: 1 (7%)
+- EXTRACTED: 8 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

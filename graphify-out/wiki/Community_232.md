@@ -39,7 +39,7 @@
 - [Community 369](Community_369.md) (1 shared connections)
 - [Community 378](Community_378.md) (1 shared connections)
 - [Community 355](Community_355.md) (1 shared connections)
-- [Community 182](Community_182.md) (1 shared connections)
+- [Community 247](Community_247.md) (1 shared connections)
 - [Community 112](Community_112.md) (1 shared connections)
 - [Community 67](Community_67.md) (1 shared connections)
 - [Community 275](Community_275.md) (1 shared connections)

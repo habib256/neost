@@ -1,43 +1,39 @@
 # Community 412
 
-> 17 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **Frame** (12 connections) — `src/core/Shifter.hpp`
-- **VideoGeometry** (9 connections) — `src/core/Shifter.hpp`
-- **.frame()** (3 connections) — `src/core/Shifter.hpp`
-- **cyclesPerLine** (1 connections) — `src/core/Shifter.hpp`
-- **displayLines** (1 connections) — `src/core/Shifter.hpp`
-- **geo** (1 connections) — `src/core/Shifter.hpp`
-- **hi** (1 connections) — `src/core/Shifter.hpp`
-- **lineStartCycle** (1 connections) — `src/core/Shifter.hpp`
-- **mode** (1 connections) — `src/core/Shifter.hpp`
-- **startRes** (1 connections) — `src/core/Shifter.hpp`
-- **sync** (1 connections) — `src/core/Shifter.hpp`
-- **cyclesPerLine** (1 connections) — `src/core/Shifter.hpp`
-- **displayLines** (1 connections) — `src/core/Shifter.hpp`
-- **dispStartLine** (1 connections) — `src/core/Shifter.hpp`
-- **lineEndCycle** (1 connections) — `src/core/Shifter.hpp`
-- **linesPerFrame** (1 connections) — `src/core/Shifter.hpp`
-- **lineStartCycle** (1 connections) — `src/core/Shifter.hpp`
+- **.fifoPush()** (10 connections) — `src/io/Fdc.hpp`
+- **dmaAddressMask()** (9 connections) — `src/io/Fdc.cpp`
+- **.fifoPull()** (7 connections) — `src/io/Fdc.hpp`
+- **FDC WD1772 et DMA** (5 connections) — `docs/MAME_DIVERGENCES.md`
+- **.billDmaCycles()** (4 connections) — `src/io/Fdc.hpp`
+- **.noteFifoFlush()** (4 connections) — `src/io/Fdc.hpp`
+- **.writeDmaAddressByte()** (4 connections) — `src/io/Fdc.hpp`
+- **dmaMaskAddressHigh()** (3 connections) — `src/io/Fdc.cpp`
+- **size_t** (3 connections)
 
 ## Relationships
 
-- [Community 396](Community_396.md) (2 shared connections)
-- [Community 328](Community_328.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 359](Community_359.md) (1 shared connections)
-- [Community 5](Community_5.md) (1 shared connections)
+- [Community 149](Community_149.md) (8 shared connections)
+- [Community 12](Community_12.md) (5 shared connections)
+- [Community 95](Community_95.md) (5 shared connections)
+- [Community 24](Community_24.md) (4 shared connections)
+- [Community 170](Community_170.md) (1 shared connections)
+- [Community 441](Community_441.md) (1 shared connections)
+- [Community 454](Community_454.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Shifter.hpp`
+- `docs/MAME_DIVERGENCES.md`
+- `src/io/Fdc.cpp`
+- `src/io/Fdc.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 21 (95%)
-- INFERRED: 1 (5%)
+- EXTRACTED: 22 (59%)
+- INFERRED: 15 (41%)
 - AMBIGUOUS: 0 (0%)
 
 ---

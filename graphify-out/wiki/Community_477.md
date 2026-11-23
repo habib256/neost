@@ -1,24 +1,26 @@
 # Community 477
 
-> 3 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **dataCallback()** (3 connections) — `src/audio/Audio.cpp`
-- **ma_device** (1 connections)
-- **ma_uint32** (1 connections)
+- **RtcPhaseRig** (5 connections) — `tests/rtc_long_phase_logic.cpp`
+- **.RtcPhaseRig()** (1 connections) — `tests/rtc_long_phase_logic.cpp`
+- **Rtc** (1 connections)
+- **clock** (1 connections) — `tests/rtc_long_phase_logic.cpp`
+- **rtc** (1 connections) — `tests/rtc_long_phase_logic.cpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/Audio.cpp`
+- `tests/rtc_long_phase_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
+- EXTRACTED: 5 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

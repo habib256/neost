@@ -23,19 +23,19 @@
 - SRC_TIMERD `EXTRACTED`
 - SRC_TIMERC `EXTRACTED`
 - SRC_ACIA `EXTRACTED`
+- SRC_FDC `EXTRACTED`
 - aer `EXTRACTED`
 - ddr `EXTRACTED`
 - gpip `EXTRACTED`
+- SRC_TIMERB `EXTRACTED`
 - iera `EXTRACTED`
 - ierb `EXTRACTED`
-- ipra `EXTRACTED`
-- iprb `EXTRACTED`
 - *…and 77 more `defines` connection(s) not listed (lowest-degree first to go)*
 
 ### method
 - .write8() `EXTRACTED`
-- .gpipSetLine() `EXTRACTED`
 - .raiseAt() `EXTRACTED`
+- .gpipSetLine() `EXTRACTED`
 - .writeTimerCtrl() `EXTRACTED`
 - .gpipInput() `EXTRACTED`
 - .scheduleTimerAt() `EXTRACTED`
@@ -44,8 +44,8 @@
 - .readTimerData() `EXTRACTED`
 - .storeStoppedCounter() `EXTRACTED`
 - .updatePulseGate() `EXTRACTED`
-- .timerPeriodSubCycles() `EXTRACTED`
 - .timerPulseMode() `EXTRACTED`
+- .timerPeriodSubCycles() `EXTRACTED`
 - .timerA_setLineInput() `EXTRACTED`
 - .read8() `EXTRACTED`
 - .gpipEdges() `EXTRACTED`

@@ -1,16 +1,13 @@
 # Community 163
 
-> 19 nodes
+> 16 nodes
 
 ## Key Concepts
 
 - **Rig** (20 connections) — `tests/ipf_image_logic.cpp`
-- **.data()** (7 connections) — `tests/ipf_image_logic.cpp`
-- **.readSector()** (5 connections) — `tests/ipf_image_logic.cpp`
-- **.reg()** (5 connections) — `tests/ipf_image_logic.cpp`
 - **.finish()** (3 connections) — `tests/ipf_image_logic.cpp`
-- **.mode()** (3 connections) — `tests/ipf_image_logic.cpp`
 - **.irq()** (2 connections) — `tests/ipf_image_logic.cpp`
+- **.select()** (2 connections) — `tests/ipf_image_logic.cpp`
 - **.Rig()** (1 connections) — `tests/ipf_image_logic.cpp`
 - **Bus** (1 connections)
 - **Fdc** (1 connections)
@@ -27,7 +24,6 @@
 ## Relationships
 
 - [Community 183](Community_183.md) (6 shared connections)
-- [Community 287](Community_287.md) (2 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
@@ -36,7 +32,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 33 (100%)
+- EXTRACTED: 23 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

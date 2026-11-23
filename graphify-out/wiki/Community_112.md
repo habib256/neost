@@ -20,8 +20,8 @@
 ## Relationships
 
 - [Community 232](Community_232.md) (1 shared connections)
-- [Community 55](Community_55.md) (1 shared connections)
-- [Community 215](Community_215.md) (1 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
+- [Community 221](Community_221.md) (1 shared connections)
 - [Community 138](Community_138.md) (1 shared connections)
 
 ## Source Files

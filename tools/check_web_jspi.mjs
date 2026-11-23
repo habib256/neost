@@ -29,6 +29,10 @@
 //               la trame close suivante, restauration au déroulement de l'instruction ;
 //    demos    : chaque démo embarquée dans sa configuration (ROM, disquette, machine,
 //               RAM au journal du cœur ; écran autre que le bureau EmuTOS), bouton Run demo ;
+//    gemdos   : démarrage EmuTOS, programme lancé depuis C: par l'INF, fichier écrit
+//               sur D: et relu dans le FS de la page, démontage, puis montage en
+//               plein blit garé quand JSPI est disponible. Sans JSPI, montage
+//               protégé en écriture puis déprotégé avec le même programme ;
 //    touch    : souris, joystick et clavier tactiles par de vrais événements tactiles
 //               (CDP, Chrome seul) ; curseur GEM amené sur la barre de menus ;
 //               repli plein écran « immersif » sans l'API (Safari sur iPhone) ;
@@ -103,6 +107,26 @@ function hogDisk(xcount, ycount) {
   for (let i = 0; i < 255; i++) sum = (sum + dv.getUint16(2 * i, false)) & 0xFFFF;
   dv.setUint16(0x1FE, (0x1234 - sum) & 0xFFFF, false);
   return img;
+}
+
+// Exécutable TOS absolu : Fcreate/Fwrite/Fclose sur D:\RESULT.TXT, puis Pterm0.
+// Les deux déplacements PC-relatifs visent les données placées après le code.
+function gemdosWriter() {
+  const code = [
+    0x4267, 0x487a, 50, 0x3f3c, 0x003c, 0x4e41, 0x508f,  // Fcreate
+    0x4a80, 0x6b20, 0x3e00,                              // si erreur, Pterm0
+    0x487a, 46, 0x4878, 5, 0x3f07, 0x3f3c, 0x0040, 0x4e41, 0x4fef, 12,  // Fwrite
+    0x3f07, 0x3f3c, 0x003e, 0x4e41, 0x588f,               // Fclose
+    0x4267, 0x4e41,                                       // Pterm0
+  ];
+  const data = Buffer.from('D:\\RESULT.TXT\0OK!\r\n', 'ascii');
+  const prg = Buffer.alloc(28 + 2 * code.length + data.length + 1);
+  prg.writeUInt16BE(0x601a, 0);
+  prg.writeUInt32BE(prg.length - 28, 2);             // taille du TEXT, paire
+  prg.writeUInt16BE(1, 26);                        // programme sans relocations
+  code.forEach((word, i) => prg.writeUInt16BE(word, 28 + 2 * i));
+  data.copy(prg, 28 + 2 * code.length);
+  return Array.from(prg);
 }
 
 // -----------------------------------------------------------------------------
@@ -556,6 +580,74 @@ async function main() {
         if (timed(s, 60, `${what}: second blit at ${hz} Hz`))
           check(near(s.fps, hz), `${what}: second blit at ${hz} Hz`);
       }
+    }
+    if (want('gemdos')) {
+      const prepare = () => cdp.ev(`(() => {
+        const fs = Module.FS;
+        fs.mkdir('/hd'); fs.mkdir('/hd/C'); fs.mkdir('/hd/D');
+        fs.writeFile('/hd/C/WRITE.PRG', new Uint8Array(${JSON.stringify(gemdosWriter())}));
+        window.__auto = (p) => Module.ccall('neost_set_autostart', 'number', ['string'], [p]);
+        window.__hd = (p, ro = 0) => Module.ccall('neost_set_gemdos', 'number', ['string', 'number'], [p, ro]);
+        window.__result = () => fs.analyzePath('/hd/D/RESULT.TXT').exists
+          ? fs.readFile('/hd/D/RESULT.TXT', { encoding: 'utf8' }) : null;
+        return true;
+      })()`);
+      const startProgram = String.raw`__auto('C:\\WRITE.PRG')`;
+      const waitForResult = async () => {
+        const deadline = Date.now() + 15000;
+        let result;
+        while (!(result = await cdp.ev('__result()')) && Date.now() < deadline) await sleep(50);
+        return result;
+      };
+      await loadPage(cdp, base, '?machine=st&mem=1m', {});
+      await prepare();
+      check(await cdp.ev(String.raw`__auto('C:\\WRITE.PRG') === 1 && __auto('DIR\\BAD.PRG') === 0`),
+            'GEMDOS: invalid autostart path leaves the pending program intact');
+      check(await cdp.ev(`__hd('/missing') === 0 && __hd('/hd/C/WRITE.PRG') === 0`),
+            'GEMDOS: rejects a missing path and a regular file');
+      check(await cdp.ev("__hd('/hd') === 1"), 'GEMDOS: accepts a C:/D: mount and cold boot');
+      check(await waitForResult() === 'OK!\r\n', 'GEMDOS: EmuTOS autostarts from C: and the guest writes to D:');
+      check(await cdp.ev('__auto(null) === 1 && __hd(null) === 1') &&
+            logsHave(/GEMDOS HDD unmounted/), 'GEMDOS: clears autostart and unmounts');
+      check(await cdp.ev('__result()') === 'OK!\r\n', 'GEMDOS: unmount preserves the work in Module.FS');
+      if (verbose) console.log(cdp.logs.join('\n'));
+
+      if (await loadPage(cdp, base, '?machine=ste', {})) {
+        await prepare();
+        await writeDisk(cdp, disk);
+        await mount(cdp, 1);
+        const deadline = Date.now() + 30000;
+        const isParked = "typeof Module.neostParkResolve === 'function'";
+        while (!(await cdp.ev(isParked)) && Date.now() < deadline) await sleep(20);
+        const frame = await cdp.ev(`${isParked} && ${startProgram} === 1 ? __jt.parked.length : 0`);
+        while (frame && (await parkedCount(cdp)) <= frame && Date.now() < deadline) await sleep(20);
+        check(frame && (await parkedCount(cdp)) > frame && !logsHave(/parked instruction abandoned/),
+              'GEMDOS: staging autostart leaves a parked blit running');
+        // Réinsère la disquette de la page pour que le prochain boot atteigne le GEM.
+        check(await cdp.ev(`(${isParked}) &&
+          Module.ccall('neost_mount_disk', 'number', ['string', 'number'], ['/disks/diskA.st', 0]) === 1 &&
+          __hd('/hd') === 1`), 'GEMDOS: accepts mount while parked');
+        check(await waitForResult() === 'OK!\r\n' && logsHave(/parked instruction abandoned/),
+              'GEMDOS: mounts and autostarts after unwinding the parked instruction');
+        if (verbose) console.log(cdp.logs.join('\n'));
+      }
+
+      check(!(await loadPage(cdp, base, '?machine=st&mem=1m&fiber=0', {})),
+            'GEMDOS: fallback loop runs without JSPI');
+      await prepare();
+      check(await cdp.ev(`${startProgram} === 1 && __hd('/hd', 1) === 1`),
+            'GEMDOS without JSPI: accepts a read-only C:/D: mount');
+      const deadline = Date.now() + 15000;
+      const servedInf = /autostart: virtual .* served for C:/;
+      while (!logsHave(servedInf) && Date.now() < deadline) await sleep(50);
+      const until = (await cdp.ev('__jt.ticks.length')) + 120;
+      while ((await cdp.ev('__jt.ticks.length')) < until && Date.now() < deadline) await sleep(50);
+      check(logsHave(servedInf) && (await cdp.ev('__jt.ticks.length')) >= until &&
+            (await cdp.ev('__result()')) === null,
+            'GEMDOS without JSPI: the autostart writer cannot create a file on protected D:');
+      check(await cdp.ev("__hd('/hd', 0) === 1") && await waitForResult() === 'OK!\r\n',
+            'GEMDOS without JSPI: the same writer creates the file when write protection is lifted');
+      if (verbose) console.log(cdp.logs.join('\n'));
     }
     if (want('saves')) {
       // Save-states téléchargeables, ROM locale et capture (web/shell.html) : par le

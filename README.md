@@ -24,6 +24,31 @@ between colour and mono, **run one of the bundled demos** in the machine it was 
 Save the whole machine to a file and drop it back later. On a phone or a tablet, the screen
 becomes a touchpad, with a touch joystick and an Atari ST keyboard. No download, no account, no build.
 
+#### GEMDOS drives for pages embedding NeoST
+
+Once NeoST has started, populate the WebAssembly file system with `Module.FS`.
+For example, with `programBytes` holding a TOS executable:
+
+```js
+Module.FS.mkdir('/hd');
+Module.FS.mkdir('/hd/C');
+Module.FS.mkdir('/hd/D');
+Module.FS.writeFile('/hd/C/START.PRG', programBytes);
+Module.ccall('neost_set_autostart', 'number', ['string'], [String.raw`C:\START.PRG`]);
+Module.ccall('neost_set_gemdos', 'number', ['string', 'number'], ['/hd', 0]);
+```
+
+GEMDOS maps an ordinary directory to C:. A root containing only C–Z letter
+subdirectories maps each subdirectory to its drive. Pass `1` as the second argument
+to write-protect the entire mount. Read guest files back with `Module.FS.readFile`.
+The page can copy them out before reloading to preserve them.
+
+A successful mount or unmount (`null` directory) cold-boots the machine. The
+mount call returns `1` when accepted and `0` for an invalid directory. An accepted
+order can be deferred while a JSPI instruction is suspended. Autostart returns
+`1` for an accepted path and `0` for an invalid one. Pass `null` to clear it.
+The setting takes effect on the next cold boot and requires EmuTOS or TOS 1.04+.
+
 ## Why you might like it
 
 🔬 **You can see everything.** The `Bus` routes every access to the right chip and hides

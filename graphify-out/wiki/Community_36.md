@@ -1,6 +1,6 @@
 # Community 36
 
-> 47 nodes
+> 48 nodes
 
 ## Key Concepts
 
@@ -29,22 +29,22 @@
 - **.readWord()** (3 connections) — `src/io/GemdosHd.hpp`
 - **.writeByte()** (3 connections) — `src/io/GemdosHd.hpp`
 - **.writeWord()** (3 connections) — `src/io/GemdosHd.hpp`
-- *... and 22 more nodes in this community*
+- *... and 23 more nodes in this community*
 
 ## Relationships
 
-- [Community 17](Community_17.md) (36 shared connections)
-- [Community 218](Community_218.md) (28 shared connections)
+- [Community 17](Community_17.md) (37 shared connections)
+- [Community 218](Community_218.md) (34 shared connections)
 - [Community 444](Community_444.md) (9 shared connections)
 - [Community 102](Community_102.md) (7 shared connections)
-- [Community 258](Community_258.md) (6 shared connections)
 - [Community 422](Community_422.md) (5 shared connections)
 - [Community 4](Community_4.md) (5 shared connections)
 - [Community 450](Community_450.md) (4 shared connections)
-- [Community 399](Community_399.md) (3 shared connections)
-- [Community 83](Community_83.md) (2 shared connections)
 - [Community 9](Community_9.md) (2 shared connections)
-- [Community 394](Community_394.md) (1 shared connections)
+- [Community 396](Community_396.md) (1 shared connections)
+- [Community 203](Community_203.md) (1 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
 
 ## Source Files
 
@@ -53,8 +53,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 154 (76%)
-- INFERRED: 48 (24%)
+- EXTRACTED: 155 (76%)
+- INFERRED: 49 (24%)
 - AMBIGUOUS: 0 (0%)
 
 ---

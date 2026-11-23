@@ -1,6 +1,6 @@
 # Community 107
 
-> 71 nodes
+> 69 nodes
 
 ## Key Concepts
 
@@ -10,7 +10,6 @@
 - **prologue()** (19 connections) — `tools/make_fx68k_programs.py`
 - **prelude_ea()** (11 connections) — `tools/make_fx68k_programs.py`
 - **reload_a0()** (9 connections) — `tools/make_fx68k_programs.py`
-- **build()** (8 connections) — `tools/make_fx68k_programs.py`
 - **prog_berr()** (6 connections) — `tools/make_fx68k_programs.py`
 - **prog_ea_alu()** (6 connections) — `tools/make_fx68k_programs.py`
 - **prog_ea_alu_mem()** (6 connections) — `tools/make_fx68k_programs.py`
@@ -29,15 +28,15 @@
 - **prog_irq_nop()** (5 connections) — `tools/make_fx68k_programs.py`
 - **prog_mixed()** (5 connections) — `tools/make_fx68k_programs.py`
 - **prog_rmw_long()** (5 connections) — `tools/make_fx68k_programs.py`
-- *... and 46 more nodes in this community*
+- **prog_stop_irq()** (5 connections) — `tools/make_fx68k_programs.py`
+- *... and 44 more nodes in this community*
 
 ## Relationships
 
-- [Community 100](Community_100.md) (4 shared connections)
+- [Community 100](Community_100.md) (6 shared connections)
 - [Community 227](Community_227.md) (2 shared connections)
+- [Community 173](Community_173.md) (1 shared connections)
 - [Community 3](Community_3.md) (1 shared connections)
-- [Community 151](Community_151.md) (1 shared connections)
-- [Community 18](Community_18.md) (1 shared connections)
 
 ## Source Files
 
@@ -45,7 +44,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 151 (86%)
+- EXTRACTED: 146 (86%)
 - INFERRED: 24 (14%)
 - AMBIGUOUS: 0 (0%)
 

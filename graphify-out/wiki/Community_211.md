@@ -6,9 +6,9 @@
 
 - **Debugger** (34 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **.vectorName()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **optional** (3 connections)
 - **.reset()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.disableLogging()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.enableLogging()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.logInstruction()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **.clearLog()** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **string** (1 connections)
 - **u8** (1 connections)
@@ -28,9 +28,8 @@
 - [Community 282](Community_282.md) (4 shared connections)
 - [Community 285](Community_285.md) (4 shared connections)
 - [Community 16](Community_16.md) (1 shared connections)
-- [Community 104](Community_104.md) (1 shared connections)
-- [Community 152](Community_152.md) (1 shared connections)
 - [Community 57](Community_57.md) (1 shared connections)
+- [Community 104](Community_104.md) (1 shared connections)
 
 ## Source Files
 
@@ -38,7 +37,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 41 (100%)
+- EXTRACTED: 40 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

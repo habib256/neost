@@ -1,16 +1,16 @@
 # Community 110
 
-> 47 nodes
+> 48 nodes
 
 ## Key Concepts
 
-- **check_web_jspi.mjs** (29 connections) — `tools/check_web_jspi.mjs`
-- **main()** (23 connections) — `tools/check_web_jspi.mjs`
+- **check_web_jspi.mjs** (30 connections) — `tools/check_web_jspi.mjs`
+- **main()** (25 connections) — `tools/check_web_jspi.mjs`
 - **.ev()** (11 connections) — `tools/check_web_jspi.mjs`
 - **Bidi** (9 connections) — `tools/check_web_jspi.mjs`
 - **Cdp** (9 connections) — `tools/check_web_jspi.mjs`
+- **.send()** (9 connections) — `tools/check_web_jspi.mjs`
 - **loadPage()** (9 connections) — `tools/check_web_jspi.mjs`
-- **.send()** (8 connections) — `tools/check_web_jspi.mjs`
 - **blit()** (7 connections) — `tools/check_web_jspi.mjs`
 - **sleep()** (7 connections) — `tools/check_web_jspi.mjs`
 - **waitBlit()** (7 connections) — `tools/check_web_jspi.mjs`
@@ -29,7 +29,7 @@
 - **mount()** (3 connections) — `tools/check_web_jspi.mjs`
 - **argValue()** (2 connections) — `tools/check_web_jspi.mjs`
 - **.version()** (2 connections) — `tools/check_web_jspi.mjs`
-- *... and 22 more nodes in this community*
+- *... and 23 more nodes in this community*
 
 ## Relationships
 
@@ -41,7 +41,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 102 (100%)
+- EXTRACTED: 105 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

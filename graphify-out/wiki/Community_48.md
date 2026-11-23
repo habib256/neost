@@ -1,6 +1,6 @@
 # Community 48
 
-> 38 nodes
+> 37 nodes
 
 ## Key Concepts
 
@@ -22,29 +22,29 @@
 - **.read8()** (5 connections) — `src/core/DmaSound.hpp`
 - **Refermés** (5 connections) — `docs/HATARI_DIVERGENCES.md`
 - **.fifoPull()** (4 connections) — `src/core/DmaSound.hpp`
-- **.capPush()** (4 connections) — `src/core/DmaSound.hpp`
 - **.resbReset()** (4 connections) — `src/core/DmaSound.hpp`
 - **.decodeMicrowire()** (4 connections) — `src/core/DmaSound.hpp`
 - **.reset()** (3 connections) — `src/core/DmaSound.hpp`
 - **.mwMaskRead()** (3 connections) — `src/core/DmaSound.hpp`
 - **.onMicrowireShift()** (3 connections) — `src/core/DmaSound.hpp`
 - **.applyTone()** (3 connections) — `src/core/DmaSound.hpp`
-- *... and 13 more nodes in this community*
+- **.setMfp()** (3 connections) — `src/core/DmaSound.hpp`
+- *... and 12 more nodes in this community*
 
 ## Relationships
 
-- [Community 13](Community_13.md) (30 shared connections)
-- [Community 446](Community_446.md) (9 shared connections)
+- [Community 13](Community_13.md) (29 shared connections)
+- [Community 446](Community_446.md) (10 shared connections)
 - [Community 102](Community_102.md) (4 shared connections)
 - [Community 392](Community_392.md) (3 shared connections)
 - [Community 140](Community_140.md) (3 shared connections)
+- [Community 287](Community_287.md) (2 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
 - [Community 130](Community_130.md) (2 shared connections)
 - [Community 138](Community_138.md) (2 shared connections)
-- [Community 55](Community_55.md) (1 shared connections)
+- [Community 449](Community_449.md) (1 shared connections)
 - [Community 218](Community_218.md) (1 shared connections)
-- [Community 386](Community_386.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 287](Community_287.md) (1 shared connections)
+- [Community 461](Community_461.md) (1 shared connections)
 
 ## Source Files
 
@@ -57,8 +57,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 83 (59%)
-- INFERRED: 58 (41%)
+- EXTRACTED: 82 (59%)
+- INFERRED: 57 (41%)
 - AMBIGUOUS: 0 (0%)
 
 ---

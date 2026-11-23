@@ -1,32 +1,49 @@
 # Community 249
 
-> 8 nodes
+> 19 nodes
 
 ## Key Concepts
 
-- **PsgBusRig** (10 connections) — `tests/psg_odd_write_logic.cpp`
-- **.PsgBusRig()** (1 connections) — `tests/psg_odd_write_logic.cpp`
-- **Bus** (1 connections)
-- **YM2149** (1 connections)
-- **bus** (1 connections) — `tests/psg_odd_write_logic.cpp`
-- **portB** (1 connections) — `tests/psg_odd_write_logic.cpp`
-- **printed** (1 connections) — `tests/psg_odd_write_logic.cpp`
-- **psg** (1 connections) — `tests/psg_odd_write_logic.cpp`
+- **run_nat_sting.py** (14 connections) — `tools/run_nat_sting.py`
+- **make_sting_test.py** (10 connections) — `tools/make_sting_test.py`
+- **main()** (9 connections) — `tools/run_nat_sting.py`
+- **replace_program()** (8 connections) — `tools/run_nat_sting.py`
+- **build_floppy()** (7 connections) — `tools/make_sting_test.py`
+- **build_prg()** (6 connections) — `tools/make_sting_test.py`
+- **build_code()** (5 connections) — `tools/make_sting_test.py`
+- **main()** (5 connections) — `tools/make_sting_test.py`
+- **alloc()** (2 connections) — `tools/make_sting_test.py`
+- **set_fat()** (2 connections) — `tools/make_sting_test.py`
+- **chain()** (2 connections) — `tools/run_nat_sting.py`
+- **replace()** (2 connections) — `tools/run_nat_sting.py`
+- **cl_off()** (1 connections) — `tools/make_sting_test.py`
+- **entry()** (1 connections) — `tools/make_sting_test.py`
+- **rd()** (1 connections) — `tools/make_sting_test.py`
+- **serve()** (1 connections) — `tools/run_nat_sting.py`
+- **find()** (1 connections) — `tools/run_nat_sting.py`
+- **STinG/ENEC → NAT → HTTP loopback, avec DNS localhost, sans accès Internet. Le…** (1 connections) — `tools/run_nat_sting.py`
+- **Remplace AUTO/STGTEST.PRG dans les clusters déjà alloués du FAT12.** (1 connections) — `tools/run_nat_sting.py`
 
 ## Relationships
 
-- [Community 419](Community_419.md) (1 shared connections)
-- [Community 287](Community_287.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 3](Community_3.md) (5 shared connections)
+- [Community 8](Community_8.md) (4 shared connections)
+- [Community 18](Community_18.md) (4 shared connections)
+- [Community 227](Community_227.md) (3 shared connections)
+- [Community 273](Community_273.md) (2 shared connections)
+- [Community 83](Community_83.md) (2 shared connections)
+- [Community 34](Community_34.md) (2 shared connections)
+- [Community 189](Community_189.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/psg_odd_write_logic.cpp`
+- `tools/make_sting_test.py`
+- `tools/run_nat_sting.py`
 
 ## Audit Trail
 
-- EXTRACTED: 10 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 49 (96%)
+- INFERRED: 2 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

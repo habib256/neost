@@ -4,25 +4,31 @@
 
 ## Key Concepts
 
-- **6. ACIA 6850, IKBD HD6301, MIDI — `Ikbd.cpp`, `MidiAcia.cpp` ↔ `acia.c`, `ikbd.c`, `midi.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Refermés** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **.parseSpec()** (7 connections) — `src/io/UsbDevice.hpp`
+- **.netUsbeeApply()** (5 connections) — `src/gui/App.hpp`
+- **.attach()** (4 connections) — `src/io/UsbDevice.hpp`
+- **Kind** (2 connections)
+- **string** (2 connections)
 
 ## Relationships
 
-- [Community 397](Community_397.md) (1 shared connections)
-- [Community 39](Community_39.md) (1 shared connections)
+- [Community 138](Community_138.md) (2 shared connections)
+- [Community 315](Community_315.md) (2 shared connections)
+- [Community 22](Community_22.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 1](Community_1.md) (1 shared connections)
+- [Community 214](Community_214.md) (1 shared connections)
+- [Community 298](Community_298.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
+- `src/gui/App.hpp`
+- `src/io/UsbDevice.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (83%)
-- INFERRED: 1 (17%)
+- EXTRACTED: 14 (93%)
+- INFERRED: 1 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

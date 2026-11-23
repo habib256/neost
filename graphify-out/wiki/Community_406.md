@@ -1,41 +1,31 @@
 # Community 406
 
-> 17 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **TimingComparison** (16 connections) — `tools/test_timing_oracle.py`
-- **compare()** (9 connections) — `tools/run_timing_oracle.py`
-- **.check()** (8 connections) — `tools/test_timing_oracle.py`
-- **fdc_fixture()** (5 connections) — `tools/test_timing_oracle.py`
-- **.test_fdc_write_preserves_cpu_stall_independently_of_disk_cadence()** (3 connections) — `tools/test_timing_oracle.py`
-- **.test_transfer_mutations_and_strict_blitter()** (3 connections) — `tools/test_timing_oracle.py`
-- **.test_changed_probe_and_short_reference()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_delayed_first_irq()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_div_order_is_exact()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_missing_interrupt_with_unchanged_dominant_period()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_references_match_themselves()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_reset_clock_bias_is_detected()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_slow_drift_with_unchanged_dominant_period()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_stx_read_time_is_honoured()** (2 connections) — `tools/test_timing_oracle.py`
-- **copy** (2 connections)
-- **.setUpClass()** (1 connections) — `tools/test_timing_oracle.py`
-- **Sonde synthétique : flux continu, scrutation quantifiée, vol CPU conservé.** (1 connections) — `tools/test_timing_oracle.py`
+- **** (10 connections) — `src/io/StxImage.hpp`
+- **FLAG_CRC** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_FUZZY** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_LOST_DATA** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_RECORD_TYPE** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_RNF** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_VARIABLE_TIME** (1 connections) — `src/io/StxImage.hpp`
+- **TRACK_FLAG_IMAGE** (1 connections) — `src/io/StxImage.hpp`
+- **TRACK_FLAG_IMAGE_SYNC** (1 connections) — `src/io/StxImage.hpp`
+- **TRACK_FLAG_SECTOR_BLOCK** (1 connections) — `src/io/StxImage.hpp`
 
 ## Relationships
 
-- [Community 207](Community_207.md) (5 shared connections)
-- [Community 227](Community_227.md) (3 shared connections)
-- [Community 151](Community_151.md) (2 shared connections)
+- [Community 63](Community_63.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/run_timing_oracle.py`
-- `tools/test_timing_oracle.py`
+- `src/io/StxImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 37 (100%)
+- EXTRACTED: 10 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

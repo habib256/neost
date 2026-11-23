@@ -8,10 +8,10 @@
 - **.reset()** (7 connections) — `src/io/GemdosHd.hpp`
 - **.clearAllInternalDTAs()** (5 connections) — `src/io/GemdosHd.hpp`
 - **GemdosHd::GemdosHd()** (5 connections) — `src/io/GemdosHd.cpp`
-- **.unmount()** (3 connections) — `src/io/GemdosHd.hpp`
+- **.unmount()** (4 connections) — `src/io/GemdosHd.hpp`
 - **.driveMask()** (3 connections) — `src/io/GemdosHd.hpp`
 - **.clearInternalDTA()** (3 connections) — `src/io/GemdosHd.hpp`
-- **.closeInfOverride()** (2 connections) — `src/io/GemdosHd.hpp`
+- **.clearInfOverride()** (3 connections) — `src/io/GemdosHd.hpp`
 - **setD0()** (2 connections) — `src/io/GemdosHd.cpp`
 - **Cpu68k** (2 connections)
 - **Bus** (1 connections)
@@ -29,8 +29,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 18 (58%)
-- INFERRED: 13 (42%)
+- EXTRACTED: 18 (56%)
+- INFERRED: 14 (44%)
 - AMBIGUOUS: 0 (0%)
 
 ---

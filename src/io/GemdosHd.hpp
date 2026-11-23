@@ -74,6 +74,10 @@ public:
     // AUTOSTART_INTERCEPT). TOS ≥ 1.04 / EmuTOS. Chemin sans lecteur → « C:\ ».
     // Renvoie false pour un chemin refusé (INF_SetAutoStart). Non sérialisé.
     bool setAutoStart(const std::string& name);
+    // Même validation que --auto, sans modifier la machine. Vide si refusé.
+    static std::string normalizeAutoStartProgram(const std::string& name);
+    // À appeler avant le boot. Retire la cartouche si elle servait uniquement l'INF.
+    void clearAutoStart();
     const std::string& autoStartProgram() const { return autoPrg_; }
     // Liaison moteur (comme setPartitionCountProvider) : disquette dans A: ? Sert à
     // ouvrir la fenêtre du lecteur de boot dans l'INF par défaut (get_builtin_inf).
@@ -381,6 +385,7 @@ private:
     void installSystemCart();
     void createInfOverride();
     bool closeInfOverride(FILE* fp);
+    void clearInfOverride();
     bool infNameMatches(const std::string& name) const;
     void captureConsole(uint16_t call, uint32_t params);
     void captureBios();

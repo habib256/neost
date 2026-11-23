@@ -1,13 +1,12 @@
 # Community 194
 
-> 14 nodes
+> 13 nodes
 
 ## Key Concepts
 
 - **testSccChannelReset()** (12 connections) — `tests/scc_channel_reset_logic.cpp`
 - **ResetRig** (11 connections) — `tests/scc_channel_reset_logic.cpp`
 - **.write()** (6 connections) — `tests/scc_channel_reset_logic.cpp`
-- **scc_channel_reset_logic.cpp** (6 connections) — `tests/scc_channel_reset_logic.cpp`
 - **.configure()** (4 connections) — `tests/scc_channel_reset_logic.cpp`
 - **.control()** (4 connections) — `tests/scc_channel_reset_logic.cpp`
 - **.read()** (4 connections) — `tests/scc_channel_reset_logic.cpp`
@@ -31,7 +30,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 33 (97%)
+- EXTRACTED: 30 (97%)
 - INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 

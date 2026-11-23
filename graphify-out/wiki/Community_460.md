@@ -4,24 +4,22 @@
 
 ## Key Concepts
 
-- **InputCallbacks.cpp** (11 connections) — `src/gui/InputCallbacks.cpp`
-- **mouseReachesSt()** (3 connections) — `src/gui/InputCallbacks.cpp`
-- **onMouseButton()** (3 connections) — `src/gui/InputCallbacks.cpp`
-- **onKey()** (2 connections) — `src/gui/InputCallbacks.cpp`
-- **GLFWwindow** (2 connections)
-- **onGlfwError()** (1 connections) — `src/gui/InputCallbacks.cpp`
+- **ym_c10_noise_logic.cpp** (8 connections) — `tests/ym_c10_noise_logic.cpp`
+- **render()** (4 connections) — `tests/ym_c10_noise_logic.cpp`
+- **testYmC10Noise()** (4 connections) — `tests/ym_c10_noise_logic.cpp`
+- **setReg()** (3 connections) — `tests/ym_c10_noise_logic.cpp`
+- **swing()** (3 connections) — `tests/ym_c10_noise_logic.cpp`
+- **YM2149** (1 connections)
 
 ## Relationships
 
-- [Community 4](Community_4.md) (4 shared connections)
-- [Community 214](Community_214.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 124](Community_124.md) (1 shared connections)
-- [Community 287](Community_287.md) (1 shared connections)
+- [Community 287](Community_287.md) (4 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/InputCallbacks.cpp`
+- `tests/ym_c10_noise_logic.cpp`
 
 ## Audit Trail
 

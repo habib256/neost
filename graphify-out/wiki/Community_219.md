@@ -1,6 +1,6 @@
 # Community 219
 
-> 47 nodes
+> 46 nodes
 
 ## Key Concepts
 
@@ -9,7 +9,6 @@
 - **IkbdRig** (11 connections) — `tests/selftest_logic.cpp`
 - **SndRig** (11 connections) — `tests/selftest_logic.cpp`
 - **testFdcTruthTable()** (9 connections) — `tests/selftest_logic.cpp`
-- **testMmioFidelity()** (7 connections) — `tests/mmio_fidelity_logic.cpp`
 - **testBlitterTruthTable()** (7 connections) — `tests/selftest_logic.cpp`
 - **.send()** (4 connections) — `tests/selftest_logic.cpp`
 - **.counter()** (4 connections) — `tests/selftest_logic.cpp`
@@ -17,7 +16,6 @@
 - **.setDmaAddr()** (3 connections) — `tests/selftest_logic.cpp`
 - **.run()** (3 connections) — `tests/selftest_logic.cpp`
 - **Bus** (3 connections)
-- **main()** (2 connections) — `tests/mmio_fidelity_logic.cpp`
 - **.peek16()** (2 connections) — `tests/selftest_logic.cpp`
 - **.poke16()** (2 connections) — `tests/selftest_logic.cpp`
 - **.program()** (2 connections) — `tests/selftest_logic.cpp`
@@ -27,28 +25,28 @@
 - **.setEnd()** (2 connections) — `tests/selftest_logic.cpp`
 - **.setStart()** (2 connections) — `tests/selftest_logic.cpp`
 - **Mfp** (2 connections)
+- **Le pixel : une écriture du CPU, la trame qui sort** (2 connections) — `docs/STCPU_BENCH.md`
 - **.BlitRig()** (1 connections) — `tests/selftest_logic.cpp`
 - **.FdcRig()** (1 connections) — `tests/selftest_logic.cpp`
-- *... and 22 more nodes in this community*
+- **.IkbdRig()** (1 connections) — `tests/selftest_logic.cpp`
+- *... and 21 more nodes in this community*
 
 ## Relationships
 
-- [Community 252](Community_252.md) (20 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 55](Community_55.md) (1 shared connections)
+- [Community 252](Community_252.md) (19 shared connections)
 - [Community 419](Community_419.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 - [Community 226](Community_226.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/mmio_fidelity_logic.cpp`
+- `docs/STCPU_BENCH.md`
 - `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 77 (94%)
-- INFERRED: 5 (6%)
+- EXTRACTED: 73 (96%)
+- INFERRED: 3 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

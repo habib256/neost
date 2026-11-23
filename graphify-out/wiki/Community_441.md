@@ -18,12 +18,13 @@
 
 ## Relationships
 
-- [Community 14](Community_14.md) (8 shared connections)
+- [Community 58](Community_58.md) (4 shared connections)
+- [Community 14](Community_14.md) (4 shared connections)
 - [Community 203](Community_203.md) (2 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
 - [Community 247](Community_247.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
+- [Community 412](Community_412.md) (1 shared connections)
 
 ## Source Files
 

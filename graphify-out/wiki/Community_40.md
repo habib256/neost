@@ -40,9 +40,9 @@
 - [Community 325](Community_325.md) (1 shared connections)
 - [Community 419](Community_419.md) (1 shared connections)
 - [Community 284](Community_284.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 - [Community 287](Community_287.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
-- [Community 56](Community_56.md) (1 shared connections)
+- [Community 300](Community_300.md) (1 shared connections)
 
 ## Source Files
 

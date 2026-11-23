@@ -1,30 +1,33 @@
 # Community 453
 
-> 8 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **Server** (8 connections) — `tools/opendst_explore.py`
-- **.cmd()** (4 connections) — `tools/opendst_explore.py`
-- **.fields()** (3 connections) — `tools/opendst_explore.py`
-- **.close()** (2 connections) — `tools/opendst_explore.py`
-- **.tail()** (2 connections) — `tools/opendst_explore.py`
-- **.__init__()** (1 connections) — `tools/opendst_explore.py`
-- **Le serveur NeoST au bout d'un tuyau : une commande, une réponse.** (1 connections) — `tools/opendst_explore.py`
-- **Réponse « frame=… screen=… ram=… nom=0x… » → dictionnaire.** (1 connections) — `tools/opendst_explore.py`
+- **.controlWritten()** (6 connections) — `src/core/Blitter.hpp`
+- **regWriteMask()** (6 connections) — `src/core/Blitter.cpp`
+- **.writeRegisters()** (5 connections) — `src/core/Blitter.hpp`
+- **.write8()** (4 connections) — `src/core/Blitter.hpp`
+- **.write16()** (4 connections) — `src/core/Blitter.hpp`
+- **.write32()** (4 connections) — `src/core/Blitter.hpp`
 
 ## Relationships
 
-- [Community 160](Community_160.md) (2 shared connections)
+- [Community 393](Community_393.md) (7 shared connections)
+- [Community 37](Community_37.md) (5 shared connections)
+- [Community 466](Community_466.md) (1 shared connections)
+- [Community 396](Community_396.md) (1 shared connections)
+- [Community 124](Community_124.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/opendst_explore.py`
+- `src/core/Blitter.cpp`
+- `src/core/Blitter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 12 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 13 (59%)
+- INFERRED: 9 (41%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,41 +1,35 @@
 # Community 434
 
-> 12 nodes
+> 7 nodes
 
 ## Key Concepts
 
 - **.runSlice()** (8 connections) — `src/core/Blitter.hpp`
 - **.readWord()** (6 connections) — `src/core/Blitter.hpp`
 - **.writeWord()** (6 connections) — `src/core/Blitter.hpp`
-- **.billCycles()** (5 connections) — `src/core/Blitter.hpp`
-- **8. Blitter — `Blitter.cpp` ↔ `blitter.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Refermés** (5 connections) — `docs/HATARI_DIVERGENCES.md`
 - **blitWordFault()** (4 connections) — `src/core/Blitter.cpp`
 - **accessObserver** (3 connections) — `src/core/Blitter.hpp`
+- **Cohérence BUSY / GPU_DONE dans NeoST** (3 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
 - **Bus** (1 connections)
-- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
-- [Community 393](Community_393.md) (9 shared connections)
-- [Community 37](Community_37.md) (5 shared connections)
+- [Community 393](Community_393.md) (8 shared connections)
+- [Community 37](Community_37.md) (4 shared connections)
 - [Community 445](Community_445.md) (1 shared connections)
-- [Community 397](Community_397.md) (1 shared connections)
-- [Community 419](Community_419.md) (1 shared connections)
-- [Community 39](Community_39.md) (1 shared connections)
+- [Community 466](Community_466.md) (1 shared connections)
+- [Community 429](Community_429.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
+- `docs/HATARI_MEGASTE_AUDIT.md`
 - `src/core/Blitter.cpp`
 - `src/core/Blitter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 18 (56%)
-- INFERRED: 14 (44%)
+- EXTRACTED: 12 (52%)
+- INFERRED: 11 (48%)
 - AMBIGUOUS: 0 (0%)
 
 ---

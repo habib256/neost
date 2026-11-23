@@ -1340,7 +1340,8 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   C..Z gardent leurs lettres, avec avertissement si elles chevauchent ACSI.
   Les appels GEMDOS (trap #1) sont interceptés et redirigés vers le système
   de fichiers hôte (POSIX). Activé par `--gemdos DIR`
-  (headless) ou `NEOST_GEMDOS_DIR` (GUI). Exclusif d'une cartouche externe.
+  (headless), `NEOST_GEMDOS_DIR` (GUI) ou `neost_set_gemdos` (WebAssembly,
+  dossier de `Module.FS`). Exclusif d'une cartouche externe.
 - **Par processus** (2026-11-11) : lecteur courant lu dans `p_curdrv` de la basepage,
   dossier courant rangé par basepage (hérité, oublié à Pterm), « X:NOM » relatif au dossier
   courant de X. Fforce vers un handle du TOS : le TOS tranche (relance par la cartouche) ; accepté, la redirection hôte tombe pour ce processus, refusé, EIHNDL et la redirection reste (2026-11-12) ; Dcreate date le dossier à l'horloge du GEMDOS émulé, et la date d'un dossier ne change pas quand on y crée, détruit ou renomme une entrée (hors `hostTime`) ; Fdatime survit à un
@@ -1365,6 +1366,10 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   n'importe quel lecteur (A: compris, rien n'est écrit sur la disquette). Sans
   `--gemdos`, la cartouche système est posée sans lecteur. TOS ≥ 1.04 et EmuTOS ;
   vérifié sous TOS 1.04, 2.06 et EmuTOS 192 (EMail 1.56 lancé depuis A:).
+  Sur le web, `neost_set_autostart` prépare la configuration du prochain
+  démarrage à froid. Le TOS exécute le C-INIT de la cartouche système, puis
+  le bureau lit l'INF virtuel. Le montage et le démarrage attendent la fin
+  d'une instruction suspendue par JSPI. Banc `check_web_jspi.mjs --only gemdos`.
 - **Coexistence ACSI/GEMDOS** : résolution commune dans Machine au montage,
   reset et boot, même si l’image ACSI est montée après le dossier. Aucun
   changement de lettre pendant les appels ordinaires ; handles fermés au reset.

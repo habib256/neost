@@ -1,64 +1,63 @@
 # Community 160
 
-> 32 nodes
+> 27 nodes
 
 ## Key Concepts
 
-- **os** (64 connections)
-- **make_ref_traces.py** (14 connections) — `tools/make_ref_traces.py`
-- **fetch_etalons.py** (10 connections) — `tools/fetch_etalons.py`
-- **capture()** (9 connections) — `tools/make_ref_traces.py`
-- **fetch_disk.py** (9 connections) — `tools/fetch_disk.py`
-- **main()** (8 connections) — `tools/opendst_explore.py`
-- **opendst_explore.py** (7 connections) — `tools/opendst_explore.py`
-- **main()** (6 connections) — `tools/make_ref_traces.py`
-- **audit_citations.py** (6 connections) — `tools/audit_citations.py`
-- **zipfile** (6 connections)
-- **main()** (5 connections) — `tools/fetch_disk.py`
-- **download_zip_member()** (5 connections) — `tools/fetch_etalons.py`
-- **build()** (5 connections) — `tools/make_blitter_programs.py`
-- **entry_args()** (5 connections) — `tools/make_ref_traces.py`
-- **random** (5 connections)
-- **download()** (4 connections) — `tools/fetch_disk.py`
-- **find_download_links()** (4 connections) — `tools/fetch_disk.py`
-- **hatari_cmd()** (4 connections) — `tools/make_ref_traces.py`
-- **sha()** (4 connections) — `tools/make_ref_traces.py`
-- **source()** (4 connections) — `tools/make_ref_traces.py`
-- **Path** (4 connections)
-- **fetch_entry()** (3 connections) — `tools/fetch_etalons.py`
-- **main()** (3 connections) — `tools/fetch_etalons.py`
-- **urllib_request** (2 connections)
-- **src()** (1 connections) — `tools/audit_citations.py`
-- *... and 7 more nodes in this community*
+- **Machine.cpp** (53 connections) — `src/core/Machine.cpp`
+- **.installSchedulerCallbacks()** (11 connections) — `src/core/Machine.hpp`
+- **.scheduleFrameEvents()** (9 connections) — `src/core/Machine.hpp`
+- **.beginFrame_()** (8 connections) — `src/core/Machine.hpp`
+- **.stepInstruction()** (8 connections) — `src/core/Machine.hpp`
+- **kHblOff()** (8 connections) — `src/core/Machine.cpp`
+- **.armTbiEdge()** (6 connections) — `src/core/Machine.hpp`
+- **.retargetTimerB()** (6 connections) — `src/core/Machine.hpp`
+- **.finalizeFrame_()** (6 connections) — `src/core/Machine.hpp`
+- **.timerBEdgeCycle()** (5 connections) — `src/core/Machine.hpp`
+- **.tbiLevelAt()** (5 connections) — `src/core/Machine.hpp`
+- **.onTbiPulseMode()** (5 connections) — `src/core/Machine.hpp`
+- **.onTimerB()** (5 connections) — `src/core/Machine.hpp`
+- **.onVbl()** (5 connections) — `src/core/Machine.hpp`
+- **.runFrameBody_()** (5 connections) — `src/core/Machine.hpp`
+- **.rollFrameInInstruction_()** (5 connections) — `src/core/Machine.hpp`
+- **.desktopMouseMove()** (4 connections) — `src/core/Machine.hpp`
+- **.onTbiEdge()** (4 connections) — `src/core/Machine.hpp`
+- **A34 — un seul modèle d'exécution, et les 83 verrous du cœur sont enfin classés (2026-08-28)** (4 connections) — `CHANGELOG.md`
+- **.desktopMousePosition()** (3 connections) — `src/core/Machine.hpp`
+- **.mouseEvent()** (3 connections) — `src/core/Machine.hpp`
+- **.onRender()** (3 connections) — `src/core/Machine.hpp`
+- **.wakestate()** (3 connections) — `src/core/Shifter.hpp`
+- **TOS 2.06 : la VBL écrase le contexte sur la pile temporaire (2026-11-04)** (3 connections) — `docs/CASE_STUDIES.md`
+- **.keyEvent()** (2 connections) — `src/core/Machine.hpp`
+- *... and 2 more nodes in this community*
 
 ## Relationships
 
-- [Community 18](Community_18.md) (26 shared connections)
-- [Community 227](Community_227.md) (10 shared connections)
-- [Community 151](Community_151.md) (9 shared connections)
-- [Community 26](Community_26.md) (7 shared connections)
-- [Community 30](Community_30.md) (7 shared connections)
-- [Community 207](Community_207.md) (6 shared connections)
-- [Community 8](Community_8.md) (5 shared connections)
-- [Community 3](Community_3.md) (4 shared connections)
-- [Community 34](Community_34.md) (4 shared connections)
-- [Community 73](Community_73.md) (3 shared connections)
-- [Community 273](Community_273.md) (3 shared connections)
-- [Community 453](Community_453.md) (2 shared connections)
+- [Community 10](Community_10.md) (22 shared connections)
+- [Community 182](Community_182.md) (10 shared connections)
+- [Community 55](Community_55.md) (9 shared connections)
+- [Community 67](Community_67.md) (5 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 386](Community_386.md) (4 shared connections)
+- [Community 170](Community_170.md) (2 shared connections)
+- [Community 124](Community_124.md) (2 shared connections)
+- [Community 287](Community_287.md) (2 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 394](Community_394.md) (1 shared connections)
+- [Community 469](Community_469.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/audit_citations.py`
-- `tools/fetch_disk.py`
-- `tools/fetch_etalons.py`
-- `tools/make_blitter_programs.py`
-- `tools/make_ref_traces.py`
-- `tools/opendst_explore.py`
+- `CHANGELOG.md`
+- `docs/CASE_STUDIES.md`
+- `src/core/Machine.cpp`
+- `src/core/Machine.hpp`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 152 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 83 (64%)
+- INFERRED: 46 (36%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,27 +1,39 @@
 # Community 319
 
-> 4 nodes
+> 14 nodes
 
 ## Key Concepts
 
-- **Event** (5 connections) — `src/audio/Mt32Synth.hpp`
-- **cycle** (1 connections) — `src/audio/Mt32Synth.hpp`
-- **msg** (1 connections) — `src/audio/Mt32Synth.hpp`
-- **sysex** (1 connections) — `src/audio/Mt32Synth.hpp`
+- **Rig** (9 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **testMfpInternalLoopback()** (7 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **Checks** (4 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **.finish()** (3 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **.equal()** (2 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **main()** (2 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **.Rig()** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **count** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **failures** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **Mfp** (1 connections)
+- **Scheduler** (1 connections)
+- **mfp** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **scheduler** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **sent** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
 
 ## Relationships
 
-- [Community 287](Community_287.md) (1 shared connections)
-- [Community 117](Community_117.md) (1 shared connections)
+- [Community 287](Community_287.md) (5 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 77](Community_77.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/Mt32Synth.hpp`
+- `tests/mfp_internal_loopback_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 21 (95%)
+- INFERRED: 1 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,30 +1,32 @@
 # Community 429
 
-> 6 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **Slice** (5 connections) — `tests/blitter_share_gap_logic.cpp`
-- **run()** (4 connections) — `tests/blitter_share_gap_logic.cpp`
-- **testBlitterShareGap()** (3 connections) — `tests/blitter_share_gap_logic.cpp`
-- **accesses** (1 connections) — `tests/blitter_share_gap_logic.cpp`
-- **last** (1 connections) — `tests/blitter_share_gap_logic.cpp`
-- **start** (1 connections) — `tests/blitter_share_gap_logic.cpp`
+- **Blitter et IRQ MegaSTE : contrôle des domaines d'horloge** (10 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Audit indépendant et expériences causales** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Borne de durée** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Correctif NeoST indépendant** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Horloge des cycles internes après IACK** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Protocole** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Reproduire** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Résultats observés au pin** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 287](Community_287.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
+- [Community 434](Community_434.md) (1 shared connections)
+- [Community 411](Community_411.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/blitter_share_gap_logic.cpp`
+- `docs/HATARI_MEGASTE_AUDIT.md`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (90%)
-- INFERRED: 1 (10%)
+- EXTRACTED: 10 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,51 +1,35 @@
 # Community 417
 
-> 16 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **.loadTos()** (8 connections) — `src/core/Bus.hpp`
-- **tosUnsupportedMachine()** (8 connections) — `src/core/MachineType.hpp`
-- **tosFileUnsupportedMachine()** (8 connections) — `src/gui/App.cpp`
-- **size_t** (8 connections)
-- **ramLabel()** (7 connections) — `src/core/MachineType.hpp`
-- **tosHeaderIsEmuTos()** (7 connections) — `src/core/MachineType.hpp`
-- **tosHeaderVersion()** (7 connections) — `src/core/MachineType.hpp`
-- **readTosInfo()** (5 connections) — `src/core/TosChoice.cpp`
-- **machineSummary()** (5 connections) — `src/gui/MachineSummary.hpp`
-- **.seedResetVectors()** (4 connections) — `src/core/Bus.hpp`
-- **tosImageBase()** (4 connections) — `src/core/MachineType.hpp`
-- **.loadCart()** (3 connections) — `src/core/Bus.hpp`
-- **string** (2 connections)
-- **string** (1 connections)
-- **Machine** (1 connections)
-- **string** (1 connections)
+- **.gpipInput()** (13 connections) — `src/io/Mfp.hpp`
+- **.timerA_setLineInput()** (8 connections) — `src/io/Mfp.hpp`
+- **.gpipEdges()** (8 connections) — `src/io/Mfp.hpp`
+- **.gpipUpdateInterruptAt()** (7 connections) — `src/io/Mfp.hpp`
+- **.gpipIrqView()** (7 connections) — `src/io/Mfp.hpp`
+- **.setTbiLine()** (6 connections) — `src/io/Mfp.hpp`
+- **.countTimerAEvent()** (4 connections) — `src/io/Mfp.hpp`
+- **.setAciaLineKbdAt()** (3 connections) — `src/io/Mfp.hpp`
+- **.setAciaLineMidiAt()** (3 connections) — `src/io/Mfp.hpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (7 shared connections)
-- [Community 138](Community_138.md) (7 shared connections)
-- [Community 14](Community_14.md) (6 shared connections)
-- [Community 203](Community_203.md) (4 shared connections)
-- [Community 325](Community_325.md) (3 shared connections)
-- [Community 394](Community_394.md) (3 shared connections)
-- [Community 252](Community_252.md) (2 shared connections)
-- [Community 392](Community_392.md) (1 shared connections)
-- [Community 419](Community_419.md) (1 shared connections)
-- [Community 68](Community_68.md) (1 shared connections)
+- [Community 215](Community_215.md) (11 shared connections)
+- [Community 6](Community_6.md) (9 shared connections)
+- [Community 221](Community_221.md) (8 shared connections)
+- [Community 392](Community_392.md) (3 shared connections)
+- [Community 275](Community_275.md) (2 shared connections)
 
 ## Source Files
 
-- `src/core/Bus.hpp`
-- `src/core/MachineType.hpp`
-- `src/core/TosChoice.cpp`
-- `src/gui/App.cpp`
-- `src/gui/MachineSummary.hpp`
+- `src/io/Mfp.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 31 (54%)
-- INFERRED: 26 (46%)
+- EXTRACTED: 21 (46%)
+- INFERRED: 25 (54%)
 - AMBIGUOUS: 0 (0%)
 
 ---

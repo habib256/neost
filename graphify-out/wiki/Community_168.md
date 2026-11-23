@@ -1,11 +1,10 @@
 # Community 168
 
-> 21 nodes
+> 14 nodes
 
 ## Key Concepts
 
 - **Device** (15 connections) — `src/io/PortDevices.hpp`
-- **Port** (8 connections) — `src/io/PortDevices.hpp`
 - **Bat2** (1 connections) — `src/io/PortDevices.hpp`
 - **Count** (1 connections) — `src/io/PortDevices.hpp`
 - **Cricket** (1 connections) — `src/io/PortDevices.hpp`
@@ -19,16 +18,10 @@
 - **Soccer** (1 connections) — `src/io/PortDevices.hpp`
 - **TenthFrame** (1 connections) — `src/io/PortDevices.hpp`
 - **Urc** (1 connections) — `src/io/PortDevices.hpp`
-- **CartButton** (1 connections) — `src/io/PortDevices.hpp`
-- **Count** (1 connections) — `src/io/PortDevices.hpp`
-- **Joy0** (1 connections) — `src/io/PortDevices.hpp`
-- **Joy1** (1 connections) — `src/io/PortDevices.hpp`
-- **Printer** (1 connections) — `src/io/PortDevices.hpp`
-- **Rs232** (1 connections) — `src/io/PortDevices.hpp`
 
 ## Relationships
 
-- [Community 51](Community_51.md) (4 shared connections)
+- [Community 51](Community_51.md) (2 shared connections)
 
 ## Source Files
 
@@ -36,7 +29,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 23 (100%)
+- EXTRACTED: 15 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

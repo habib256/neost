@@ -1,12 +1,11 @@
 # Community 59
 
-> 52 nodes
+> 39 nodes
 
 ## Key Concepts
 
 - **EmuFiber** (30 connections) — `src/core/EmuFiber.hpp`
 - **EmuFiber.cpp** (28 connections) — `src/core/EmuFiber.cpp`
-- **impl_** (16 connections) — `src/core/EmuFiber.hpp`
 - **emuFiberEnter()** (6 connections) — `src/core/EmuFiber.cpp`
 - **.abort()** (5 connections) — `src/core/EmuFiber.hpp`
 - **.runJobs()** (4 connections) — `src/core/EmuFiber.hpp`
@@ -29,15 +28,16 @@
 - **exception_ptr** (1 connections)
 - **Module** (1 connections)
 - **neost_jspi_park** (1 connections)
-- *... and 27 more nodes in this community*
+- **neost_jspi_release** (1 connections)
+- *... and 14 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (6 shared connections)
+- [Community 4](Community_4.md) (5 shared connections)
 - [Community 55](Community_55.md) (4 shared connections)
+- [Community 349](Community_349.md) (2 shared connections)
 - [Community 10](Community_10.md) (1 shared connections)
 - [Community 287](Community_287.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
 - [Community 126](Community_126.md) (1 shared connections)
 - [Community 83](Community_83.md) (1 shared connections)
 - [Community 68](Community_68.md) (1 shared connections)
@@ -49,8 +49,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 80 (92%)
-- INFERRED: 7 (8%)
+- EXTRACTED: 66 (90%)
+- INFERRED: 7 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

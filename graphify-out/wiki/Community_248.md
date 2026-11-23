@@ -34,8 +34,9 @@
 ## Relationships
 
 - [Community 214](Community_214.md) (23 shared connections)
-- [Community 138](Community_138.md) (2 shared connections)
 - [Community 223](Community_223.md) (2 shared connections)
+- [Community 138](Community_138.md) (1 shared connections)
+- [Community 366](Community_366.md) (1 shared connections)
 - [Community 204](Community_204.md) (1 shared connections)
 
 ## Source Files

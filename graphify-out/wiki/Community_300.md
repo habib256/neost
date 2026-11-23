@@ -1,32 +1,46 @@
 # Community 300
 
-> 8 nodes
+> 16 nodes
 
 ## Key Concepts
 
-- **Banc différentiel Moira ↔ fx68k — le 68000 nu contre le RTL** (9 connections) — `docs/FX68K_BENCH.md`
-- **État (2026-11-03)** (2 connections) — `docs/FX68K_BENCH.md`
-- **Autovecteur par VPA et E-clock (2026-11-04)** (1 connections) — `docs/FX68K_BENCH.md`
-- **Bus prêté à un DMA, BR/BG (2026-11-11)** (1 connections) — `docs/FX68K_BENCH.md`
-- **Ce qui manque au banc** (1 connections) — `docs/FX68K_BENCH.md`
-- **Comment** (1 connections) — `docs/FX68K_BENCH.md`
-- **La date limite d'IPL, confrontée dans NeoST (2026-11-04)** (1 connections) — `docs/FX68K_BENCH.md`
-- **Pourquoi** (1 connections) — `docs/FX68K_BENCH.md`
+- **HayesModem.cpp** (24 connections) — `src/net/HayesModem.cpp`
+- **.sendStr()** (10 connections) — `src/net/HayesModem.hpp`
+- **.hangup()** (9 connections) — `src/net/HayesModem.hpp`
+- **.execute()** (8 connections) — `src/net/HayesModem.hpp`
+- **.onTx()** (8 connections) — `src/net/HayesModem.hpp`
+- **.poll()** (7 connections) — `src/net/HayesModem.hpp`
+- **.out()** (7 connections) — `src/net/HayesModem.hpp`
+- **mtrace()** (7 connections) — `src/net/HayesModem.cpp`
+- **.onPortA()** (6 connections) — `src/net/HayesModem.hpp`
+- **.cancelDial()** (6 connections) — `src/net/HayesModem.hpp`
+- **string** (6 connections)
+- **.resetProfile()** (5 connections) — `src/net/HayesModem.hpp`
+- **dial_** (5 connections) — `src/net/HayesModem.hpp`
+- **.flushPlus()** (4 connections) — `src/net/HayesModem.hpp`
+- **.setAllowedDomains()** (3 connections) — `src/net/HayesModem.hpp`
+- **Effets CRT : version GLSL choisie à l'exécution (débloque le Raspberry Pi) (2026-08-07)** (2 connections) — `CHANGELOG.md`
 
 ## Relationships
 
-- [Community 431](Community_431.md) (1 shared connections)
-- [Community 333](Community_333.md) (1 shared connections)
-- [Community 30](Community_30.md) (1 shared connections)
+- [Community 56](Community_56.md) (15 shared connections)
+- [Community 4](Community_4.md) (6 shared connections)
+- [Community 433](Community_433.md) (2 shared connections)
+- [Community 40](Community_40.md) (1 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
+- [Community 394](Community_394.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/FX68K_BENCH.md`
+- `CHANGELOG.md`
+- `src/net/HayesModem.cpp`
+- `src/net/HayesModem.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (90%)
-- INFERRED: 1 (10%)
+- EXTRACTED: 48 (67%)
+- INFERRED: 24 (33%)
 - AMBIGUOUS: 0 (0%)
 
 ---

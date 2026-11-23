@@ -1,5 +1,13 @@
 # Changelog — NeoST
 
+## 2026-11-23 — Web : dossiers GEMDOS et démarrage automatique
+
+- Deux exports WebAssembly pour les pages intégratrices (`neost_set_gemdos` et
+  `neost_set_autostart`, issue #45). Le montage d'un dossier de `Module.FS` et
+  son démontage passent par un démarrage à froid, après la fin d'une instruction
+  suspendue par JSPI. Le TOS initialise la cartouche GEMDOS existante et son
+  bureau lance le programme configuré via l'INF virtuel.
+
 ## 2026-11-18 — Icône : le logo de la page web
 
 - L'icône des paquets (`.app`/`.dmg`, AppImage, APK Android) reprend le logo de l'en-tête de la

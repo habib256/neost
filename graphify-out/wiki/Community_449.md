@@ -1,38 +1,40 @@
 # Community 449
 
-> 8 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **Syntax** (8 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **.setDasmSyntax()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **.NeostMoira()** (4 connections) — `src/core/Cpu68k.cpp`
-- **GNU** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **GNU_MIT** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **MOIRA** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **MOIRA_MIT** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **MUSASHI** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **machineHasBlitter()** (10 connections) — `src/core/MachineType.hpp`
+- **.buildIoFault()** (8 connections) — `src/core/Bus.hpp`
+- **.write16()** (3 connections) — `src/core/Bus.hpp`
+- **.write32()** (3 connections) — `src/core/Bus.hpp`
+- **Passe de cohérence doc ↔ code (2026-08-19)** (3 connections) — `CHANGELOG.md`
+- **.claimsBlitter()** (2 connections) — `src/core/Bus.hpp`
 
 ## Relationships
 
-- [Community 131](Community_131.md) (1 shared connections)
-- [Community 57](Community_57.md) (1 shared connections)
-- [Community 314](Community_314.md) (1 shared connections)
-- [Community 16](Community_16.md) (1 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
-- [Community 150](Community_150.md) (1 shared connections)
-- [Community 333](Community_333.md) (1 shared connections)
+- [Community 14](Community_14.md) (4 shared connections)
+- [Community 58](Community_58.md) (3 shared connections)
+- [Community 55](Community_55.md) (3 shared connections)
+- [Community 203](Community_203.md) (2 shared connections)
+- [Community 170](Community_170.md) (1 shared connections)
+- [Community 396](Community_396.md) (1 shared connections)
+- [Community 394](Community_394.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 468](Community_468.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/Moira.h`
-- `extern/moira/Moira/MoiraTypes.h`
-- `src/core/Cpu68k.cpp`
+- `CHANGELOG.md`
+- `src/core/Bus.hpp`
+- `src/core/MachineType.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 11 (79%)
-- INFERRED: 3 (21%)
+- EXTRACTED: 10 (42%)
+- INFERRED: 14 (58%)
 - AMBIGUOUS: 0 (0%)
 
 ---

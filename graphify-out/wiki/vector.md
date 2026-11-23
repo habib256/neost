@@ -1,6 +1,6 @@
 # vector
 
-> God node · 367 connections · `src/core/Cpu68k.hpp`
+> God node · 368 connections · `src/core/Cpu68k.hpp`
 
 **Community:** [Community 287](Community_287.md)
 
@@ -12,8 +12,8 @@
 ### imports
 - AppLoop.cpp `EXTRACTED`
 - selftest_logic.cpp `EXTRACTED`
-- Bus.hpp `EXTRACTED`
 - main_web.cpp `EXTRACTED`
+- Bus.hpp `EXTRACTED`
 - AppInit.cpp `EXTRACTED`
 - Moira.cpp `EXTRACTED`
 - Machine.hpp `EXTRACTED`
@@ -30,7 +30,7 @@
 - stx_raw_track_wrap_logic.cpp `EXTRACTED`
 - YM2149.cpp `EXTRACTED`
 - DebugWindows.cpp `EXTRACTED`
-- *…and 142 more `imports` connection(s) not listed (lowest-degree first to go)*
+- *…and 143 more `imports` connection(s) not listed (lowest-degree first to go)*
 
 ### references
 - [Fdc](Fdc.md) `EXTRACTED`

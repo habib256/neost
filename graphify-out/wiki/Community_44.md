@@ -1,12 +1,11 @@
 # Community 44
 
-> 32 nodes
+> 31 nodes
 
 ## Key Concepts
 
 - **GmSynth** (24 connections) — `src/audio/GmSynth.hpp`
 - **GmSynth.cpp** (16 connections) — `src/audio/GmSynth.cpp`
-- **.available()** (5 connections) — `src/audio/GmSynth.hpp`
 - **sf2In()** (5 connections) — `src/audio/GmSynth.cpp`
 - **Event** (4 connections) — `src/audio/GmSynth.hpp`
 - **.open()** (4 connections) — `src/audio/GmSynth.hpp`
@@ -29,17 +28,16 @@
 - **error_** (1 connections) — `src/audio/GmSynth.hpp`
 - **gain_** (1 connections) — `src/audio/GmSynth.hpp`
 - **parser_** (1 connections) — `src/audio/GmSynth.hpp`
-- *... and 7 more nodes in this community*
+- **pending_** (1 connections) — `src/audio/GmSynth.hpp`
+- *... and 6 more nodes in this community*
 
 ## Relationships
 
 - [Community 287](Community_287.md) (3 shared connections)
 - [Community 4](Community_4.md) (2 shared connections)
+- [Community 214](Community_214.md) (2 shared connections)
 - [Community 102](Community_102.md) (2 shared connections)
-- [Community 447](Community_447.md) (1 shared connections)
-- [Community 214](Community_214.md) (1 shared connections)
-- [Community 325](Community_325.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 185](Community_185.md) (1 shared connections)
 
 ## Source Files
 
@@ -48,7 +46,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 52 (98%)
+- EXTRACTED: 49 (98%)
 - INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 

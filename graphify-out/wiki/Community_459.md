@@ -4,25 +4,25 @@
 
 ## Key Concepts
 
-- **Snap** (7 connections) — `src/core/Rewind.hpp`
-- **MediaCopy** (1 connections)
-- **shared_ptr** (1 connections)
-- **disk** (1 connections) — `src/core/Rewind.hpp`
-- **state** (1 connections) — `src/core/Rewind.hpp`
-- **stxWrites** (1 connections) — `src/core/Rewind.hpp`
+- **Fault** (7 connections) — `src/core/Cpu68k.hpp`
+- **.lastFault()** (3 connections) — `src/core/Cpu68k.hpp`
+- **addr** (1 connections) — `src/core/Cpu68k.hpp`
+- **pc** (1 connections) — `src/core/Cpu68k.hpp`
+- **valid** (1 connections) — `src/core/Cpu68k.hpp`
+- **write** (1 connections) — `src/core/Cpu68k.hpp`
 
 ## Relationships
 
+- [Community 27](Community_27.md) (3 shared connections)
 - [Community 287](Community_287.md) (1 shared connections)
-- [Community 298](Community_298.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Rewind.hpp`
+- `src/core/Cpu68k.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (100%)
+- EXTRACTED: 9 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

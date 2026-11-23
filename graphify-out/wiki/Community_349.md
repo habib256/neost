@@ -1,51 +1,38 @@
 # Community 349
 
-> 21 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **Acsi.cpp** (39 connections) — `src/io/Acsi.cpp`
-- **.emulateCommand()** (16 connections) — `src/io/Acsi.hpp`
-- **.usatanSlot()** (11 connections) — `src/io/Acsi.hpp`
-- **.prepRespBuf()** (10 connections) — `src/io/Acsi.hpp`
-- **.feedByte()** (10 connections) — `src/io/Acsi.hpp`
-- **.lba()** (8 connections) — `src/io/Acsi.hpp`
-- **.count()** (7 connections) — `src/io/Acsi.hpp`
-- **.cmdInquiry()** (7 connections) — `src/io/Acsi.hpp`
-- **.cmdReadSector()** (7 connections) — `src/io/Acsi.hpp`
-- **.cmdWriteSector()** (7 connections) — `src/io/Acsi.hpp`
-- **.cmdRequestSense()** (6 connections) — `src/io/Acsi.hpp`
-- **.executeUltraSatan()** (5 connections) — `src/io/Acsi.hpp`
-- **.cmdReadCapacity()** (5 connections) — `src/io/Acsi.hpp`
-- **.cmdTestUnitReady()** (4 connections) — `src/io/Acsi.hpp`
-- **.cmdModeSense()** (4 connections) — `src/io/Acsi.hpp`
-- **.cmdSeek()** (4 connections) — `src/io/Acsi.hpp`
-- **.cmdReportLuns()** (4 connections) — `src/io/Acsi.hpp`
-- **.cmdFormatDrive()** (3 connections) — `src/io/Acsi.hpp`
-- **.lun()** (3 connections) — `src/io/Acsi.hpp`
-- **rdInt24()** (2 connections) — `src/io/Acsi.cpp`
-- **rdInt32()** (2 connections) — `src/io/Acsi.cpp`
+- **impl_** (16 connections) — `src/core/EmuFiber.hpp`
+- **pthread_t** (1 connections)
+- **condition_variable** (1 connections)
+- **mutex** (1 connections)
+- **size_t** (1 connections)
+- **cv** (1 connections) — `src/core/EmuFiber.cpp`
+- **fiber** (1 connections) — `src/core/EmuFiber.cpp`
+- **fiberTurn** (1 connections) — `src/core/EmuFiber.cpp`
+- **host** (1 connections) — `src/core/EmuFiber.cpp`
+- **m** (1 connections) — `src/core/EmuFiber.cpp`
+- **mapBytes** (1 connections) — `src/core/EmuFiber.cpp`
+- **quit** (1 connections) — `src/core/EmuFiber.cpp`
+- **ucontext_t** (1 connections)
 
 ## Relationships
 
-- [Community 103](Community_103.md) (23 shared connections)
-- [Community 122](Community_122.md) (9 shared connections)
-- [Community 212](Community_212.md) (7 shared connections)
-- [Community 175](Community_175.md) (2 shared connections)
-- [Community 83](Community_83.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 399](Community_399.md) (2 shared connections)
+- [Community 59](Community_59.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Acsi.cpp`
-- `src/io/Acsi.hpp`
+- `src/core/EmuFiber.cpp`
+- `src/core/EmuFiber.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 60 (57%)
-- INFERRED: 46 (43%)
+- EXTRACTED: 16 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

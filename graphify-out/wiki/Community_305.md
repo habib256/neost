@@ -1,10 +1,11 @@
 # Community 305
 
-> 7 nodes
+> 8 nodes
 
 ## Key Concepts
 
 - **CellTrack** (14 connections) — `src/io/IpfImage.hpp`
+- **.totalNs()** (3 connections) — `src/io/IpfImage.hpp`
 - **.Stream()** (2 connections) — `src/io/IpfImage.cpp`
 - **cells** (1 connections) — `src/io/IpfImage.hpp`
 - **cylinder** (1 connections) — `src/io/IpfImage.hpp`
@@ -14,7 +15,7 @@
 
 ## Relationships
 
-- [Community 143](Community_143.md) (3 shared connections)
+- [Community 143](Community_143.md) (4 shared connections)
 - [Community 217](Community_217.md) (2 shared connections)
 - [Community 183](Community_183.md) (2 shared connections)
 - [Community 287](Community_287.md) (1 shared connections)
@@ -27,8 +28,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 14 (93%)
-- INFERRED: 1 (7%)
+- EXTRACTED: 15 (88%)
+- INFERRED: 2 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

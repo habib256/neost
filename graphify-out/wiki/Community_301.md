@@ -1,54 +1,45 @@
 # Community 301
 
-> 25 nodes
+> 16 nodes
 
 ## Key Concepts
 
-- **cpu_swap_gate.py** (29 connections) — `tools/cpu_swap_gate.py`
-- **main()** (11 connections) — `tools/cpu_swap_gate.py`
-- **Scenario** (7 connections) — `tools/cpu_swap_gate.py`
-- **scenarios()** (7 connections) — `tools/cpu_swap_gate.py`
-- **megaste_scenarios()** (6 connections) — `tools/cpu_swap_gate.py`
-- **replay_scenarios()** (6 connections) — `tools/cpu_swap_gate.py`
-- **collection_scenarios()** (5 connections) — `tools/cpu_swap_gate.py`
-- **run()** (5 connections) — `tools/cpu_swap_gate.py`
-- **assemble_at_speed()** (4 connections) — `tools/cpu_swap_gate.py`
-- **etalon_scenarios()** (4 connections) — `tools/cpu_swap_gate.py`
-- **build()** (4 connections) — `tools/cpu_swap_gate.py`
-- **compare()** (3 connections) — `tools/cpu_swap_gate.py`
-- **build()** (3 connections) — `tools/cpu_swap_gate.py`
-- **self_blit()** (3 connections) — `tools/cpu_swap_gate.py`
-- **suite_of()** (2 connections) — `tools/cpu_swap_gate.py`
-- **__init__()** (1 connections) — `tools/cpu_swap_gate.py`
-- **build()** (1 connections) — `tools/cpu_swap_gate.py`
-- **diag()** (1 connections) — `tools/cpu_swap_gate.py`
-- **build()** (1 connections) — `tools/cpu_swap_gate.py`
-- **Assemble une sonde pour le Mega STE : `move.b #$40,$FF8E0D` (SCU : MFP…** (1 connections) — `tools/cpu_swap_gate.py`
-- **Le blitter écrit sa RAM de demi-teinte ($FF8A00), le CPU la relit, puis le…** (1 connections) — `tools/cpu_swap_gate.py`
-- **(id, statut, empreintes). Statut : 'ok', ou 'skip: …', ou 'error: …'.** (1 connections) — `tools/cpu_swap_gate.py`
-- **None si accord ; sinon la description de la première divergence.** (1 connections) — `tools/cpu_swap_gate.py`
-- **dataclasses** (1 connections)
-- **typing** (1 connections)
+- **.mmioTable()** (7 connections) — `src/core/Bus.hpp`
+- **.mmioWrite8()** (7 connections) — `src/core/Bus.hpp`
+- **MmioSlot** (6 connections) — `src/core/Bus.hpp`
+- **.mmioSlotFor()** (6 connections) — `src/core/Bus.hpp`
+- **.mmioRead8()** (6 connections) — `src/core/Bus.hpp`
+- **.mmioTableSize()** (5 connections) — `src/core/Bus.hpp`
+- **.steVpaVoidWait()** (5 connections) — `src/core/Bus.hpp`
+- **.mmioTableDisjoint()** (4 connections) — `src/core/Bus.hpp`
+- **.ioAccessWidth()** (4 connections) — `src/core/Bus.hpp`
+- **size_t** (4 connections)
+- **.wrPsg()** (3 connections) — `src/core/Bus.hpp`
+- **Le Bus** (3 connections) — `DEV.md`
+- **Bus::Bus()** (2 connections) — `src/core/Bus.cpp`
+- **hi** (1 connections) — `src/core/Bus.hpp`
+- **lo** (1 connections) — `src/core/Bus.hpp`
+- **name** (1 connections) — `src/core/Bus.hpp`
 
 ## Relationships
 
-- [Community 18](Community_18.md) (8 shared connections)
-- [Community 227](Community_227.md) (4 shared connections)
-- [Community 26](Community_26.md) (3 shared connections)
-- [Community 160](Community_160.md) (2 shared connections)
-- [Community 273](Community_273.md) (2 shared connections)
-- [Community 34](Community_34.md) (2 shared connections)
-- [Community 151](Community_151.md) (1 shared connections)
-- [Community 49](Community_49.md) (1 shared connections)
+- [Community 14](Community_14.md) (10 shared connections)
+- [Community 58](Community_58.md) (10 shared connections)
+- [Community 252](Community_252.md) (2 shared connections)
+- [Community 203](Community_203.md) (2 shared connections)
+- [Community 186](Community_186.md) (2 shared connections)
+- [Community 247](Community_247.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/cpu_swap_gate.py`
+- `DEV.md`
+- `src/core/Bus.cpp`
+- `src/core/Bus.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 57 (86%)
-- INFERRED: 9 (14%)
+- EXTRACTED: 31 (67%)
+- INFERRED: 15 (33%)
 - AMBIGUOUS: 0 (0%)
 
 ---

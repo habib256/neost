@@ -1,6 +1,6 @@
 # GemdosHd
 
-> God node · 169 connections · `src/io/GemdosHd.hpp`
+> God node · 172 connections · `src/io/GemdosHd.hpp`
 
 **Community:** [Community 17](Community_17.md)
 
@@ -18,6 +18,7 @@
 ### defines
 - partitionCountProvider_ `EXTRACTED`
 - clockProvider_ `EXTRACTED`
+- CART_RETRAP_RET `EXTRACTED`
 - MAX_HARDDRIVES `EXTRACTED`
 - MAX_FILE_HANDLES `EXTRACTED`
 - BASE_FILEHANDLE `EXTRACTED`
@@ -35,7 +36,6 @@
 - dtas_ `EXTRACTED`
 - dtaIndex_ `EXTRACTED`
 - writeProtect_ `EXTRACTED`
-- hostTime_ `EXTRACTED`
 - *…and 20 more `defines` connection(s) not listed (lowest-degree first to go)*
 
 ### method
@@ -59,7 +59,7 @@
 - .freezeChildren() `EXTRACTED`
 - .setCurrentPath() `EXTRACTED`
 - .setExtraAttr() `EXTRACTED`
-- *…and 94 more `method` connection(s) not listed (lowest-degree first to go)*
+- *…and 97 more `method` connection(s) not listed (lowest-degree first to go)*
 
 ### references
 - [vector](vector.md) `EXTRACTED`

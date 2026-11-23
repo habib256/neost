@@ -1,51 +1,61 @@
 # Community 170
 
-> 19 nodes
+> 23 nodes
 
 ## Key Concepts
 
-- **testBlitterRmw()** (10 connections) — `tests/blitter_rmw_logic.cpp`
-- **word** (6 connections) — `tools/gstmcu_bench.cpp`
-- **testFdcTiming()** (5 connections) — `tests/fdc_timing_logic.cpp`
-- **duration()** (5 connections) — `tests/ste_cmap_slot_logic.cpp`
-- **Checks** (4 connections) — `tests/blitter_rmw_logic.cpp`
-- **Checks** (4 connections) — `tests/fdc_timing_logic.cpp`
-- **.step()** (3 connections) — `tests/blitter_rmw_logic.cpp`
-- **.execute()** (3 connections) — `tests/fdc_timing_logic.cpp`
-- **testSteCmapSlot()** (3 connections) — `tests/ste_cmap_slot_logic.cpp`
-- **.equal()** (2 connections) — `tests/blitter_rmw_logic.cpp`
-- **main()** (2 connections) — `tests/blitter_rmw_logic.cpp`
-- **.copyToOperand()** (2 connections) — `tests/blitter_rmw_logic.cpp`
-- **.MegaSteRig()** (2 connections) — `tests/blitter_rmw_logic.cpp`
-- **.equal()** (2 connections) — `tests/fdc_timing_logic.cpp`
-- **main()** (2 connections) — `tests/fdc_timing_logic.cpp`
-- **count** (1 connections) — `tests/blitter_rmw_logic.cpp`
-- **failures** (1 connections) — `tests/blitter_rmw_logic.cpp`
-- **count** (1 connections) — `tests/fdc_timing_logic.cpp`
-- **failures** (1 connections) — `tests/fdc_timing_logic.cpp`
+- **machineIsSte()** (23 connections) — `src/core/MachineType.hpp`
+- **lineLenAttrEnv()** (12 connections) — `src/core/ShifterInternal.hpp`
+- **.glueLineBytes()** (11 connections) — `src/core/Shifter.hpp`
+- **Bug hunt multi-agents (2026-07-29)** (10 connections) — `CHANGELOG.md`
+- **Shifter::endVideoLine()** (9 connections) — `src/core/VideoCounter.cpp`
+- **ShifterInternal.hpp** (9 connections) — `src/core/ShifterInternal.hpp`
+- **.videoCounter()** (8 connections) — `src/core/Shifter.hpp`
+- **.read8()** (7 connections) — `src/core/Shifter.hpp`
+- **envFlag()** (7 connections) — `src/core/ShifterInternal.hpp`
+- **A32 — le Shifter perd 1 586 lignes, le GLUE vidéo retrouve son nom (2026-08-28)** (7 connections) — `CHANGELOG.md`
+- **.resetGlue()** (4 connections) — `src/core/Shifter.hpp`
+- **.lineLenEnv()** (4 connections) — `src/core/Shifter.hpp`
+- **beamClock_** (4 connections) — `src/core/Shifter.hpp`
+- **SpreadTable** (3 connections) — `src/core/ShifterInternal.hpp`
+- **Shifter::beamPos()** (3 connections) — `src/core/VideoCounter.cpp`
+- **Shifter::videoCounter()** (3 connections) — `src/core/VideoCounter.cpp`
+- **Shifter::lineStoppedOver()** (3 connections) — `src/core/VideoGlue.cpp`
+- **Shifter::realLinePos()** (3 connections) — `src/core/VideoGlue.cpp`
+- **VideoGlue::vblankAtLine()** (3 connections) — `src/core/VideoGlue.cpp`
+- **.lineBytes()** (2 connections) — `src/core/Shifter.hpp`
+- **.lineStoppedOver()** (2 connections) — `src/core/Shifter.hpp`
+- **.SpreadTable()** (1 connections) — `src/core/ShifterInternal.hpp`
+- **v** (1 connections) — `src/core/ShifterInternal.hpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (8 shared connections)
-- [Community 132](Community_132.md) (4 shared connections)
-- [Community 252](Community_252.md) (4 shared connections)
-- [Community 41](Community_41.md) (3 shared connections)
-- [Community 192](Community_192.md) (1 shared connections)
-- [Community 394](Community_394.md) (1 shared connections)
-- [Community 272](Community_272.md) (1 shared connections)
-- [Community 452](Community_452.md) (1 shared connections)
+- [Community 88](Community_88.md) (20 shared connections)
+- [Community 5](Community_5.md) (8 shared connections)
+- [Community 288](Community_288.md) (8 shared connections)
+- [Community 205](Community_205.md) (6 shared connections)
+- [Community 55](Community_55.md) (5 shared connections)
+- [Community 396](Community_396.md) (4 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 394](Community_394.md) (2 shared connections)
+- [Community 160](Community_160.md) (2 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 130](Community_130.md) (2 shared connections)
 
 ## Source Files
 
-- `tests/blitter_rmw_logic.cpp`
-- `tests/fdc_timing_logic.cpp`
-- `tests/ste_cmap_slot_logic.cpp`
-- `tools/gstmcu_bench.cpp`
+- `CHANGELOG.md`
+- `src/core/MachineType.hpp`
+- `src/core/Shifter.hpp`
+- `src/core/ShifterInternal.hpp`
+- `src/core/VideoCounter.cpp`
+- `src/core/VideoGlue.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 31 (76%)
-- INFERRED: 10 (24%)
+- EXTRACTED: 35 (32%)
+- INFERRED: 75 (68%)
 - AMBIGUOUS: 0 (0%)
 
 ---

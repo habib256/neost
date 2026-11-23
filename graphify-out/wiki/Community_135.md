@@ -1,11 +1,10 @@
 # Community 135
 
-> 13 nodes
+> 11 nodes
 
 ## Key Concepts
 
 - **ArchState** (14 connections) — `src/core/Cpu68k.hpp`
-- **.parseCore()** (9 connections) — `src/core/Cpu68k.hpp`
 - **d** (2 connections) — `src/core/Cpu68k.hpp`
 - **busClock** (1 connections) — `src/core/Cpu68k.hpp`
 - **halted** (1 connections) — `src/core/Cpu68k.hpp`
@@ -16,15 +15,12 @@
 - **ssp** (1 connections) — `src/core/Cpu68k.hpp`
 - **stopped** (1 connections) — `src/core/Cpu68k.hpp`
 - **usp** (1 connections) — `src/core/Cpu68k.hpp`
-- **string** (1 connections)
 
 ## Relationships
 
-- [Community 27](Community_27.md) (5 shared connections)
-- [Community 138](Community_138.md) (2 shared connections)
-- [Community 419](Community_419.md) (2 shared connections)
+- [Community 27](Community_27.md) (3 shared connections)
 - [Community 380](Community_380.md) (1 shared connections)
-- [Community 68](Community_68.md) (1 shared connections)
+- [Community 419](Community_419.md) (1 shared connections)
 
 ## Source Files
 
@@ -32,8 +28,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 21 (91%)
-- INFERRED: 2 (9%)
+- EXTRACTED: 13 (87%)
+- INFERRED: 2 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

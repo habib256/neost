@@ -1,6 +1,6 @@
 # Changelog — NeoST
 
-> God node · 351 connections · `CHANGELOG.md`
+> God node · 360 connections · `CHANGELOG.md`
 
 **Community:** [Community 130](Community_130.md)
 
@@ -27,7 +27,7 @@
 - Le PSG grésillait dans Super Hang-On : un digidrum à 45 kHz décimé de 61 % (2026-09-02) `EXTRACTED`
 - L'élection de l'exception MFP : la règle chronologique existait mais ne pouvait jamais s'appliquer (2026-09-02) `EXTRACTED`
 - Chasse round 2 : 6 défauts de plus, dont un trou dans le correctif du matin (2026-09-01) `EXTRACTED`
-- *…and 331 more `contains` connection(s) not listed (lowest-degree first to go)*
+- *…and 340 more `contains` connection(s) not listed (lowest-degree first to go)*
 
 ---
 

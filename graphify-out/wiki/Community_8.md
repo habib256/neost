@@ -1,6 +1,6 @@
 # Community 8
 
-> 63 nodes
+> 64 nodes
 
 ## Key Concepts
 
@@ -29,22 +29,24 @@
 - **.cmd()** (4 connections) — `tools/check_server_media.py`
 - **build_prg()** (4 connections) — `tools/make_gemdos_irq_test.py`
 - **check_rw_pos()** (4 connections) — `tools/make_gemdos_irq_test.py`
-- *... and 38 more nodes in this community*
+- *... and 39 more nodes in this community*
 
 ## Relationships
 
-- [Community 3](Community_3.md) (22 shared connections)
-- [Community 18](Community_18.md) (8 shared connections)
-- [Community 151](Community_151.md) (6 shared connections)
-- [Community 160](Community_160.md) (5 shared connections)
-- [Community 34](Community_34.md) (4 shared connections)
-- [Community 227](Community_227.md) (4 shared connections)
+- [Community 227](Community_227.md) (16 shared connections)
+- [Community 3](Community_3.md) (15 shared connections)
+- [Community 18](Community_18.md) (5 shared connections)
+- [Community 189](Community_189.md) (5 shared connections)
+- [Community 249](Community_249.md) (4 shared connections)
 - [Community 30](Community_30.md) (3 shared connections)
 - [Community 207](Community_207.md) (3 shared connections)
+- [Community 173](Community_173.md) (2 shared connections)
+- [Community 151](Community_151.md) (2 shared connections)
 - [Community 26](Community_26.md) (2 shared connections)
 
 ## Source Files
 
+- `tools/analyze_megaste_blitter_gap.py`
 - `tools/check_server_media.py`
 - `tools/make_gemdos_irq_test.py`
 - `tools/make_mfp_iack_probe.py`
@@ -55,7 +57,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 182 (94%)
+- EXTRACTED: 183 (94%)
 - INFERRED: 12 (6%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,15 +1,17 @@
 # Community 67
 
-> 26 nodes
+> 28 nodes
 
 ## Key Concepts
 
 - **.runFrame()** (20 connections) — `src/core/Machine.hpp`
 - **Cas tranchés — diagnostics de terrain** (20 connections) — `docs/CASE_STUDIES.md`
 - **Vroom STE : vérifier la conduite et l'arrêt audio (2026-11-05)** (6 connections) — `docs/CASE_STUDIES.md`
+- **stScancode()** (5 connections) — `src/headless/main_headless.cpp`
 - **Blit HOG : la trame continue, l'hôte reprend la main (2026-11-11)** (2 connections) — `CHANGELOG.md`
 - **Blit HOG long sur le web et Android (2026-11-12)** (2 connections) — `CHANGELOG.md`
 - **Chantiers de la chasse aux bugs fermés ; format d'état v61 (2026-11-11)** (2 connections) — `CHANGELOG.md`
+- **Headless : `--joy-at`, `--joy-script` et `--mouse-at` deviennent répétables (`OUTIL-1`) (2026-08-25)** (2 connections) — `CHANGELOG.md`
 - **Les bandes de Super Hang-On : UNE trame de transitoire faisait sauter le cadre pendant 0,6 s (2026-09-02)** (2 connections) — `CHANGELOG.md`
 - **shforstv : ligne suivante invalidée** (2 connections) — `docs/CASE_STUDIES.md`
 - **shforstv STE : réveil STOP après une HBL préarmée (2026-11-15)** (2 connections) — `docs/CASE_STUDIES.md`
@@ -27,35 +29,34 @@
 - **Lemmings : aligner le menu sur son entrée effective (2026-11-04)** (1 connections) — `docs/CASE_STUDIES.md`
 - **Lethal Xcess STE : la bordure haute calibrée sur la gigue du MFP (2026-11-10)** (1 connections) — `docs/CASE_STUDIES.md`
 - **Magic Pockets STX sur STE : retour à gauche sensible à l’alignement (2026-11-10)** (1 connections) — `docs/CASE_STUDIES.md`
-- **Premiers parcours souris : Bubble Ghost et Lemmings (2026-11-10)** (1 connections) — `docs/CASE_STUDIES.md`
-- **shforstv : flash après Espace en STF (2026-11-15)** (1 connections) — `docs/CASE_STUDIES.md`
-- *... and 1 more nodes in this community*
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
-- [Community 10](Community_10.md) (5 shared connections)
-- [Community 130](Community_130.md) (4 shared connections)
-- [Community 182](Community_182.md) (2 shared connections)
-- [Community 443](Community_443.md) (2 shared connections)
-- [Community 88](Community_88.md) (2 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 160](Community_160.md) (5 shared connections)
+- [Community 130](Community_130.md) (5 shared connections)
+- [Community 124](Community_124.md) (2 shared connections)
+- [Community 10](Community_10.md) (1 shared connections)
 - [Community 175](Community_175.md) (1 shared connections)
 - [Community 446](Community_446.md) (1 shared connections)
-- [Community 366](Community_366.md) (1 shared connections)
+- [Community 430](Community_430.md) (1 shared connections)
+- [Community 299](Community_299.md) (1 shared connections)
 - [Community 317](Community_317.md) (1 shared connections)
 - [Community 48](Community_48.md) (1 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
+- [Community 20](Community_20.md) (1 shared connections)
+- [Community 298](Community_298.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
 - `docs/CASE_STUDIES.md`
 - `src/core/Machine.hpp`
+- `src/headless/main_headless.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 29 (57%)
-- INFERRED: 22 (43%)
+- EXTRACTED: 32 (57%)
+- INFERRED: 24 (43%)
 - AMBIGUOUS: 0 (0%)
 
 ---

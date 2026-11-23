@@ -1,45 +1,53 @@
 # Community 258
 
-> 9 nodes
+> 17 nodes
 
 ## Key Concepts
 
-- **Audit Hatari, passes 1 à 4 : l'inventaire et ses premiers correctifs (2026-06-15)** (20 connections) — `CHANGELOG.md`
-- **.addPathComponent()** (8 connections) — `src/io/GemdosHd.hpp`
-- **.matchHostDirEntry()** (7 connections) — `src/io/GemdosHd.hpp`
-- **determineMaxPartitions()** (5 connections) — `src/io/GemdosHd.cpp`
-- **filenameInvalidChar()** (5 connections) — `src/io/GemdosHd.cpp`
-- **fsfirst_match()** (4 connections) — `src/io/GemdosHd.cpp`
-- **Sur macOS, un fichier accentué du lecteur GEMDOS était introuvable (2026-09-02)** (4 connections) — `CHANGELOG.md`
-- **clip_to_83()** (3 connections) — `src/io/GemdosHd.cpp`
-- **Disque dur GEMDOS (émulation HD façon Hatari)** (3 connections) — `docs/IMPLEMENTED.md`
+- **.scanNextDue()** (10 connections) — `src/core/Scheduler.hpp`
+- **Performance du cœur : ~2,4× sur la même machine, à sortie octet-identique (2026-08-02)** (9 connections) — `CHANGELOG.md`
+- **.runMfpTimersTo()** (6 connections) — `src/core/Scheduler.hpp`
+- **.runTo()** (6 connections) — `src/core/Scheduler.hpp`
+- **.schedule()** (6 connections) — `src/core/Scheduler.hpp`
+- **.addStolenCycles()** (4 connections) — `src/core/Scheduler.hpp`
+- **.ctz32()** (4 connections) — `src/core/Scheduler.hpp`
+- **.nextDue()** (4 connections) — `src/core/Scheduler.hpp`
+- **Les cycles volés par le blitter avancent enfin l'horloge des timers (2026-08-25)** (4 connections) — `CHANGELOG.md`
+- **3.1 Ordonnanceur — du balayage linéaire au minimum tenu à jour** (4 connections) — `docs/PERFORMANCE.md`
+- **.armedInvariant()** (3 connections) — `src/core/Scheduler.hpp`
+- **.serialize()** (3 connections) — `src/core/Scheduler.hpp`
+- **A42 soldé : l'élection de l'IRQ MFP voit enfin tout le lot de dispatch (2026-09-03)** (3 connections) — `CHANGELOG.md`
+- **3. MFP 68901 (mfp.c)** (3 connections) — `docs/HATARI_MAPPING.md`
+- **.isMfpTimer()** (2 connections) — `src/core/Scheduler.hpp`
+- **endSlice_** (2 connections) — `src/core/Scheduler.hpp`
+- **StateArchive** (1 connections)
 
 ## Relationships
 
-- [Community 218](Community_218.md) (6 shared connections)
-- [Community 36](Community_36.md) (6 shared connections)
-- [Community 24](Community_24.md) (3 shared connections)
-- [Community 17](Community_17.md) (2 shared connections)
-- [Community 130](Community_130.md) (2 shared connections)
-- [Community 75](Community_75.md) (2 shared connections)
-- [Community 15](Community_15.md) (2 shared connections)
-- [Community 39](Community_39.md) (2 shared connections)
-- [Community 433](Community_433.md) (1 shared connections)
-- [Community 106](Community_106.md) (1 shared connections)
-- [Community 140](Community_140.md) (1 shared connections)
-- [Community 20](Community_20.md) (1 shared connections)
+- [Community 39](Community_39.md) (12 shared connections)
+- [Community 221](Community_221.md) (4 shared connections)
+- [Community 130](Community_130.md) (3 shared connections)
+- [Community 350](Community_350.md) (2 shared connections)
+- [Community 9](Community_9.md) (2 shared connections)
+- [Community 218](Community_218.md) (1 shared connections)
+- [Community 468](Community_468.md) (1 shared connections)
+- [Community 77](Community_77.md) (1 shared connections)
+- [Community 215](Community_215.md) (1 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
+- [Community 203](Community_203.md) (1 shared connections)
+- [Community 186](Community_186.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
-- `docs/IMPLEMENTED.md`
-- `src/io/GemdosHd.cpp`
-- `src/io/GemdosHd.hpp`
+- `docs/HATARI_MAPPING.md`
+- `docs/PERFORMANCE.md`
+- `src/core/Scheduler.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 19 (41%)
-- INFERRED: 27 (59%)
+- EXTRACTED: 32 (60%)
+- INFERRED: 21 (40%)
 - AMBIGUOUS: 0 (0%)
 
 ---

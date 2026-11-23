@@ -1,42 +1,30 @@
 # Community 433
 
-> 12 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **10. GEMDOS HD / cartouche / RTC / SCU / joysticks (gemdos.c, cart.c, rtc.c, scu_vme.c, joy.c)** (7 connections) — `docs/HATARI_MAPPING.md`
-- **13. GEMDOS HD — `GemdosHd.cpp` ↔ `gemdos.c`, `inffile.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **.pexecBpCreated()** (4 connections) — `src/io/GemdosHd.hpp`
-- **.setAnalog()** (2 connections) — `src/io/StePads.hpp`
-- **Refermés** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **IKBD — cadence commune et monitoring (actualisé le 2026-10-18)** (1 connections) — `docs/HATARI_MAPPING.md`
-- **IKBD — PAUSE et octet SCI engagé (actualisé le 2026-10-18)** (1 connections) — `docs/HATARI_MAPPING.md`
-- **SCC — générateur de débit (actualisé le 2026-10-18)** (1 connections) — `docs/HATARI_MAPPING.md`
-- **USART MFP — réception (actualisé le 2026-10-18)** (1 connections) — `docs/HATARI_MAPPING.md`
+- **HayesModem::DialJob** (9 connections) — `src/net/HayesModem.cpp`
+- **mutex** (1 connections)
+- **SocketHandle** (1 connections)
+- **cancelled** (1 connections) — `src/net/HayesModem.cpp`
+- **done** (1 connections) — `src/net/HayesModem.cpp`
+- **err** (1 connections) — `src/net/HayesModem.cpp`
+- **fd** (1 connections) — `src/net/HayesModem.cpp`
+- **m** (1 connections) — `src/net/HayesModem.cpp`
 
 ## Relationships
 
-- [Community 17](Community_17.md) (1 shared connections)
-- [Community 175](Community_175.md) (1 shared connections)
-- [Community 106](Community_106.md) (1 shared connections)
-- [Community 397](Community_397.md) (1 shared connections)
-- [Community 258](Community_258.md) (1 shared connections)
-- [Community 352](Community_352.md) (1 shared connections)
+- [Community 300](Community_300.md) (2 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
-- `docs/HATARI_MAPPING.md`
-- `src/io/GemdosHd.hpp`
-- `src/io/StePads.hpp`
+- `src/net/HayesModem.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 12 (71%)
-- INFERRED: 5 (29%)
+- EXTRACTED: 9 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---
