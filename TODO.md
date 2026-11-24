@@ -461,7 +461,9 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
   IndexedDB (IDBFS) entre deux visites, avec un bouton pour l'effacer (poste partagé).
 - **Retour du cours d'assembleur (issue #45)** · P2 ⏸ retour — Devpac 3 et MonST sous
   EmuTOS en C:/D: dans la page publique : ni testés par nous (logiciels commerciaux), ni
-  confirmés par l'enseignant. Ne pas en faire une réussite avant son retour.
+  confirmés par l'enseignant. Ne pas en faire une réussite avant son retour. Le 2026-11-24 :
+  réponse de l'issue corrigée (lien de cours, `neostReady`) et enseignant contacté
+  directement avec une offre d'aide ; le paquet publié passe `--only hdui,statedisk,gemdos`.
 - **Vérifier un état sauvegardé juste après l'écriture** · P3 ⭘ — le relire et contrôler son CRC
   (déjà vérifié au chargement) ; un état raté est supprimé et le menu le dit, comme BMAtariST 0.1.1.
 - **Format `.scp` (SuperCard Pro, flux magnétique)** · P3 ⭘ — lu par BMAtariST via Hatari ; NeoST lit
