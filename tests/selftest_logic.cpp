@@ -22,6 +22,7 @@
 #include "util/JoyScript.hpp"
 #include "util/ConfigPath.hpp"
 #include "util/RomProbe.hpp"
+#include "util/Crc32.hpp"
 #include <fstream>
 
 #include <algorithm>
@@ -208,6 +209,10 @@ int testIkbdMonitorMachine(); // câblage du timer dans la machine complète
 int testDmaSoundMono(); // précision du repli mono et drainage après STOP
 int testShifterStateGeometry(); // géométrie du save-state liée à la résolution (idx[660])
 int testIkbdAutoSend(); // autosend indépendant de la fréquence vidéo
+int testMediaState();   // états autonomes : save-state + disquettes (libretro)
+int testMachineReconstruct(); // une Machine reconstruite repart du même état
+int testLogSink();      // puits des journaux du cœur
+int testAvTracker();    // annonce de géométrie et de cadence (libretro)
 
 static void checkStr(const char* what, const std::string& got, const std::string& want) {
     if (got == want) { ++g_ok; return; }
@@ -233,6 +238,34 @@ static void checkBool(const char* what, bool got, bool want) {
     ++g_fail;
     std::printf("  FAIL %-46s = %s (attendu %s)\n",
                 what, got ? "true" : "false", want ? "true" : "false");
+}
+
+// -----------------------------------------------------------------------------
+//  CRC-32 des save-states : les trois chemins (matériel ARMv8, découpage par 8,
+//  octet par octet) rendent la MÊME valeur, sur toutes longueurs et tous
+//  alignements — sinon les états déjà écrits deviendraient illisibles.
+// -----------------------------------------------------------------------------
+static void testCrc32Paths() {
+    // Vecteur connu : CRC-32 IEEE de "123456789" = $CBF43926 (valeur de contrôle du
+    // catalogue de Williams, « A Painless Guide to CRC Error Detection Algorithms »).
+    const uint8_t check[] = {'1','2','3','4','5','6','7','8','9'};
+    checkHex("crc32(\"123456789\") octet par octet", neost::crc32Bytewise(check, 9), 0xCBF43926u);
+    checkHex("crc32(\"123456789\")", neost::crc32(check, 9), 0xCBF43926u);
+    checkHex("crc32 de 0 octet", neost::crc32(check, 0), 0u);
+    std::vector<uint8_t> buf(4096 + 16);
+    uint32_t x = 0x12345678u;
+    for (auto& b : buf) { x = x * 1664525u + 1013904223u; b = uint8_t(x >> 24); }
+    int bad = 0;
+    for (std::size_t off = 0; off < 8; ++off)
+        for (std::size_t n : {std::size_t(0), std::size_t(1), std::size_t(7), std::size_t(8),
+                              std::size_t(9), std::size_t(63), std::size_t(64), std::size_t(65),
+                              std::size_t(1000), std::size_t(4096)}) {
+            const uint32_t ref = neost::crc32Bytewise(buf.data() + off, n);
+            if (neost::crc32Sliced(buf.data() + off, n) != ref) ++bad;
+            if (neost::crc32(buf.data() + off, n) != ref) ++bad;
+        }
+    checkInt(neost::crc32Hardware() ? "crc32 : matériel et découpage = référence"
+                                    : "crc32 : découpage = référence", bad, 0);
 }
 
 // -----------------------------------------------------------------------------
@@ -4126,6 +4159,7 @@ static void testBlitterAddressWrap() {
 }
 
 int main() {
+    testCrc32Paths();
     testCompDisks();
     testDongleTable();
     testCartridgeKey();
@@ -4228,6 +4262,10 @@ int main() {
     if (const int failures = testIkbdTxPhase()) g_fail += failures; else ++g_ok;
     if (testSccStatusModes()) ++g_ok; else ++g_fail;
     if (const int failures = testMfpBreak()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMediaState()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMachineReconstruct()) g_fail += failures; else ++g_ok;
+    if (const int failures = testLogSink()) g_fail += failures; else ++g_ok;
+    if (const int failures = testAvTracker()) g_fail += failures; else ++g_ok;
     if (testSccAutoEcho()) ++g_ok; else ++g_fail;
     if (const int failures = testStxWrittenTrack()) g_fail += failures; else ++g_ok;
     if (const int failures = testStxAbsentTrack()) g_fail += failures; else ++g_ok;

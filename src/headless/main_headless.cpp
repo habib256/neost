@@ -2698,18 +2698,10 @@ int main(int argc, char** argv) {
         // --trace-from N > 0 : le hook n'est branché qu'à la trame N (boucle principale).
     }
 
-    // Mode déterministe absolu : l'horloge RTC Mega ST(E) doit être constante.
-    // Sinon EmuTOS STE affiche l'heure système réelle sur le bureau, ce qui casse
-    // la comparaison pixel au pixel (test `etos_ste_boot`).
-    // Année du RP5C15 comptée depuis 1980, comme le GEMDOS (cf. Rtc::initFromHostTime) :
-    // 46 = 2026. La valeur 26 posait le 1er janvier 2006 depuis l'origine. Jour de la
-    // semaine : jeudi (4, convention tm_wday).
-    machine.rtc.setDateTime(Rtc::DateTime{0, 0, 12, 4, 1, 1, 46}); // 1er jan 2026, 12:00:00
-    // Même chose pour l'horloge IKBD (commande $1C) : EmuTOS STE/ST affiche la
-    // date/heure du bureau depuis l'IKBD, pas la RTC — figée pour le déterminisme.
-    machine.ikbd.setClock(26, 1, 1, 12, 0, 0);
-    // L'horloge de l'UltraSatan aussi : éteinte, elle reste sérialisée, et --state-hash-every la verrait.
-    machine.usatan.setDateTime(UltraSatan::DateTime{2026, 1, 1, 12, 0, 0});
+    // Mode déterministe absolu : les horloges de date (RTC Mega ST(E), IKBD, UltraSatan)
+    // doivent être constantes. Sinon EmuTOS STE affiche l'heure système réelle sur le
+    // bureau, ce qui casse la comparaison pixel au pixel (test `etos_ste_boot`).
+    machine.freezeHostClocks();
 
     machine.reset();
     if (midiLoopbackCfg) {   // --from-cfg midi_loopback=1 : la fiche MIDI OUT→IN du GUI
@@ -2738,8 +2730,7 @@ int main(int argc, char** argv) {
     double dumpCarry = 0.0;
     const bool soundDump = !soundDumpPath.empty();
     if (soundDump) {
-        machine.psg.setCycleClock([&machine] { return machine.frameRelCycle(); });
-        machine.dmasnd.setCycleClock([&machine] { return machine.frameRelCycle(); });
+        machine.armAudioClocks();
         // Plafonné : reserve() n'est qu'une optimisation, et --frames n'est borné que
         // par le bas — « --frames 90000000 --sound-dump » demandait 320 Go et mourait
         // sur std::bad_alloc (SIGABRT + core) avant d'émuler la moindre trame.
@@ -3340,9 +3331,10 @@ int main(int argc, char** argv) {
         // regarder une fenêtre à l'œil, donc de ne rien pouvoir mesurer ni comparer.
         // Trace pure : n'influe sur AUCUN calcul d'émulation.
         { static const bool dz = std::getenv("NEOST_FRAMING_DIAG") != nullptr;
+          static neost::FramingLatch framing;
           if (dz) {
             int ct = 0, ch = 0, cw = 0;
-            neost::stContentRegion(machine.shifter, ct, ch, cw);
+            neost::stContentRegion(machine.shifter, framing, ct, ch, cw);
             std::fprintf(stderr,
                 "[frm] f=%d act=%d+%d live=%d+%d open=%d(side=%d/%d) buf=%dx%d"
                 " -> top=%d h=%d w=%d\n",

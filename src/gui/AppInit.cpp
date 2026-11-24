@@ -665,14 +665,10 @@ int appInit(App& A, int argc, char** argv) {
     // doublait le YM (clipping) et l'état microwire d'une session STE colorait le ST.
     // Prédicat DYNAMIQUE : suit les reconfigure à chaud (applyConfig).
     audio.setDmaGate([&machine] { return machineHasDmaSound(machine.machineType()); });
-    // Modèle « push » (Phase C) : on ARME l'horodatage des écritures PSG (cycle CPU dans
-    // la trame). Dès lors, write8 enregistre les écritures et la synthèse les rejoue au bon
-    // instant (digidrums/sync-buzzer). produceFrame (après runFrame) génère et empile la trame.
-    machine.psg.setCycleClock([&machine] { return machine.frameRelCycle(); });
-    // Idem pour le son DMA STE : on horodate les transitions PLAY/STOP de la trame, pour
-    // les rejouer au cycle exact (bruitages one-shot courts, queues de samples — cf.
-    // DmaSound::mixStereo). Posé UNIQUEMENT côté frontend (jamais en headless → pas de fuite).
-    machine.dmasnd.setCycleClock([&machine] { return machine.frameRelCycle(); });
+    // Modèle « push » (Phase C) : on ARME l'horodatage des écritures PSG et des transitions
+    // PLAY/STOP du son DMA (cycle CPU dans la trame) ; produceFrame (après runFrame) les
+    // rejoue au bon instant et draine chaque trame — contrat de Machine::armAudioClocks.
+    machine.armAudioClocks();
 
     A.screen = std::make_unique<GlScreen>();
     GlScreen& screen = *A.screen;

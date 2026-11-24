@@ -436,13 +436,13 @@ uint8_t Mfp::read8(uint32_t addr) {
             // contre Hatari --trace mfp_read (chantier Closure : la démo mesure
             // par les compteurs de timers, cf. docs/CLOSURE_CHANTIER.md).
             static const bool d = std::getenv("NEOST_MFPRD_DIAG") != nullptr;
-            if (d) std::fprintf(stderr, "[MFPRD] TADR=%02X\n", r);
+            if (d) neost::log::err("[MFPRD] TADR=%02X\n", r);
             return r;
         }
         case 0x21: {                          // TBDR : compteur VIVANT de Timer B
             const uint8_t r = readTimerData(1);
             static const bool d = std::getenv("NEOST_MFPRD_DIAG") != nullptr;
-            if (d) std::fprintf(stderr, "[MFPRD] TBDR=%02X\n", r);
+            if (d) neost::log::err("[MFPRD] TBDR=%02X\n", r);
             return r;
         }
         case 0x23: return readTimerData(2);  // TCDR : compteur VIVANT de Timer C
@@ -719,16 +719,16 @@ void Mfp::updateSerialConfig() {
     if (!traceAll && nLogs > kMaxLogs) return;
     if (!traceAll && nLogs == kMaxLogs) {
         ++nLogs;
-        std::fprintf(stderr, "[mfp] USART: further reconfigurations are silent "
-                             "(Timer D repurposed by the program; NEOST_MFP_TRACE=1 to see them all)\n");
+        neost::log::err("[mfp] USART: further reconfigurations are silent "
+                                "(Timer D repurposed by the program; NEOST_MFP_TRACE=1 to see them all)\n");
         return;
     }
     ++nLogs;
     static const char* kStops[4] = {"sync", "1", "1.5", "2"};   // UCR bits 3-4
-    std::fprintf(stderr, "[mfp] USART: %d baud, %d%c%s (UCR=$%02X, TDDR=%d, prescaler /%d)\n",
-                 baud, 8 - ((ucr >> 5) & 3),                    // taille du mot (bits 5-6)
-                 (ucr & 4) ? ((ucr & 2) ? 'E' : 'O') : 'N',     // parité (bits 1-2)
-                 kStops[(ucr >> 3) & 3], ucr, data, kDiv[ctrl]);
+    neost::log::err("[mfp] USART: %d baud, %d%c%s (UCR=$%02X, TDDR=%d, prescaler /%d)\n",
+                    baud, 8 - ((ucr >> 5) & 3),                    // taille du mot (bits 5-6)
+                    (ucr & 4) ? ((ucr & 2) ? 'E' : 'O') : 'N',     // parité (bits 1-2)
+                    kStops[(ucr >> 3) & 3], ucr, data, kDiv[ctrl]);
 }
 
 // -----------------------------------------------------------------------------
@@ -1211,7 +1211,7 @@ bool Mfp::mfpSelfTest() {
     int pass = 0, fail = 0;
     auto chk = [&](const char* n, long got, long want) {
         if (got == want) { ++pass; }
-        else { ++fail; std::fprintf(stderr, "  FAIL %-30s got=%ld want=%ld\n", n, got, want); }
+        else { ++fail; neost::log::err("  FAIL %-30s got=%ld want=%ld\n", n, got, want); }
     };
 
     // --- (a) Bits d'ENTRÉE GPIP forcés à la lecture (ddr=0 → read8 $01 = gpipInput) --
@@ -1424,7 +1424,7 @@ bool Mfp::mfpSelfTest() {
             elect(SRC_TIMERA, 100, SRC_TIMERD, 140).src, SRC_TIMERA);
     }
 
-    std::fprintf(stderr, "[mfp-selftest] %d OK, %d FAIL\n", pass, fail);
+    neost::log::err("[mfp-selftest] %d OK, %d FAIL\n", pass, fail);
     return fail == 0;
 }
 

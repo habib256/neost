@@ -148,6 +148,8 @@ add_library(neost_core STATIC
     src/core/TosChoice.cpp    # TOS assorti à la machine choisie (page Machine)
     src/core/BitmapView.cpp   # explorateur de bitmaps : RAM en plans ST → ARGB
     src/util/HostPath.cpp
+    src/util/Crc32.cpp        # CRC des save-states (matériel ARMv8 ou découpage par 8)
+    src/util/Log.cpp          # puits des journaux du cœur (stderr, ou libretro)
     src/util/ConfigPath.cpp   # A36 : où vit neost.cfg (règle testable)
     src/util/RomProbe.cpp     # TOS ou disquette ? (argument positionnel du GUI, testable)
     src/gui/AppConfig.cpp)
@@ -165,6 +167,30 @@ if(NOT EMSCRIPTEN AND NOT WIN32)
     find_package(Threads REQUIRED)
     target_link_libraries(neost_core PUBLIC Threads::Threads)
 endif()
+
+# Cœur en code indépendant de la position : la condition pour le lier dans une
+# bibliothèque PARTAGÉE (cœur libretro .so/.dylib/.dll, docs/LIBRETRO.md). OFF par
+# défaut : les exécutables n'en ont pas besoin. Avec, neost-shared-probe en fait la
+# preuve : une bibliothèque partagée qui construit une Machine, joue une trame et
+# sérialise un état autonome, liée SANS symbole non résolu, puis appelée par
+# neost-shared-probe-run (job « Réseau hôte désactivé » de la CI, sous Linux x86_64,
+# là où un cœur non PIC refuse de se lier).
+option(NEOST_PIC "neost_core en code indépendant de la position (bibliothèques partagées)" OFF)
+if(NEOST_PIC)
+    # Visibilité cachée : la bibliothèque partagée n'exporte que ce qu'elle déclare
+    # (les retro_* d'un cœur libretro), pas les milliers de symboles C++ du cœur.
+    set_target_properties(neost_core PROPERTIES POSITION_INDEPENDENT_CODE ON
+        CXX_VISIBILITY_PRESET hidden C_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+    add_library(neost-shared-probe SHARED tests/shared_probe.cpp)
+    target_link_libraries(neost-shared-probe PRIVATE neost_core)
+    set_target_properties(neost-shared-probe PROPERTIES
+        CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+    if(NOT APPLE AND NOT WIN32)
+        target_link_options(neost-shared-probe PRIVATE "-Wl,--no-undefined")
+    endif()
+    add_executable(neost-shared-probe-run tests/shared_probe_run.cpp)
+    target_link_libraries(neost-shared-probe-run PRIVATE neost-shared-probe)
+endif()
 # (Cpu68k.cpp est traité à part : il inclut l'en-tête tiers Moira.h → C++20 sans
 #  -Wpedantic strict, cf. le bloc Moira plus bas.)
 set_source_files_properties(
@@ -172,7 +198,7 @@ set_source_files_properties(
     src/core/Bus.cpp src/core/Shifter.cpp src/core/VideoGlue.cpp
     src/core/VideoCounter.cpp src/core/YM2149.cpp src/core/DmaSound.cpp
     src/core/Blitter.cpp
-    src/core/Machine.cpp src/core/EmuFiber.cpp src/core/Rewind.cpp src/core/Tracer.cpp src/core/Symbols.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp src/io/StxImage.cpp src/io/WrittenTrack.cpp src/io/IpfImage.cpp src/io/Rtc.cpp src/io/MidiAcia.cpp src/io/Fpu.cpp src/io/GemdosHd.cpp src/io/Acsi.cpp src/io/Scc.cpp src/io/MediaScan.cpp src/io/CompDisks.cpp src/io/Ne2000.cpp src/io/UltraSatan.cpp src/io/Isp1160.cpp src/io/CartridgeKey.cpp src/io/PortDevices.cpp src/io/DongleTable.cpp src/core/Framing.cpp src/core/TosChoice.cpp src/core/BitmapView.cpp src/util/HostPath.cpp src/util/ConfigPath.cpp src/util/RomProbe.cpp src/gui/AppConfig.cpp
+    src/core/Machine.cpp src/core/EmuFiber.cpp src/core/Rewind.cpp src/core/Tracer.cpp src/core/Symbols.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp src/io/StxImage.cpp src/io/WrittenTrack.cpp src/io/IpfImage.cpp src/io/Rtc.cpp src/io/MidiAcia.cpp src/io/Fpu.cpp src/io/GemdosHd.cpp src/io/Acsi.cpp src/io/Scc.cpp src/io/MediaScan.cpp src/io/CompDisks.cpp src/io/Ne2000.cpp src/io/UltraSatan.cpp src/io/Isp1160.cpp src/io/CartridgeKey.cpp src/io/PortDevices.cpp src/io/DongleTable.cpp src/core/Framing.cpp src/core/TosChoice.cpp src/core/BitmapView.cpp src/util/HostPath.cpp src/util/Crc32.cpp src/util/Log.cpp src/util/ConfigPath.cpp src/util/RomProbe.cpp src/gui/AppConfig.cpp
     PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
 
 # =============================================================================
@@ -384,7 +410,7 @@ set_source_files_properties(src/headless/main_headless.cpp src/headless/Server.c
 # contre neost_core.
 # StKeysSymbolic y entre pour les TABLES CLAVIER PAR PAYS du TOS (caractère hôte →
 # scancode ST) : sans GLFW, séparé de StKeys.cpp à cette fin.
-add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp tests/scc_serial_logic.cpp
+add_executable(neost-selftest tests/selftest_logic.cpp tests/libretro_frontier_logic.cpp tests/selftest_scc.cpp tests/scc_serial_logic.cpp
     tests/scc_rx_fifo_logic.cpp tests/ikbd_cpu_serial_logic.cpp
     tests/midi_serial_logic.cpp tests/ikbd_acia_format_logic.cpp
     tests/machine_midi_logic.cpp tests/mfp_serial_logic.cpp
@@ -495,7 +521,8 @@ set_source_files_properties(tests/fuzz_diskimage.cpp
 # compilé, jamais invoqué) pendant que StxImage.cpp (510 l. de parseur binaire exposé
 # à des fichiers arbitraires) n'avait aucun autre test. Branché au palier fast de
 # tools/run_all.py, sur une image STX FORGÉE (aucune dépendance à un disque commercial).
-add_executable(neost-stx-test tests/stx_writetrack_test.cpp src/io/StxImage.cpp src/io/WrittenTrack.cpp)
+add_executable(neost-stx-test tests/stx_writetrack_test.cpp src/io/StxImage.cpp src/io/WrittenTrack.cpp
+    src/util/Log.cpp)   # journaux de StxImage (puits du cœur, cf. util/Log.hpp)
 target_include_directories(neost-stx-test PRIVATE "${CMAKE_SOURCE_DIR}/src")
 # ⚠ Le test vérifie par assert() : le -DNDEBUG du profil Release les VIDERAIT tous
 # (vert creux garanti). On les réactive pour CETTE cible uniquement.

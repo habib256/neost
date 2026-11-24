@@ -7,8 +7,7 @@
 //  jamais compilé dans le cœur) traduit les manettes USB détectées par GLFW et
 //  une éventuelle émulation au clavier en ces deux octets.
 //
-//  Format d'octet IKBD (cf. Hatari ATARIJOY_BITMASK_*, includes/joy.h) :
-//    bit0 = haut, bit1 = bas, bit2 = gauche, bit3 = droite, bit7 = feu.
+//  Format d'octet IKBD : cf. io/StJoyBits.hpp (bits UP/DOWN/LEFT/RIGHT/FIRE).
 //
 //  Affectation des ports : par défaut (AUTO, comme la plupart des jeux ST) la
 //  1re manette physique va au PORT 1 (le port « jeux »), la 2e au PORT 0 (partagé
@@ -25,10 +24,9 @@
 #include <cstdint>
 #include <cstdio>
 
-namespace stjoy {
+#include "io/StJoyBits.hpp"   // bits d'état (UP, DOWN, LEFT, RIGHT, FIRE)
 
-// Bits d'état joystick ST (cf. Hatari joy.h).
-enum : uint8_t { UP = 0x01, DOWN = 0x02, LEFT = 0x04, RIGHT = 0x08, FIRE = 0x80 };
+namespace stjoy {
 
 // Rôle d'une manette HÔTE : à quel port ST elle est affectée. AUTO = affectation
 // historique (1re manette présente → port 1, 2e → port 0) sur les ports qu'aucune

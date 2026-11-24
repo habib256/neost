@@ -480,8 +480,7 @@ void pollHostInput() {
         stjoy::compose(g_window, g_kbdJoy, g_kbdJoyPort, g_joyDeadzone, joy0, joy1);
         const uint8_t touch = g_touchJoy | g_touchJoyLatch;   // joystick tactile, OR-é
         (g_touchJoyPort == 0 ? joy0 : joy1) |= touch;
-        g_machine->ikbd.setJoystick(joy0, joy1);
-        g_machine->bus.setStePadInput(joy0, joy1);   // joypads STE ($FF9200/02)
+        g_machine->setJoysticks(joy0, joy1);   // IKBD + joypads STE ($FF9200/02)
     }
 
     g_machine->cpu.updateIpl();
@@ -643,7 +642,8 @@ void presentFrame() {
     // l'hystérésis se compte en trames, et le passage en plein écran hérite
     // ainsi d'un latch déjà à jour au lieu de partir à froid.
     int cTop = 0, cH = h, cW = w;
-    neost::stContentRegion(g_machine->shifter, cTop, cH, cW);
+    static neost::FramingLatch framing;   // la page n'a qu'une machine, qu'un affichage
+    neost::stContentRegion(g_machine->shifter, framing, cTop, cH, cW);
 
     float u0 = 0.f, v0 = 0.f, u1 = 1.f, v1 = 1.f;
     int viewW = w, viewH = h;
@@ -1269,7 +1269,9 @@ int main(int argc, char** argv) {
                  Cpu68k::coreName(machine.cpu.core()), machineName(machTypeAdj), ramLabel(ramBytes));
     if (!machine.loadTos(romPath)) {
         std::fprintf(stderr, "[web] TOS not found (%s) — falling back to EmuTOS 192 KB.\n", romPath.c_str());
-        if (romPath != "/roms/etos192us.img" && !machine.loadTos("/roms/etos192us.img"))
+        // switchTos et non loadTos : le repli rejoue la garde machine/TOS (une machine
+        // construite en STE pour la ROM demandée redescend en ST sous EmuTOS 192 Ko).
+        if (romPath != "/roms/etos192us.img" && !machine.switchTos("/roms/etos192us.img", machType))
             std::fprintf(stderr, "[web] no loadable TOS — CPU running on nothing.\n");
     }
     neost::stkeys::setCountryFromTos(machine.bus.rom);   // pays clavier du TOS de boot
@@ -1293,8 +1295,7 @@ int main(int argc, char** argv) {
     // bruitages courts. Ces deux lignes ne sont pas un réglage : sans elles,
     // synthesizeFrame rend le jeu de registres « audio » que plus rien ne met à
     // jour, et la machine devient MUETTE.
-    machine.psg.setCycleClock([] { return g_machine->frameRelCycle(); });
-    machine.dmasnd.setCycleClock([] { return g_machine->frameRelCycle(); });
+    machine.armAudioClocks();
 
     // Bruits mécaniques du lecteur : le cœur émet des FdcSound, la page les joue
     // via Web Audio (cf. shell.html, window.neostDriveSound). Codes : 0 = moteur,

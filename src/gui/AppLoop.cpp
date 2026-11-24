@@ -306,8 +306,7 @@ static void feedJoysticks(App& A) {
         // Overlay kiosk ouvert : la manette pilote l'overlay → on n'envoie
         // rien au ST (sinon le jeu bougerait pendant la navigation).
         if (A.kioskDiskMenu) { joy0 = 0; joy1 = 0; }
-        machine.ikbd.setJoystick(joy0, joy1);
-        machine.bus.setStePadInput(joy0, joy1);   // joypads STE ($FF9200/02) — même état
+        machine.setJoysticks(joy0, joy1);        // IKBD + joypads STE ($FF9200/02)
         // Boutons auxiliaires manette → touches ST : X = ESPACE, Y = RETURN
         // (cf. stjoy::readAux — jeux « PRESS SPACE » jouables sans clavier).
         // Make/break IKBD sur les FRONTS ; tout est relâché quand l'overlay

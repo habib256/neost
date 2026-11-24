@@ -8,6 +8,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/Scc.hpp"
+#include "util/Log.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -472,7 +473,7 @@ void Scc::serialWriteByte(int c, uint8_t v) {
     // octets hôtes async huit bits sans parité dans onSerialEvent, sans
     // reconstruire les bits ni les intervalles du fil source.
     if (chn_[c].WR[14] & 0x08) return;
-    if (trace_) std::fprintf(stderr, "[scc] TX %c: $%02X\n", 'A' + c, v);
+    if (trace_) neost::log::err("[scc] TX %c: $%02X\n", 'A' + c, v);
     // [B] UM0109 WR14 D4 p.171, p.69 : en bouclage local, TxD est
     // relié à RxD à l'intérieur de la puce ; TxD reste aussi connecté au
     // transmetteur. La prise externe occupe le sink hôte, comme
@@ -1049,8 +1050,8 @@ uint8_t Scc::handleRead(uint32_t addr) {
     int channel = (addr >> 2) & 1;               // bit2 : 0 = A, 1 = B
     int reg = activeReg_;
     uint8_t v = (addr & 2) ? readDataReg(channel) : readControl(channel);
-    if (trace_) std::fprintf(stderr, "[scc] rd %c %s%d=$%02X\n", 'A' + channel,
-                             (addr & 2) ? "RRdata" : "RR", reg, v);
+    if (trace_) neost::log::err("[scc] rd %c %s%d=$%02X\n", 'A' + channel,
+                                (addr & 2) ? "RRdata" : "RR", reg, v);
     // [B] UM0109 p.28, p.30 : une lecture D//C haut ne touche pas le pointeur, seule D//C bas le remet à 0.
     // [D] Hatari scc.c:1644 @ f0736b24 le remet à toute lecture ; le manuel prime.
     if (!(addr & 2)) activeReg_ = 0;
@@ -1058,8 +1059,8 @@ uint8_t Scc::handleRead(uint32_t addr) {
 }
 void Scc::handleWrite(uint32_t addr, uint8_t v) {
     int channel = (addr >> 2) & 1;
-    if (trace_) std::fprintf(stderr, "[scc] wr %c %s%d=$%02X\n", 'A' + channel,
-                             (addr & 2) ? "WRdata" : "WR", activeReg_, v);
+    if (trace_) neost::log::err("[scc] wr %c %s%d=$%02X\n", 'A' + channel,
+                                (addr & 2) ? "WRdata" : "WR", activeReg_, v);
     // [B] UM0109 p.28, p.30 : l'écriture D//C haut laisse le pointeur en l'état.
     if (addr & 2) writeDataReg(channel, v);
     else          writeControl(channel, v);

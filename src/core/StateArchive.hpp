@@ -9,6 +9,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #pragma once
+#include "util/Log.hpp"
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -29,7 +30,7 @@ public:
 
     // Échec d'I/O hôte également possible pendant une sauvegarde.
     void fail(const char* what) {
-        if (ok_) std::fprintf(stderr, "[save-state] %s\n", what);
+        if (ok_) neost::log::err("[save-state] %s\n", what);
         ok_ = false;
     }
 
@@ -42,8 +43,8 @@ public:
     // d'un fichier réellement corrompu).
     void check(bool cond, const char* what = nullptr) {
         if (!loading_ || cond) return;
-        if (ok_) std::fprintf(stderr, "[save-state] invariant rejected: %s\n",
-                              what ? what : "(unlabelled)");
+        if (ok_) neost::log::err("[save-state] invariant rejected: %s\n",
+                                 what ? what : "(unlabelled)");
         ok_ = false;
     }
 

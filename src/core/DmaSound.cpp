@@ -4,6 +4,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/Pacing.hpp"
+#include "util/Log.hpp"
 #include "core/DmaSound.hpp"
 #include "core/Bus.hpp"
 #include "core/Scheduler.hpp"
@@ -112,10 +113,10 @@ void DmaSound::fifoRefill() {
         fifo_[(fifoPos_ + fifoNb_ + 0) & 7] = int8_t(bus_.ramCycleRead8(curAddr_));
         fifo_[(fifoPos_ + fifoNb_ + 1) & 7] = int8_t(bus_.ramCycleRead8(curAddr_ + 1));
         if (trace)
-            std::fprintf(stderr, "DMA snd fifo refill adr=%x pos %d nb %d %x %x\n",
-                         curAddr_, fifoPos_, fifoNb_,
-                         uint8_t(fifo_[(fifoPos_ + fifoNb_ + 0) & 7]),
-                         uint8_t(fifo_[(fifoPos_ + fifoNb_ + 1) & 7]));
+            neost::log::err("DMA snd fifo refill adr=%x pos %d nb %d %x %x\n",
+                            curAddr_, fifoPos_, fifoNb_,
+                            uint8_t(fifo_[(fifoPos_ + fifoNb_ + 0) & 7]),
+                            uint8_t(fifo_[(fifoPos_ + fifoNb_ + 1) & 7]));
         fifoNb_ += 2;
         curAddr_ = (curAddr_ + 2) & 0x3FFFFE;          // compteur 22 bits (cf. supra)
         if (curAddr_ == frameEndAddr_) {               // fin de trame atteinte AU FETCH
@@ -263,8 +264,8 @@ void DmaSound::onFetchEvent() {
     if (!playing_) return;
     static const bool trace = std::getenv("NEOST_DMASND_TRACE") != nullptr;
     if (trace && sched_)
-        std::fprintf(stderr, "DMA snd end-of-frame fetch event due=%lld live=%lld adr=%x end=%x nb %d\n",
-                     (long long)sched_->firingDue(), (long long)sched_->liveNow(), curAddr_, frameEndAddr_, fifoNb_);
+        neost::log::err("DMA snd end-of-frame fetch event due=%lld live=%lld adr=%x end=%x nb %d\n",
+                        (long long)sched_->firingDue(), (long long)sched_->liveNow(), curAddr_, frameEndAddr_, fifoNb_);
     updateDac();
     fifoRefill();
     armFrameEnd();
@@ -361,8 +362,8 @@ void DmaSound::decodeMicrowire() {
 
     static const bool mwTrace = std::getenv("NEOST_MW_TRACE") != nullptr;
     if (mwTrace)
-        std::fprintf(stderr, "Microwire command=%03x len=%d (data=%04x mask=%04x)\n",
-                     unsigned(cmd & 0x7FF), cmdLen, mwData_, mwMask_);
+        neost::log::err("Microwire command=%03x len=%d (data=%04x mask=%04x)\n",
+                        unsigned(cmd & 0x7FF), cmdLen, mwData_, mwMask_);
     switch ((cmd >> 6) & 0x07) {
         case 0: mwMixing_ = cmd & 0x03; break;
         case 1: mwBass_   = cmd & 0x0F; break;
@@ -664,9 +665,9 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
         // nombre de décalages restants (≠ 0 = écriture pendant un transfert).
         static const bool mwTrace = std::getenv("NEOST_MW_TRACE") != nullptr;
         if (mwTrace)
-            std::fprintf(stderr, "Microwire write $FF89%02X=%02x width=%d steps=%d data=%04x mask=%04x cyc=%lld\n",
-                         unsigned(addr & 0xFF), v, bus_.ioAccessWidth(), mwSteps_, mwData_, mwMask_,
-                         (long long)(sched_ ? sched_->liveNow() : 0));
+            neost::log::err("Microwire write $FF89%02X=%02x width=%d steps=%d data=%04x mask=%04x cyc=%lld\n",
+                            unsigned(addr & 0xFF), v, bus_.ioAccessWidth(), mwSteps_, mwData_, mwMask_,
+                            (long long)(sched_ ? sched_->liveNow() : 0));
     }
     switch (addr & 0xFF) {
         case 0x01: {                                  // contrôle : play / repeat

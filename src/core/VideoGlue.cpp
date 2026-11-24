@@ -17,6 +17,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/ShifterInternal.hpp"
+#include "util/Log.hpp"
 #include "core/VideoGlue.hpp"
 #include "core/Shifter.hpp"
 #include "core/Bus.hpp"
@@ -47,20 +48,20 @@ int64_t Shifter::timerBFrameCycleForLine(int line, bool startOfLine) {
     static const bool dbg = std::getenv("NEOST_TBGRID_DIAG") != nullptr;
     if (!lineLen || frameMode_ == Mode::High || glue_.syncWrites.empty()
         || line < 0 || static_cast<std::size_t>(line) >= glue_.lineStart.size()) {
-        if (dbg) std::fprintf(stderr, "[TBG] line=%d -1 (ll=%d hi=%d sw=%zu sz=%zu)\n",
-                              line, lineLen ? 1 : 0, frameMode_ == Mode::High ? 1 : 0,
-                              glue_.syncWrites.size(), glue_.lineStart.size());
+        if (dbg) neost::log::err("[TBG] line=%d -1 (ll=%d hi=%d sw=%zu sz=%zu)\n",
+                                 line, lineLen ? 1 : 0, frameMode_ == Mode::High ? 1 : 0,
+                                 glue_.syncWrites.size(), glue_.lineStart.size());
         return -1;
     }
     const int pos = timerBPosForLine(line, startOfLine);   // fait le catch-up jusqu'à `line`
     if (glue_.liveLine < line) {                            // grille pas encore construite
-        if (dbg) std::fprintf(stderr, "[TBG] line=%d -1 (glueLine=%d)\n", line, glue_.liveLine);
+        if (dbg) neost::log::err("[TBG] line=%d -1 (glueLine=%d)\n", line, glue_.liveLine);
         return -1;
     }
-    if (dbg) std::fprintf(stderr, "[TBG] line=%d pos=%d start=%lld -> %lld (nominal %lld)\n",
-                          line, pos, (long long)glue_.lineStart[line],
-                          (long long)(glue_.lineStart[line] + pos),
-                          (long long)(static_cast<int64_t>(line) * geometry().cyclesPerLine + pos));
+    if (dbg) neost::log::err("[TBG] line=%d pos=%d start=%lld -> %lld (nominal %lld)\n",
+                             line, pos, (long long)glue_.lineStart[line],
+                             (long long)(glue_.lineStart[line] + pos),
+                             (long long)(static_cast<int64_t>(line) * geometry().cyclesPerLine + pos));
     return glue_.lineStart[static_cast<std::size_t>(line)] + pos;
 }
 
@@ -153,12 +154,12 @@ void VideoGlue::liveGlueCatchUp(int targetLine) {
                 // La longueur de la ligne COURANTE suit le dernier « Freq_match ».
                 if (lineLen && wl == liveLine && cyclesLine > 0) liveLen = cyclesLine;
                 if (glueDiag)
-                    std::fprintf(stderr, "[GLUP] line=%d cyc=%d %s freq=%d -> mask=%03x de=%d..%d"
-                                 " vdeOn=%d vdeOff=%d vo=%02x refresh=%d\n",
-                                 wl, lc, w.isRes ? "res" : "sync", freqHz,
-                                 lines[wl].borderMask, lines[wl].displayStartCycle,
-                                 lines[wl].displayEndCycle,
-                                 vdeOn, vdeOff, vOverscan, screenRefreshRate);
+                    neost::log::err("[GLUP] line=%d cyc=%d %s freq=%d -> mask=%03x de=%d..%d"
+                                    " vdeOn=%d vdeOff=%d vo=%02x refresh=%d\n",
+                                    wl, lc, w.isRes ? "res" : "sync", freqHz,
+                                    lines[wl].borderMask, lines[wl].displayStartCycle,
+                                    lines[wl].displayEndCycle,
+                                    vdeOn, vdeOff, vOverscan, screenRefreshRate);
                 ++liveWi;
                 continue;
             }
@@ -171,7 +172,7 @@ void VideoGlue::liveGlueCatchUp(int targetLine) {
         // à diff'er contre les « HBL n start= » d'Hatari (--trace video_hbl).
         static const bool llenDump = std::getenv("NEOST_LLEN_DUMP") != nullptr;
         if (llenDump && lineLen && liveLine >= 0 && liveLen != cpl)
-            std::fprintf(stderr, "[LLD] line=%d len=%d\n", liveLine, liveLen);
+            neost::log::err("[LLD] line=%d len=%d\n", liveLine, liveLen);
         ++liveLine;
         if (lineLen) {
             if (static_cast<std::size_t>(liveLine) < lineStart.size())
@@ -294,8 +295,8 @@ int Shifter::glueLineBytes(int scanline) const {
     // la trace Hatari `video_res,video_sync` (detect remove/extend border).
     static const bool glueDiag = std::getenv("NEOST_GLUE_DIAG") != nullptr;
     if (glueDiag && bytes != 160)
-        std::fprintf(stderr, "[GLUE] line=%d mask=%03x de=%d..%d bytes=%d\n",
-                     scanline, L.borderMask, L.displayStartCycle, L.displayEndCycle, bytes);
+        neost::log::err("[GLUE] line=%d mask=%03x de=%d..%d bytes=%d\n",
+                        scanline, L.borderMask, L.displayStartCycle, L.displayEndCycle, bytes);
     return bytes;
 }
 
@@ -348,7 +349,7 @@ void Shifter::recordSyncWrite(bool isRes, uint8_t val) {
     // QUE si un trick est déjà armé). Cf. menu Cuddly : retrait bordure basse non détecté.
     if (std::getenv("NEOST_SYNC_TRACE")) {
         const int cpl = geometry().cyclesPerLine;
-        std::fprintf(stderr, "[SYNC] %s val=%02x line=%lld cyc=%lld pc=%06x\n",
+        neost::log::err("[SYNC] %s val=%02x line=%lld cyc=%lld pc=%06x\n",
             isRes ? "res " : "freq", val, static_cast<long long>(fc / cpl),
             static_cast<long long>(fc % cpl), bus_.cpu ? bus_.cpu->pc() : 0);
     }
@@ -366,7 +367,7 @@ void Shifter::recordSyncWrite(bool isRes, uint8_t val) {
         const int cpl = geometry().cyclesPerLine;
         const int64_t fcRaw = liveFrameClock_();
         const int64_t into = bus_.cpu->cyclesIntoInstr();
-        std::fprintf(stderr, "[WDIAG] %s val=%02x line=%lld cyc=%lld into=%lld pc=%06x\n",
+        neost::log::err("[WDIAG] %s val=%02x line=%lld cyc=%lld into=%lld pc=%06x\n",
             isRes ? "res " : "freq", val, static_cast<long long>(fcRaw / cpl),
             static_cast<long long>(fcRaw % cpl), static_cast<long long>(into),
             bus_.cpu->pc());
@@ -446,8 +447,8 @@ void Shifter::writeShifterRes(uint8_t res) {
         shifterStopLine_  = line;                        // lignes > line décalées
         shifterStopShift_ = shift;
         if (std::getenv("NEOST_SYNC_TRACE"))
-            std::fprintf(stderr, "[SYNC] shifter stop line=%d cyc=%d..%d shift=%d inc=%d\n",
-                         line, shifterResCyc_, lineCyc, shift, inc);
+            neost::log::err("[SYNC] shifter stop line=%d cyc=%d..%d shift=%d inc=%d\n",
+                            line, shifterResCyc_, lineCyc, shift, inc);
     }
     // Intervalle « Shifter arrêté » (rendu noir, cf. lineStoppedOver).
     if (res == 3) {
@@ -908,8 +909,8 @@ void VideoGlue::updateGlueRes(int line, int lineCycles, int prevRes, int newRes)
     if (medDiag && newRes == 1) {
         static long n = 0;
         if (++n % 200 == 0)
-            std::fprintf(stderr, "[MEDR] line=%d lc=%d prev=%d bm=%05x\n",
-                         line, lineCycles, prevRes, GL.borderMask);
+            neost::log::err("[MEDR] line=%d lc=%d prev=%d bm=%05x\n",
+                            line, lineCycles, prevRes, GL.borderMask);
     }
 
     // hi → med tôt dans la ligne avec retrait gauche déjà posé : le retrait
@@ -1120,9 +1121,9 @@ void VideoGlue::replayGlue() {
             // écart annoncé sans savoir s'il a le moindre effet.
             static const bool attrTrace = std::getenv("NEOST_VARLINE_TRACE") != nullptr;
             if (attrTrace)
-                std::fprintf(stderr, "[attr] lineLen=%d %s=%02x fc=%d -> L%d/c%d len=%d\n",
-                             lineLen ? 1 : 0, w.isRes ? "res" : "frq", w.val,
-                             static_cast<int>(w.frameCycle), line, lc, len);
+                neost::log::err("[attr] lineLen=%d %s=%02x fc=%d -> L%d/c%d len=%d\n",
+                                lineLen ? 1 : 0, w.isRes ? "res" : "frq", w.val,
+                                static_cast<int>(w.frameCycle), line, lc, len);
         }
         lineCyc += len;
     }
@@ -1162,31 +1163,31 @@ void VideoGlue::replayGlue() {
     // Stat Glue (gated NEOST_GLUE_STAT) : liste les écritures freq/res datées de la
     // trame (ligne, cycle, registre, valeur) — diagnostic « pourquoi pas de trick ».
     if (!syncWrites.empty() && std::getenv("NEOST_GLUE_STAT")) {
-        std::fprintf(stderr, "[gluestat] %zu writes:", syncWrites.size());
+        neost::log::err("[gluestat] %zu writes:", syncWrites.size());
         for (std::size_t i = 0; i < syncWrites.size() && i < 24; ++i) {
             const SyncWrite& w = syncWrites[i];
-            std::fprintf(stderr, " %s=%02X@%lld+%d", w.isRes ? "res" : "frq", w.val,
-                         (long long)(w.frameCycle / cpl), (int)(w.frameCycle % cpl));
+            neost::log::err(" %s=%02X@%lld+%d", w.isRes ? "res" : "frq", w.val,
+                            (long long)(w.frameCycle / cpl), (int)(w.frameCycle % cpl));
         }
-        std::fprintf(stderr, " | trick=%d start=%d end=%d\n", bordersTrick ? 1 : 0,
-                     vdeOn, vdeOff);
+        neost::log::err(" | trick=%d start=%d end=%d\n", bordersTrick ? 1 : 0,
+                        vdeOn, vdeOff);
     }
 
     // Trace bordure (gated NEOST_BORDER_TRACE) : pour le diff oracle Hatari
     // (video_border_h/v). Émet les retraits détectés cette trame, format comparable.
     if (bordersTrick && std::getenv("NEOST_BORDER_TRACE")) {
         if (vdeOn < baseStart)
-            std::fprintf(stderr, "detect remove top (nStartHBL=%d)\n", vdeOn);
+            neost::log::err("detect remove top (nStartHBL=%d)\n", vdeOn);
         if (vdeOff > baseEnd)
-            std::fprintf(stderr, "detect remove bottom (nEndHBL=%d)\n", vdeOff);
+            neost::log::err("detect remove bottom (nEndHBL=%d)\n", vdeOff);
         int nLeft = 0, nRight = 0;
         for (int sl = vdeOn; sl < vdeOff && sl < (int)lines.size(); ++sl) {
             const GlueLine& L = lines[sl];
             if (L.displayStartCycle >= 0 && L.displayStartCycle < nomStart) ++nLeft;
             if (L.displayEndCycle > nomEnd) ++nRight;
         }
-        if (nLeft)  std::fprintf(stderr, "detect remove left x%d\n", nLeft);
-        if (nRight) std::fprintf(stderr, "detect remove right x%d\n", nRight);
+        if (nLeft)  neost::log::err("detect remove left x%d\n", nLeft);
+        if (nRight) neost::log::err("detect remove right x%d\n", nRight);
     }
 
     // INSTRUMENTATION (gated NEOST_VARLINE_TRACE) — chantier « longueur de ligne variable » :
@@ -1214,7 +1215,7 @@ void VideoGlue::replayGlue() {
                 if (fixedLine != vline) {
                     ++ndiff;
                     if (++nshown <= 24)
-                        std::fprintf(stderr, "[varline] %s=%02x fc=%d : fixed=L%d/c%d  var=L%d/c%d\n",
+                        neost::log::err("[varline] %s=%02x fc=%d : fixed=L%d/c%d  var=L%d/c%d\n",
                             w.isRes ? "res" : "frq", w.val, w.frameCycle, fixedLine,
                             static_cast<int>(w.frameCycle % cpl), vline,
                             static_cast<int>(w.frameCycle - cyc));
@@ -1224,8 +1225,8 @@ void VideoGlue::replayGlue() {
             }
             cyc += len; ++vline;
         }
-        std::fprintf(stderr, "[varline] %d/%zu writes misattributed (fixed!=variable) | final drift=%lld cyc\n",
-                     ndiff, nw, static_cast<long long>(cyc - static_cast<int64_t>(vline) * cpl));
+        neost::log::err("[varline] %d/%zu writes misattributed (fixed!=variable) | final drift=%lld cyc\n",
+                        ndiff, nw, static_cast<long long>(cyc - static_cast<int64_t>(vline) * cpl));
     }
 }
 
@@ -1302,7 +1303,7 @@ bool Shifter::glueSelfTest() {
     };
     auto chk = [&](const char* name, long got, long want) {
         if (got == want) { ++pass; }
-        else { ++fail; std::fprintf(stderr, "  FAIL %-26s got=%ld want=%ld\n", name, got, want); }
+        else { ++fail; neost::log::err("  FAIL %-26s got=%ld want=%ld\n", name, got, want); }
     };
     // Attentes sur la table de la MACHINE COURANTE (STF WS3 ou STE) : les stimuli
     // ci-dessous tombent dans les fenêtres des deux machines, les positions
@@ -1864,7 +1865,7 @@ bool Shifter::glueSelfTest() {
         bus_.machine = oldMachine; setLiveFrameClock(oldClock); reset();
     }
 
-    std::fprintf(stderr, "[glue-selftest] %d OK, %d FAIL\n", pass, fail);
+    neost::log::err("[glue-selftest] %d OK, %d FAIL\n", pass, fail);
     return fail == 0;
 }
 

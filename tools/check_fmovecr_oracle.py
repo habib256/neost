@@ -126,7 +126,8 @@ int main() {
         run([os.environ.get('CXX', 'c++'), '-std=c++17', '-O2', '-I', hatari/'src/cpu',
              oracle_cpp, sf_object, '-o', oracle_bin])
         run([os.environ.get('CXX', 'c++'), '-std=c++17', '-O2', '-I', ROOT/'src/io',
-             '-I', ROOT/'src', cir_cpp, args.fpu_source.resolve(), '-o', cir_bin])
+             '-I', ROOT/'src', cir_cpp, args.fpu_source.resolve(),
+             ROOT/'src/util/Log.cpp', '-o', cir_bin])   # journaux de Fpu.cpp (puits du cœur)
         oracle = run([oracle_bin]).stdout.splitlines()
         actual = run([cir_bin]).stdout.splitlines()
     except subprocess.CalledProcessError as exc:

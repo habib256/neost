@@ -112,7 +112,8 @@ def main():
         driver.write_text(PROBE)
         run([cc, "-O2", "-I", str(hatari / "src/cpu"), "-c", str(source), "-o", str(obj)])
         build = [cxx, "-std=c++17", "-O2", "-I", str(root / "src"),
-                 "-I", str(root / "src/io"), "-I", str(hatari / "src/cpu"), str(driver)]
+                 "-I", str(root / "src/io"), "-I", str(hatari / "src/cpu"), str(driver),
+                 str(root / "src/util/Log.cpp")]   # journaux de Fpu.cpp (puits du cœur)
         run(build + [str(root / "src/io/Fpu.cpp"), str(obj), "-o", str(executable)])
         print(run([str(executable)], quiet_stderr=True).stdout, end="")
         if args.check_mutation:

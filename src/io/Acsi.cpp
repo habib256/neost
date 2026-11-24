@@ -9,6 +9,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/Acsi.hpp"
+#include "util/Log.hpp"
 
 #include <algorithm>
 #include <cstdlib>
@@ -72,8 +73,8 @@ bool Acsi::mount(int target, const std::string& path) {
     // puis READ CAPACITY annoncerait une capacité sans rapport avec les accès.
     // Refuser avant fopen/conversion plutôt que monter une image tronquée.
     if (ec || sz == 0 || (sz & 511) || sz / 512 > UINT32_MAX) {
-        std::fprintf(stderr, "[acsi] invalid image (zero size, not a multiple of 512, or exceeds 32-bit block count): %s\n",
-                     path.c_str());
+        neost::log::err("[acsi] invalid image (zero size, not a multiple of 512, or exceeds 32-bit block count): %s\n",
+                        path.c_str());
         d.path.clear();          // même raison qu'unmountAll : pas de chemin sans image
         d.enabled = devicePopulated;
         return false;
@@ -82,7 +83,7 @@ bool Acsi::mount(int target, const std::string& path) {
     FILE* fp = fopen(path.c_str(), "rb+");
     if (!fp) { fp = fopen(path.c_str(), "rb"); ro = true; }
     if (!fp) {
-        std::fprintf(stderr, "[acsi] cannot open: %s\n", path.c_str());
+        neost::log::err("[acsi] cannot open: %s\n", path.c_str());
         d.path.clear();          // même raison qu'unmountAll
         d.enabled = devicePopulated;
         return false;
@@ -95,8 +96,8 @@ bool Acsi::mount(int target, const std::string& path) {
     d.lastError = HD_REQSENS_OK;
     d.enabled = true;
     d.path = path;
-    std::fprintf(stderr, "[acsi] ACSI %d <-> %s (%u sectors, %.1f MB%s)\n",
-                 target, path.c_str(), d.hdSize, d.hdSize / 2048.0, ro ? ", read-only" : "");
+    neost::log::err("[acsi] ACSI %d <-> %s (%u sectors, %.1f MB%s)\n",
+                    target, path.c_str(), d.hdSize, d.hdSize / 2048.0, ro ? ", read-only" : "");
     return true;
 }
 
@@ -143,8 +144,8 @@ void Acsi::attachUltraSatan(int firstTarget, UltraSatan* dev) {
         devs_[firstTarget + s].enabled = true;      // slot peuplé → IRQ ACSI, INQUIRY répond
         devs_[firstTarget + s].lastError = HD_REQSENS_OK;
     }
-    std::fprintf(stderr, "[usatan] UltraSatan attached on ACSI targets %d-%d\n",
-                 firstTarget, std::min(firstTarget + 1, MAX_DEVS - 1));
+    neost::log::err("[usatan] UltraSatan attached on ACSI targets %d-%d\n",
+                    firstTarget, std::min(firstTarget + 1, MAX_DEVS - 1));
 }
 
 void Acsi::detachUltraSatan() {
@@ -521,8 +522,8 @@ void Acsi::emulateCommand() {
     }
     static const bool trace = getenv("NEOST_ACSI_TRACE") != nullptr;
     if (trace)
-        std::fprintf(stderr, "[acsi] t=%d op=0x%02X lba=%u cnt=%d -> status=%d len=%d%s\n",
-                     target_, opcode_, lba(), count(), status_, dataLen_, dmaWrite_ ? " (write)" : "");
+        neost::log::err("[acsi] t=%d op=0x%02X lba=%u cnt=%d -> status=%d len=%d%s\n",
+                        target_, opcode_, lba(), count(), status_, dataLen_, dmaWrite_ ? " (write)" : "");
 }
 
 // -----------------------------------------------------------------------------

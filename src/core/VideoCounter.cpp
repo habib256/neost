@@ -13,6 +13,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/ShifterInternal.hpp"
+#include "util/Log.hpp"
 #include "core/VideoGlue.hpp"
 #include "core/Shifter.hpp"
 #include "core/Bus.hpp"
@@ -411,10 +412,10 @@ uint32_t VideoCounter::read(int64_t fc, GlueView& glue, bool lineLenRead) const 
     // trame — à diff'er entre builds/против Hatari video_addr (calibrations LX/EL).
     static const bool vcTrace = std::getenv("NEOST_VC_TRACE") != nullptr;
     if (vcTrace) {
-        std::fprintf(stderr, "[VC] fc=%lld line=%d X=%d addr=%06X vcY=%d vcB=%06X"
-                     " dispStart=%d disp2=%d la=%d ",
-                     (long long)fc, line, X, addr & 0xFFFFFF, lineY, lineBase,
-                     dispStart, disp2, la);
+        neost::log::err("[VC] fc=%lld line=%d X=%d addr=%06X vcY=%d vcB=%06X"
+                        " dispStart=%d disp2=%d la=%d ",
+                        (long long)fc, line, X, addr & 0xFFFFFF, lineY, lineBase,
+                        dispStart, disp2, la);
         glue.traceSyncWrites();
     }
     // Compteur 22 bits : l'intra-ligne/l'extrapolation ne peuvent pas « déborder »
@@ -431,12 +432,12 @@ bool Shifter::lineState(int line, int& displayStartCycle, uint32_t& borderMask) 
 }
 
 void Shifter::traceSyncWrites() const {
-    std::fprintf(stderr, "sw=%zu startHBL=%d [", glue_.syncWrites.size(), glue_.vdeOn);
+    neost::log::err("sw=%zu startHBL=%d [", glue_.syncWrites.size(), glue_.vdeOn);
     for (std::size_t i = 0; i < glue_.syncWrites.size() && i < 8; ++i)
-        std::fprintf(stderr, "%s%c%02x@%d", i ? " " : "",
-                     glue_.syncWrites[i].isRes ? 'r' : 'f', glue_.syncWrites[i].val,
-                     glue_.syncWrites[i].frameCycle);
-    std::fprintf(stderr, "]\n");
+        neost::log::err("%s%c%02x@%d", i ? " " : "",
+                        glue_.syncWrites[i].isRes ? 'r' : 'f', glue_.syncWrites[i].val,
+                        glue_.syncWrites[i].frameCycle);
+    neost::log::err("]\n");
 }
 
 // Écriture du compteur vidéo $FF8205/07/09 (STE/TT) — port fidèle de

@@ -283,4 +283,52 @@ private:
     bool   armed_  = false;
 };
 
+// -----------------------------------------------------------------------------
+//  Géométrie et cadence NOMINALES, pour un frontend qui veut un ÉVÉNEMENT.
+// -----------------------------------------------------------------------------
+// libretro n'accepte pas une taille d'image et une cadence relues à chaque trame : il
+// veut qu'on lui ANNONCE un changement (RETRO_ENVIRONMENT_SET_GEOMETRY pour la taille,
+// SET_SYSTEM_AV_INFO pour la cadence, qui réinitialise sa sortie audio et vidéo —
+// docs/LIBRETRO.md). Or une trame isolée peut sortir de la règle : bascule 50/60 Hz ou
+// changement de résolution en cours de trame, ouverture d'overscan d'une seule trame.
+// Une valeur n'est donc ANNONCÉE qu'après kStable trames consécutives identiques — même
+// principe que l'attaque du cadrage adaptatif (core/Framing.cpp, kAttack).
+class AvTracker {
+public:
+    static constexpr int kStable = 3;
+    struct Av {
+        int     width = 0, height = 0;
+        int64_t frameCycles = 0;          // durée de la trame (lignes × cycles par ligne)
+    };
+    enum Change : unsigned { None = 0, Geometry = 1, Timing = 2 };
+
+    // À appeler une fois par trame émulée. Rend ce qui change dans l'annonce à cette
+    // trame (masque de Change) ; la PREMIÈRE trame annonce tout.
+    unsigned onFrame(int width, int height, int64_t frameCycles) {
+        const Av v{width, height, frameCycles};
+        if (!armed_) { announced_ = candidate_ = v; streak_ = kStable; armed_ = true;
+                       return Geometry | Timing; }
+        if (same(v, announced_)) { candidate_ = v; streak_ = kStable; return None; }
+        if (same(v, candidate_)) ++streak_; else { candidate_ = v; streak_ = 1; }
+        if (streak_ < kStable) return None;
+        unsigned c = None;
+        if (v.width != announced_.width || v.height != announced_.height) c |= Geometry;
+        if (v.frameCycles != announced_.frameCycles) c |= Timing;
+        announced_ = v;
+        return c;
+    }
+    const Av& announced() const { return announced_; }
+    // Cadence annoncée en Hz (suit le quartz en service, cf. cpuHz).
+    double fps() const { return announced_.frameCycles > 0 ? cpuHz() / double(announced_.frameCycles) : 0.0; }
+    void reset() { *this = AvTracker{}; }
+
+private:
+    static bool same(const Av& a, const Av& b) {
+        return a.width == b.width && a.height == b.height && a.frameCycles == b.frameCycles;
+    }
+    Av   announced_{}, candidate_{};
+    int  streak_ = 0;
+    bool armed_  = false;
+};
+
 }  // namespace neost::pacing

@@ -9,12 +9,25 @@
 //  Demande de l'auteur (2026-11-13) : le terminal était trop bavard (rappels de
 //  callback audio, version GLSL, chaque reprogrammation de l'USART du MFP…).
 //
+//  PUITS (2026-11-24) : les journaux du cœur (src/core, src/io, src/util) passent par
+//  err(), et non plus par fprintf(stderr, …). Sans puits posé, err() écrit sur stderr,
+//  octet pour octet comme avant — les outils du harnais lisent stderr. Un frontend qui
+//  n'a pas de terminal les détourne par setSink : libretro vers retro_log_printf
+//  (docs/LIBRETRO.md). Les frontends eux-mêmes gardent leurs fprintf.
+//
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #pragma once
 
 #include <atomic>
+#include <cstdarg>
 #include <string>
+
+#if defined(__GNUC__) || defined(__clang__)
+#define NEOST_PRINTF_FMT(f, a) __attribute__((format(printf, f, a)))
+#else
+#define NEOST_PRINTF_FMT(f, a)
+#endif
 
 namespace neost::log {
 
@@ -25,6 +38,15 @@ inline std::atomic<bool>& verboseFlag() {
 // Vrai : journaux détaillés (défaut, headless). Faux : terminal sobre (GUI).
 inline bool verbose() { return verboseFlag().load(std::memory_order_relaxed); }
 inline void setVerbose(bool v) { verboseFlag().store(v, std::memory_order_relaxed); }
+
+// Puits des journaux du cœur : reçoit chaque appel à err() déjà formaté (le texte
+// porte ses fins de ligne, comme l'ancien fprintf). nullptr = stderr. À poser avant de
+// lancer l'émulation : il n'est pas protégé contre un changement concurrent.
+using Sink = void (*)(const char* text, void* user);
+void setSink(Sink sink, void* user = nullptr);
+// ≡ std::fprintf(stderr, fmt, …) tant qu'aucun puits n'est posé.
+void err(const char* fmt, ...) NEOST_PRINTF_FMT(1, 2);
+void verr(const char* fmt, va_list ap);
 
 // Nom de fichier seul (le terminal sobre ne montre pas « …/build/../disks/st/ »).
 inline std::string baseName(const std::string& path) {

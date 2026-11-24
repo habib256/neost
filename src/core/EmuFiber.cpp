@@ -10,6 +10,7 @@
 #  define _DARWIN_C_SOURCE 1
 #endif
 #include "core/EmuFiber.hpp"
+#include "util/Log.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -132,7 +133,7 @@ void EmuFiber::abort() {
     // Ne peut pas dérouler sur place : le frontend web diffère reset, reconfiguration
     // et chargement de ROM jusqu'à la fin du déroulement (requestAbort). Arriver ici
     // est un défaut du frontend — on s'arrête net plutôt que de corrompre l'état.
-    std::fprintf(stderr, "[fiber] synchronous abort requested while parked (JSPI)\n");
+    neost::log::err("[fiber] synchronous abort requested while parked (JSPI)\n");
     std::abort();
 }
 
@@ -213,7 +214,7 @@ EmuFiber::EmuFiber() : impl_(new Impl) {
     impl_->map = mmap(nullptr, impl_->mapBytes, PROT_READ | PROT_WRITE,
                       MAP_PRIVATE | MAP_ANON, -1, 0);
     if (impl_->map == MAP_FAILED) {
-        std::fprintf(stderr, "[fiber] cannot map the emulation stack\n");
+        neost::log::err("[fiber] cannot map the emulation stack\n");
         std::abort();
     }
     mprotect(impl_->map, page, PROT_NONE);       // garde : un débordement faute net
@@ -227,14 +228,14 @@ EmuFiber::EmuFiber() : impl_(new Impl) {
     pthread_attr_init(&attr);
     pthread_attr_setstacksize(&attr, kStackBytes);
     if (pthread_create(&impl_->thread, &attr, fiberThreadEntry, this) != 0) {
-        std::fprintf(stderr, "[fiber] cannot start the emulation thread\n");
+        neost::log::err("[fiber] cannot start the emulation thread\n");
         std::abort();
     }
     pthread_attr_destroy(&attr);
 #else
     impl_->fiber = CreateFiber(kStackBytes, fiberEntryWin, this);
     if (!impl_->fiber) {
-        std::fprintf(stderr, "[fiber] cannot create the emulation fiber\n");
+        neost::log::err("[fiber] cannot create the emulation fiber\n");
         std::abort();
     }
 #endif

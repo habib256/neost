@@ -776,13 +776,11 @@ bool switchRom(Machine& m, const std::string& dataDir, int index) {
     if (index < 0 || index >= neost::kAndroidRomCount) return false;
     const neost::AndroidRom& r = neost::kAndroidRoms[index];
     const std::string path = dataDir + "/" + r.file;
-    if (!m.loadTos(path)) { NEOERR("ROM not loadable: %s - previous ROM kept", path.c_str()); return false; }
-    const MachineType mt = Machine::adjustMachineForTos(r.machine, path);
-    if (mt != m.machineType()) m.reconfigure(m.bus.ram.size(), CpuCore::Moira, mt);
+    if (!m.switchTos(path, r.machine)) { NEOERR("ROM not loadable: %s - previous ROM kept", path.c_str()); return false; }
     neost::stkeys::setCountryFromTos(m.bus.rom);   // pays du TOS → clavier physique
     m.mfp.setColorMonitor(true);
     m.hardReset();
-    NEOLOG("ROM: %s (%s)", r.file, machineName(mt));
+    NEOLOG("ROM: %s (%s)", r.file, machineName(m.machineType()));
     return true;
 }
 
@@ -908,8 +906,7 @@ int main(int argc, char* argv[]) {
 
     // MODÈLE « PUSH » : sans ces deux horloges, synthesizeFrame rend un jeu de
     // registres que plus rien ne met à jour — la machine serait MUETTE.
-    machine.psg.setCycleClock([] { return g_machine->frameRelCycle(); });
-    machine.dmasnd.setCycleClock([] { return g_machine->frameRelCycle(); });
+    machine.armAudioClocks();
     // À FROID, pas à chaud : au premier lancement c'est équivalent (RAM neuve), mais
     // la Machine est STATIQUE — sur une relance dans le même processus, un reset()
     // gardait la RAM de la partie précédente et son « memvalid », et le TOS refaisait
@@ -1125,8 +1122,7 @@ int main(int argc, char* argv[]) {
 
         // Manette : au ST seulement quand l'interface ne la réclame pas.
         const uint8_t joy = uiHasInput ? 0 : readPad(pad);
-        machine.ikbd.setJoystick(0, joy);             // port 1 = port « jeux »
-        machine.bus.setStePadInput(0, joy);
+        machine.setJoysticks(0, joy);                 // port 1 = port « jeux » (IKBD + STE)
         machine.cpu.updateIpl();
 
         const double nowMs = double(SDL_GetTicks64());

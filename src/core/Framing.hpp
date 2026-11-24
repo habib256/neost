@@ -30,8 +30,11 @@
 //  `NEOST_FRAMING_DIAG=1` sur neost-headless.
 //
 //  À appeler UNE fois par trame RENDUE : l'hystérésis se compte en trames.
-//  Les latches sont des statiques de fonction — un seul jeu par processus, donc
-//  un aller-retour bureau ⇄ kiosk ne réinitialise pas l'hystérésis en cours.
+//  Les latches vivent dans un FramingLatch tenu par l'appelant (2026-11-24) : ils
+//  étaient des statiques de fonction, qu'un nouveau jeu dans le même processus
+//  (libretro : retro_load_game après retro_unload_game, docs/LIBRETRO.md) héritait
+//  de la session précédente. Le GUI garde UN latch pour tout le processus, si bien
+//  qu'un aller-retour bureau ⇄ kiosk ne réinitialise toujours pas l'hystérésis.
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
@@ -46,6 +49,16 @@ namespace neost {
 // bordures latérales sont du décor, rognables), le buffer entier dès qu'une
 // bordure est ouverte (l'image déborde alors DANS les bordures). Les frontends
 // s'en servent comme plancher : ils n'amputent jamais l'image elle-même.
-void stContentRegion(const Shifter& sh, int& cTop, int& cH, int& cW);
+// Hystérésis du cadrage (cf. Framing.cpp). Un par affichage ; reset() pour repartir
+// à froid (nouveau jeu, nouvelle machine).
+struct FramingLatch {
+    int  overscanLatch = 0;   // trames de maintien restantes, bordure ouverte (haut ou bas)
+    int  openStreak = 0;      // trames CONSÉCUTIVES à bordure ouverte (cf. kAttack)
+    int  latchTop = 0, latchBot = 0;   // étendue verticale RETENUE
+    bool latchWide = false;   // largeur RETENUE : buffer entier ?
+    void reset() { *this = FramingLatch{}; }
+};
+
+void stContentRegion(const Shifter& sh, FramingLatch& latch, int& cTop, int& cH, int& cW);
 
 }  // namespace neost

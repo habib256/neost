@@ -8,6 +8,7 @@
 // =============================================================================
 #include <algorithm>
 #include "io/Isp1160.hpp"
+#include "util/Log.hpp"
 #include "core/Pacing.hpp"
 
 #include <cstdio>
@@ -44,7 +45,7 @@ constexpr uint16_t PTD_ACTIVE = 1 << 11, PTD_CC_MASK = 0xF << 12, PTD_CC_NOTRESP
 
 void Isp1160::trace(const char* what, unsigned a, unsigned b) const {
     static const bool on = std::getenv("NEOST_USB_TRACE") != nullptr;
-    if (on) std::fprintf(stderr, "[isp1160] %s %04x %08x\n", what, a, b);
+    if (on) neost::log::err("[isp1160] %s %04x %08x\n", what, a, b);
 }
 
 void Isp1160::reset() {

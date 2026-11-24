@@ -4,6 +4,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/ShifterInternal.hpp"
+#include "util/Log.hpp"
 #include "core/VideoGlue.hpp"
 #include "core/Shifter.hpp"
 #include "core/Bus.hpp"
@@ -774,7 +775,7 @@ void Shifter::recordColorWrite(int index) {
     if (std::getenv("NEOST_COL_DIAG")) {
         const int cpl = geometry().cyclesPerLine;
         const int64_t into = bus_.cpu ? bus_.cpu->cyclesIntoInstr() : -1;
-        std::fprintf(stderr, "[COL] base=%06x line=%lld cyc=%lld into=%lld idx=%d col=%03x pc=%06x\n",
+        neost::log::err("[COL] base=%06x line=%lld cyc=%lld into=%lld idx=%d col=%03x pc=%06x\n",
             vc_.frameBase & 0xFFFFFF,
             static_cast<long long>(fc / cpl), static_cast<long long>(fc % cpl),
             static_cast<long long>(into), index, palette[index] & 0xFFF,
@@ -947,8 +948,8 @@ void Shifter::renderGlueFrame() {
                              static_cast<int>(w.frameCycle % gg.cyclesPerLine),
                              w.index, w.colour & 0xFFF, w.pc);
             std::fclose(tf);
-            std::fprintf(stderr, "[spec512] %zu palette writes → %s\n",
-                         colorWrites_.size(), spcTrace);
+            neost::log::err("[spec512] %zu palette writes → %s\n",
+                            colorWrites_.size(), spcTrace);
         }
     }
 
@@ -963,8 +964,8 @@ void Shifter::renderGlueFrame() {
     static const int traceFrame = []{ const char* s = std::getenv("NEOST_RENDER_TRACE"); return s ? std::atoi(s) : -1; }();
     static const bool renderAll = std::getenv("NEOST_RENDER_ALL") != nullptr;   // toutes les lignes (≠ 12)
     const bool rtr = (traceFrame >= 0 && s_renderFrame >= traceFrame);
-    if (rtr) std::fprintf(stderr, "[render f%d] base=%06x start=%d end=%d vover=%d\n",
-                          s_renderFrame, vc_.frameBase & 0xFFFFFF, glue_.vdeOn, glue_.vdeOff, glue_.vOverscan);
+    if (rtr) neost::log::err("[render f%d] base=%06x start=%d end=%d vover=%d\n",
+                             s_renderFrame, vc_.frameBase & 0xFFFFFF, glue_.vdeOn, glue_.vdeOff, glue_.vOverscan);
 
     // Dimensionné pour le PIRE cas décodable : DE_end = LINE_END_FULL (512, hors
     // table — écriture 71 Hz mi-ligne) × 2 px/cycle (ligne med) = 1024 px, arrondi
@@ -1061,19 +1062,19 @@ void Shifter::renderGlueFrame() {
         if (medDiag && displayed && sl == 120) {
             static long n = 0;
             if (++n % 100 == 0)
-                std::fprintf(stderr, "[MED] sl=%d bm=%05x med=%d ds=%d de=%d snap=%d\n",
-                             sl, bm, lineMed ? 1 : 0, ds, de,
-                             (sl < (int)lineSnapLen_.size() && lineSnapLen_[sl] > 0) ? 1 : 0);
+                neost::log::err("[MED] sl=%d bm=%05x med=%d ds=%d de=%d snap=%d\n",
+                                sl, bm, lineMed ? 1 : 0, ds, de,
+                                (sl < (int)lineSnapLen_.size() && lineSnapLen_[sl] > 0) ? 1 : 0);
         }
         const int  lppc = lineMed ? 2 : ppc;               // px décodés par cycle de CETTE ligne
         int nPix = lineHasDE ? (de - ds) * lppc : 0;
         if (nPix > 1024) nPix = 1024;                      // garde idx : cf. dimensionnement ci-dessus
         if (rtr && displayed && (renderAll || sl < baseStart + 12))
-            std::fprintf(stderr, "  sl%d ds=%d de=%d bm=%03x sh=%d nPix=%d addr=%06x snap=%d snapLen=%d gbytes=%d\n",
-                         sl, ds, de, bm, shift, nPix, addr & 0xFFFFFF,
-                         (sl >= 0 && sl < (int)lineSnapLen_.size() && lineSnapLen_[sl] > 0) ? 1 : 0,
-                         (sl >= 0 && sl < (int)lineSnapLen_.size()) ? lineSnapLen_[sl] : -1,
-                         glueLineBytes(sl));
+            neost::log::err("  sl%d ds=%d de=%d bm=%03x sh=%d nPix=%d addr=%06x snap=%d snapLen=%d gbytes=%d\n",
+                            sl, ds, de, bm, shift, nPix, addr & 0xFFFFFF,
+                            (sl >= 0 && sl < (int)lineSnapLen_.size() && lineSnapLen_[sl] > 0) ? 1 : 0,
+                            (sl >= 0 && sl < (int)lineSnapLen_.size()) ? lineSnapLen_[sl] : -1,
+                            glueLineBytes(sl));
         // Scroll fin STE PAR LIGNE : la valeur capturée au commit de CETTE scanline
         // (lineScrollSnap_, même datation que lineSnap_) — un split qui change
         // $FF8264/65 à mi-trame était re-rendu tout entier avec le scroll de FIN
@@ -1378,7 +1379,7 @@ bool Shifter::spec512SelfTest() {
     int pass = 0, fail = 0;
     auto chk = [&](const char* name, long got, long want) {
         if (got == want) { ++pass; }
-        else { ++fail; std::fprintf(stderr, "  FAIL %-24s got=%ld want=%ld\n", name, got, want); }
+        else { ++fail; neost::log::err("  FAIL %-24s got=%ld want=%ld\n", name, got, want); }
     };
 
     // 0. Garde-fou : la constante d'alignement calibrée à l'oracle Hatari (spec512.c).
@@ -1501,7 +1502,7 @@ bool Shifter::spec512SelfTest() {
     chk("bordé : C2 présent (palette roulante)",      hasColor(C2) ? 1 : 0, 1);
     chk("bordé : C4 présent (curseur inter-lignes)",  hasColor(C4) ? 1 : 0, 1);
 
-    std::fprintf(stderr, "[spec512-selftest] %d OK, %d FAIL\n", pass, fail);
+    neost::log::err("[spec512-selftest] %d OK, %d FAIL\n", pass, fail);
     return fail == 0;
 }
 
@@ -1564,7 +1565,7 @@ uint8_t Shifter::read8(uint32_t addr) {
             const int X  = g.cyclesPerLine ? static_cast<int>(fc % g.cyclesPerLine) : 0;
             const uint32_t pc = bus_.cpu ? bus_.cpu->pc() : 0;
             const int into = bus_.cpu ? static_cast<int>(bus_.cpu->cyclesIntoInstr()) : -1;
-            std::fprintf(stderr,
+            neost::log::err(
                 "VC reg=%05x base=%06x addr=%06x fc=%lld line=%d X=%d start=%d cpl=%d "
                 "liveStart=%d sync=%zu pc=%06x into=%d\n",
                 addr, videoBase & 0xFFFFFFu, vc, static_cast<long long>(fc), ln, X,
@@ -1656,8 +1657,8 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
             static const bool baseTrace_ = std::getenv("NEOST_BASE_TRACE") != nullptr;
             if (baseTrace_ && liveFrameClock_) {
                 const int64_t fc = liveFrameClock_(); const int cpl = geometry().cyclesPerLine;
-                std::fprintf(stderr, "[base] $8203=%02x line=%lld cyc=%lld\n", v,
-                             (long long)(fc>=0?fc/cpl:-1), (long long)(fc>=0?fc%cpl:-1));
+                neost::log::err("[base] $8203=%02x line=%lld cyc=%lld\n", v,
+                                (long long)(fc>=0?fc/cpl:-1), (long long)(fc>=0?fc%cpl:-1));
             }
             return;
         // $FF820A répond sans créneau : SYNCSEL pose DTACK directement.

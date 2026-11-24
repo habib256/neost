@@ -243,7 +243,8 @@ def main():
             run([cc, "-O2", "-I", str(hatari / "src/cpu"), "-c", str(softfloat / name), "-o", str(obj)])
             objects.append(str(obj))
         build = [cxx, "-std=c++17", "-O2", f"-DRANDOM={args.random}", "-I", str(root / "src"),
-                 "-I", str(root / "src/io"), "-I", str(hatari / "src/cpu"), str(driver)]
+                 "-I", str(root / "src/io"), "-I", str(hatari / "src/cpu"), str(driver),
+                 str(root / "src/util/Log.cpp")]   # journaux de Fpu.cpp (puits du cœur)
         run(build + [str(root / "src/io/Fpu.cpp")] + objects + ["-o", str(executable)])
         print(run([str(executable)]).stdout, end="")
         if args.check_mutation:

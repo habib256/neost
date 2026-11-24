@@ -12,6 +12,8 @@
 // =============================================================================
 #include <algorithm>
 #include "core/Machine.hpp"
+#include "util/Log.hpp"
+#include "util/Crc32.hpp"
 #include "core/StateArchive.hpp"
 #include <cstdio>
 #include <cstdint>
@@ -66,7 +68,7 @@ MachineType Machine::adjustMachineForTos(MachineType requested, const std::strin
     // le STE ni le Mega STE → Hatari bascule en mode ST. machineIsSte() = STE || Mega STE
     // (le Mega ST tourne nativement sous TOS 1.0x, donc PAS de bascule).
     if (tosVer <= 0x0104 && machineIsSte(requested)) {
-        std::fprintf(stderr,
+        neost::log::err(
             "[NeoST] TOS %X.%02X only runs in ST mode (68000) — switching %s -> ST.\n"
             "        For STE/Mega STE, use EmuTOS 256 KB (etos256*) or TOS 1.62/2.06.\n",
             tosVer >> 8, tosVer & 0xFF, machineName(requested));
@@ -79,7 +81,7 @@ MachineType Machine::adjustMachineForTos(MachineType requested, const std::strin
     // moindre message — un utilisateur qui choisit « ST » avec un TOS 1.62 n'avait
     // aucun moyen de comprendre. Hatari bascule en STE et boote ; on fait pareil.
     if ((tosVer == 0x0106 || tosVer == 0x0162) && requested != MachineType::Ste) {
-        std::fprintf(stderr,
+        neost::log::err(
             "[NeoST] TOS %X.%02X is an STE-only ROM — switching %s -> STE.\n"
             "        (on ST its RAM clear overruns and halts the CPU: frozen screen)\n",
             tosVer >> 8, tosVer & 0xFF, machineName(requested));
@@ -91,7 +93,7 @@ MachineType Machine::adjustMachineForTos(MachineType requested, const std::strin
     // contourne cela par les patchs TP_ANTI_STE. Ici on conserve la ROM et
     // choisit le STE, sans changer les profils STE/Mega STE déjà compatibles.
     if (tosVer == 0x0205 && !machineIsSte(requested)) {
-        std::fprintf(stderr,
+        neost::log::err(
             "[NeoST] Unmodified TOS 2.05 requires STE hardware — switching %s -> STE.\n",
             machineName(requested));
         return MachineType::Ste;
@@ -102,7 +104,7 @@ MachineType Machine::adjustMachineForTos(MachineType requested, const std::strin
     // donc en STE, où ce TOS tourne normalement (cf. bug cube3d : Mega STE + TOS 1.62
     // = écran vide, alors que STE + 1.62 fonctionne).
     if (tosVer < 0x0200 && requested == MachineType::MegaSte) {
-        std::fprintf(stderr,
+        neost::log::err(
             "[NeoST] TOS %X.%02X does not support the Mega STE (cache/SCU/16 MHz) — switching Mega STE -> STE.\n"
             "        For a real Mega STE, use TOS 2.06 (tos206*) or EmuTOS 256 KB (etos256*).\n",
             tosVer >> 8, tosVer & 0xFF);
@@ -169,7 +171,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
         bus.watchBase_ = static_cast<uint32_t>(std::strtoul(w, nullptr, 16));
         bus.watchHook = [this](uint32_t addr, uint8_t v) {
             const int64_t fc = sched.liveNow() - frameStart_;
-            std::fprintf(stderr, "[WATCH] fc=%lld line=%lld cyc=%lld addr=%06x val=%02x pc=%06x\n",
+            neost::log::err("[WATCH] fc=%lld line=%lld cyc=%lld addr=%06x val=%02x pc=%06x\n",
                 static_cast<long long>(fc), static_cast<long long>(fc / cpl_),
                 static_cast<long long>(fc % cpl_), addr, v, cpu.pc());
         };
@@ -222,7 +224,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
         cpu.armHblPinAt(lineStart + hblPos);
         curLineLen_ = cyclesLine;
         syncFrameEnd_();                      // la fin de trame suit la ligne en cours
-        if (std::getenv("NEOST_LINELEN_TRACE")) std::fprintf(stderr,
+        if (std::getenv("NEOST_LINELEN_TRACE")) neost::log::err(
             "[LLEN] line=%d hblPos=%d len=%d carry=%lld\n", line, hblPos, cyclesLine,
             (long long)lineCarry_);
     });
@@ -240,8 +242,8 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
         sched.schedule(Scheduler::HBL, frameStart_ + lineStart + kHblPosHi);
         lineCarry_ += cpl_ - kLineLenHi;                  // lignes suivantes décalées plus tôt
         if (std::getenv("NEOST_V2_TRACE")) { static long n=0; if (++n % 500 == 0)
-            std::fprintf(stderr, "[v2] shorten #%ld line=%d cyc=%lld carry=%lld\n",
-                         n, hblLine_, (long long)lineCyc, (long long)lineCarry_); }
+            neost::log::err("[v2] shorten #%ld line=%d cyc=%lld carry=%lld\n",
+                            n, hblLine_, (long long)lineCyc, (long long)lineCarry_); }
     });
     // Connecteur de bouclage RS232 : les sorties RTS (port A bit3) et DTR (bit4) du
     // PSG recopient les entrées de contrôle du MFP — RTS→CTS (GPIP2), DTR→DCD (GPIP1)
@@ -677,8 +679,8 @@ void Machine::onTimerB() {
         // posLine = ce que voit la Glue MAINTENANT (déclenche le catch-up) ; le
         // delta pos↔posLine au tir révèle les tics partis avant leur re-cible.
         const int pl = timerBPosLine(tbLine_);
-        std::fprintf(stderr, "[TB] line=%d pos=%lld posLine=%d fired=%d\n",
-                     tbLine_, (long long)pos, pl, shifter.liveLineDisplayed(tbLine_) ? 1 : 0);
+        neost::log::err("[TB] line=%d pos=%lld posLine=%d fired=%d\n",
+                        tbLine_, (long long)pos, pl, shifter.liveLineDisplayed(tbLine_) ? 1 : 0);
     }
     if (shifter.liveLineDisplayed(tbLine_)) {
         mfp.hblankAt(tbScheduledAt_);
@@ -703,8 +705,8 @@ void Machine::onHbl() {
     static const long hblDiagN = []{ const char* s = std::getenv("NEOST_HBL_DIAG");
                                      return s ? std::atol(s) : 0L; }();
     if (hblDiagN) { static long n=0; if (++n % hblDiagN == 0)
-        std::fprintf(stderr, "[HBLD] line=%d sched=%lld live=%lld\n",
-                     hblLine_, (long long)sched.now(), (long long)sched.liveNow()); }
+        neost::log::err("[HBLD] line=%d sched=%lld live=%lld\n",
+                        hblLine_, (long long)sched.now(), (long long)sched.liveNow()); }
     cpu.raiseHbl();                                // HBL niveau 2 (gaté par le SR)
     // Son DMA STE : la FIFO 8 octets est entretenue à CHAQUE HBL (fetch au faisceau
     // + consommation DAC datée) — port de l'appel DmaSnd_STE_HBL_Update du handler
@@ -783,8 +785,8 @@ void Machine::onVbl() {
     static const bool vblTrace = std::getenv("NEOST_VBL_TRACE") != nullptr;
     if (vblTrace) {
         const int64_t evt = frameStart_ + (machineIsSte(machineType_) ? 68 : 64);
-        std::fprintf(stderr, "[vbl] over=%lld now=%lld\n",
-                     static_cast<long long>(sched.now() - evt), static_cast<long long>(sched.now()));
+        neost::log::err("[vbl] over=%lld now=%lld\n",
+                        static_cast<long long>(sched.now() - evt), static_cast<long long>(sched.now()));
     }
     cpu.raiseVbl();   // interruption trame (niveau 4) — une fois par trame
     // Tic VBL de l'IKBD (horloge interne $1B/$1C et garde initiale). La durée
@@ -824,14 +826,14 @@ void Machine::setFrameFiber(bool on) {
 bool Machine::requestParkedAbort() {
     if (!parkedInInstruction()) return false;
     if (EmuFiber::synchronous()) { abortParked_(); return false; }
-    std::fprintf(stderr, "[fiber] parked instruction abandoned (blitter transfer cut)\n");
+    neost::log::err("[fiber] parked instruction abandoned (blitter transfer cut)\n");
     fiber_->requestAbort();
     return true;
 }
 
 void Machine::abortParked_() {
     if (!parkedInInstruction()) return;
-    std::fprintf(stderr, "[fiber] parked instruction abandoned (blitter transfer cut)\n");
+    neost::log::err("[fiber] parked instruction abandoned (blitter transfer cut)\n");
     fiber_->abort();
     // L'instruction coupée laisse le cœur au milieu d'un cycle : l'appelant (reset,
     // reconfiguration, destruction) remplace cet état. Les gardes RAII du chemin (cœur,
@@ -968,8 +970,8 @@ void Machine::beginFrame_() {
     }
     static const bool frameDiag = std::getenv("NEOST_FRAME_DIAG") != nullptr;
     if (frameDiag)
-        std::fprintf(stderr, "[FRM] start=%lld mod4=%d lpf=%d cpl=%d\n",
-                     (long long)frameStart_, (int)(frameStart_ & 3), lpf_, cpl_);
+        neost::log::err("[FRM] start=%lld mod4=%d lpf=%d cpl=%d\n",
+                        (long long)frameStart_, (int)(frameStart_ & 3), lpf_, cpl_);
     scheduleFrameEvents();
     frameEnd_ = frameStart_ + static_cast<int64_t>(lpf_) * cpl_;
     // L'horloge temps réel compte les secondes en CYCLES : on lui donne la longueur
@@ -1220,7 +1222,7 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     // des divergences du test de déterminisme — l'offset fautif → la puce fautive).
     const bool mapDbg = !ar.loading() && std::getenv("NEOST_STATE_MAP");
     auto mapAt = [&](const char* who, size_t off) {
-        if (mapDbg) std::fprintf(stderr, "[state-map] %-8s @ %zu\n", who, off);
+        if (mapDbg) neost::log::err("[state-map] %-8s @ %zu\n", who, off);
     };
     bus.serialize(ar);      mapAt("cpu",     ar.saveSize());
     if (!ar.loading()) cpuSectionBegin_ = ar.saveSize();
@@ -1298,33 +1300,16 @@ static constexpr std::size_t kStateAcsiOffset  = kStateCfgOffset + Machine::kSes
 static constexpr std::size_t kStateCrcOffset   = kStateAcsiOffset + 4 * Machine::kAcsiTargets;
 static constexpr std::size_t kStateHeaderSize  = kStateCrcOffset + 4;
 
-// CRC32 (IEEE, réflexe, sans table) du payload : détecte un fichier corrompu de la
-// bonne longueur AVANT de muter la machine — la seule troncature était couverte.
-// Table du CRC-32 (polynôme réfléchi $EDB88320), construite une fois. La version
-// bit à bit d'origine faisait 8 décalages PAR OCTET : sur un état de 1,4 Mo elle
-// était le poste DOMINANT d'une reprise (mesuré : 21,6 ms par restauration, dont
-// deux CRC complets et une sérialisation de sauvegarde, contre 1,6 ms pour émuler
-// une trame). Valeurs produites IDENTIQUES — même polynôme, même initialisation,
-// même inversion finale : le format de fichier ne bouge pas et les états déjà
-// écrits restent lisibles (vérifié en relisant des états du binaire précédent).
-static const uint32_t* stateCrcTable() {
-    static const std::array<uint32_t, 256> table = [] {
-        std::array<uint32_t, 256> t{};
-        for (uint32_t i = 0; i < 256; ++i) {
-            uint32_t c = i;
-            for (int k = 0; k < 8; ++k) c = (c >> 1) ^ (0xEDB88320u & (0u - (c & 1u)));
-            t[i] = c;
-        }
-        return t;
-    }();
-    return table.data();
-}
-
+// CRC32 (IEEE, réflexe) du payload : détecte un fichier corrompu de la bonne longueur
+// AVANT de muter la machine — la seule troncature était couverte. Historique du coût :
+// bit à bit d'origine (21,6 ms par restauration d'un état de 1,4 Mo), puis table octet
+// par octet (~80 % d'un save comme d'un load en 2026-11 : 6,3 et 7,6 ms pour 1,87 Mo),
+// puis util/Crc32 (instruction CRC32 d'ARMv8, sinon découpage par 8 octets). Valeurs
+// produites IDENTIQUES à chaque étape — même polynôme, même initialisation, même
+// inversion finale : le format de fichier ne bouge pas et les états déjà écrits restent
+// lisibles (gardé par neost-selftest, qui confronte les trois chemins).
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n) {
-    const uint32_t* t = stateCrcTable();
-    uint32_t c = 0xFFFFFFFFu;
-    for (std::size_t i = 0; i < n; ++i) c = t[(c ^ p[i]) & 0xFFu] ^ (c >> 8);
-    return ~c;
+    return neost::crc32(p, n);
 }
 
 // Line-A ABI : DEV_TAB=-692, GCURX/Y=-602/-600, MOUSE_BT=-596.
@@ -1408,6 +1393,9 @@ void Machine::mouseEvent(int dx, int dy, bool left, bool right) {
 
 bool Machine::saveState(std::vector<uint8_t>& out) {
     out.clear();
+    // Taille du dernier état : un appelant qui passe un vecteur neuf à chaque trame
+    // n'en paie qu'une allocation, au lieu d'une croissance géométrique sur ~1,9 Mo.
+    out.reserve(lastStateBytes_);
     if (parkedInInstruction()) { lastStateError_ = kParkedReason; return false; }
     StateArchive ar = StateArchive::saver(out);
     serializeState(ar);
@@ -1418,6 +1406,7 @@ bool Machine::saveState(std::vector<uint8_t>& out) {
                                         out.size() - kStateHeaderSize);
         std::memcpy(out.data() + kStateCrcOffset, &crc, 4);
     }
+    lastStateBytes_ = out.size();
     return true;
 }
 
@@ -1468,9 +1457,9 @@ bool Machine::stateHeaderOk(const uint8_t* data, std::size_t n) {
     uint16_t version; std::memcpy(&version, data + 4, 2);
     if (magic != 0x4E535453u) { lastStateError_ = "Not a NeoST state file"; return false; }
     if (version != kStateVersion) {
-        std::fprintf(stderr, "[state] rejected: unsupported format v%u (this build of "
-                     "NeoST writes v%u) — older states are not compatible\n",
-                     version, static_cast<unsigned>(kStateVersion));
+        neost::log::err("[state] rejected: unsupported format v%u (this build of "
+                        "NeoST writes v%u) — older states are not compatible\n",
+                        version, static_cast<unsigned>(kStateVersion));
         lastStateError_ = "State from another NeoST version";
         return false;
     }
@@ -1479,10 +1468,10 @@ bool Machine::stateHeaderOk(const uint8_t* data, std::size_t n) {
     uint16_t tosV;  std::memcpy(&tosV, data + 11, 2);
     if (mt != static_cast<uint8_t>(machineType_) || ramSz != bus.ram.size()
         || tosV != bus.tosVersion) {
-        std::fprintf(stderr, "[state] rejected: the state was saved on a different config "
-                     "(machine %u/RAM %u KB/TOS %03x vs session %u/%zu KB/%03x)\n",
-                     mt, ramSz / 1024u, tosV, unsigned(machineType_),
-                     bus.ram.size() / 1024u, bus.tosVersion);
+        neost::log::err("[state] rejected: the state was saved on a different config "
+                        "(machine %u/RAM %u KB/TOS %03x vs session %u/%zu KB/%03x)\n",
+                        mt, ramSz / 1024u, tosV, unsigned(machineType_),
+                        bus.ram.size() / 1024u, bus.tosVersion);
         lastStateError_ = "State from another machine, RAM size or TOS";
         return false;
     }
@@ -1497,9 +1486,9 @@ bool Machine::stateHeaderOk(const uint8_t* data, std::size_t n) {
         // repris sous une ROM DIFFÉRENTE de même version passait donc, et la RAM restaurée
         // — vecteurs d'exception, piles, adresses de retour, pointeurs système — désignait
         // des adresses d'une AUTRE image : CPU figé, sans un mot d'explication.
-        std::fprintf(stderr, "[state] rejected: the state was saved with a DIFFERENT ROM "
-                     "image (same TOS version %03x, but the bytes differ) — reload the "
-                     "exact ROM used for the save\n", bus.tosVersion);
+        neost::log::err("[state] rejected: the state was saved with a DIFFERENT ROM "
+                        "image (same TOS version %03x, but the bytes differ) — reload the "
+                        "exact ROM used for the save\n", bus.tosVersion);
         lastStateError_ = "State saved with a different ROM image";
         return false;
     }
@@ -1510,16 +1499,16 @@ bool Machine::stateHeaderOk(const uint8_t* data, std::size_t n) {
                                        | (fdc.acsiAnyImage() ? 32u : 0u));
     const uint32_t curCartFp = cartFingerprint(bus.cart);
     if (flags != curFlags) {
-        std::fprintf(stderr, "[state] rejected: peripheral config mismatch — GEMDOS HD "
-                     "%s->%s, EtherNEC %s->%s, UltraSatan %s->%s, "
-                     "NetUSBee %s->%s, Cubase dongle %s->%s, ACSI image %s->%s "
-                     "(these must match the save)\n",
-                     (flags & 1) ? "active" : "inactive", (curFlags & 1) ? "active" : "inactive",
-                     (flags & 2) ? "active" : "inactive", (curFlags & 2) ? "active" : "inactive",
-                     (flags & 4) ? "active" : "inactive", (curFlags & 4) ? "active" : "inactive",
-                     (flags & 8) ? "active" : "inactive", (curFlags & 8) ? "active" : "inactive",
-                     (flags & 16) ? "active" : "inactive", (curFlags & 16) ? "active" : "inactive",
-                     (flags & 32) ? "mounted" : "none", (curFlags & 32) ? "mounted" : "none");
+        neost::log::err("[state] rejected: peripheral config mismatch — GEMDOS HD "
+                        "%s->%s, EtherNEC %s->%s, UltraSatan %s->%s, "
+                        "NetUSBee %s->%s, Cubase dongle %s->%s, ACSI image %s->%s "
+                        "(these must match the save)\n",
+                        (flags & 1) ? "active" : "inactive", (curFlags & 1) ? "active" : "inactive",
+                        (flags & 2) ? "active" : "inactive", (curFlags & 2) ? "active" : "inactive",
+                        (flags & 4) ? "active" : "inactive", (curFlags & 4) ? "active" : "inactive",
+                        (flags & 8) ? "active" : "inactive", (curFlags & 8) ? "active" : "inactive",
+                        (flags & 16) ? "active" : "inactive", (curFlags & 16) ? "active" : "inactive",
+                        (flags & 32) ? "mounted" : "none", (curFlags & 32) ? "mounted" : "none");
         lastStateError_ = ((flags ^ curFlags) == 32u)
             ? ((flags & 32) ? "State needs the ACSI hard disk image it was saved with"
                             : "State was saved without an ACSI hard disk image")
@@ -1535,20 +1524,20 @@ bool Machine::stateHeaderOk(const uint8_t* data, std::size_t n) {
             uint32_t fileFp;
             std::memcpy(&fileFp, data + kStateAcsiOffset + 4 * t, 4);
             if (fileFp == curAcsi[t]) continue;
-            std::fprintf(stderr, "[state] rejected: ACSI target %zu: %s (fingerprint "
-                         "%08x vs %08x) — mount the same image path and size\n", t,
-                         !fileFp ? "the save had no image there"
-                                 : !curAcsi[t] ? "the save's image is not mounted"
-                                               : "a different image than at save",
-                         fileFp, curAcsi[t]);
+            neost::log::err("[state] rejected: ACSI target %zu: %s (fingerprint "
+                            "%08x vs %08x) — mount the same image path and size\n", t,
+                            !fileFp ? "the save had no image there"
+                                    : !curAcsi[t] ? "the save's image is not mounted"
+                                                  : "a different image than at save",
+                            fileFp, curAcsi[t]);
             lastStateError_ = "State needs the same ACSI hard disk image on target "
                             + std::to_string(t);
             return false;
         }
     }
     if (cartFp != curCartFp) {
-        std::fprintf(stderr, "[state] rejected: the mounted cartridge is not the one from "
-                     "the save (fingerprint %08x vs %08x)\n", cartFp, curCartFp);
+        neost::log::err("[state] rejected: the mounted cartridge is not the one from "
+                        "the save (fingerprint %08x vs %08x)\n", cartFp, curCartFp);
         lastStateError_ = "State needs the cartridge it was saved with";
         return false;
     }
@@ -1556,19 +1545,19 @@ bool Machine::stateHeaderOk(const uint8_t* data, std::size_t n) {
     sessionConfig(curCfg);
     if (std::memcmp(curCfg, data + kStateCfgOffset, kSessionCfgSize) != 0) {
         const uint8_t* f = data + kStateCfgOffset;
-        std::fprintf(stderr, "[state] rejected: session config mismatch — dongle model "
-                     "%u->%u, ports (joy0/joy1/RS-232/printer/cart button) "
-                     "%u,%u,%u,%u,%u->%u,%u,%u,%u,%u, fast FDC %u->%u, "
-                     "quartz %u->%u, MFP phase %u->%u (these must match the save)\n",
-                     f[0], curCfg[0], f[1], f[2], f[3], f[4], f[5],
-                     curCfg[1], curCfg[2], curCfg[3], curCfg[4], curCfg[5], f[6], curCfg[6],
-                     f[7] & 3, curCfg[7] & 3, f[7] >> 2, curCfg[7] >> 2);
+        neost::log::err("[state] rejected: session config mismatch — dongle model "
+                        "%u->%u, ports (joy0/joy1/RS-232/printer/cart button) "
+                        "%u,%u,%u,%u,%u->%u,%u,%u,%u,%u, fast FDC %u->%u, "
+                        "quartz %u->%u, MFP phase %u->%u (these must match the save)\n",
+                        f[0], curCfg[0], f[1], f[2], f[3], f[4], f[5],
+                        curCfg[1], curCfg[2], curCfg[3], curCfg[4], curCfg[5], f[6], curCfg[6],
+                        f[7] & 3, curCfg[7] & 3, f[7] >> 2, curCfg[7] >> 2);
         lastStateError_ = "State needs the same dongle, port devices, fast-FDC and clock settings";
         return false;
     }
     uint32_t crc; std::memcpy(&crc, data + kStateCrcOffset, 4);
     if (crc != stateCrc32(data + kStateHeaderSize, n - kStateHeaderSize)) {
-        std::fprintf(stderr, "[state] rejected: invalid payload CRC (corrupt file)\n");
+        neost::log::err("[state] rejected: invalid payload CRC (corrupt file)\n");
         lastStateError_ = "State file is corrupt";
         return false;
     }
@@ -1577,8 +1566,15 @@ bool Machine::stateHeaderOk(const uint8_t* data, std::size_t n) {
 
 bool Machine::loadState(const uint8_t* data, std::size_t n) {
     if (parkedInInstruction()) { lastStateError_ = kParkedReason; return false; }
-    desktopLineA_ = 0;
     if (!stateHeaderOk(data, n)) return false;
+    return loadStateBody_(data, n);
+}
+
+// Restauration d'un état dont l'en-tête vient d'être validé (stateHeaderOk) : partagée
+// par loadState et loadStateWithMedia, qui la valide AVANT de remonter les disquettes
+// — la refaire doublait le CRC de l'état à chaque reprise.
+bool Machine::loadStateBody_(const uint8_t* data, std::size_t n) {
+    desktopLineA_ = 0;
     // Filet de sécurité : un load qui échoue à MI-restauration (ok_=false — champ
     // hors bornes détecté par un ar.check(), taille incohérente — ou exception
     // d'allocation) laisserait la machine à moitié mutée. On fige l'état courant
@@ -1586,7 +1582,11 @@ bool Machine::loadState(const uint8_t* data, std::size_t n) {
     // Ce tampon ne quitte JAMAIS la mémoire et son rejeu passe par StateArchive sans
     // repasser par l'en-tête : lui calculer un CRC ne protégeait rien et doublait
     // presque le coût d'une reprise d'état. On sérialise donc à nu.
-    std::vector<uint8_t> backup;
+    // Tampon MEMBRE, réutilisé : sa capacité survit d'un chargement à l'autre, si bien
+    // qu'une reprise par trame (retour arrière, exécution anticipée de libretro) ne
+    // réalloue plus ~1,9 Mo à chaque appel.
+    std::vector<uint8_t>& backup = loadBackup_;
+    backup.clear();
     { StateArchive bar = StateArchive::saver(backup); serializeState(bar, false);
       if (!bar.ok()) return false; }
     bool ok = false;
@@ -1598,11 +1598,107 @@ bool Machine::loadState(const uint8_t* data, std::size_t n) {
     if (!ok) {
         StateArchive rb = StateArchive::loader(backup.data(), backup.size());
         serializeState(rb, false);
-        std::fprintf(stderr, "[state] truncated/inconsistent file — session state restored\n");
+        neost::log::err("[state] truncated/inconsistent file — session state restored\n");
         lastStateError_ = "State file is inconsistent";
         return false;
     }
     return true;
+}
+
+bool Machine::switchTos(const std::string& path, MachineType requested) {
+    if (!loadTos(path)) return false;
+    const MachineType adj = adjustMachineForTos(requested, path);
+    if (adj != machineType_) reconfigure(bus.ram.size(), cpu.core(), adj);
+    return true;
+}
+
+void Machine::freezeHostClocks() {
+    // Année du RP5C15 comptée depuis 1980, comme le GEMDOS (cf. Rtc::initFromHostTime) :
+    // 46 = 2026. La valeur 26 posait le 1er janvier 2006 depuis l'origine. Jour de la
+    // semaine : jeudi (4, convention tm_wday).
+    rtc.setDateTime(Rtc::DateTime{0, 0, 12, 4, 1, 1, 46});   // 1er jan 2026, 12:00:00
+    // Même chose pour l'horloge IKBD (commande $1C) : EmuTOS STE/ST affiche la
+    // date/heure du bureau depuis l'IKBD, pas la RTC — figée pour le déterminisme.
+    ikbd.setClock(26, 1, 1, 12, 0, 0);
+    // L'horloge de l'UltraSatan aussi : éteinte, elle reste sérialisée, et
+    // --state-hash-every la verrait.
+    usatan.setDateTime(UltraSatan::DateTime{2026, 1, 1, 12, 0, 0});
+}
+
+// --- États autonomes (cf. Machine.hpp) --------------------------------------------------
+static constexpr uint32_t kMediaStateMagic   = 0x4D54534Eu;   // "NSTM" en petit-boutiste
+static constexpr uint16_t kMediaStateVersion = 1;
+// magic(4) version(2) longueur de l'état(4) longueur totale(4) | état | lecteurs A et B |
+// CRC-32 des lecteurs(4). La longueur totale permet un remplissage final, ignoré à la
+// reprise : libretro veut une taille d'état FIXE sur la session (retro_serialize_size),
+// alors que l'état GEMDOS grandit au boot (processus, handles) — l'adaptateur annonce
+// une borne et complète par des zéros.
+static constexpr std::size_t kMediaStateHead = 14;
+
+bool Machine::saveStateWithMedia(std::vector<uint8_t>& out) {
+    out.clear();
+    std::vector<uint8_t>& st = mediaScratch_;
+    if (!saveState(st)) return false;
+    out.reserve(kMediaStateHead + st.size() + 2 * 1024 * 1024);
+    out.resize(kMediaStateHead);
+    std::memcpy(out.data(), &kMediaStateMagic, 4);
+    std::memcpy(out.data() + 4, &kMediaStateVersion, 2);
+    const uint32_t len = uint32_t(st.size());
+    std::memcpy(out.data() + 6, &len, 4);
+    out.insert(out.end(), st.begin(), st.end());
+    const std::size_t mediaAt = out.size();
+    StateArchive ar = StateArchive::saver(out);
+    fdc.writeMedia(ar, 0);
+    fdc.writeMedia(ar, 1);
+    if (!ar.ok()) { out.clear(); return false; }
+    const uint32_t crc = stateCrc32(out.data() + mediaAt, out.size() - mediaAt);
+    const uint8_t* c = reinterpret_cast<const uint8_t*>(&crc);
+    out.insert(out.end(), c, c + 4);
+    const uint32_t total = uint32_t(out.size());
+    std::memcpy(out.data() + 10, &total, 4);
+    return true;
+}
+
+bool Machine::loadStateWithMedia(const uint8_t* data, std::size_t n) {
+    lastStateError_.clear();
+    uint32_t magic = 0, len = 0, total = 0; uint16_t version = 0;
+    if (n >= kMediaStateHead) {
+        std::memcpy(&magic, data, 4);
+        std::memcpy(&version, data + 4, 2);
+        std::memcpy(&len, data + 6, 4);
+        std::memcpy(&total, data + 10, 4);
+    }
+    if (magic == kMediaStateMagic && total <= n) n = total;   // remplissage final ignoré
+    if (magic != kMediaStateMagic || total > n || n < kMediaStateHead + 4
+        || len > n - kMediaStateHead - 4) {
+        lastStateError_ = "Not a NeoST state with floppy media";
+        return false;
+    }
+    if (version != kMediaStateVersion) {
+        lastStateError_ = "Unsupported NeoST media state version";
+        return false;
+    }
+    if (parkedInInstruction()) { lastStateError_ = kParkedReason; return false; }
+    const uint8_t* st = data + kMediaStateHead;
+    // L'en-tête AVANT les lecteurs : remonter une disquette réécrit son fichier hôte,
+    // ce qu'un état refusé ensuite ne déferait pas (même ordre que Rewind::stepBack).
+    if (!stateHeaderOk(st, len)) return false;
+    const uint8_t* media = st + len;
+    const std::size_t mediaLen = n - kMediaStateHead - len - 4;
+    uint32_t crc; std::memcpy(&crc, media + mediaLen, 4);
+    if (crc != stateCrc32(media, mediaLen)) {
+        lastStateError_ = "State file is corrupt";
+        return false;
+    }
+    StateArchive ar = StateArchive::loader(media, mediaLen);
+    const auto a = Fdc::readMediaCopy(ar);
+    const auto b = a ? Fdc::readMediaCopy(ar) : nullptr;
+    if (!a || !b || !ar.ok()) { lastStateError_ = "State file is inconsistent"; return false; }
+    if (!fdc.restoreMedia(0, *a) || !fdc.restoreMedia(1, *b)) {
+        lastStateError_ = "Floppy image is gone";
+        return false;
+    }
+    return loadStateBody_(st, len);
 }
 
 bool Machine::archHash(uint64_t& machine, uint64_t& cpuHash) {

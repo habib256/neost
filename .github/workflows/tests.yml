@@ -56,8 +56,19 @@ jobs:
       - uses: actions/checkout@v5
       - name: Configurer et compiler sans sockets hôte
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DNEOST_WITH_NET=OFF
-          cmake --build build -j"$(nproc)" --target neost-headless
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DNEOST_WITH_NET=OFF -DNEOST_PIC=ON
+          cmake --build build -j"$(nproc)" --target neost-headless neost-shared-probe-run
+      # La configuration d'un futur cœur libretro (docs/LIBRETRO.md) : sans sockets, cœur
+      # PIC à visibilité cachée, lié dans une .so sans symbole non résolu ni export parasite.
+      - name: Cœur dans une bibliothèque partagée (NEOST_PIC)
+        run: |
+          ./build/neost-shared-probe-run
+          # Fonctions exportées hors _init/_fini : la sonde seule. (Les instanciations de
+          # la bibliothèque standard restent visibles en W ; un cœur libretro les masquera
+          # par un script de version.)
+          nm -D --defined-only build/libneost-shared-probe.so | grep -w T | grep -vE ' _(init|fini)$' | tee exports.txt
+          test "$(wc -l < exports.txt)" = 1
+          grep -q ' neost_shared_probe$' exports.txt
       - name: NAT refusé explicitement
         run: |
           if ./build/neost-headless roms/etos192us.img --ethernec --nat --frames 1 > nat-off.log 2>&1; then

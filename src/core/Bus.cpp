@@ -142,7 +142,7 @@ void Bus::peripheralReset() {
 bool Bus::loadTos(const std::string& path) {
     std::ifstream f(path, std::ios::binary | std::ios::ate);
     if (!f) {
-        std::fprintf(stderr, "[Bus] TOS not found: %s\n", path.c_str());
+        neost::log::err("[Bus] TOS not found: %s\n", path.c_str());
         return false;
     }
     const std::streamsize n = f.tellg();
@@ -150,8 +150,8 @@ bool Bus::loadTos(const std::string& path) {
     // Linux) → resize géant. Borne haute : la fenêtre ROM à $E00000 fait 1 Mo.
     constexpr std::streamsize kMaxTos = 1024 * 1024;
     if (n <= 0 || n > kMaxTos) {
-        std::fprintf(stderr, "[Bus] invalid TOS (%lld B, max %lld B): %s\n",
-                     static_cast<long long>(n), static_cast<long long>(kMaxTos), path.c_str());
+        neost::log::err("[Bus] invalid TOS (%lld B, max %lld B): %s\n",
+                        static_cast<long long>(n), static_cast<long long>(kMaxTos), path.c_str());
         return false;
     }
     f.seekg(0);
@@ -163,9 +163,9 @@ bool Bus::loadTos(const std::string& path) {
     const uint16_t ver = tosHeaderVersion(img.data(), img.size());
     if (const char* target = tosUnsupportedMachine(ver, tosHeaderIsEmuTos(img.data(), img.size()),
                                                    img.size())) {
-        std::fprintf(stderr, "[Bus] TOS %X.%02X is for the Atari %s: TT/Falcon TOS not supported "
-                             "(NeoST emulates ST, Mega ST, STE and Mega STE): %s\n",
-                     ver >> 8, ver & 0xFF, target, path.c_str());
+        neost::log::err("[Bus] TOS %X.%02X is for the Atari %s: TT/Falcon TOS not supported "
+                                "(NeoST emulates ST, Mega ST, STE and Mega STE): %s\n",
+                        ver >> 8, ver & 0xFF, target, path.c_str());
         return false;
     }
     rom = std::move(img);
@@ -175,14 +175,14 @@ bool Bus::loadTos(const std::string& path) {
     bool baseFromHeader = false;
     romBase = tosImageBase(rom.data(), rom.size(), &baseFromHeader);
     if (!baseFromHeader)
-        std::fprintf(stderr, "[Bus] TOS header gives no valid os_base: placed by size at $%06X\n",
-                     romBase);
+        neost::log::err("[Bus] TOS header gives no valid os_base: placed by size at $%06X\n",
+                        romBase);
     // [D] Hatari tos.c:1043 @ f0736b24 admet jusqu'à 224 Ko à $FC0000, mais la fenêtre
     // décodée n'y fait que 192 Ko (romWindowSize) et le chemin rapide de read8 servirait
     // rom[] au-delà, sur $FF0000-$FF7FFF qui doit fauter : on ne garde que la fenêtre.
     if (romBase == stmap::ROM_FC0000 && rom.size() > 0x30000u) {
-        std::fprintf(stderr, "[Bus] TOS at $FC0000 larger than the 192 KB ROM window: "
-                             "%zu bytes beyond $FEFFFF dropped\n", rom.size() - 0x30000u);
+        neost::log::err("[Bus] TOS at $FC0000 larger than the 192 KB ROM window: "
+                                "%zu bytes beyond $FEFFFF dropped\n", rom.size() - 0x30000u);
         rom.resize(0x30000u);
     }
     // Version du TOS : mot big-endian de l'en-tête à l'offset 2 (cf. adjustMachineForTos).
@@ -191,15 +191,15 @@ bool Bus::loadTos(const std::string& path) {
     // recopie en RAM dès le chargement (et à chaque reset, cf. seedResetVectors).
     seedResetVectors();
     if (neost::log::verbose())   // terminal sobre du GUI : le résumé de la machine le dit
-        std::fprintf(stderr, "[Bus] TOS loaded: %s (%zu KB @ $%06X, version $%04X)\n",
-                     path.c_str(), rom.size() / 1024, romBase, tosVersion);
+        neost::log::err("[Bus] TOS loaded: %s (%zu KB @ $%06X, version $%04X)\n",
+                        path.c_str(), rom.size() / 1024, romBase, tosVersion);
     return true;
 }
 
 bool Bus::loadCart(const std::string& path) {
     std::ifstream f(path, std::ios::binary | std::ios::ate);
     if (!f) {
-        std::fprintf(stderr, "[Bus] cartridge not found: %s\n", path.c_str());
+        neost::log::err("[Bus] cartridge not found: %s\n", path.c_str());
         return false;
     }
     const std::streamsize n = f.tellg();
@@ -210,8 +210,8 @@ bool Bus::loadCart(const std::string& path) {
     // [D] Hatari cart.c:67-84 @ f0736b24 — même taille exacte, même saut.
     const bool stc = static_cast<std::size_t>(n) == maxSize + 4;
     if (n <= 0 || (static_cast<std::size_t>(n) > maxSize && !stc)) {
-        std::fprintf(stderr, "[Bus] invalid cartridge (%lld B, max %zu B, or %zu B for .STC): %s\n",
-                     static_cast<long long>(n), maxSize, maxSize + 4, path.c_str());
+        neost::log::err("[Bus] invalid cartridge (%lld B, max %zu B, or %zu B for .STC): %s\n",
+                        static_cast<long long>(n), maxSize, maxSize + 4, path.c_str());
         return false;
     }
     // Lu dans un tampon À PART : une lecture courte (fichier tronqué pendant la
@@ -223,8 +223,8 @@ bool Bus::loadCart(const std::string& path) {
     std::vector<uint8_t> image(stc ? maxSize : static_cast<std::size_t>(n));
     f.read(reinterpret_cast<char*>(image.data()), static_cast<std::streamsize>(image.size()));
     if (static_cast<std::size_t>(f.gcount()) != image.size()) {
-        std::fprintf(stderr, "[Bus] cartridge read failed (%lld of %zu B): %s\n",
-                     static_cast<long long>(f.gcount()), image.size(), path.c_str());
+        neost::log::err("[Bus] cartridge read failed (%lld of %zu B): %s\n",
+                        static_cast<long long>(f.gcount()), image.size(), path.c_str());
         return false;
     }
     cart.swap(image);
@@ -238,8 +238,8 @@ bool Bus::loadCart(const std::string& path) {
                      : magic == 0xABCDEF42 ? "application (launched by TOS)"
                      : "unknown (no magic)";
     cartPath_ = path;
-    std::fprintf(stderr, "[Bus] cartridge loaded: %s (%zu KB @ $FA0000, magic $%08X, %s)\n",
-                 path.c_str(), cart.size() / 1024, magic, kind);
+    neost::log::err("[Bus] cartridge loaded: %s (%zu KB @ $FA0000, magic $%08X, %s)\n",
+                    path.c_str(), cart.size() / 1024, magic, kind);
     return true;
 }
 
@@ -248,7 +248,7 @@ void Bus::ejectCart() {
     // GEMDOS (posé par GemdosHd, retiré puis réinstallé à chaque reconfiguration) : le dire
     // « cartridge ejected: » avec un nom vide, c'était du bruit — on se tait.
     if (!cart.empty() && !cartPath_.empty())
-        std::fprintf(stderr, "[Bus] cartridge ejected: %s\n", cartPath_.c_str());
+        neost::log::err("[Bus] cartridge ejected: %s\n", cartPath_.c_str());
     cart.clear();
     cartPath_.clear();
 }
@@ -709,7 +709,7 @@ bool Bus::busSelfTest() {
     int pass = 0, fail = 0;
     auto chk = [&](const char* n, long got, long want) {
         if (got == want) { ++pass; }
-        else { ++fail; std::fprintf(stderr, "  FAIL %-30s got=%ld want=%ld\n", n, got, want); }
+        else { ++fail; neost::log::err("  FAIL %-30s got=%ld want=%ld\n", n, got, want); }
     };
     // Force le superviseur : sinon la branche user-mode de busFaultN fait fauter TOUT
     // l'espace IO ($0-$7FF + $FF8000+) et masque l'invariant whitelist qu'on teste.
@@ -764,7 +764,7 @@ bool Bus::busSelfTest() {
     }
 
     if (cpu) cpu->setSr(savedSr);               // restaure le SR d'entrée
-    std::fprintf(stderr, "[bus-selftest] %d OK, %d FAIL\n", pass, fail);
+    neost::log::err("[bus-selftest] %d OK, %d FAIL\n", pass, fail);
     return fail == 0;
 }
 

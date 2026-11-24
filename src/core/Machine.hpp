@@ -82,6 +82,24 @@ public:
     // inclus) : c'est l'estampille d'une écriture PSG faite en plein bloc CPU. À câbler
     // sur YM2149::setCycleClock côté frontend audio (cf. main.cpp).
     int64_t frameRelCycle() const { return sched.liveNow() - frameStart_; }
+    // Arme ce modèle « push » : les écritures du PSG et les transitions PLAY/STOP du son
+    // DMA portent alors leur cycle dans la trame, et neost::mixEmulatedFrame les rejoue à
+    // leur instant (digidrums, sync-buzzer, bruitages courts). SANS CET ARMEMENT LA
+    // MACHINE EST MUETTE : la synthèse lit un jeu de registres que plus rien ne met à jour.
+    // Contrat : une fois armé, l'appelant DRAINE chaque trame par mixEmulatedFrame (zéro
+    // échantillon suffit, sortie audio fermée comprise) — sinon les journaux d'écritures
+    // croissent sans fin. D'où le headless, qui ne l'arme que pour --sound-dump.
+    void armAudioClocks() {
+        psg.setCycleClock([this] { return frameRelCycle(); });
+        dmasnd.setCycleClock([this] { return frameRelCycle(); });
+    }
+    // Horloges de DATE figées au jeudi 1er janvier 2026, 12:00:00 : RTC RP5C15 (Mega ST,
+    // Mega STE), horloge de l'IKBD (commande $1C), UltraSatan. Sans cet appel elles partent
+    // de l'heure de l'hôte (Rtc::initFromHostTime, Ikbd::initClockFromHostTime) et deux
+    // sessions ne partent pas du même état. Mode du headless (pixels et traces comparés à
+    // l'octet), et celui du jeu en réseau et des rejeux (libretro, docs/LIBRETRO.md).
+    // À poser avant le reset de démarrage.
+    void freezeHostClocks();
 
     // Abaisse le type machine si le TOS de `romPath` ne le supporte pas — port de
     // Hatari `TOS_CheckSysConfig` : un TOS <= 1.04 (TOS 1.0x, EmuTOS 192 Ko qui se
@@ -92,6 +110,15 @@ public:
     static MachineType adjustMachineForTos(MachineType requested, const std::string& romPath);
 
     bool loadTos(const std::string& path)  { return bus.loadTos(path); }
+    // Change de TOS, la recette commune des frontends (bureau, web, Android, libretro) :
+    // charger D'ABORD — Bus::loadTos refuse un fichier absent ou de taille invalide sans
+    // toucher à la ROM courante, d'où faux et machine INTACTE — puis poser le profil
+    // qu'exige ce TOS, calculé depuis la machine DEMANDÉE (adjustMachineForTos : un TOS
+    // <= 1.04 sur STE/Mega STE halterait le CPU). reconfigure() (boot à froid, RAM
+    // effacée) seulement si le profil change. Ne remet PAS à zéro : l'appelant enchaîne
+    // hardReset(), ou le diffère (web : instruction garée). Le pays clavier du TOS
+    // (stkeys::setCountryFromTos) reste au frontend, qui possède le clavier hôte.
+    bool switchTos(const std::string& path, MachineType requested);
     bool loadCart(const std::string& path) { return bus.loadCart(path); }
     void ejectCart() { bus.ejectCart(); }
     bool loadDisk(const std::string& path)  { return fdc.loadImage(path, 0); }   // lecteur A
@@ -297,6 +324,28 @@ public:
     bool saveStateFile(const std::string& path);
     bool loadStateFile(const std::string& path);
 
+    // --- États AUTONOMES : le save-state ET le contenu des disquettes --------------------
+    // Le .state ne porte pas les disquettes : leur fichier hôte les porte, écrit au fil
+    // de l'eau. Un état repris après une écriture disquette mettrait donc la disquette du
+    // présent sous la RAM du passé (FAT en cache périmée). Ce conteneur colle les deux en
+    // un blob — ce que le retour arrière (core/Rewind) garde côte à côte en mémoire —,
+    // pour un frontend qui ne connaît qu'un blob : libretro (retro_serialize, exécution
+    // anticipée, jeu en réseau, cf. docs/LIBRETRO.md).
+    //   · Format : "NSTM", version, longueurs, l'état .state INTACT (son en-tête et son
+    //     CRC), puis les deux lecteurs (Fdc::writeMedia) et un CRC-32 de cette partie.
+    //     Des octets AU-DELÀ de la longueur totale sont ignorés à la reprise : un
+    //     frontend à taille d'état fixe (libretro) complète par des zéros.
+    //   · Reprise : l'en-tête de l'état est validé AVANT de toucher aux lecteurs, puis
+    //     les disquettes sont remontées (fichier hôte réécrit là où il diffère, comme le
+    //     retour arrière), puis l'état est chargé.
+    //   · Hors du blob, comme dans le .state : le contenu des disques durs (GEMDOS, ACSI,
+    //     UltraSatan, USB) et les écritures d'une image STX (fichier .wd1772).
+    //   · Taille constante tant que les médias ne changent pas, SAUF avec un disque dur
+    //     GEMDOS, dont l'état grandit au boot (mesuré : +322 octets entre 200 et 400
+    //     trames sous EmuTOS) — d'où le remplissage toléré.
+    bool saveStateWithMedia(std::vector<uint8_t>& out);
+    bool loadStateWithMedia(const uint8_t* data, std::size_t n);
+
     // Accès direct aux composants (frontend, débogueur, headless).
     Bus       bus;
     Shifter   shifter{bus};
@@ -372,6 +421,14 @@ public:
     }
     bool netUsbeeEnabled() const { return isp1160.enabled(); }
     void keyEvent(uint8_t scancode, bool down);
+    // État des deux ports joystick (bits stjoy::, io/StJoyBits.hpp), vu à la fois par
+    // l'IKBD et par les ports manette du STE ($FF9200/02, s'ils sont câblés) : chaque
+    // frontend posait les deux à la main. L'appelant réévalue l'IPL (cpu.updateIpl)
+    // une fois TOUTES ses entrées de la trame posées.
+    void setJoysticks(uint8_t joy0, uint8_t joy1) {
+        ikbd.setJoystick(joy0, joy1);
+        bus.setStePadInput(joy0, joy1);
+    }
     void mouseEvent(int dx, int dy, bool left, bool right);
     uint8_t keyRoute_[128] = {};           // destination du MAKE, pour router aussi son BREAK
 
@@ -430,7 +487,11 @@ private:
     int  rolledFrames_  = 0;  // trames closes en cours d'instruction pendant ce runFrame (hors état)
     int  lastRunFrames_ = 0;  // cf. lastRunFrames() (hors état)
     void serializeState(StateArchive& ar, bool hostFiles = true);
+    bool loadStateBody_(const uint8_t* data, std::size_t n);   // en-tête déjà validé
     std::size_t cpuSectionBegin_ = 0, cpuSectionEnd_ = 0;  // relevés au dernier save (archHash)
+    std::size_t lastStateBytes_ = 0;      // taille du dernier saveState (réserve du suivant, hors état)
+    std::vector<uint8_t> loadBackup_;     // filet de loadState, capacité réutilisée (hors état)
+    std::vector<uint8_t> mediaScratch_;   // état intérieur de saveStateWithMedia (hors état)
     mutable uint32_t desktopLineA_ = 0; // cache hôte dérivé, validé avant chaque utilisation
     // Handlers des événements datés vidéo (positions au cycle dans la ligne).
     // Les Timers A/C/D (mode délai) sont datés par le MFP lui-même.

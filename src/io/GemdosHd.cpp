@@ -412,7 +412,7 @@ GemdosHd::~GemdosHd() { clearAllFileHandles(); clearInfOverride(); }
 
 bool GemdosHd::setDirectory(const std::string& hostDir) {
     if (!dirExists(hostDir)) {
-        std::fprintf(stderr, "[gemdos] folder not found or not a folder: %s\n", hostDir.c_str());
+        neost::log::err("[gemdos] folder not found or not a folder: %s\n", hostDir.c_str());
         return false;
     }
     trace_ = getenv("NEOST_GEMDOS_TRACE") != nullptr;
@@ -430,7 +430,7 @@ bool GemdosHd::setDirectory(const std::string& hostDir) {
     // laissait le montage PRÉCÉDENT en miettes — un simple dossier disparu (clé USB
     // retirée) suffisait à tuer le C: de la session, sans reset ni retour en arrière.
     if (!initDrives(absDir)) {
-        std::fprintf(stderr, "[gemdos] no available GEMDOS drive from %s (current mount kept)\n", hostDir.c_str());
+        neost::log::err("[gemdos] no available GEMDOS drive from %s (current mount kept)\n", hostDir.c_str());
         return false;
     }
     if (absDir != mountedDirectory_) extraAttr_.clear();   // attributs du montage précédent
@@ -443,10 +443,10 @@ bool GemdosHd::setDirectory(const std::string& hostDir) {
     for (auto& d : emudrives_)
         if (d.used) {
             if (neost::log::verbose())
-                std::fprintf(stderr, "[gemdos] HDD GEMDOS : %c: <-> %s\n",
-                             'A' + d.driveNumber, d.hdEmuDir.c_str());
+                neost::log::err("[gemdos] HDD GEMDOS : %c: <-> %s\n",
+                                'A' + d.driveNumber, d.hdEmuDir.c_str());
             else if (d.hdEmuDir != lastShown)
-                std::fprintf(stderr, "[disk] %c: %s\n", 'A' + d.driveNumber, d.hdEmuDir.c_str());
+                neost::log::err("[disk] %c: %s\n", 'A' + d.driveNumber, d.hdEmuDir.c_str());
             lastShown = d.hdEmuDir;
         }
     return true;
@@ -483,7 +483,7 @@ void GemdosHd::unmount() {
     // les deux partageant le même stockage bus_.cart ($FA0000).
     if (bus_.mountedCartPath().empty()) bus_.ejectCart();
     active_ = false;
-    std::fprintf(stderr, "[gemdos] GEMDOS HDD unmounted\n");
+    neost::log::err("[gemdos] GEMDOS HDD unmounted\n");
 }
 
 void GemdosHd::reset() {
@@ -507,8 +507,8 @@ void GemdosHd::reset() {
                 letters += char('A' + drive);
                 letters += ':';
             }
-        std::fprintf(stderr, "[gemdos] drive mapping updated: %s\n",
-                     letters.empty() ? "no available drive" : letters.c_str());
+        neost::log::err("[gemdos] drive mapping updated: %s\n",
+                        letters.empty() ? "no available drive" : letters.c_str());
     }
     initGemdos_ = false;
     initCurPaths();
@@ -596,7 +596,7 @@ static bool determineMaxPartitions(const std::string& dir, int& maxDrives) {
     maxDrives = 0;
     DIR* d = opendir(dir.c_str());
     if (!d) {
-        std::fprintf(stderr, "[gemdos] cannot access: %s\n", dir.c_str());
+        neost::log::err("[gemdos] cannot access: %s\n", dir.c_str());
         return false;
     }
     int last = 0;
@@ -1061,8 +1061,8 @@ void GemdosHd::reapDead() {
         // basepage nulle : ouvert au boot, sans processus lisible. L'INF virtuel appartient
         // à l'override (fermé par closeInfOverride).
         if (!fh.used || !fh.basepage || alive(fh.basepage) || (fh.fp && fh.fp == infFile_)) continue;
-        if (trace_) std::fprintf(stderr, "[gemdos] process $%06X ended without Pterm: closing handle %d\n",
-                                 fh.basepage, i + BASE_FILEHANDLE);
+        if (trace_) neost::log::err("[gemdos] process $%06X ended without Pterm: closing handle %d\n",
+                                    fh.basepage, i + BASE_FILEHANDLE);
         closeFileHandle(i);
         dropForcedTo(i);
     }
@@ -1070,7 +1070,7 @@ void GemdosHd::reapDead() {
         auto& pe = procPaths_[i];
         if (alive(pe.first)) { pe.second.ran = true; ++i; continue; }
         if (pe.second.ran) {
-            if (trace_) std::fprintf(stderr, "[gemdos] process $%06X ended without Pterm: state forgotten\n", pe.first);
+            if (trace_) neost::log::err("[gemdos] process $%06X ended without Pterm: state forgotten\n", pe.first);
             procPaths_.erase(procPaths_.begin() + (long)i);
             continue;
         }
@@ -1421,7 +1421,7 @@ void GemdosHd::clampToSandbox(const EmuDrive& d, const std::string& gemName, std
     try {
         clampToSandboxUnchecked(d, gemName, out);
     } catch (const std::exception&) {
-        std::fprintf(stderr, "[gemdos] REFUSED: '%s' is not a usable host name\n", gemName.c_str());
+        neost::log::err("[gemdos] REFUSED: '%s' is not a usable host name\n", gemName.c_str());
         std::string root = d.hdEmuDir;
         addSlash(root);
         out = root + std::string(300, '~') + std::string(1, PATHSEP) + "refused";
@@ -1483,8 +1483,8 @@ void GemdosHd::clampToSandboxUnchecked(const EmuDrive& d, const std::string& gem
     // limite de nom de tous les systèmes de fichiers visés (255) : aucun appel ne peut
     // l'ouvrir NI LE CRÉER — un nom ordinaire, même hors 8.3, l'invité pouvait le créer
     // par Dcreate et y faire converger toutes les tentatives refusées.
-    std::fprintf(stderr, "[gemdos] REFUSED: '%s' escaped the drive (%s)\n",
-                 gemName.c_str(), canon.c_str());
+    neost::log::err("[gemdos] REFUSED: '%s' escaped the drive (%s)\n",
+                    gemName.c_str(), canon.c_str());
     out = root + std::string(300, '~') + std::string(1, PATHSEP) + "refused";
 }
 
@@ -1543,13 +1543,13 @@ void GemdosHd::createHostFileName(int drive, const std::string& gemNameIn, std::
             out.push_back(PATHSEP);
             out += filename;                       // (conversion charset off)
         } else if (!addPathComponent(out, filename, false)) {
-            if (trace_) std::fprintf(stderr, "[gemdos] not found: %s\n", out.c_str());
+            if (trace_) neost::log::err("[gemdos] not found: %s\n", out.c_str());
             clampToSandbox(d, gemNameIn, out);
             return;
         }
     }
     clampToSandbox(d, gemNameIn, out);
-    if (trace_) std::fprintf(stderr, "[gemdos] %s -> %s\n", gemNameIn.c_str(), out.c_str());
+    if (trace_) neost::log::err("[gemdos] %s -> %s\n", gemNameIn.c_str(), out.c_str());
 }
 
 // -----------------------------------------------------------------------------
@@ -1792,8 +1792,8 @@ bool GemdosHd::gemOpen(uint32_t p) {
         setD0(cpu_, GEMDOS_ENHNDL); return true;
     }
     if (infFile_ && infNameMatches(name)) {
-        std::fprintf(stderr, "[gemdos] autostart: virtual %s served for %s\n",
-                     name.c_str(), autoPrg_.c_str());
+        neost::log::err("[gemdos] autostart: virtual %s served for %s\n",
+                        name.c_str(), autoPrg_.c_str());
         fileHandles_[idx].fp = infFile_;
         fileHandles_[idx].readOnly = true;
         fileHandles_[idx].used = true;
@@ -2648,8 +2648,8 @@ void GemdosHd::pexecBpCreated() {
             const bool okBp  = giveBlockToChild(bp, parent, bp);
             const bool okEnv = giveBlockToChild(env, parent, bp);
             if (trace_ && !(okBp && okEnv))
-                std::fprintf(stderr, "[gemdos] Pexec: TOS memory descriptor not found (bp %d, env %d)\n",
-                             okBp, okEnv);
+                neost::log::err("[gemdos] Pexec: TOS memory descriptor not found (bp %d, env %d)\n",
+                                okBp, okEnv);
         }
         // Relance un Pexec « just-go » pour démarrer le programme.
         writeWord(savedPexecParams_, bus_.tosVersion >= 0x104 ? 6 : 4);
@@ -2811,7 +2811,7 @@ std::string GemdosHd::normalizeAutoStartProgram(const std::string& name) {
         const auto slash = name.rfind('\\');
         if (name.size() < 3 || name[2] != '\\') {
             if (slash != std::string::npos) {          // A:DIR\NAME.PRG refusé
-                std::fprintf(stderr, "[gemdos] autostart path rejected (no '\\' after the drive): %s\n", name.c_str());
+                neost::log::err("[gemdos] autostart path rejected (no '\\' after the drive): %s\n", name.c_str());
                 return {};
             }
             prg = upperAtari(name.substr(0, 2)) + "\\" + upperAtari(name.substr(2));
@@ -2819,7 +2819,7 @@ std::string GemdosHd::normalizeAutoStartProgram(const std::string& name) {
             prg = upperAtari(name);
         }
     } else if (name.find('\\') != std::string::npos) {
-        std::fprintf(stderr, "[gemdos] autostart path rejected (path without a drive): %s\n", name.c_str());
+        neost::log::err("[gemdos] autostart path rejected (path without a drive): %s\n", name.c_str());
         return {};
     } else {
         prg = "C:\\" + upperAtari(name);
@@ -2827,7 +2827,7 @@ std::string GemdosHd::normalizeAutoStartProgram(const std::string& name) {
     // « @ » termine le champ du #Z. Une fin de ligne le coupe avant la fin du nom.
     if (prg.size() <= 3 || prg.back() == '\\' || prg.find(':', 2) != std::string::npos
         || prg.find_first_of("@/\r\n") != std::string::npos) {
-        std::fprintf(stderr, "[gemdos] autostart path rejected: invalid INF program name\n");
+        neost::log::err("[gemdos] autostart path rejected: invalid INF program name\n");
         return {};
     }
     return prg;
@@ -2889,7 +2889,7 @@ void GemdosHd::createInfOverride() {
     const uint16_t tos = bus_.tosVersion;
     const bool emuTos = romIsEmuTos();
     if (!emuTos && tos < 0x0104) {
-        std::fprintf(stderr, "[gemdos] autostart needs TOS 1.04 or later (TOS %X.%02X)\n", tos >> 8, tos & 0xFF);
+        neost::log::err("[gemdos] autostart needs TOS 1.04 or later (TOS %X.%02X)\n", tos >> 8, tos & 0xFF);
         return;
     }
     const bool bootC = bootDrive_ == 2 && isDriveEmulated(2);
@@ -2949,7 +2949,7 @@ void GemdosHd::createInfOverride() {
         pos = next;
     }
     if (!sawE) {
-        std::fprintf(stderr, "[gemdos] %s is not a valid INF file (no #E line): autostart impossible\n", infName_.c_str());
+        neost::log::err("[gemdos] %s is not a valid INF file (no #E line): autostart impossible\n", infName_.c_str());
         return;
     }
     // Contenu ENTIER. Hatari garde size = sizeof(INF intégré) après que
@@ -2960,10 +2960,10 @@ void GemdosHd::createInfOverride() {
         || std::fseek(infFile_, 0, SEEK_SET) != 0) {
         if (infFile_) std::fclose(infFile_);
         infFile_ = nullptr;
-        std::fprintf(stderr, "[gemdos] cannot create the virtual %s\n", infName_.c_str());
+        neost::log::err("[gemdos] cannot create the virtual %s\n", infName_.c_str());
         return;
     }
-    std::fprintf(stderr, "[gemdos] autostart: virtual %s prepared for %s\n", infName_.c_str(), autoPrg_.c_str());
+    neost::log::err("[gemdos] autostart: virtual %s prepared for %s\n", infName_.c_str(), autoPrg_.c_str());
 }
 
 void GemdosHd::setConsoleSink(std::function<void(const std::string&)> sink) {
@@ -3043,11 +3043,11 @@ int GemdosHd::trap() {
         default: break;
         }
         if (handle >= 0)
-            std::fprintf(stderr, "[gemdos] call 0x%02X %s handle=%d at PC $%06X\n",
-                         call, gemdosCallName(call), handle, callingPC_);
+            neost::log::err("[gemdos] call 0x%02X %s handle=%d at PC $%06X\n",
+                            call, gemdosCallName(call), handle, callingPC_);
         else
-            std::fprintf(stderr, "[gemdos] call 0x%02X %s at PC $%06X\n",
-                         call, gemdosCallName(call), callingPC_);
+            neost::log::err("[gemdos] call 0x%02X %s at PC $%06X\n",
+                            call, gemdosCallName(call), callingPC_);
     }
 
     sr &= ~SR_OVERFLOW;
@@ -3089,9 +3089,9 @@ int GemdosHd::trap() {
     if (traced) {
         if (finished) {
             const int32_t d0 = (int32_t)reg(0);
-            std::fprintf(stderr, "[gemdos]   -> host d0=%d%s\n", d0, gemdosErrorName(d0));
+            neost::log::err("[gemdos]   -> host d0=%d%s\n", d0, gemdosErrorName(d0));
         } else {
-            std::fprintf(stderr, "[gemdos]   -> TOS\n");   // D0 n'est connu qu'au retour de TOS
+            neost::log::err("[gemdos]   -> TOS\n");   // D0 n'est connu qu'au retour de TOS
         }
     }
 
@@ -3130,8 +3130,8 @@ void GemdosHd::boot() {
         bus_.cart[off + 3] = (uint8_t)(oldVec);
     }
     writeLong(0x0084, CART_GEMDOS);
-    if (trace_) std::fprintf(stderr, "[gemdos] hook installed: (0x84)=$%06X, previous=$%06X, act_pd=$%06X\n",
-                             CART_GEMDOS, oldVec, actPd_);
+    if (trace_) neost::log::err("[gemdos] hook installed: (0x84)=$%06X, previous=$%06X, act_pd=$%06X\n",
+                                CART_GEMDOS, oldVec, actPd_);
 }
 
 void GemdosHd::sysInit() {
@@ -3141,7 +3141,7 @@ void GemdosHd::sysInit() {
     writeLong(0x4c2, connectedDriveMask_);
     boot();
     createInfOverride();   // GemDOS_Reset → INF_CreateOverride (après le lecteur de boot)
-    if (trace_) std::fprintf(stderr, "[gemdos] sysInit : _drvbits=$%08X\n", connectedDriveMask_);
+    if (trace_) neost::log::err("[gemdos] sysInit : _drvbits=$%08X\n", connectedDriveMask_);
 }
 
 bool GemdosHd::handleOpcode(uint16_t opcode) {
@@ -3281,7 +3281,7 @@ void GemdosHd::serialize(StateArchive& ar) {
             ar.fail("GEMDOS state: invalid file mode or position"); return;
         }
         if (!allowed(h.actualName)) {
-            std::fprintf(stderr, "[state] GEMDOS file unavailable or outside mounted roots: %s\n", h.actualName.c_str());
+            neost::log::err("[state] GEMDOS file unavailable or outside mounted roots: %s\n", h.actualName.c_str());
             ar.fail("GEMDOS state: file path rejected"); return;
         }
         std::strcpy(h.mode, mode.c_str());
@@ -3292,7 +3292,7 @@ void GemdosHd::serialize(StateArchive& ar) {
             if (!fp || !fileInfo(fp.get(), h.actualName, actualSize, actualStamp)
                 || actualSize != size || actualStamp != stamp
                 || int64_t(off_t(position)) != position || fseeko(fp.get(), off_t(position), SEEK_SET)) {
-                std::fprintf(stderr, "[state] GEMDOS file missing, changed or inaccessible: %s\n", h.actualName.c_str());
+                neost::log::err("[state] GEMDOS file missing, changed or inaccessible: %s\n", h.actualName.c_str());
                 ar.fail("GEMDOS file restore refused; current session preserved"); return;
             }
             h.fp = fp.get();
@@ -3440,11 +3440,11 @@ bool GemdosHd::sandboxSelfTest() {
     stdfs::create_directories(root / "SUB" / "DEEP", ec);
     { std::ofstream(root / "SUB" / "FILE.TXT") << "x"; }
     if (ec || !stdfs::is_directory(root, ec)) {
-        std::fprintf(stderr, "[gemdos-selftest] FAIL: dossier temporaire indisponible\n");
+        neost::log::err("[gemdos-selftest] FAIL: dossier temporaire indisponible\n");
         return false;
     }
     if (!setDirectory(root.string())) {
-        std::fprintf(stderr, "[gemdos-selftest] FAIL: montage refusé (%s)\n", root.c_str());
+        neost::log::err("[gemdos-selftest] FAIL: montage refusé (%s)\n", root.c_str());
         return false;
     }
     // Racine CANONIQUE avec séparateur final : c'est le préfixe que tout chemin hôte
@@ -3463,8 +3463,8 @@ bool GemdosHd::sandboxSelfTest() {
         if (ok) ++pass;
         else {
             ++fail;
-            std::fprintf(stderr, "  FAIL %-34s '%s' -> %s (HORS du bac à sable %s)\n",
-                         what, gemName, canon.c_str(), rootCanon.c_str());
+            neost::log::err("  FAIL %-34s '%s' -> %s (HORS du bac à sable %s)\n",
+                            what, gemName, canon.c_str(), rootCanon.c_str());
         }
     };
 
@@ -3491,12 +3491,12 @@ bool GemdosHd::sandboxSelfTest() {
     createHostFileName(2, "SUB\\FILE.TXT", host);
     const std::string want = physicalCanon((root / "SUB" / "FILE.TXT").string());
     if (physicalCanon(host) == want) ++pass;
-    else { ++fail; std::fprintf(stderr, "  FAIL %-34s -> %s (attendu %s)\n",
-                                "fichier legitime", host.c_str(), want.c_str()); }
+    else { ++fail; neost::log::err("  FAIL %-34s -> %s (attendu %s)\n",
+                                   "fichier legitime", host.c_str(), want.c_str()); }
     createHostFileName(2, "C:\\", host);
     if (physicalCanon(host) + PATHSEP == rootCanon || physicalCanon(host) == rootCanon) ++pass;
-    else { ++fail; std::fprintf(stderr, "  FAIL %-34s -> %s (attendu la racine %s)\n",
-                                "racine du lecteur", host.c_str(), rootCanon.c_str()); }
+    else { ++fail; neost::log::err("  FAIL %-34s -> %s (attendu la racine %s)\n",
+                                   "racine du lecteur", host.c_str(), rootCanon.c_str()); }
 
     // --- Nom ACCENTUÉ écrit en forme DÉCOMPOSÉE (le cas macOS), de bout en bout ----
     // On écrit le fichier avec les octets NFD (« cafe » + U+0301) — ce que macOS rend
@@ -3513,7 +3513,7 @@ bool GemdosHd::sandboxSelfTest() {
         const std::string got = matchHostDirEntry(emudrives_[0].hdEmuDir, nfc,
                                                   /*pattern=*/false, /*onlyInvalid=*/false);
         if (got == nfc) ++pass;
-        else { ++fail; std::fprintf(stderr,
+        else { ++fail; neost::log::err(
                "  FAIL %-34s '%s' introuvable (rendu '%s')\n",
                "nom accentue NFD -> NFC", nfc.c_str(), got.c_str()); }
     }
@@ -3540,7 +3540,7 @@ bool GemdosHd::sandboxSelfTest() {
         auto refusedPath = [&](const std::string& h) { return h.find(refusedMark) != std::string::npos; };
         auto layer = [&](const char* what, bool ok, const std::string& got) {
             if (ok) ++pass;
-            else { ++fail; std::fprintf(stderr, "  FAIL couche %-38s -> %s\n", what, got.c_str()); }
+            else { ++fail; neost::log::err("  FAIL couche %-38s -> %s\n", what, got.c_str()); }
         };
         auto pulled = [&](const char* what, const char* gemName) {   // couches 1 et 2
             createHostFileName(2, gemName, host);
@@ -3576,8 +3576,8 @@ bool GemdosHd::sandboxSelfTest() {
         if (!lec) stdfs::create_symlink(root.parent_path() / "neost-gemdos-selftest-absent", root / "DANGLE", lec);
         if (!lec) stdfs::create_symlink(root / "SUB" / "FILE.TXT", root / "LNK", lec);
         if (lec) {
-            std::fprintf(stderr, "  note: symlinks unavailable (%s), layers 3-5 link cases skipped\n",
-                         lec.message().c_str());
+            neost::log::err("  note: symlinks unavailable (%s), layers 3-5 link cases skipped\n",
+                            lec.message().c_str());
         } else {
             g = guard(rootCanon + "OUT" + sep + "X");
             layer("3 garde : lien sortant OUT/X", refusedPath(g), g);
@@ -3593,7 +3593,7 @@ bool GemdosHd::sandboxSelfTest() {
     // cartouche était refusé (audit codes d'erreur face à gemdos.c, 2026-10-20).
     auto area = [&](const char* what, uint32_t a, uint32_t n, bool rom, bool want) {
         if (checkArea(a, n, rom) == want) ++pass;
-        else { ++fail; std::fprintf(stderr, "  FAIL %-34s $%06X+%u\n", what, a, n); }
+        else { ++fail; neost::log::err("  FAIL %-34s $%06X+%u\n", what, a, n); }
     };
     area("cartouche en lecture",      stmap::CART_BASE, 16, true, true);
     area("fin de cartouche",          stmap::CART_END - 16, 16, true, true);
@@ -3602,6 +3602,6 @@ bool GemdosHd::sandboxSelfTest() {
 
     unmount();
     stdfs::remove_all(root, ec);
-    std::fprintf(stderr, "[gemdos-selftest] %d OK, %d FAIL\n", pass, fail);
+    neost::log::err("[gemdos-selftest] %d OK, %d FAIL\n", pass, fail);
     return fail == 0;
 }

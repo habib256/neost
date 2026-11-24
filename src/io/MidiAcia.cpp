@@ -4,6 +4,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/MidiAcia.hpp"
+#include "util/Log.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -158,8 +159,8 @@ void MidiAcia::write8(uint32_t addr, uint8_t v) {
 
 void MidiAcia::emitTx(uint8_t v, int64_t cycle) {
     static const bool traceOut = std::getenv("NEOST_MIDI_TRACE") != nullptr;
-    if (traceOut) std::fprintf(stderr, "[midi] %lld %02X\n",
-                               static_cast<long long>(cycle), v);
+    if (traceOut) neost::log::err("[midi] %lld %02X\n",
+                                  static_cast<long long>(cycle), v);
     if (midiSinkTimed_) { midiSinkTimed_(v, cycle); return; }
     if (midiSink_) { midiSink_(v); return; }
     if (loopback_) pushRx(v, sched_ ? cycle : -1);

@@ -1,5 +1,50 @@
 # Changelog — NeoST
 
+## 2026-11-24 — Frontière libretro : ce qu'un cinquième frontend exige du cœur
+
+Préparation d'un cœur libretro, sans une ligne de libretro (carte : `docs/LIBRETRO.md`).
+Aucun changement d'émulation : paliers `fast` et `full` verts (les oracles FPU, qui
+compilent `Fpu.cpp` hors CMake, lient désormais `util/Log.cpp`), états `.state` des
+binaires précédents relus.
+
+- **États rapides.** Le CRC-32 octet par octet pesait ~80 % d'un `saveState` comme d'un
+  `loadState` (profil `sample` sur une boucle de 1 500 sauvegardes). `util/Crc32` passe par
+  l'instruction CRC32 d'ARMv8 quand le compilateur l'annonce, sinon par un découpage par
+  8 octets ; valeurs identiques, gardées par `neost-selftest` (trois chemins, toutes
+  longueurs et alignements, valeur de contrôle `$CBF43926`). Tampon de secours de `loadState`
+  réutilisé, réserve du tampon de sauvegarde. Mac arm64, état de 1,87 Mo : sauvegarde
+  6,3 → 0,41 ms, reprise 7,6 → 0,52 ms (le chemin portable : 1,4 ms par CRC). Une trame
+  coûte ~1 ms : l'exécution anticipée de libretro, qui fait les deux à chaque trame, devient
+  tenable.
+- **États autonomes** (`Machine::saveStateWithMedia` / `loadStateWithMedia`). Le `.state` ne
+  porte pas les disquettes, et `Fdc::writeBack` recopie chaque écriture dans le fichier hôte :
+  une trame jouée par anticipation qui écrivait sur la disquette n'était pas défaite par la
+  reprise. Le conteneur `NSTM` colle l'état intact et les deux lecteurs (`Fdc::writeMedia` /
+  `readMediaCopy`, pistes réécrites comprises) ; la reprise valide l'en-tête, remonte les
+  disquettes comme le retour arrière, puis charge l'état (en-tête validé une fois). Une copie
+  relue porte une génération étrangère (`Fdc::kForeignGen`), et la remontée passe par un
+  `memcmp` quand rien n'a changé. Remplissage final toléré : l'état GEMDOS grandit au boot
+  (+322 octets entre 200 et 400 trames sous EmuTOS), libretro veut une taille fixe.
+- **Recettes partagées.** `Machine::switchTos` (charger, puis profil exigé par le TOS depuis
+  la machine demandée) remplace le changement de ROM d'Android et le repli du web, qui
+  chargeait EmuTOS 192 Ko sans rejouer la garde. `armAudioClocks` (sans lui la machine est
+  muette ; contrat de drainage écrit) remplace quatre copies, `freezeHostClocks` la date
+  figée du headless, `setJoysticks` (IKBD + ports manette STE) trois copies.
+- **État de processus.** Les verrous du cadrage adaptatif étaient des statiques de fonction,
+  hérités par un nouveau jeu dans le même processus : `FramingLatch`, tenu par l'appelant (le
+  GUI en garde un pour bureau et borne, comme avant). Test : une `Machine` reconstruite
+  repart du même état qu'une première.
+- **Journaux.** 224 `fprintf(stderr, …)` du cœur (et la trace IKBD) passent par `neost::log::err` : identique
+  sur stderr tant qu'aucun puits n'est posé, détournable par `setSink` (libretro :
+  `retro_log_printf`).
+- **Géométrie et cadence.** `pacing::AvTracker` n'annonce une taille ou une cadence qu'après
+  trois trames identiques, et distingue la taille (`SET_GEOMETRY`) de la cadence
+  (`SET_SYSTEM_AV_INFO`).
+- **Bibliothèque partagée.** Option `NEOST_PIC` : cœur PIC à visibilité cachée ;
+  `neost-shared-probe` (une `.so` qui construit une `Machine`, joue une trame, sérialise et
+  reprend un état autonome) n'exporte qu'un symbole. Job CI « Réseau hôte désactivé ».
+- Bits joystick sans GLFW (`io/StJoyBits.hpp`). Tests : `tests/libretro_frontier_logic.cpp`.
+
 ## 2026-11-24 — CI Windows : migration vers UCRT64
 
 - MSYS2 a retiré GLFW du dépôt MINGW64. Le paquet Windows x64 se construit

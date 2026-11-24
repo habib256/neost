@@ -4,6 +4,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/Blitter.hpp"
+#include "util/Log.hpp"
 #include <algorithm>
 #include "core/Bus.hpp"
 #include "core/Cpu68k.hpp"
@@ -324,11 +325,11 @@ void Blitter::start() {
         static const bool blitTrace = std::getenv("NEOST_BLIT_TRACE") != nullptr;
         if (blitTrace) {
             auto r16 = [&](uint32_t o) { return unsigned((reg_[o] << 8) | reg_[o + 1]); };
-            std::fprintf(stderr, "[BLIT] src=%06X dst=%06X x=%u y=%u hop=%u lop=%u ctrl=%02X skew=%02X\n",
-                         unsigned(((r16(0x24) << 16) | r16(0x26)) & 0xFFFFFF),
-                         unsigned(((r16(0x32) << 16) | r16(0x34)) & 0xFFFFFF),
-                         r16(0x36), unsigned(yLatch_), reg_[0x3A] & 3u, reg_[0x3B] & 0xFu,
-                         reg_[0x3C], reg_[0x3D]);
+            neost::log::err("[BLIT] src=%06X dst=%06X x=%u y=%u hop=%u lop=%u ctrl=%02X skew=%02X\n",
+                            unsigned(((r16(0x24) << 16) | r16(0x26)) & 0xFFFFFF),
+                            unsigned(((r16(0x32) << 16) | r16(0x34)) & 0xFFFFFF),
+                            r16(0x36), unsigned(yLatch_), reg_[0x3A] & 3u, reg_[0x3B] & 0xFu,
+                            reg_[0x3C], reg_[0x3D]);
         }
     }
 
@@ -383,7 +384,7 @@ void Blitter::onSlice() {
     // à Hatari, indépendamment de l'origine absolue liée au boot du TOS.
     static const bool startDiag = std::getenv("NEOST_BLIT_START_DIAG") != nullptr;
     if (startDiag && sched_)
-        std::fprintf(stderr, "[BLSTART] %lld\n", (long long)sched_->liveNow());
+        neost::log::err("[BLSTART] %lld\n", (long long)sched_->liveNow());
     // Hatari invalide le cache AVANT les cycles d'arbitrage, même si un
     // événement tombe pendant ceux-ci et observe le cache.
     bus_.megaSteCacheFlushIfEnabled();
@@ -394,7 +395,7 @@ void Blitter::onSlice() {
     inSlice_ = false;
     static const bool endDiag = std::getenv("NEOST_BLIT_START_DIAG") != nullptr;
     if (endDiag && sched_)
-        std::fprintf(stderr, "[BLEND] %lld\n", (long long)sched_->liveNow());
+        neost::log::err("[BLEND] %lld\n", (long long)sched_->liveNow());
     billCycles(kArbOut);                   // restitution au CPU
     if (done) finishTransfer();            // Blitter_Start [D] blitter.c:871 @ f0736b24 : IRQ après arbitration
     if (!done) {
@@ -466,7 +467,7 @@ void Blitter::finishTransfer() {
     reg_[0x3C] &= uint8_t(~0xC0);   // BUSY et HOG effacés
     static const bool diag = std::getenv("NEOST_BLIT_START_DIAG") != nullptr;
     if (diag && sched_)
-        std::fprintf(stderr, "[BLDONE] %lld\n", (long long)sched_->liveNow());
+        neost::log::err("[BLDONE] %lld\n", (long long)sched_->liveNow());
     if (bus_.mfp) bus_.mfp->setBlitterLine(true);
 }
 

@@ -26,6 +26,7 @@
 //  d'arrondi, et s'arrête (fatalerror) sur un décalage hors table (vérifié le 2026-11-10).
 // =============================================================================
 #include "Fpu.hpp"
+#include "util/Log.hpp"
 #include "io/SoftFloatDecimal.hpp"
 #include "io/SoftFloatFpsp.hpp"
 #include <cmath>
@@ -867,6 +868,6 @@ void Fpu::genOp(uint16_t cmd, Ext src) {
 // =============================================================================
 void Fpu::trace(const char* what, uint16_t v) {
     if (traceCount_ >= 32) return;
-    std::fprintf(stderr, "[fpu] %s $%04X%s\n", what, v,
-                 ++traceCount_ == 32 ? " (rest of the dialogue not logged)" : "");
+    neost::log::err("[fpu] %s $%04X%s\n", what, v,
+                    ++traceCount_ == 32 ? " (rest of the dialogue not logged)" : "");
 }

@@ -9,6 +9,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/UltraSatan.hpp"
+#include "util/Log.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -136,9 +137,9 @@ int UltraSatan::execute(const uint8_t* cdb) {
     std::memset(buf_, 0, sizeof buf_);
     const uint8_t* code = cdb + 3;
     if (trace)
-        std::fprintf(stderr, "[usatan] US%c%c%c%c%c%c%c params %02X %02X %02X\n",
-                     code[0], code[1], code[2], code[3], code[4], code[5], code[6],
-                     cdb[7], cdb[8], cdb[9]);
+        neost::log::err("[usatan] US%c%c%c%c%c%c%c params %02X %02X %02X\n",
+                        code[0], code[1], code[2], code[3], code[4], code[5], code[6],
+                        cdb[7], cdb[8], cdb[9]);
 
     // Ordre de comparaison IDENTIQUE au firmware (préfixes de 4 puis 7/5 octets).
     if (cmpn(code, "RdFW", 4) || cmpn(code, "WrFW", 4)) {

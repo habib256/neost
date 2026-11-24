@@ -5,6 +5,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/Ikbd.hpp"
+#include "util/Log.hpp"
 #include "io/Mfp.hpp"
 #include "core/Pacing.hpp"   // kCpuHzInt — UNE horloge CPU pour tout l'arbre
 #include <cstdio>
@@ -101,12 +102,12 @@ Ikbd::Ikbd(Mfp& mfp) : mfp_(mfp) {
 
 void Ikbd::trace(const char* format, ...) const {
     if (!kbdTraceEnabled()) return;
-    std::fprintf(stderr, "[kbd] cycle=%lld ", (long long)firmwareEventTime());
+    neost::log::err("[kbd] cycle=%lld ", (long long)firmwareEventTime());
     va_list args;
     va_start(args, format);
-    std::vfprintf(stderr, format, args);
+    neost::log::verr(format, args);
     va_end(args);
-    std::fputc('\n', stderr);
+    neost::log::err("\n");
 }
 
 // Ordre de balayage de la matrice au reset (ROM $F086-$F0C5), extrait de la ROM :
@@ -228,9 +229,9 @@ uint8_t Ikbd::read8(uint32_t addr) {
     }
     trace("acia-read data=$%02X full=%d overrun=%d queued=%zu", b, had, ovrn_, rx_.size());
     if (dbgRdr)
-        std::fprintf(stderr, "[acia] rd %s$%02X%s reste=%zu cyc=%lld\n",
-                     had ? "" : "EMPTY (", b, had ? "" : ")",
-                     rx_.size(), sched_ ? (long long)sched_->now() : 0LL);
+        neost::log::err("[acia] rd %s$%02X%s reste=%zu cyc=%lld\n",
+                        had ? "" : "EMPTY (", b, had ? "" : ")",
+                        rx_.size(), sched_ ? (long long)sched_->now() : 0LL);
     armRx();                         // octet suivant éventuel → livraison datée
     // ⚠ [B] MC6850 § Interrupt Request p. 6, § Receiver Overrun p. 8-9 : l'IRQ ne tomberait qu'à SR puis RDR. Écart gardé, cf. ci-dessus.
     raiseIfReady();                  // RDRF/overrun retombés → l'IRQ RX peut retomber
@@ -445,10 +446,10 @@ void Ikbd::dispatchCommand() {
     // un jeu utilise (souris relative/absolue, joystick auto/monitoring…).
     static const bool dbg = std::getenv("NEOST_DEBUG_IKBD") != nullptr;
     if (dbg) {
-        std::fprintf(stderr, "[ikbd] cmd $%02X", opcode);
+        neost::log::err("[ikbd] cmd $%02X", opcode);
         for (int i = 1; i < inBufLen_ && i < (int)inBuf_.size(); ++i)
-            std::fprintf(stderr, " $%02X", inBuf_[i]);
-        std::fprintf(stderr, "\n");
+            neost::log::err(" $%02X", inBuf_[i]);
+        neost::log::err("\n");
     }
     // Levée de la pause ($13) : seules les commandes qui sortent par $F91B de la
     // ROM la lèvent. Les rapports d'état, $13, un $0D hors mode absolu, un $16

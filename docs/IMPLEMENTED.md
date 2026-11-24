@@ -968,7 +968,23 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
 - **Save-states plus rapides** : CRC-32 par table (il était calculé bit à bit) et filet de
   `loadState` sérialisé sans CRC — reprise 21,6 → 3,9 ms, sauvegarde 10,2 → 2,6 ms
   (mesuré sur la lignée précédente), à format et valeurs INCHANGÉS. Le GUI (F7/F8) en
-  profite autant.
+  profite autant. Puis (2026-11-24) `util/Crc32` : instruction CRC32 d'ARMv8, sinon découpage
+  par 8 octets, et tampon de secours réutilisé — sauvegarde 6,3 → 0,41 ms, reprise 7,6 →
+  0,52 ms pour un état de 1,87 Mo sur Mac arm64 (1,4 ms par CRC sur le chemin portable), à
+  valeurs identiques (`neost-selftest` confronte les trois chemins).
+- **États autonomes** (`Machine::saveStateWithMedia` / `loadStateWithMedia`, 2026-11-24) :
+  l'état `.state` intact, plus le contenu des deux lecteurs de disquette et un CRC, en un
+  seul blob ; la reprise remonte les disquettes (fichier hôte réécrit là où il diffère) après
+  avoir validé l'en-tête. Remplissage final toléré (taille fixe d'un frontend libretro).
+  0,66 ms la sauvegarde et 0,76 ms la reprise, disquette de 720 Ko comprise. Hors du blob :
+  disques durs et écritures STX, comme le `.state`. Gardé par `neost-selftest`
+  (`tests/libretro_frontier_logic.cpp`).
+- **Frontière libretro** (2026-11-24, `docs/LIBRETRO.md`) : `Machine::switchTos`,
+  `armAudioClocks`, `freezeHostClocks`, `setJoysticks` (recettes que les frontends
+  recopiaient) ; journaux du cœur détournables (`neost::log::setSink`) ; verrous du cadrage
+  tenus par l'appelant (`FramingLatch`) ; annonce de géométrie et de cadence
+  (`pacing::AvTracker`) ; bits joystick sans GLFW (`io/StJoyBits.hpp`) ; option `NEOST_PIC`
+  (cœur PIC à visibilité cachée, lié dans une `.so` par `neost-shared-probe`, CI Linux).
 - **Oracle différentiel NeoST↔Hatari** (`tools/opendst_oracle.py`) : le même script
   d'entrées rejoué des deux côtés, images comparées, décalage de boot mesuré en deux
   passes. Repose sur `tools/hatari_neost_oracle.patch` (script joystick daté par VBL +

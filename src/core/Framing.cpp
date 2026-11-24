@@ -25,11 +25,12 @@ namespace {
 constexpr int kSideNum = 1, kSideDen = 4;
 }  // namespace
 
-void stContentRegion(const Shifter& sh, int& cTop, int& cH, int& cW) {
-    static int overscanLatch = 0;   // bordure ouverte (haut ou bas)
-    static int openStreak = 0;      // trames CONSÉCUTIVES à bordure ouverte (cf. kAttack)
-    static int latchTop = 0, latchBot = 0;   // étendue verticale RETENUE (cf. plus bas)
-    static bool latchWide = false;           // largeur RETENUE : buffer entier ?
+void stContentRegion(const Shifter& sh, FramingLatch& latch, int& cTop, int& cH, int& cW) {
+    int&  overscanLatch = latch.overscanLatch;
+    int&  openStreak    = latch.openStreak;
+    int&  latchTop      = latch.latchTop;
+    int&  latchBot      = latch.latchBot;
+    bool& latchWide     = latch.latchWide;
 
     // snapBordersOpen/snapLive* : snapshot capturé à finishFrame(), stable au rendu
     // (les champs live glueStartHBL_/glueEndHBL_ sont remis à zéro par beginFrame_()

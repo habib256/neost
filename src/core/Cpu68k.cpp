@@ -10,6 +10,7 @@
 // =============================================================================
 #include <algorithm>
 #include "core/Cpu68k.hpp"
+#include "util/Log.hpp"
 #include "core/Blitter.hpp"
 #include "core/Bus.hpp"
 #include "core/Scheduler.hpp"
@@ -393,7 +394,7 @@ public:
     // exacts au moment de la faute.
     void cpuDidHalt() override {
         if (g_cur->inReset) {
-            std::fprintf(stderr,
+            neost::log::err(
                 "[cpu] 68000 halted: reset vector fetch failed (SSP/PC unreadable).\n");
             return;
         }
@@ -404,7 +405,7 @@ public:
         // ([D] newcpu.c:3097 @ f0736b24). Les deux adresses peuvent donc différer : pour voir
         // toute la chaîne, armer NEOST_FAULT_TRACE.
         if (g_cur->faultValid)
-            std::fprintf(stderr,
+            neost::log::err(
                 "[cpu] 68000 halted: double bus/address error while taking exception "
                 "vector %d (SSP=$%08X).\n"
                 "      Last fault: %s at address $%08X, PC=$%06X.\n"
@@ -414,7 +415,7 @@ public:
                 static_cast<unsigned>(g_cur->faultAddr),
                 static_cast<unsigned>(g_cur->faultPc & 0xFFFFFFu));
         else
-            std::fprintf(stderr,
+            neost::log::err(
                 "[cpu] 68000 halted: double bus/address error while taking exception "
                 "vector %d (SSP=$%08X).\n"
                 "      The emulated machine is frozen until reset.\n",
@@ -438,10 +439,10 @@ public:
         // façon nommée là où elle compte, dans le message de halt.
         static const bool trace = std::getenv("NEOST_FAULT_TRACE") != nullptr;
         if (trace)
-            std::fprintf(stderr, "[cpu] bus error %s at address $%08X, PC=$%06X\n",
-                         write ? "writing" : "reading",
-                         static_cast<unsigned>(addr),
-                         static_cast<unsigned>(getPC0() & 0xFFFFFFu));
+            neost::log::err("[cpu] bus error %s at address $%08X, PC=$%06X\n",
+                            write ? "writing" : "reading",
+                            static_cast<unsigned>(addr),
+                            static_cast<unsigned>(getPC0() & 0xFFFFFFu));
         moira::StackFrame f{};
         const moira::u16 ird = getIRD();
         // code = IR(15..5) | function-code(2..0) | bit4 R/W (1 = lecture sur 68000).
@@ -568,8 +569,8 @@ public:
         if (g_busDiagPage < 0) return;
         const moira::u32 pc = getPC0() & 0xFFFFFFu;
         if ((pc >> 8) != (moira::u32)g_busDiagPage) return;
-        std::fprintf(stderr, "[BUS] %c pc=%06x a=%06x c=%lld m4=%d\n",
-                     k, pc, a & 0xFFFFFFu, (long long)c, (int)(c & 3));
+        neost::log::err("[BUS] %c pc=%06x a=%06x c=%lld m4=%d\n",
+                        k, pc, a & 0xFFFFFFu, (long long)c, (int)(c & 3));
     }
     // Fin de cycle bus : /UDS remonte pour tout accès mot, ou octet à adresse PAIRE.
     // C'est l'horloge de la clé Cubase 2 (PAL16R8), qui voit CHAQUE cycle du CPU —
@@ -794,8 +795,8 @@ public:
     void willInterrupt(moira::u8 level) override {
         static const bool blitDiag = std::getenv("NEOST_BLIT_START_DIAG") != nullptr;
         if (blitDiag)
-            std::fprintf(stderr, "[BLIRQ] entry level=%u clock=%lld\n", unsigned(level),
-                         (long long)(g_cur->sched ? g_cur->sched->liveNow() : busOfClock(getClock())));
+            neost::log::err("[BLIRQ] entry level=%u clock=%lld\n", unsigned(level),
+                            (long long)(g_cur->sched ? g_cur->sched->liveNow() : busOfClock(getClock())));
         if (g_iackOn) {                                          // IACK fidèle WinUAE (E-clock @ IACK + bloc occupé)
             if (g_iackAt) return;                                // ← nouveau modèle : tout se fait AU point d'IACK
                                                                  //   (iackSyncBefore/After), plus rien ici.
@@ -882,8 +883,8 @@ public:
         if (g_iackSync && g_cur->sched && !g_cur->inReset && g_cur->cpuSelf) g_cur->cpuSelf->rebaseQuantumAndSync();
         static const bool blitDiag = std::getenv("NEOST_BLIT_START_DIAG") != nullptr;
         if (blitDiag)
-            std::fprintf(stderr, "[BLIRQ] iack level=%u clock=%lld\n", unsigned(level),
-                         (long long)(g_cur->sched ? g_cur->sched->liveNow() : busOfClock(getClock())));
+            neost::log::err("[BLIRQ] iack level=%u clock=%lld\n", unsigned(level),
+                            (long long)(g_cur->sched ? g_cur->sched->liveNow() : busOfClock(getClock())));
         if (level == 6 && g_cur->bus->mfp) {                 // MFP : vecteur fourni par le 68901
             const int v = g_cur->bus->mfp->iack();
             if (g_cur->tracer) g_cur->tracer->onInterrupt(level, v);
@@ -978,7 +979,7 @@ CpuCore Cpu68k::parseCore(const std::string& s) {
     // L'ancien cœur Musashi a été retiré : on tolère la valeur historique pour ne pas
     // casser les vieux neost.cfg / scripts, mais on AVERTIT et on reste sur Moira.
     if (l == "musashi" || l == "uae")
-        std::fprintf(stderr, "[cpu] core \"%s\" removed — NeoST uses Moira (cycle-exact).\n", s.c_str());
+        neost::log::err("[cpu] core \"%s\" removed — NeoST uses Moira (cycle-exact).\n", s.c_str());
     return CpuCore::Moira;
 }
 
@@ -1038,8 +1039,8 @@ void Cpu68k::rebaseQuantumAndSync(bool rollFrames) {
         ++total;
         if (nd >= 0 && nd <= busNow) ++hits;
         if (total % 100000 == 0)
-            std::fprintf(stderr, "[IACKDISP] %ld/%ld IACK with a due event (%.3f %%)\n",
-                         hits, total, 100.0 * double(hits) / double(total));
+            neost::log::err("[IACKDISP] %ld/%ld IACK with a due event (%.3f %%)\n",
+                            hits, total, 100.0 * double(hits) / double(total));
     }
     if (rollFrames) state_->sched->syncToRollingFrames(busNow);   // vol du blitter (cf. Blitter::billCycles)
     else            state_->sched->syncTo(busNow);
@@ -1145,13 +1146,13 @@ int Cpu68k::run(int cycles) {
             ++runs;
             if (delta != 0) { ++nonZero; sumDelta += delta; if (delta > maxDelta) maxDelta = delta; }
             if (delta >= qdiag)
-                std::fprintf(stderr, "[QDELTA] run#%ld busNow=%lld schedNow=%lld delta=%lld\n",
-                             runs, (long long)quantumStartBus_,
-                             (long long)state_->sched->now(), (long long)delta);
+                neost::log::err("[QDELTA] run#%ld busNow=%lld schedNow=%lld delta=%lld\n",
+                                runs, (long long)quantumStartBus_,
+                                (long long)state_->sched->now(), (long long)delta);
             if (runs % 100000 == 0)
-                std::fprintf(stderr, "[QDELTA] recap runs=%ld nonzero=%ld (%.3f %%) max=%lld sum=%lld\n",
-                             runs, nonZero, 100.0 * double(nonZero) / double(runs),
-                             (long long)maxDelta, (long long)sumDelta);
+                neost::log::err("[QDELTA] recap runs=%ld nonzero=%ld (%.3f %%) max=%lld sum=%lld\n",
+                                runs, nonZero, 100.0 * double(nonZero) / double(runs),
+                                (long long)maxDelta, (long long)sumDelta);
         }
     }
     state_->endSlice = false;                              // un éventuel résidu de préemption ne doit pas couper le 1er pas
@@ -1195,7 +1196,7 @@ int Cpu68k::run(int cycles) {
         }
         if (htEmit) {
             const int64_t now = busClockNow();
-            std::fprintf(stderr, "HT %06X d=%-3lld %s\n", htPc, static_cast<long long>(now - state_->htPrev), htDis);
+            neost::log::err("HT %06X d=%-3lld %s\n", htPc, static_cast<long long>(now - state_->htPrev), htDis);
             state_->htPrev = now; --g_htN;
         }
         // Préemption du bloc CPU : runFrame arme beginRun à chaque bloc, donc elle est
@@ -1438,7 +1439,7 @@ void Cpu68k::setMegaSteSpeed(bool sixteenMhz) {
     // Seuils du délai IPL : en cycles CPU, inchangés par la vitesse (cf. constructeur) —
     // même chemin qu'au chargement d'un save-state.
     state_->moira->applyIplFetchConfig(mul);
-    std::fprintf(stderr, "[cpu] Mega STE: 68000 at %d MHz\n", sixteenMhz ? 16 : 8);
+    neost::log::err("[cpu] Mega STE: 68000 at %d MHz\n", sixteenMhz ? 16 : 8);
 }
 
 bool Cpu68k::megaSte16Mhz() const { return state_->cpuMul == 2; }
@@ -1521,9 +1522,9 @@ bool raiseWindowDefers() {
                       && g_cur->sched->now() - due < g_raiseWindow;
     // DIAG (NEOST_RAISE_DIAG=1) : marge frontière−échéance, état STOP et décision.
     static const bool diag = std::getenv("NEOST_RAISE_DIAG") != nullptr;
-    if (diag) std::fprintf(stderr, "[RWD] due=%lld now=%lld stop=%d defer=%d\n",
-                           (long long)due, (long long)(g_cur->sched->now()),
-                           stopped ? 1 : 0, defer ? 1 : 0);
+    if (diag) neost::log::err("[RWD] due=%lld now=%lld stop=%d defer=%d\n",
+                              (long long)due, (long long)(g_cur->sched->now()),
+                              stopped ? 1 : 0, defer ? 1 : 0);
     return defer;
 } }
 void Cpu68k::raiseVbl() {

@@ -62,9 +62,11 @@ GLuint crtApply(App& A, const GlScreen& s, int dstW, int dstH) {
 
 // Région de CONTENU (zoom adaptatif) : le calcul vit dans core/Framing.cpp,
 // PARTAGÉ avec le plein écran WASM — même règle, mêmes latches d'hystérésis.
-// Ici on ne garde que l'adaptation de signature (Machine& → Shifter&).
+// Ici on ne garde que l'adaptation de signature (Machine& → Shifter&) et UN latch pour
+// tout le GUI : bureau et kiosk le partagent, l'aller-retour ne repart pas à froid.
 void stContentRegion(Machine& machine, int& cTop, int& cH, int& cW) {
-    neost::stContentRegion(machine.shifter, cTop, cH, cW);
+    static neost::FramingLatch latch;
+    neost::stContentRegion(machine.shifter, latch, cTop, cH, cW);
 }
 
 // Rendu kiosk ADAPTATIF : on cale la région de contenu [cTop, cTop+cH) sur la

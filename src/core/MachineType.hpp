@@ -12,6 +12,7 @@
 //  vérification ; pilotes st, megast, ste, megaste). (c) 2026 NeoST.
 // =============================================================================
 #pragma once
+#include "util/Log.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -124,7 +125,7 @@ inline MachineType parseMachine(const std::string& s) {
     // Valeur inconnue → défaut STE, mais EN LE DISANT : « mega-ste » ou « ST » (casse)
     // silencieusement remplacés faisaient diffier l'utilisateur contre le mauvais profil.
     if (s != "ste" && !s.empty())
-        std::fprintf(stderr, "[config] unknown machine \"%s\" → ste (valid: st, megast, ste, megaste)\n", s.c_str());
+        neost::log::err("[config] unknown machine \"%s\" → ste (valid: st, megast, ste, megaste)\n", s.c_str());
     return MachineType::Ste;                 // défaut : 1040 STE (son DMA, pas de blitter)
 }
 
@@ -143,7 +144,7 @@ inline std::size_t parseRamBytes(const std::string& s) {
     if (s == "2560k" || s == "2.5m") return 2560u * 1024;     // 2M + 512K
     if (s == "4m")   return 4096u * 1024;
     if (!s.empty())                              // même politique que parseMachine : défaut ANNONCÉ
-        std::fprintf(stderr, "[config] unknown mem \"%s\" → 512k (valid: 256k, 512k, 1m, 2m, 2176k, 2560k, 4m)\n", s.c_str());
+        neost::log::err("[config] unknown mem \"%s\" → 512k (valid: 256k, 512k, 1m, 2m, 2176k, 2560k, 4m)\n", s.c_str());
     return 512u * 1024;                          // défaut : 512 Ko
 }
 inline const char* ramLabel(std::size_t bytes) {

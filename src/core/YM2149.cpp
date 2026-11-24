@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <cstdio>
 #include "core/YM2149.hpp"
+#include "util/Log.hpp"
 
 #include <cmath>
 #include <cstdint>
@@ -470,8 +471,8 @@ void YM2149::synthesizeFrame(float* out, uint32_t frames, uint32_t sampleRate, i
                            if (g < 32) ++lt32; else if (g < 64) ++lt64; else ++ge64; }
             pc = int64_t(e.cycle);
         }
-        std::fprintf(stderr, "[ymev] f=%ld ecritures=%zu instants=%d resolus_hote=%d resolus_250k=%d ecarts <32=%d 32-63=%d >=64=%d\n",
-                     fr, events_.size(), inst, dh, dq, lt32, lt64, ge64);
+        neost::log::err("[ymev] f=%ld ecritures=%zu instants=%d resolus_hote=%d resolus_250k=%d ecarts <32=%d 32-63=%d >=64=%d\n",
+                        fr, events_.size(), inst, dh, dq, lt32, lt64, ge64);
       } }
     if (gen < n250) doSamples250(int(n250 - gen));
     events_.clear();

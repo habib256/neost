@@ -162,6 +162,15 @@ public:
     bool restoreMedia(int drive, const MediaCopy& copy);
     static uint64_t mediaCopyGeneration(const MediaCopy& copy);
     static std::size_t mediaCopyBytes(const MediaCopy& copy);
+    // États AUTONOMES (Machine::saveStateWithMedia) : le média d'un lecteur en octets.
+    // writeMedia écrit le lecteur VIVANT (sans copie intermédiaire de ~720 Ko) ;
+    // readMediaCopy relit le même format en copie restaurable. Une copie relue porte une
+    // génération ÉTRANGÈRE (kForeignGen) : les générations ne valent qu'à l'intérieur
+    // d'une session, et une égalité fortuite avec celle du lecteur sauterait la remontée.
+    // Une image STX n'y porte que son chemin : ses écritures vivent dans le .wd1772.
+    static constexpr uint64_t kForeignGen = ~uint64_t(0);
+    void writeMedia(StateArchive& ar, int drive) const;
+    static std::shared_ptr<const MediaCopy> readMediaCopy(StateArchive& ar);
     // Une commande est en cours sur un STX : ses dates suivent la piste réelle, on n'y
     // prend pas d'instantané. Sur un .ST le save-state porte la commande entière : l'exclure
     // aussi priverait de retour arrière les chargeurs qui lisent sans relâche.

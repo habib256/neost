@@ -3,6 +3,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "util/ConfigPath.hpp"
+#include "util/Log.hpp"
 #include "util/MouseScale.hpp"   // bornes partagées avec le curseur
 #include "gui/AppConfig.hpp"
 
@@ -233,8 +234,8 @@ void parseConfigLine(Config& c, std::string line) {
             // chaîne illisible est IGNORÉE plutôt qu'à moitié appliquée — parseZones
             // rend alors une liste vide (cf. MidiZones.hpp).
             if (r.size() > 3 && !neost::midi::parseZones(r[3], d.zones))
-                std::fprintf(stderr, "[config] midi_in_devices: zones \"%s\" of \"%s\" "
-                             "unreadable - ignored\n", r[3].c_str(), r[0].c_str());
+                neost::log::err("[config] midi_in_devices: zones \"%s\" of \"%s\" "
+                                "unreadable - ignored\n", r[3].c_str(), r[0].c_str());
             c.midiInDevices.push_back(std::move(d));
         }
     }
@@ -412,7 +413,7 @@ Config loadConfig(const std::string& exeDir) {
 // (GUI, headless --from-cfg, profils) n'aurait su la relire.
 static std::string oneLine(const std::string& v) {
     if (v.find_first_of("\r\n") == std::string::npos) return v;
-    std::fprintf(stderr, "[cfg] value with a line break not saved: \"%s\"\n", v.c_str());
+    neost::log::err("[cfg] value with a line break not saved: \"%s\"\n", v.c_str());
     return std::string();
 }
 

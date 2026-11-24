@@ -11,6 +11,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/Ne2000.hpp"
+#include "util/Log.hpp"
 
 #include <algorithm>
 #include <cstdio>
@@ -77,7 +78,7 @@ constexpr uint8_t kTallyMax = 0xC0;
 
 void Ne2000::trace(const char* what, unsigned a, unsigned b) const {
     static const bool on = std::getenv("NEOST_ENEC_TRACE") != nullptr;
-    if (on) std::fprintf(stderr, "[enec] %s %04x %04x\n", what, a, b);
+    if (on) neost::log::err("[enec] %s %04x %04x\n", what, a, b);
 }
 
 void Ne2000::setMac(const uint8_t mac[6]) {
