@@ -1,31 +1,26 @@
 # Community 429
 
-> 8 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **Blitter et IRQ MegaSTE : contrôle des domaines d'horloge** (10 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Audit indépendant et expériences causales** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Borne de durée** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Correctif NeoST indépendant** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Horloge des cycles internes après IACK** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Protocole** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Reproduire** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Résultats observés au pin** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Action** (5 connections) — `src/util/DesktopPointer.hpp`
+- **left** (1 connections) — `src/util/DesktopPointer.hpp`
+- **right** (1 connections) — `src/util/DesktopPointer.hpp`
+- **x** (1 connections) — `src/util/DesktopPointer.hpp`
+- **y** (1 connections) — `src/util/DesktopPointer.hpp`
 
 ## Relationships
 
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 434](Community_434.md) (1 shared connections)
-- [Community 411](Community_411.md) (1 shared connections)
+- [Community 90](Community_90.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_MEGASTE_AUDIT.md`
+- `src/util/DesktopPointer.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 10 (100%)
+- EXTRACTED: 5 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

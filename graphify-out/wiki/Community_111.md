@@ -1,11 +1,12 @@
 # Community 111
 
-> 24 nodes
+> 25 nodes
 
 ## Key Concepts
 
 - **Rig** (16 connections) — `tests/ikbd_monitor_logic.cpp`
 - **testIkbdMonitor()** (13 connections) — `tests/ikbd_monitor_logic.cpp`
+- **ikbd_monitor_logic.cpp** (12 connections) — `tests/ikbd_monitor_logic.cpp`
 - **Checks** (4 connections) — `tests/ikbd_monitor_logic.cpp`
 - **.command()** (3 connections) — `tests/ikbd_monitor_logic.cpp`
 - **.equal()** (2 connections) — `tests/ikbd_monitor_logic.cpp`
@@ -31,8 +32,11 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (6 shared connections)
-- [Community 41](Community_41.md) (3 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 460](Community_460.md) (2 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
@@ -40,8 +44,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 36 (97%)
-- INFERRED: 1 (3%)
+- EXTRACTED: 42 (98%)
+- INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

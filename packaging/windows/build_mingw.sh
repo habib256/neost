@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-#  Paquet Windows x86_64 — bâti dans un shell MSYS2/MINGW64.
+#  Paquet Windows x86_64 — bâti dans un shell MSYS2/UCRT64.
 #
 #  Pourquoi MinGW-w64 et pas MSVC : le code est écrit pour GCC/Clang (attributs,
 #  extensions, options -W…), Moira exige C++20 et le reste du dépôt se compile
@@ -21,7 +21,7 @@
 #  Sortie : dist/NeoST-<version>-windows-x86_64.zip
 #           (neost.exe + neost-headless.exe + roms/ disks/ fonts/ + LISEZMOI)
 #
-#  Usage (dans un shell MINGW64) :
+#  Usage (dans un shell UCRT64) :
 #      NEOST_VERSION=0.5.1 packaging/windows/build_mingw.sh
 #
 #  (c) 2026 VERHILLE Arnaud — projet NeoST.
@@ -77,7 +77,7 @@ check_dlls() {
         case "${dll,,}" in
             kernel32.dll|user32.dll|gdi32.dll|shell32.dll|advapi32.dll|ole32.dll|\
             oleaut32.dll|winmm.dll|imm32.dll|version.dll|setupapi.dll|cfgmgr32.dll|\
-            msvcrt.dll|opengl32.dll|dwmapi.dll|shlwapi.dll|ws2_32.dll|iphlpapi.dll|bcrypt.dll|\
+            msvcrt.dll|ucrtbase.dll|opengl32.dll|dwmapi.dll|shlwapi.dll|ws2_32.dll|iphlpapi.dll|bcrypt.dll|\
             avrt.dll|mmdevapi.dll|api-ms-win-*|ext-ms-*) ;;
             *) bad="$bad $dll" ;;
         esac

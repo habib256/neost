@@ -1,12 +1,11 @@
 # Community 70
 
-> 34 nodes
+> 32 nodes
 
 ## Key Concepts
 
 - **Rig** (28 connections) — `tests/stx_raw_track_wrap_logic.cpp`
 - **checkDump()** (10 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **testStxRawTrackWrap()** (10 connections) — `tests/stx_raw_track_wrap_logic.cpp`
 - **writeSector()** (9 connections) — `tests/stx_raw_track_wrap_logic.cpp`
 - **.data()** (7 connections) — `tests/stx_raw_track_wrap_logic.cpp`
 - **.reg()** (7 connections) — `tests/stx_raw_track_wrap_logic.cpp`
@@ -17,7 +16,6 @@
 - **.mode()** (4 connections) — `tests/stx_raw_track_wrap_logic.cpp`
 - **.armIndex()** (3 connections) — `tests/stx_raw_track_wrap_logic.cpp`
 - **.select()** (3 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **main()** (2 connections) — `tests/stx_raw_track_wrap_logic.cpp`
 - **.address()** (2 connections) — `tests/stx_raw_track_wrap_logic.cpp`
 - **.advance()** (2 connections) — `tests/stx_raw_track_wrap_logic.cpp`
 - **.irq()** (2 connections) — `tests/stx_raw_track_wrap_logic.cpp`
@@ -29,13 +27,14 @@
 - **Bus** (1 connections)
 - **Fdc** (1 connections)
 - **Mfp** (1 connections)
-- *... and 9 more nodes in this community*
+- **Scheduler** (1 connections)
+- **YM2149** (1 connections)
+- *... and 7 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (7 shared connections)
-- [Community 294](Community_294.md) (6 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 294](Community_294.md) (11 shared connections)
+- [Community 460](Community_460.md) (1 shared connections)
 
 ## Source Files
 
@@ -43,8 +42,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 69 (99%)
-- INFERRED: 1 (1%)
+- EXTRACTED: 63 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

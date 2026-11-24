@@ -775,7 +775,7 @@ jobs:
         uses: actions/deploy-pages@v4
 
   # ------------------------------------------------------ Windows x86_64 -----
-  # MSYS2/MINGW64 et non MSVC : le code est écrit pour GCC/Clang (options -W…,
+  # MSYS2/UCRT64 utilise toujours GCC et MinGW-w64 (options -W…,
   # C++20 pour Moira) et se compile ainsi tel quel, sans porter la chaîne de
   # dépendances vers vcpkg. Le runner windows-latest EXÉCUTE le binaire produit :
   # le smoke-launch ci-dessous est donc un vrai lancement Windows, pas un
@@ -795,7 +795,8 @@ jobs:
 
       - uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64
+          # GLFW a quitté le dépôt MINGW64 (MSYS2/MINGW-packages #33705).
+          msystem: UCRT64
           update: false
           install: >-
             zip
@@ -807,7 +808,7 @@ jobs:
             glfw:p
             python:p
 
-      - name: Build + zip (MinGW64, tout statique)
+      - name: Build + zip (UCRT64, tout statique)
         env:
           NEOST_VERSION: ${{ needs.version.outputs.neost_version }}
         run: packaging/windows/build_mingw.sh

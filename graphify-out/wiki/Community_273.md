@@ -1,59 +1,61 @@
 # Community 273
 
-> 56 nodes
+> 50 nodes
 
 ## Key Concepts
 
-- **cpu_swap_gate.py** (29 connections) — `tools/cpu_swap_gate.py`
 - **run_perfbench.py** (18 connections) — `tools/run_perfbench.py`
+- **run_nat_sting.py** (14 connections) — `tools/run_nat_sting.py`
 - **run_closure_intro_guard.py** (13 connections) — `tools/run_closure_intro_guard.py`
 - **time** (12 connections)
-- **main()** (11 connections) — `tools/cpu_swap_gate.py`
+- **make_sting_test.py** (10 connections) — `tools/make_sting_test.py`
 - **main()** (9 connections) — `tools/run_closure_intro_guard.py`
+- **main()** (9 connections) — `tools/run_nat_sting.py`
 - **host_info()** (9 connections) — `tools/run_perfbench.py`
-- **Scenario** (7 connections) — `tools/cpu_swap_gate.py`
-- **scenarios()** (7 connections) — `tools/cpu_swap_gate.py`
+- **replace_program()** (8 connections) — `tools/run_nat_sting.py`
+- **build_floppy()** (7 connections) — `tools/make_sting_test.py`
 - **threading** (7 connections)
-- **megaste_scenarios()** (6 connections) — `tools/cpu_swap_gate.py`
-- **replay_scenarios()** (6 connections) — `tools/cpu_swap_gate.py`
+- **build_prg()** (6 connections) — `tools/make_sting_test.py`
 - **budget()** (6 connections) — `tools/run_perfbench.py`
 - **_cpu_name()** (6 connections) — `tools/run_perfbench.py`
 - **measure_load()** (6 connections) — `tools/run_perfbench.py`
-- **collection_scenarios()** (5 connections) — `tools/cpu_swap_gate.py`
-- **run()** (5 connections) — `tools/cpu_swap_gate.py`
+- **build_code()** (5 connections) — `tools/make_sting_test.py`
+- **main()** (5 connections) — `tools/make_sting_test.py`
 - **handle()** (5 connections) — `tools/net_gateway80.py`
 - **features()** (5 connections) — `tools/run_closure_intro_guard.py`
 - **main()** (5 connections) — `tools/run_perfbench.py`
 - **net_gateway80.py** (5 connections) — `tools/net_gateway80.py`
-- **assemble_at_speed()** (4 connections) — `tools/cpu_swap_gate.py`
-- **etalon_scenarios()** (4 connections) — `tools/cpu_swap_gate.py`
-- **build()** (4 connections) — `tools/cpu_swap_gate.py`
 - **measure_all()** (4 connections) — `tools/run_perfbench.py`
-- *... and 31 more nodes in this community*
+- **run_timed()** (4 connections) — `tools/run_perfbench.py`
+- **compare()** (3 connections) — `tools/run_perfbench.py`
+- **measure()** (3 connections) — `tools/run_perfbench.py`
+- *... and 25 more nodes in this community*
 
 ## Relationships
 
-- [Community 18](Community_18.md) (18 shared connections)
-- [Community 173](Community_173.md) (12 shared connections)
-- [Community 227](Community_227.md) (9 shared connections)
+- [Community 18](Community_18.md) (17 shared connections)
+- [Community 227](Community_227.md) (8 shared connections)
 - [Community 34](Community_34.md) (7 shared connections)
+- [Community 3](Community_3.md) (5 shared connections)
 - [Community 26](Community_26.md) (5 shared connections)
-- [Community 83](Community_83.md) (2 shared connections)
-- [Community 249](Community_249.md) (2 shared connections)
+- [Community 173](Community_173.md) (5 shared connections)
+- [Community 8](Community_8.md) (4 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
+- [Community 55](Community_55.md) (3 shared connections)
 - [Community 332](Community_332.md) (1 shared connections)
-- [Community 49](Community_49.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/cpu_swap_gate.py`
+- `tools/make_sting_test.py`
 - `tools/net_gateway80.py`
 - `tools/run_closure_intro_guard.py`
+- `tools/run_nat_sting.py`
 - `tools/run_perfbench.py`
 
 ## Audit Trail
 
-- EXTRACTED: 142 (92%)
-- INFERRED: 12 (8%)
+- EXTRACTED: 135 (96%)
+- INFERRED: 5 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

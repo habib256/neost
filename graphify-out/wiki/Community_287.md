@@ -1,33 +1,41 @@
 # Community 287
 
-> 5 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **rtc_long_phase_logic.cpp** (9 connections) — `tests/rtc_long_phase_logic.cpp`
-- **testRtcLongPhase()** (6 connections) — `tests/rtc_long_phase_logic.cpp`
-- **limits** (5 connections)
-- **main()** (2 connections) — `tests/rtc_long_phase_logic.cpp`
-- **rtcAddress()** (2 connections) — `tests/rtc_long_phase_logic.cpp`
+- **Ce qui est implémenté — par sous-système** (18 connections) — `docs/IMPLEMENTED.md`
+- **Blitter** (4 connections) — `docs/IMPLEMENTED.md`
+- **Validé** (4 connections) — `docs/IMPLEMENTED.md`
+- **FPU MC68881** (3 connections) — `docs/IMPLEMENTED.md`
+- **Ports, cartouches et clés** (3 connections) — `docs/IMPLEMENTED.md`
+- **Rechargement du compteur pendant VSYNC (2026-11-15)** (1 connections) — `docs/IMPLEMENTED.md`
+- **Réseau — extensions NeoST (INACTIVES par défaut, cf. `docs/EXTENSIONS.md`)** (1 connections) — `docs/IMPLEMENTED.md`
+- **Réveil STOP avec HBL préarmée (2026-11-15)** (1 connections) — `docs/IMPLEMENTED.md`
 
 ## Relationships
 
-- [Community 41](Community_41.md) (3 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 477](Community_477.md) (1 shared connections)
-- [Community 20](Community_20.md) (1 shared connections)
-- [Community 315](Community_315.md) (1 shared connections)
-- [Community 297](Community_297.md) (1 shared connections)
+- [Community 27](Community_27.md) (1 shared connections)
+- [Community 393](Community_393.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
+- [Community 121](Community_121.md) (1 shared connections)
+- [Community 68](Community_68.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
+- [Community 471](Community_471.md) (1 shared connections)
+- [Community 64](Community_64.md) (1 shared connections)
+- [Community 457](Community_457.md) (1 shared connections)
+- [Community 203](Community_203.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/rtc_long_phase_logic.cpp`
+- `docs/IMPLEMENTED.md`
 
 ## Audit Trail
 
-- EXTRACTED: 17 (94%)
-- INFERRED: 1 (6%)
+- EXTRACTED: 20 (71%)
+- INFERRED: 8 (29%)
 - AMBIGUOUS: 0 (0%)
 
 ---

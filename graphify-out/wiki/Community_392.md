@@ -1,15 +1,20 @@
 # Community 392
 
-> 17 nodes
+> 22 nodes
 
 ## Key Concepts
 
 - **Audit Hatari, 5ᵉ passe : statuts remis en phase, chantiers Super Hang-On et Rick Dangerous (2026-07-07, complétée le 2026-07-08)** (25 connections) — `CHANGELOG.md`
 - **.gpipSetLine()** (16 connections) — `src/io/Mfp.hpp`
+- **.gpipInput()** (13 connections) — `src/io/Mfp.hpp`
+- **.gpipUpdateInterruptAt()** (7 connections) — `src/io/Mfp.hpp`
 - **.mfpSelfTest()** (6 connections) — `src/io/Mfp.hpp`
 - **.gpipUpdateInterrupt()** (6 connections) — `src/io/Mfp.hpp`
+- **.flushIrqUpdate()** (5 connections) — `src/io/Mfp.hpp`
 - **.setXsintLine()** (3 connections) — `src/io/Mfp.hpp`
 - **.setAciaLineKbd()** (3 connections) — `src/io/Mfp.hpp`
+- **.setAciaLineKbdAt()** (3 connections) — `src/io/Mfp.hpp`
+- **.setAciaLineMidiAt()** (3 connections) — `src/io/Mfp.hpp`
 - **.setBlitterLine()** (3 connections) — `src/io/Mfp.hpp`
 - **.setFdcLine()** (3 connections) — `src/io/Mfp.hpp`
 - **.setMonitorButton()** (3 connections) — `src/io/Mfp.hpp`
@@ -24,18 +29,18 @@
 
 ## Relationships
 
-- [Community 6](Community_6.md) (15 shared connections)
-- [Community 215](Community_215.md) (5 shared connections)
-- [Community 221](Community_221.md) (4 shared connections)
-- [Community 417](Community_417.md) (3 shared connections)
+- [Community 6](Community_6.md) (20 shared connections)
+- [Community 215](Community_215.md) (10 shared connections)
+- [Community 221](Community_221.md) (8 shared connections)
 - [Community 48](Community_48.md) (3 shared connections)
+- [Community 275](Community_275.md) (2 shared connections)
 - [Community 130](Community_130.md) (2 shared connections)
 - [Community 203](Community_203.md) (2 shared connections)
 - [Community 247](Community_247.md) (2 shared connections)
 - [Community 205](Community_205.md) (2 shared connections)
-- [Community 88](Community_88.md) (2 shared connections)
+- [Community 288](Community_288.md) (2 shared connections)
+- [Community 378](Community_378.md) (1 shared connections)
 - [Community 121](Community_121.md) (1 shared connections)
-- [Community 468](Community_468.md) (1 shared connections)
 
 ## Source Files
 
@@ -44,8 +49,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 32 (49%)
-- INFERRED: 33 (51%)
+- EXTRACTED: 44 (50%)
+- INFERRED: 44 (50%)
 - AMBIGUOUS: 0 (0%)
 
 ---

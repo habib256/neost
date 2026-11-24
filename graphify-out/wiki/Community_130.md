@@ -4,10 +4,9 @@
 
 ## Key Concepts
 
-- **Changelog — NeoST** (360 connections) — `CHANGELOG.md`
-- **A10 — la couverture Spectrum 512 est RENDUE, sans une ligne de ROM Atari (2026-08-28)** (2 connections) — `CHANGELOG.md`
+- **Changelog — NeoST** (361 connections) — `CHANGELOG.md`
 - **Bug hunt passes 1-3 + CI de release (2026-07-31)** (2 connections) — `CHANGELOG.md`
-- **Paquet Android : premier APK qui tourne (2026-08-11)** (2 connections) — `CHANGELOG.md`
+- **Porte d'échange élargie : parcours, collection, Mega STE à 16 MHz (2026-11-10)** (2 connections) — `CHANGELOG.md`
 - **0.5.1 — Windows, et le vrai paquet Pi 400 (2026-08-10)** (1 connections) — `CHANGELOG.md`
 - **0.5.2 — la 0.5.1, mais réellement livrée (2026-08-10)** (1 connections) — `CHANGELOG.md`
 - **0.5.4 — dongles, ports, MIDI vérifié (2026-08-23)** (1 connections) — `CHANGELOG.md`
@@ -27,24 +26,25 @@
 - **2026-11-18 — Plein écran : le retrait gauche standard sortait 4 px à gauche** (1 connections) — `CHANGELOG.md`
 - **2026-11-18 — Web : huit démos, chacune dans sa configuration** (1 connections) — `CHANGELOG.md`
 - **2026-11-18 — Web : save-states, TOS déposé, capture d'écran** (1 connections) — `CHANGELOG.md`
+- **2026-11-24 — CI Windows : migration vers UCRT64** (1 connections) — `CHANGELOG.md`
 - **68000 : STOP et ordre des accès alignés sur fx68k (2026-11-03)** (1 connections) — `CHANGELOG.md`
 - **A14 — `--disk-ro` : une campagne de test ne modifie plus les images du dépôt (2026-08-28)** (1 connections) — `CHANGELOG.md`
 - *... and 236 more nodes in this community*
 
 ## Relationships
 
-- [Community 101](Community_101.md) (7 shared connections)
-- [Community 88](Community_88.md) (6 shared connections)
-- [Community 67](Community_67.md) (6 shared connections)
-- [Community 218](Community_218.md) (5 shared connections)
-- [Community 39](Community_39.md) (4 shared connections)
+- [Community 101](Community_101.md) (6 shared connections)
+- [Community 88](Community_88.md) (5 shared connections)
+- [Community 9](Community_9.md) (4 shared connections)
+- [Community 449](Community_449.md) (4 shared connections)
+- [Community 58](Community_58.md) (4 shared connections)
+- [Community 67](Community_67.md) (4 shared connections)
 - [Community 68](Community_68.md) (4 shared connections)
+- [Community 444](Community_444.md) (3 shared connections)
+- [Community 394](Community_394.md) (3 shared connections)
+- [Community 203](Community_203.md) (3 shared connections)
 - [Community 42](Community_42.md) (3 shared connections)
 - [Community 392](Community_392.md) (2 shared connections)
-- [Community 394](Community_394.md) (2 shared connections)
-- [Community 9](Community_9.md) (2 shared connections)
-- [Community 215](Community_215.md) (2 shared connections)
-- [Community 203](Community_203.md) (2 shared connections)
 
 ## Source Files
 
@@ -52,8 +52,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 360 (99%)
-- INFERRED: 3 (1%)
+- EXTRACTED: 361 (99%)
+- INFERRED: 2 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

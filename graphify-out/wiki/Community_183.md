@@ -1,6 +1,6 @@
 # Community 183
 
-> 22 nodes
+> 23 nodes
 
 ## Key Concepts
 
@@ -14,6 +14,7 @@
 - **.end()** (6 connections) — `tests/ipf_image_logic.cpp`
 - **setBe32()** (4 connections) — `tests/ipf_image_logic.cpp`
 - **.bytes()** (4 connections) — `tests/ipf_image_logic.cpp`
+- **pattern()** (3 connections) — `tests/ipf_image_logic.cpp`
 - **.sync3()** (3 connections) — `tests/ipf_image_logic.cpp`
 - **.weak()** (3 connections) — `tests/ipf_image_logic.cpp`
 - **.fill()** (2 connections) — `tests/ipf_image_logic.cpp`
@@ -29,10 +30,12 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (14 shared connections)
+- [Community 102](Community_102.md) (8 shared connections)
 - [Community 163](Community_163.md) (7 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 460](Community_460.md) (6 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 - [Community 201](Community_201.md) (1 shared connections)
+- [Community 172](Community_172.md) (1 shared connections)
 
 ## Source Files
 
@@ -40,7 +43,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 54 (95%)
+- EXTRACTED: 56 (95%)
 - INFERRED: 3 (5%)
 - AMBIGUOUS: 0 (0%)
 

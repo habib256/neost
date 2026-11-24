@@ -1,26 +1,32 @@
 # Community 378
 
-> 4 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **Carte du code NeoST avec Graphify** (3 connections) — `docs/GRAPHIFY.md`
-- **GRAPHIFY.md** (2 connections) — `docs/GRAPHIFY.md`
-- **Consulter** (1 connections) — `docs/GRAPHIFY.md`
-- **Périmètre et limites** (1 connections) — `docs/GRAPHIFY.md`
+- **L'élection de l'exception MFP : la règle chronologique existait mais ne pouvait jamais s'appliquer (2026-09-02)** (6 connections) — `CHANGELOG.md`
+- **.checkPendingInterrupts()** (5 connections) — `src/io/Mfp.hpp`
+- **.updateIrq()** (4 connections) — `src/io/Mfp.hpp`
+- **.earliestEligible()** (4 connections) — `src/io/Mfp.hpp`
+- **.highestInService()** (4 connections) — `src/io/Mfp.hpp`
 
 ## Relationships
 
-- [Community 232](Community_232.md) (1 shared connections)
+- [Community 215](Community_215.md) (5 shared connections)
+- [Community 6](Community_6.md) (4 shared connections)
+- [Community 247](Community_247.md) (2 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 392](Community_392.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/GRAPHIFY.md`
+- `CHANGELOG.md`
+- `src/io/Mfp.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 9 (50%)
+- INFERRED: 9 (50%)
 - AMBIGUOUS: 0 (0%)
 
 ---

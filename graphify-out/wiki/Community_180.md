@@ -1,11 +1,12 @@
 # Community 180
 
-> 14 nodes
+> 15 nodes
 
 ## Key Concepts
 
 - **EchoClockRig** (13 connections) — `tests/scc_echo_tx_clock_logic.cpp`
 - **testSccEchoTxClock()** (9 connections) — `tests/scc_echo_tx_clock_logic.cpp`
+- **scc_echo_tx_clock_logic.cpp** (6 connections) — `tests/scc_echo_tx_clock_logic.cpp`
 - **.receiveSource()** (3 connections) — `tests/scc_echo_tx_clock_logic.cpp`
 - **.write()** (3 connections) — `tests/scc_echo_tx_clock_logic.cpp`
 - **.available()** (2 connections) — `tests/scc_echo_tx_clock_logic.cpp`
@@ -21,9 +22,10 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 41](Community_41.md) (3 shared connections)
+- [Community 460](Community_460.md) (4 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
 - [Community 77](Community_77.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
@@ -31,7 +33,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 24 (96%)
+- EXTRACTED: 27 (96%)
 - INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 

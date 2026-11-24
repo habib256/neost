@@ -4,48 +4,50 @@
 
 ## Key Concepts
 
-- **ProbeSet** (11 connections) — `src/headless/Observe.hpp`
-- **ProbeSpec** (10 connections) — `src/headless/Observe.hpp`
-- **probeFields()** (8 connections) — `src/headless/Observe.hpp`
-- **Options** (7 connections) — `src/headless/Server.hpp`
-- **Machine** (6 connections)
-- **addProbe()** (5 connections) — `src/headless/Observe.hpp`
-- **emitProbeLine()** (5 connections) — `src/headless/Observe.hpp`
-- **parseProbeSpec()** (5 connections) — `src/headless/Observe.hpp`
-- **probeValue()** (5 connections) — `src/headless/Observe.hpp`
-- **ramHash()** (4 connections) — `src/headless/Observe.hpp`
-- **read8()** (4 connections) — `src/headless/Observe.hpp`
-- **screenHash()** (4 connections) — `src/headless/Observe.hpp`
-- **string** (4 connections)
-- **hashRam** (1 connections) — `src/headless/Observe.hpp`
-- **hashRamAddr** (1 connections) — `src/headless/Observe.hpp`
-- **hashRamLen** (1 connections) — `src/headless/Observe.hpp`
-- **probes** (1 connections) — `src/headless/Observe.hpp`
-- **addr** (1 connections) — `src/headless/Observe.hpp`
-- **len** (1 connections) — `src/headless/Observe.hpp`
-- **name** (1 connections) — `src/headless/Observe.hpp`
-- **string** (1 connections)
-- **identityHead** (1 connections) — `src/headless/Server.hpp`
-- **identityTail** (1 connections) — `src/headless/Server.hpp`
-- **probes** (1 connections) — `src/headless/Server.hpp`
-- **slots** (1 connections) — `src/headless/Server.hpp`
+- **cpu_swap_gate.py** (29 connections) — `tools/cpu_swap_gate.py`
+- **main()** (11 connections) — `tools/cpu_swap_gate.py`
+- **Scenario** (7 connections) — `tools/cpu_swap_gate.py`
+- **scenarios()** (7 connections) — `tools/cpu_swap_gate.py`
+- **megaste_scenarios()** (6 connections) — `tools/cpu_swap_gate.py`
+- **replay_scenarios()** (6 connections) — `tools/cpu_swap_gate.py`
+- **collection_scenarios()** (5 connections) — `tools/cpu_swap_gate.py`
+- **run()** (5 connections) — `tools/cpu_swap_gate.py`
+- **assemble_at_speed()** (4 connections) — `tools/cpu_swap_gate.py`
+- **etalon_scenarios()** (4 connections) — `tools/cpu_swap_gate.py`
+- **build()** (4 connections) — `tools/cpu_swap_gate.py`
+- **compare()** (3 connections) — `tools/cpu_swap_gate.py`
+- **build()** (3 connections) — `tools/cpu_swap_gate.py`
+- **self_blit()** (3 connections) — `tools/cpu_swap_gate.py`
+- **suite_of()** (2 connections) — `tools/cpu_swap_gate.py`
+- **__init__()** (1 connections) — `tools/cpu_swap_gate.py`
+- **build()** (1 connections) — `tools/cpu_swap_gate.py`
+- **diag()** (1 connections) — `tools/cpu_swap_gate.py`
+- **build()** (1 connections) — `tools/cpu_swap_gate.py`
+- **Assemble une sonde pour le Mega STE : `move.b #$40,$FF8E0D` (SCU : MFP…** (1 connections) — `tools/cpu_swap_gate.py`
+- **Le blitter écrit sa RAM de demi-teinte ($FF8A00), le CPU la relit, puis le…** (1 connections) — `tools/cpu_swap_gate.py`
+- **(id, statut, empreintes). Statut : 'ok', ou 'skip: …', ou 'error: …'.** (1 connections) — `tools/cpu_swap_gate.py`
+- **None si accord ; sinon la description de la première divergence.** (1 connections) — `tools/cpu_swap_gate.py`
+- **dataclasses** (1 connections)
+- **typing** (1 connections)
 
 ## Relationships
 
-- [Community 4](Community_4.md) (11 shared connections)
-- [Community 419](Community_419.md) (4 shared connections)
-- [Community 383](Community_383.md) (2 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 18](Community_18.md) (9 shared connections)
+- [Community 26](Community_26.md) (3 shared connections)
+- [Community 173](Community_173.md) (3 shared connections)
+- [Community 273](Community_273.md) (3 shared connections)
+- [Community 227](Community_227.md) (3 shared connections)
+- [Community 34](Community_34.md) (1 shared connections)
+- [Community 49](Community_49.md) (1 shared connections)
 
 ## Source Files
 
-- `src/headless/Observe.hpp`
-- `src/headless/Server.hpp`
+- `tools/cpu_swap_gate.py`
 
 ## Audit Trail
 
-- EXTRACTED: 52 (96%)
-- INFERRED: 2 (4%)
+- EXTRACTED: 57 (86%)
+- INFERRED: 9 (14%)
 - AMBIGUOUS: 0 (0%)
 
 ---

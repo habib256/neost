@@ -1,6 +1,6 @@
 # Community 207
 
-> 77 nodes
+> 76 nodes
 
 ## Key Concepts
 
@@ -29,20 +29,20 @@
 - **main()** (7 connections) — `tools/run_megaste_bus_oracle.py`
 - **main()** (7 connections) — `tools/run_timing_oracle.py`
 - **sha()** (7 connections) — `tools/run_timing_oracle.py`
-- *... and 52 more nodes in this community*
+- *... and 51 more nodes in this community*
 
 ## Relationships
 
-- [Community 18](Community_18.md) (22 shared connections)
-- [Community 173](Community_173.md) (20 shared connections)
-- [Community 151](Community_151.md) (11 shared connections)
-- [Community 227](Community_227.md) (11 shared connections)
+- [Community 18](Community_18.md) (18 shared connections)
+- [Community 26](Community_26.md) (16 shared connections)
+- [Community 151](Community_151.md) (16 shared connections)
+- [Community 227](Community_227.md) (13 shared connections)
+- [Community 173](Community_173.md) (11 shared connections)
 - [Community 3](Community_3.md) (8 shared connections)
-- [Community 26](Community_26.md) (8 shared connections)
 - [Community 34](Community_34.md) (5 shared connections)
-- [Community 146](Community_146.md) (4 shared connections)
 - [Community 8](Community_8.md) (3 shared connections)
 - [Community 229](Community_229.md) (2 shared connections)
+- [Community 146](Community_146.md) (2 shared connections)
 - [Community 189](Community_189.md) (1 shared connections)
 
 ## Source Files
@@ -59,8 +59,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 248 (86%)
-- INFERRED: 39 (14%)
+- EXTRACTED: 248 (87%)
+- INFERRED: 38 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,6 +1,6 @@
 # Community 16
 
-> 75 nodes
+> 70 nodes
 
 ## Key Concepts
 
@@ -8,7 +8,6 @@
 - **u32** (34 connections)
 - **Moira::execMovecRcRx()** (11 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
 - **Moira::execMovecRxRc()** (11 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
-- **u16** (11 connections)
 - **.getSP()** (5 connections) — `extern/moira/Moira/Moira.h`
 - **i64** (5 connections)
 - **.getCAAR()** (3 connections) — `extern/moira/Moira/Moira.h`
@@ -26,25 +25,26 @@
 - **.setSP()** (3 connections) — `extern/moira/Moira/Moira.h`
 - **.setUSP()** (3 connections) — `extern/moira/Moira/Moira.h`
 - **.setVBR()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **illegalOpcodeHook()** (2 connections) — `extern/moira/Moira/Moira.h`
 - **.getA()** (2 connections) — `extern/moira/Moira/Moira.h`
 - **.getD()** (2 connections) — `extern/moira/Moira/Moira.h`
-- *... and 50 more nodes in this community*
+- **.setA()** (2 connections) — `extern/moira/Moira/Moira.h`
+- **.setClock()** (2 connections) — `extern/moira/Moira/Moira.h`
+- *... and 45 more nodes in this community*
 
 ## Relationships
 
-- [Community 141](Community_141.md) (20 shared connections)
-- [Community 314](Community_314.md) (15 shared connections)
-- [Community 64](Community_64.md) (12 shared connections)
-- [Community 166](Community_166.md) (12 shared connections)
+- [Community 314](Community_314.md) (19 shared connections)
+- [Community 141](Community_141.md) (16 shared connections)
+- [Community 64](Community_64.md) (14 shared connections)
+- [Community 166](Community_166.md) (8 shared connections)
+- [Community 9](Community_9.md) (6 shared connections)
+- [Community 57](Community_57.md) (5 shared connections)
 - [Community 131](Community_131.md) (5 shared connections)
-- [Community 9](Community_9.md) (5 shared connections)
 - [Community 299](Community_299.md) (4 shared connections)
 - [Community 33](Community_33.md) (4 shared connections)
-- [Community 57](Community_57.md) (3 shared connections)
-- [Community 333](Community_333.md) (2 shared connections)
-- [Community 377](Community_377.md) (2 shared connections)
-- [Community 211](Community_211.md) (1 shared connections)
+- [Community 134](Community_134.md) (1 shared connections)
+- [Community 104](Community_104.md) (1 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
 
 ## Source Files
 
@@ -54,7 +54,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 185 (89%)
+- EXTRACTED: 174 (89%)
 - INFERRED: 22 (11%)
 - AMBIGUOUS: 0 (0%)
 

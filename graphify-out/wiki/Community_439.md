@@ -1,29 +1,26 @@
 # Community 439
 
-> 8 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **Server** (8 connections) — `tools/opendst_explore.py`
-- **.cmd()** (4 connections) — `tools/opendst_explore.py`
-- **.fields()** (3 connections) — `tools/opendst_explore.py`
-- **.close()** (2 connections) — `tools/opendst_explore.py`
-- **.tail()** (2 connections) — `tools/opendst_explore.py`
-- **.__init__()** (1 connections) — `tools/opendst_explore.py`
-- **Le serveur NeoST au bout d'un tuyau : une commande, une réponse.** (1 connections) — `tools/opendst_explore.py`
-- **Réponse « frame=… screen=… ram=… nom=0x… » → dictionnaire.** (1 connections) — `tools/opendst_explore.py`
+- **Mode** (5 connections) — `src/core/Shifter.hpp`
+- **High** (1 connections) — `src/core/Shifter.hpp`
+- **Low** (1 connections) — `src/core/Shifter.hpp`
+- **Medium** (1 connections) — `src/core/Shifter.hpp`
 
 ## Relationships
 
-- [Community 227](Community_227.md) (2 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
+- [Community 5](Community_5.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/opendst_explore.py`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 12 (100%)
+- EXTRACTED: 5 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,65 +1,69 @@
 # Community 203
 
-> 28 nodes
+> 43 nodes
 
 ## Key Concepts
 
+- **.mmuTranslate()** (23 connections) — `src/core/Bus.hpp`
 - **2. Plan mémoire figé** (18 connections) — `docs/HYPOTHESES_ST.md`
 - **.read8Slow()** (12 connections) — `src/core/Bus.hpp`
 - **.peek8()** (12 connections) — `src/core/Bus.hpp`
 - **.busFaultN()** (11 connections) — `src/core/Bus.hpp`
 - **.busFault()** (10 connections) — `src/core/Bus.hpp`
+- **memConfigForBytes()** (10 connections) — `src/core/MachineType.hpp`
 - **.romWindowSize()** (9 connections) — `src/core/Bus.hpp`
 - **Plan mémoire et MMU** (9 connections) — `docs/MAME_DIVERGENCES.md`
-- **.loadTos()** (8 connections) — `src/core/Bus.hpp`
+- **.buildIoFault()** (8 connections) — `src/core/Bus.hpp`
 - **.steCartWindow()** (8 connections) — `src/core/Bus.hpp`
-- **tosUnsupportedMachine()** (8 connections) — `src/core/MachineType.hpp`
-- **size_t** (8 connections)
+- **ramBanks()** (8 connections) — `src/core/Bus.cpp`
+- **.rebuildMmuCache()** (7 connections) — `src/core/Bus.hpp`
 - **.busFaultNSlow()** (7 connections) — `src/core/Bus.hpp`
-- **ramLabel()** (7 connections) — `src/core/MachineType.hpp`
+- **mmuBank0Size()** (7 connections) — `src/core/Bus.cpp`
+- **Performance du cœur NeoST — profil, optimisations, recette de build** (7 connections) — `docs/PERFORMANCE.md`
 - **.steCartRelocated()** (6 connections) — `src/core/Bus.hpp`
+- **3. Les optimisations, et ce qu'elles paient** (6 connections) — `docs/PERFORMANCE.md`
 - **.peekMapped8()** (5 connections) — `src/core/Bus.hpp`
 - **.steRomSelectVoid()** (5 connections) — `src/core/Bus.hpp`
+- **Écarts voulus — ne pas réaligner** (5 connections) — `docs/HATARI_DIVERGENCES.md`
 - **.busSelfTest()** (4 connections) — `src/core/Bus.hpp`
-- **.seedResetVectors()** (4 connections) — `src/core/Bus.hpp`
+- **mmuFastLimit_** (4 connections) — `src/core/Bus.hpp`
+- **mmuConfSize()** (4 connections) — `src/core/Bus.cpp`
 - **mmuXlatSTE()** (4 connections) — `src/core/Bus.cpp`
-- **mmuXlatSTF()** (4 connections) — `src/core/Bus.cpp`
-- **tosImageBase()** (4 connections) — `src/core/MachineType.hpp`
-- **Bug hunt 11ᵉ passe : 24 correctifs sur six sous-systèmes, save-state v51 (2026-10-20)** (4 connections) — `CHANGELOG.md`
-- **.loadCart()** (3 connections) — `src/core/Bus.hpp`
-- **.peek16()** (2 connections) — `src/core/Bus.hpp`
-- **.read8()** (2 connections) — `src/core/Bus.hpp`
-- *... and 3 more nodes in this community*
+- *... and 18 more nodes in this community*
 
 ## Relationships
 
-- [Community 14](Community_14.md) (16 shared connections)
-- [Community 58](Community_58.md) (12 shared connections)
-- [Community 186](Community_186.md) (11 shared connections)
-- [Community 325](Community_325.md) (8 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 301](Community_301.md) (2 shared connections)
-- [Community 441](Community_441.md) (2 shared connections)
-- [Community 218](Community_218.md) (2 shared connections)
-- [Community 350](Community_350.md) (2 shared connections)
-- [Community 449](Community_449.md) (2 shared connections)
+- [Community 14](Community_14.md) (43 shared connections)
+- [Community 449](Community_449.md) (10 shared connections)
+- [Community 9](Community_9.md) (4 shared connections)
+- [Community 444](Community_444.md) (3 shared connections)
+- [Community 160](Community_160.md) (3 shared connections)
+- [Community 394](Community_394.md) (3 shared connections)
+- [Community 130](Community_130.md) (3 shared connections)
 - [Community 392](Community_392.md) (2 shared connections)
-- [Community 247](Community_247.md) (2 shared connections)
+- [Community 149](Community_149.md) (2 shared connections)
+- [Community 470](Community_470.md) (2 shared connections)
+- [Community 88](Community_88.md) (2 shared connections)
+- [Community 39](Community_39.md) (2 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
+- `DEV.md`
+- `docs/HATARI_DIVERGENCES.md`
 - `docs/HYPOTHESES_ST.md`
+- `docs/IMPLEMENTED.md`
 - `docs/MAME_DIVERGENCES.md`
 - `docs/OPENDST.md`
+- `docs/PERFORMANCE.md`
 - `src/core/Bus.cpp`
 - `src/core/Bus.hpp`
 - `src/core/MachineType.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 52 (40%)
-- INFERRED: 79 (60%)
+- EXTRACTED: 75 (44%)
+- INFERRED: 96 (56%)
 - AMBIGUOUS: 0 (0%)
 
 ---

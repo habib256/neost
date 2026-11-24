@@ -1,6 +1,6 @@
 # Community 131
 
-> 32 nodes
+> 31 nodes
 
 ## Key Concepts
 
@@ -22,14 +22,14 @@
 - **.setDasmNumberFormat()** (3 connections) — `extern/moira/Moira/Moira.h`
 - **.setDumpNumberFormat()** (3 connections) — `extern/moira/Moira/Moira.h`
 - **binDigits()** (3 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **u8** (3 connections)
 - **i64** (3 connections)
 - **.StrWriter()** (2 connections) — `extern/moira/Moira/StrWriter.h`
 - **plainZero** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **prefix** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **radix** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **upperCase** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- *... and 7 more nodes in this community*
+- **letterCase** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- *... and 6 more nodes in this community*
 
 ## Relationships
 
@@ -37,7 +37,7 @@
 - [Community 57](Community_57.md) (3 shared connections)
 - [Community 314](Community_314.md) (3 shared connections)
 - [Community 2](Community_2.md) (2 shared connections)
-- [Community 104](Community_104.md) (2 shared connections)
+- [Community 104](Community_104.md) (1 shared connections)
 - [Community 399](Community_399.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
 
@@ -50,7 +50,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 72 (100%)
+- EXTRACTED: 70 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

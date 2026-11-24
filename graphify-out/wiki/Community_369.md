@@ -1,38 +1,33 @@
 # Community 369
 
-> 11 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **run_selftests.py** (14 connections) — `tools/run_selftests.py`
-- **run_one()** (7 connections) — `tools/run_selftests.py`
-- **ensure_rom_asset()** (5 connections) — `tools/run_selftests.py`
-- **run_timed()** (5 connections) — `tools/run_selftests.py`
-- **is_untracked()** (4 connections) — `tools/run_selftests.py`
-- **main()** (4 connections) — `tools/run_selftests.py`
-- **rom_is_free()** (3 connections) — `tools/run_selftests.py`
-- **load_manifest()** (2 connections) — `tools/run_selftests.py`
-- **parse_verdicts()** (2 connections) — `tools/run_selftests.py`
-- **Vrai si git ne versionne PAS `path` (étalon gitignoré). Sans git (archive…** (1 connections) — `tools/run_selftests.py`
-- **EmuTOS (`roms/etos*.img`) est livré avec le dépôt : son absence est une casse.…** (1 connections) — `tools/run_selftests.py`
+- **stx_writetrack_test.cpp** (14 connections) — `tests/stx_writetrack_test.cpp`
+- **forgeFlux()** (5 connections) — `tests/stx_writetrack_test.cpp`
+- **add()** (4 connections) — `tests/stx_writetrack_test.cpp`
+- **cassert** (4 connections)
+- **expect()** (3 connections) — `tests/stx_writetrack_test.cpp`
 
 ## Relationships
 
-- [Community 18](Community_18.md) (5 shared connections)
-- [Community 26](Community_26.md) (2 shared connections)
-- [Community 227](Community_227.md) (2 shared connections)
-- [Community 20](Community_20.md) (1 shared connections)
-- [Community 34](Community_34.md) (1 shared connections)
-- [Community 173](Community_173.md) (1 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 63](Community_63.md) (4 shared connections)
+- [Community 460](Community_460.md) (4 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 172](Community_172.md) (1 shared connections)
+- [Community 141](Community_141.md) (1 shared connections)
+- [Community 14](Community_14.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/run_selftests.py`
+- `tests/stx_writetrack_test.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 29 (97%)
-- INFERRED: 1 (3%)
+- EXTRACTED: 24 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

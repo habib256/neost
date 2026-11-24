@@ -1,13 +1,12 @@
 # Community 114
 
-> 27 nodes
+> 26 nodes
 
 ## Key Concepts
 
 - **Touch** (18 connections) — `src/android/main_android.cpp`
 - **handleTouch()** (9 connections) — `src/android/main_android.cpp`
 - **Finger** (6 connections) — `src/android/main_android.cpp`
-- **injectClick()** (4 connections) — `src/android/main_android.cpp`
 - **.slotOf()** (3 connections) — `src/android/main_android.cpp`
 - **SDL_FingerID** (3 connections)
 - **2026-11-18 — Web : commandes tactiles et plein écran sur iPhone** (3 connections) — `CHANGELOG.md`
@@ -29,11 +28,12 @@
 - **remX** (1 connections) — `src/android/main_android.cpp`
 - **remY** (1 connections) — `src/android/main_android.cpp`
 - **startMs** (1 connections) — `src/android/main_android.cpp`
-- *... and 2 more nodes in this community*
+- **travel** (1 connections) — `src/android/main_android.cpp`
+- *... and 1 more nodes in this community*
 
 ## Relationships
 
-- [Community 228](Community_228.md) (7 shared connections)
+- [Community 228](Community_228.md) (5 shared connections)
 - [Community 130](Community_130.md) (2 shared connections)
 - [Community 68](Community_68.md) (1 shared connections)
 
@@ -44,7 +44,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 37 (92%)
+- EXTRACTED: 34 (92%)
 - INFERRED: 3 (8%)
 - AMBIGUOUS: 0 (0%)
 

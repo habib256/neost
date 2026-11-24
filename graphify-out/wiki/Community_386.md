@@ -1,32 +1,35 @@
 # Community 386
 
-> 8 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **Banc différentiel Moira ↔ fx68k — le 68000 nu contre le RTL** (9 connections) — `docs/FX68K_BENCH.md`
-- **État (2026-11-03)** (2 connections) — `docs/FX68K_BENCH.md`
-- **Autovecteur par VPA et E-clock (2026-11-04)** (1 connections) — `docs/FX68K_BENCH.md`
-- **Bus prêté à un DMA, BR/BG (2026-11-11)** (1 connections) — `docs/FX68K_BENCH.md`
-- **Ce qui manque au banc** (1 connections) — `docs/FX68K_BENCH.md`
-- **Comment** (1 connections) — `docs/FX68K_BENCH.md`
-- **La date limite d'IPL, confrontée dans NeoST (2026-11-04)** (1 connections) — `docs/FX68K_BENCH.md`
-- **Pourquoi** (1 connections) — `docs/FX68K_BENCH.md`
+- **.portAvailable()** (6 connections) — `src/audio/MidiOutHost.hpp`
+- **shortMessageLength()** (4 connections) — `src/audio/MidiMessageParser.hpp`
+- **Le MIDI Windows rejoint macOS et Linux — backend winmm (2026-08-31)** (4 connections) — `CHANGELOG.md`
+- **byte()** (3 connections) — `src/audio/MidiMessageParser.hpp`
+- **dataBytesFor()** (3 connections) — `src/audio/MidiMessageParser.hpp`
 
 ## Relationships
 
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 141](Community_141.md) (1 shared connections)
-- [Community 30](Community_30.md) (1 shared connections)
+- [Community 42](Community_42.md) (4 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 214](Community_214.md) (1 shared connections)
+- [Community 325](Community_325.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 173](Community_173.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/FX68K_BENCH.md`
+- `CHANGELOG.md`
+- `src/audio/MidiMessageParser.hpp`
+- `src/audio/MidiOutHost.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (90%)
-- INFERRED: 1 (10%)
+- EXTRACTED: 11 (69%)
+- INFERRED: 5 (31%)
 - AMBIGUOUS: 0 (0%)
 
 ---

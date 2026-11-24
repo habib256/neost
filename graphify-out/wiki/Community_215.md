@@ -1,6 +1,6 @@
 # Community 215
 
-> 40 nodes
+> 36 nodes
 
 ## Key Concepts
 
@@ -10,17 +10,13 @@
 - **.advanceSerialTx()** (12 connections) — `src/io/Mfp.hpp`
 - **.read8()** (8 connections) — `src/io/Mfp.hpp`
 - **.startSerialTx()** (7 connections) — `src/io/Mfp.hpp`
-- **L'élection de l'exception MFP : la règle chronologique existait mais ne pouvait jamais s'appliquer (2026-09-02)** (6 connections) — `CHANGELOG.md`
-- **.flushIrqUpdate()** (5 connections) — `src/io/Mfp.hpp`
-- **.checkPendingInterrupts()** (5 connections) — `src/io/Mfp.hpp`
+- **.onTimerExpire()** (5 connections) — `src/io/Mfp.hpp`
 - **.receiveSerialBreakEnd()** (5 connections) — `src/io/Mfp.hpp`
 - **.clearSerialBreak()** (5 connections) — `src/io/Mfp.hpp`
 - **.finishSerialTx()** (5 connections) — `src/io/Mfp.hpp`
 - **.writeEventTime()** (5 connections) — `src/io/Mfp.hpp`
 - **.hblankAt()** (4 connections) — `src/io/Mfp.hpp`
-- **.updateIrq()** (4 connections) — `src/io/Mfp.hpp`
-- **.earliestEligible()** (4 connections) — `src/io/Mfp.hpp`
-- **.highestInService()** (4 connections) — `src/io/Mfp.hpp`
+- **.countTimerAEvent()** (4 connections) — `src/io/Mfp.hpp`
 - **.scheduleSerialRx()** (4 connections) — `src/io/Mfp.hpp`
 - **.onSerialRxEvent()** (4 connections) — `src/io/Mfp.hpp`
 - **.receiveSerialBreak()** (4 connections) — `src/io/Mfp.hpp`
@@ -29,21 +25,25 @@
 - **.updateTimers()** (4 connections) — `src/io/Mfp.hpp`
 - **.updateSerialConfig()** (4 connections) — `src/io/Mfp.hpp`
 - **.resetChip()** (4 connections) — `src/io/Mfp.hpp`
-- *... and 15 more nodes in this community*
+- **.internalSerialLoopback()** (4 connections) — `src/io/Mfp.hpp`
+- **.hblank()** (3 connections) — `src/io/Mfp.hpp`
+- **.reset()** (3 connections) — `src/io/Mfp.hpp`
+- **.raise()** (3 connections) — `src/io/Mfp.hpp`
+- *... and 11 more nodes in this community*
 
 ## Relationships
 
-- [Community 6](Community_6.md) (37 shared connections)
-- [Community 221](Community_221.md) (25 shared connections)
-- [Community 417](Community_417.md) (11 shared connections)
-- [Community 392](Community_392.md) (5 shared connections)
-- [Community 4](Community_4.md) (4 shared connections)
+- [Community 6](Community_6.md) (34 shared connections)
+- [Community 221](Community_221.md) (31 shared connections)
+- [Community 392](Community_392.md) (10 shared connections)
+- [Community 378](Community_378.md) (5 shared connections)
 - [Community 102](Community_102.md) (3 shared connections)
-- [Community 130](Community_130.md) (2 shared connections)
-- [Community 247](Community_247.md) (2 shared connections)
-- [Community 39](Community_39.md) (1 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 58](Community_58.md) (1 shared connections)
 - [Community 41](Community_41.md) (1 shared connections)
+- [Community 460](Community_460.md) (1 shared connections)
 - [Community 482](Community_482.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
@@ -53,8 +53,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 108 (62%)
-- INFERRED: 67 (38%)
+- EXTRACTED: 104 (63%)
+- INFERRED: 61 (37%)
 - AMBIGUOUS: 0 (0%)
 
 ---

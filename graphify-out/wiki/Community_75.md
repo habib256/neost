@@ -1,6 +1,6 @@
 # Community 75
 
-> 21 nodes
+> 17 nodes
 
 ## Key Concepts
 
@@ -13,25 +13,21 @@
 - **rootPrefixLen()** (6 connections) — `src/util/HostPath.cpp`
 - **hasDriveLetter()** (5 connections) — `src/util/HostPath.cpp`
 - **join()** (5 connections) — `src/util/HostPath.cpp`
-- **Precomp** (4 connections) — `src/util/HostPath.cpp`
 - **currentDir()** (4 connections) — `src/util/HostPath.cpp`
 - **makeAbsolute()** (4 connections) — `src/util/HostPath.cpp`
 - **stripTrailingSep()** (4 connections) — `src/util/HostPath.cpp`
 - **neost::hostpath::precomposeUtf8()** (2 connections) — `src/util/HostPath.cpp`
 - **direct** (2 connections)
 - **size_t** (1 connections)
-- **base** (1 connections) — `src/util/HostPath.cpp`
-- **comb** (1 connections) — `src/util/HostPath.cpp`
-- **pre** (1 connections) — `src/util/HostPath.cpp`
 - **Posix** (1 connections) — `src/util/HostPath.hpp`
 - **Windows** (1 connections) — `src/util/HostPath.hpp`
 
 ## Relationships
 
+- [Community 4](Community_4.md) (4 shared connections)
 - [Community 245](Community_245.md) (3 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
 - [Community 218](Community_218.md) (2 shared connections)
-- [Community 83](Community_83.md) (1 shared connections)
+- [Community 440](Community_440.md) (1 shared connections)
 - [Community 36](Community_36.md) (1 shared connections)
 
 ## Source Files
@@ -41,7 +37,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 53 (96%)
+- EXTRACTED: 50 (96%)
 - INFERRED: 2 (4%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,11 +1,12 @@
 # Community 104
 
-> 25 nodes
+> 26 nodes
 
 ## Key Concepts
 
 - **Registers** (18 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **StatusRegister** (14 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **u8** (3 connections)
 - **Moira::disassembleSR()** (2 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
 - **caar** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **cacr** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
@@ -28,16 +29,15 @@
 - **t1** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **v** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **x** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **z** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- *... and 1 more nodes in this community*
 
 ## Relationships
 
-- [Community 131](Community_131.md) (2 shared connections)
-- [Community 57](Community_57.md) (2 shared connections)
+- [Community 57](Community_57.md) (3 shared connections)
 - [Community 16](Community_16.md) (1 shared connections)
-- [Community 211](Community_211.md) (1 shared connections)
-- [Community 333](Community_333.md) (1 shared connections)
+- [Community 134](Community_134.md) (1 shared connections)
 - [Community 2](Community_2.md) (1 shared connections)
+- [Community 131](Community_131.md) (1 shared connections)
 
 ## Source Files
 
@@ -46,7 +46,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 32 (100%)
+- EXTRACTED: 33 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

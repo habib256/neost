@@ -1,28 +1,24 @@
 # Community 447
 
-> 7 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **Port** (8 connections) — `src/io/PortDevices.hpp`
-- **CartButton** (1 connections) — `src/io/PortDevices.hpp`
-- **Count** (1 connections) — `src/io/PortDevices.hpp`
-- **Joy0** (1 connections) — `src/io/PortDevices.hpp`
-- **Joy1** (1 connections) — `src/io/PortDevices.hpp`
-- **Printer** (1 connections) — `src/io/PortDevices.hpp`
-- **Rs232** (1 connections) — `src/io/PortDevices.hpp`
+- **SpreadTable** (3 connections) — `src/core/ShifterInternal.hpp`
+- **.SpreadTable()** (1 connections) — `src/core/ShifterInternal.hpp`
+- **v** (1 connections) — `src/core/ShifterInternal.hpp`
 
 ## Relationships
 
-- [Community 51](Community_51.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/PortDevices.hpp`
+- `src/core/ShifterInternal.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 8 (100%)
+- EXTRACTED: 3 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

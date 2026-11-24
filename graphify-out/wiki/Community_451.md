@@ -1,28 +1,27 @@
 # Community 451
 
-> 6 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **Pending** (6 connections) — `src/audio/MidiOutHost.hpp`
-- **time_point** (2 connections)
-- **b** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **len** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **msg** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **when** (1 connections) — `src/audio/MidiOutHost.hpp`
+- **bus_mmio_mirror_logic.cpp** (5 connections) — `tests/bus_mmio_mirror_logic.cpp`
+- **testBusMmioMirror()** (3 connections) — `tests/bus_mmio_mirror_logic.cpp`
+- **main()** (2 connections) — `tests/bus_mmio_mirror_logic.cpp`
 
 ## Relationships
 
-- [Community 42](Community_42.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
+- [Community 460](Community_460.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/MidiOutHost.hpp`
+- `tests/bus_mmio_mirror_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 6 (86%)
+- INFERRED: 1 (14%)
 - AMBIGUOUS: 0 (0%)
 
 ---

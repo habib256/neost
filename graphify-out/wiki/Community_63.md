@@ -1,10 +1,9 @@
 # Community 63
 
-> 36 nodes
+> 24 nodes
 
 ## Key Concepts
 
-- **StxImage** (33 connections) — `src/io/StxImage.hpp`
 - **StxImage.cpp** (25 connections) — `src/io/StxImage.cpp`
 - **main()** (15 connections) — `tests/stx_writetrack_test.cpp`
 - **.parse()** (12 connections) — `src/io/StxImage.hpp`
@@ -25,26 +24,23 @@
 - **rd16le()** (2 connections) — `src/io/StxImage.cpp`
 - **rd32be()** (2 connections) — `src/io/StxImage.cpp`
 - **rd32le()** (2 connections) — `src/io/StxImage.cpp`
-- **.tracksCount()** (2 connections) — `src/io/StxImage.hpp`
 - **string** (2 connections)
 - **added** (2 connections) — `src/io/StxImage.hpp`
-- **.revision()** (1 connections) — `src/io/StxImage.hpp`
-- *... and 11 more nodes in this community*
+- **initializer_list** (1 connections)
+- **Sector** (1 connections)
 
 ## Relationships
 
-- [Community 102](Community_102.md) (17 shared connections)
-- [Community 31](Community_31.md) (9 shared connections)
-- [Community 201](Community_201.md) (6 shared connections)
-- [Community 121](Community_121.md) (3 shared connections)
+- [Community 489](Community_489.md) (10 shared connections)
+- [Community 31](Community_31.md) (8 shared connections)
+- [Community 172](Community_172.md) (5 shared connections)
+- [Community 460](Community_460.md) (5 shared connections)
+- [Community 201](Community_201.md) (4 shared connections)
+- [Community 369](Community_369.md) (4 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
 - [Community 163](Community_163.md) (2 shared connections)
-- [Community 172](Community_172.md) (2 shared connections)
-- [Community 78](Community_78.md) (1 shared connections)
-- [Community 23](Community_23.md) (1 shared connections)
-- [Community 489](Community_489.md) (1 shared connections)
-- [Community 406](Community_406.md) (1 shared connections)
-- [Community 238](Community_238.md) (1 shared connections)
-- [Community 470](Community_470.md) (1 shared connections)
+- [Community 121](Community_121.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
@@ -54,8 +50,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 81 (70%)
-- INFERRED: 34 (30%)
+- EXTRACTED: 61 (67%)
+- INFERRED: 30 (33%)
 - AMBIGUOUS: 0 (0%)
 
 ---

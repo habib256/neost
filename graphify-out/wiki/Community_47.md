@@ -31,7 +31,7 @@
 - [Community 370](Community_370.md) (7 shared connections)
 - [Community 421](Community_421.md) (7 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
 - [Community 149](Community_149.md) (1 shared connections)
 
 ## Source Files

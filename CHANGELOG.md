@@ -1,5 +1,11 @@
 # Changelog — NeoST
 
+## 2026-11-24 — CI Windows : migration vers UCRT64
+
+- MSYS2 a retiré GLFW du dépôt MINGW64. Le paquet Windows x64 se construit
+  désormais dans UCRT64 avec GLFW statique. Le contrôle des imports admet
+  `ucrtbase.dll`, fournie par Windows 10 et 11.
+
 ## 2026-11-23 — Web : dossiers GEMDOS et démarrage automatique
 
 - Deux exports WebAssembly pour les pages intégratrices (`neost_set_gemdos` et

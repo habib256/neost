@@ -1,16 +1,16 @@
 # Community 113
 
-> 22 nodes
+> 27 nodes
 
 ## Key Concepts
 
 - **DriveSound** (18 connections) — `src/audio/DriveSound.hpp`
 - **DriveSound.cpp** (11 connections) — `src/audio/DriveSound.cpp`
+- **FdcSound** (10 connections) — `src/io/Fdc.hpp`
 - **.shutdown()** (6 connections) — `src/audio/DriveSound.hpp`
 - **.init()** (4 connections) — `src/audio/DriveSound.hpp`
 - **.motorStop()** (4 connections) — `src/audio/DriveSound.hpp`
 - **.onEvent()** (4 connections) — `src/audio/DriveSound.hpp`
-- **sockShutdown()** (4 connections) — `src/net/Socket.cpp`
 - **.setEnabled()** (3 connections) — `src/audio/DriveSound.hpp`
 - **.mix()** (2 connections) — `src/audio/DriveSound.hpp`
 - **.~DriveSound()** (2 connections) — `src/audio/DriveSound.hpp`
@@ -26,26 +26,32 @@
 - **startupPath_** (1 connections) — `src/audio/DriveSound.hpp`
 - **tick_** (1 connections) — `src/audio/DriveSound.hpp`
 - **string** (1 connections)
+- **Index** (1 connections) — `src/io/Fdc.hpp`
+- **MotorOff** (1 connections) — `src/io/Fdc.hpp`
+- **MotorOn** (1 connections) — `src/io/Fdc.hpp`
+- *... and 2 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (4 shared connections)
-- [Community 60](Community_60.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
+- [Community 101](Community_101.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
+- [Community 60](Community_60.md) (1 shared connections)
 - [Community 175](Community_175.md) (1 shared connections)
-- [Community 463](Community_463.md) (1 shared connections)
-- [Community 83](Community_83.md) (1 shared connections)
+- [Community 460](Community_460.md) (1 shared connections)
 
 ## Source Files
 
 - `src/audio/DriveSound.cpp`
 - `src/audio/DriveSound.hpp`
-- `src/net/Socket.cpp`
+- `src/io/Fdc.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 35 (85%)
-- INFERRED: 6 (15%)
+- EXTRACTED: 40 (85%)
+- INFERRED: 7 (15%)
 - AMBIGUOUS: 0 (0%)
 
 ---

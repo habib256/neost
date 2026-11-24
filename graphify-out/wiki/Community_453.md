@@ -1,33 +1,27 @@
 # Community 453
 
-> 6 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **.controlWritten()** (6 connections) — `src/core/Blitter.hpp`
-- **regWriteMask()** (6 connections) — `src/core/Blitter.cpp`
-- **.writeRegisters()** (5 connections) — `src/core/Blitter.hpp`
-- **.write8()** (4 connections) — `src/core/Blitter.hpp`
-- **.write16()** (4 connections) — `src/core/Blitter.hpp`
-- **.write32()** (4 connections) — `src/core/Blitter.hpp`
+- **machine_scc_logic.cpp** (5 connections) — `tests/machine_scc_logic.cpp`
+- **testMachineScc()** (3 connections) — `tests/machine_scc_logic.cpp`
+- **main()** (2 connections) — `tests/machine_scc_logic.cpp`
 
 ## Relationships
 
-- [Community 393](Community_393.md) (7 shared connections)
-- [Community 37](Community_37.md) (5 shared connections)
-- [Community 466](Community_466.md) (1 shared connections)
-- [Community 328](Community_328.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
+- [Community 460](Community_460.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Blitter.cpp`
-- `src/core/Blitter.hpp`
+- `tests/machine_scc_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 13 (59%)
-- INFERRED: 9 (41%)
+- EXTRACTED: 6 (86%)
+- INFERRED: 1 (14%)
 - AMBIGUOUS: 0 (0%)
 
 ---

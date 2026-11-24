@@ -40,11 +40,11 @@
 - [Community 412](Community_412.md) (4 shared connections)
 - [Community 218](Community_218.md) (3 shared connections)
 - [Community 88](Community_88.md) (3 shared connections)
-- [Community 67](Community_67.md) (2 shared connections)
 - [Community 396](Community_396.md) (2 shared connections)
-- [Community 397](Community_397.md) (1 shared connections)
-- [Community 463](Community_463.md) (1 shared connections)
-- [Community 235](Community_235.md) (1 shared connections)
+- [Community 160](Community_160.md) (2 shared connections)
+- [Community 417](Community_417.md) (1 shared connections)
+- [Community 113](Community_113.md) (1 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
 
 ## Source Files
 

@@ -1,11 +1,12 @@
 # Community 37
 
-> 25 nodes
+> 26 nodes
 
 ## Key Concepts
 
 - **Blitter** (44 connections) — `src/core/Blitter.hpp`
 - **Bus** (3 connections) — `src/core/Blitter.hpp`
+- **.read8()** (2 connections) — `src/core/Blitter.hpp`
 - **.Blitter()** (2 connections) — `src/core/Blitter.hpp`
 - **.serialize()** (2 connections) — `src/core/Blitter.hpp`
 - **.setScheduler()** (2 connections) — `src/core/Blitter.hpp`
@@ -28,13 +29,12 @@
 - **xReset_** (1 connections) — `src/core/Blitter.hpp`
 - **yLatch_** (1 connections) — `src/core/Blitter.hpp`
 - **function** (1 connections)
-- **StateArchive** (1 connections)
+- *... and 1 more nodes in this community*
 
 ## Relationships
 
-- [Community 393](Community_393.md) (11 shared connections)
-- [Community 453](Community_453.md) (5 shared connections)
-- [Community 434](Community_434.md) (4 shared connections)
+- [Community 393](Community_393.md) (15 shared connections)
+- [Community 434](Community_434.md) (5 shared connections)
 - [Community 102](Community_102.md) (2 shared connections)
 
 ## Source Files
@@ -43,7 +43,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 48 (100%)
+- EXTRACTED: 49 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

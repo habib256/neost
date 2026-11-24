@@ -32,7 +32,7 @@
 ## Relationships
 
 - [Community 76](Community_76.md) (14 shared connections)
-- [Community 41](Community_41.md) (3 shared connections)
+- [Community 252](Community_252.md) (3 shared connections)
 - [Community 2](Community_2.md) (3 shared connections)
 - [Community 57](Community_57.md) (3 shared connections)
 - [Community 327](Community_327.md) (1 shared connections)

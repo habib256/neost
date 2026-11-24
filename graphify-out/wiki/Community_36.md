@@ -1,11 +1,12 @@
 # Community 36
 
-> 48 nodes
+> 49 nodes
 
 ## Key Concepts
 
 - **GemdosHd.cpp** (109 connections) — `src/io/GemdosHd.cpp`
 - **.checkArea()** (17 connections) — `src/io/GemdosHd.hpp`
+- **ProcPaths** (12 connections) — `src/io/GemdosHd.hpp`
 - **.readLong()** (10 connections) — `src/io/GemdosHd.hpp`
 - **.currentBasepage()** (10 connections) — `src/io/GemdosHd.hpp`
 - **.ensureEntry()** (10 connections) — `src/io/GemdosHd.hpp`
@@ -22,29 +23,28 @@
 - **.getString()** (5 connections) — `src/io/GemdosHd.hpp`
 - **.forcedHandle()** (5 connections) — `src/io/GemdosHd.hpp`
 - **.setForcedHandle()** (5 connections) — `src/io/GemdosHd.hpp`
-- **.unforceFileHandle()** (4 connections) — `src/io/GemdosHd.hpp`
-- **.dropForcedTo()** (4 connections) — `src/io/GemdosHd.hpp`
 - **.getValidFileHandle()** (3 connections) — `src/io/GemdosHd.hpp`
 - **.isDriveEmulated()** (3 connections) — `src/io/GemdosHd.hpp`
 - **.readWord()** (3 connections) — `src/io/GemdosHd.hpp`
 - **.writeByte()** (3 connections) — `src/io/GemdosHd.hpp`
 - **.writeWord()** (3 connections) — `src/io/GemdosHd.hpp`
-- *... and 23 more nodes in this community*
+- **.writeLong()** (3 connections) — `src/io/GemdosHd.hpp`
+- *... and 24 more nodes in this community*
 
 ## Relationships
 
-- [Community 17](Community_17.md) (37 shared connections)
-- [Community 218](Community_218.md) (28 shared connections)
-- [Community 450](Community_450.md) (13 shared connections)
-- [Community 102](Community_102.md) (8 shared connections)
-- [Community 4](Community_4.md) (7 shared connections)
-- [Community 444](Community_444.md) (6 shared connections)
-- [Community 422](Community_422.md) (5 shared connections)
+- [Community 17](Community_17.md) (36 shared connections)
+- [Community 218](Community_218.md) (26 shared connections)
+- [Community 444](Community_444.md) (13 shared connections)
+- [Community 4](Community_4.md) (10 shared connections)
+- [Community 285](Community_285.md) (7 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 450](Community_450.md) (4 shared connections)
+- [Community 422](Community_422.md) (2 shared connections)
 - [Community 9](Community_9.md) (2 shared connections)
-- [Community 328](Community_328.md) (1 shared connections)
+- [Community 123](Community_123.md) (1 shared connections)
+- [Community 449](Community_449.md) (1 shared connections)
 - [Community 203](Community_203.md) (1 shared connections)
-- [Community 383](Community_383.md) (1 shared connections)
-- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
@@ -53,8 +53,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 155 (76%)
-- INFERRED: 49 (24%)
+- EXTRACTED: 157 (77%)
+- INFERRED: 48 (23%)
 - AMBIGUOUS: 0 (0%)
 
 ---

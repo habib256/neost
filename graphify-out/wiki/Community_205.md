@@ -1,54 +1,63 @@
 # Community 205
 
-> 19 nodes
+> 39 nodes
 
 ## Key Concepts
 
+- **VideoCounter.cpp** (20 connections) — `src/core/VideoCounter.cpp`
 - **.write8()** (13 connections) — `src/core/Shifter.hpp`
 - **Convergence Moira ↔ WinUAE — chantier « full timing-engine » (beam-sync)** (10 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
 - **.syncCpuBus()** (9 connections) — `src/core/Shifter.hpp`
+- **Shifter::endVideoLine()** (9 connections) — `src/core/VideoCounter.cpp`
+- **.videoCounter()** (8 connections) — `src/core/Shifter.hpp`
+- **.read8()** (7 connections) — `src/core/Shifter.hpp`
+- **envFlag()** (7 connections) — `src/core/ShifterInternal.hpp`
+- **A32 — le Shifter perd 1 586 lignes, le GLUE vidéo retrouve son nom (2026-08-28)** (7 connections) — `CHANGELOG.md`
+- **7. CHANTIER RESTANT (plus de deadlock, mais EL scramble en jeu)** (7 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
+- **.commitAnchor()** (5 connections) — `src/core/Shifter.hpp`
 - **Shifter::writeVideoCounterByte()** (5 connections) — `src/core/VideoCounter.cpp`
 - **Passe de cohérence doc ↔ code, 3ᵉ tour (2026-08-19)** (5 connections) — `CHANGELOG.md`
+- **.lineLenEnv()** (4 connections) — `src/core/Shifter.hpp`
 - **.recordSyncWrite()** (4 connections) — `src/core/Shifter.hpp`
+- **beamClock_** (4 connections) — `src/core/Shifter.hpp`
 - **⭐ ÉTAT COURANT (posé le 2026-08-27 — lire CECI avant tout le reste)** (4 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
 - **.beamLineActive()** (3 connections) — `src/core/Shifter.hpp`
 - **.beamPos()** (3 connections) — `src/core/Shifter.hpp`
 - **.restartVideoCounter()** (3 connections) — `src/core/Shifter.hpp`
+- **Shifter::beamPos()** (3 connections) — `src/core/VideoCounter.cpp`
+- **Shifter::commitScanline()** (3 connections) — `src/core/VideoCounter.cpp`
+- **Shifter::videoCounter()** (3 connections) — `src/core/VideoCounter.cpp`
+- **.lineStoppedOver()** (2 connections) — `src/core/Shifter.hpp`
 - **.writeShifterRes()** (2 connections) — `src/core/Shifter.hpp`
-- **.writeVideoCounterByte()** (2 connections) — `src/core/Shifter.hpp`
-- **hblShorten_** (2 connections) — `src/core/Shifter.hpp`
-- **1. L'outil n°1 — harnais différentiel de cycles (Moira ↔ WinUAE)** (2 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **5. ✅ CONVERGENCE INSTRUCTION — COMPLÈTE (validée par workflow 6 classes)** (2 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **8. 🎯 PLAN D'ATTAQUE COORDONNÉ (refonte beam-sync) — pour la prochaine passe** (2 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **3. Vérités MESURÉES cette session (corrigent la mémoire)** (1 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **4. Implémenté (RAM_SLOT+IACK DÉFAUT ON depuis 2026-06-17 ; toggle via `=0`)** (1 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **6. ✅ FONDATION CORRIGÉE — dispatch BLOC (Enchanted Land DÉBLOQUÉ)** (1 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
+- *... and 14 more nodes in this community*
 
 ## Relationships
 
-- [Community 5](Community_5.md) (9 shared connections)
-- [Community 88](Community_88.md) (8 shared connections)
-- [Community 288](Community_288.md) (4 shared connections)
-- [Community 359](Community_359.md) (3 shared connections)
+- [Community 88](Community_88.md) (21 shared connections)
+- [Community 5](Community_5.md) (15 shared connections)
+- [Community 288](Community_288.md) (10 shared connections)
+- [Community 4](Community_4.md) (5 shared connections)
+- [Community 160](Community_160.md) (3 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 27](Community_27.md) (3 shared connections)
 - [Community 299](Community_299.md) (2 shared connections)
 - [Community 392](Community_392.md) (2 shared connections)
-- [Community 27](Community_27.md) (2 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 39](Community_39.md) (1 shared connections)
+- [Community 130](Community_130.md) (2 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
 - `docs/MOIRA_WINUAE_CONVERGENCE.md`
 - `src/core/Shifter.hpp`
+- `src/core/ShifterInternal.hpp`
 - `src/core/VideoCounter.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (43%)
-- INFERRED: 31 (57%)
+- EXTRACTED: 56 (46%)
+- INFERRED: 67 (54%)
 - AMBIGUOUS: 0 (0%)
 
 ---

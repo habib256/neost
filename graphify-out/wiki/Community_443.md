@@ -1,32 +1,25 @@
 # Community 443
 
-> 8 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **ikbd_irq_timing_logic.cpp** (7 connections) — `tests/ikbd_irq_timing_logic.cpp`
-- **testIkbdIrqTiming()** (5 connections) — `tests/ikbd_irq_timing_logic.cpp`
-- **Checks** (4 connections) — `tests/ikbd_irq_timing_logic.cpp`
-- **.equal()** (2 connections) — `tests/ikbd_irq_timing_logic.cpp`
-- **main()** (2 connections) — `tests/ikbd_irq_timing_logic.cpp`
-- **.run()** (2 connections) — `tests/ikbd_irq_timing_logic.cpp`
-- **count** (1 connections) — `tests/ikbd_irq_timing_logic.cpp`
-- **failures** (1 connections) — `tests/ikbd_irq_timing_logic.cpp`
+- **dataCallback()** (3 connections) — `src/audio/Audio.cpp`
+- **ma_device** (1 connections)
+- **ma_uint32** (1 connections)
 
 ## Relationships
 
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 159](Community_159.md) (2 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/ikbd_irq_timing_logic.cpp`
+- `src/audio/Audio.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (93%)
-- INFERRED: 1 (7%)
+- EXTRACTED: 3 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

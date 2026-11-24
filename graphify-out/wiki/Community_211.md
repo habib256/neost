@@ -1,43 +1,35 @@
 # Community 211
 
-> 17 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **Debugger** (34 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.vectorName()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.reset()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.enableLogging()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.logInstruction()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.clearLog()** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **string** (1 connections)
-- **u8** (1 connections)
-- **breakpoints** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **catchpoints** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **logBuffer** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **logBufferCapacity** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **logCnt** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **softStop** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **swTraps** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **watchpoints** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **i64** (1 connections)
+- **opendst_memdiff.py** (9 connections) — `tools/opendst_memdiff.py`
+- **main()** (7 connections) — `tools/opendst_memdiff.py`
+- **Server** (6 connections) — `tools/opendst_memdiff.py`
+- **runs()** (3 connections) — `tools/opendst_memdiff.py`
+- **.cmd()** (3 connections) — `tools/opendst_memdiff.py`
+- **.dump()** (3 connections) — `tools/opendst_memdiff.py`
+- **parse_hex()** (2 connections) — `tools/opendst_memdiff.py`
+- **read_word()** (2 connections) — `tools/opendst_memdiff.py`
+- **.close()** (2 connections) — `tools/opendst_memdiff.py`
+- **.__init__()** (1 connections) — `tools/opendst_memdiff.py`
+- **Image mémoire [start, start+length) par tranches de 4 Ko.** (1 connections) — `tools/opendst_memdiff.py`
+- **Adresses triées → plages contiguës [(début, fin)].** (1 connections) — `tools/opendst_memdiff.py`
 
 ## Relationships
 
-- [Community 134](Community_134.md) (13 shared connections)
-- [Community 282](Community_282.md) (4 shared connections)
-- [Community 285](Community_285.md) (4 shared connections)
-- [Community 16](Community_16.md) (1 shared connections)
-- [Community 57](Community_57.md) (1 shared connections)
-- [Community 104](Community_104.md) (1 shared connections)
+- [Community 26](Community_26.md) (2 shared connections)
+- [Community 227](Community_227.md) (2 shared connections)
+- [Community 18](Community_18.md) (2 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraDebugger.h`
+- `tools/opendst_memdiff.py`
 
 ## Audit Trail
 
-- EXTRACTED: 40 (100%)
+- EXTRACTED: 23 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,78 +1,78 @@
 # Community 102
 
-> 156 nodes
+> 98 nodes
 
 ## Key Concepts
 
-- **vector** (368 connections) — `src/core/Cpu68k.hpp`
-- **cstdio** (219 connections)
 - **Mfp.hpp** (100 connections) — `src/io/Mfp.hpp`
 - **Bus.hpp** (87 connections) — `src/core/Bus.hpp`
 - **algorithm** (86 connections)
-- **cstring** (56 connections)
 - **filesystem** (56 connections)
+- **Pacing.hpp** (52 connections) — `src/core/Pacing.hpp`
 - **Scheduler.hpp** (49 connections) — `src/core/Scheduler.hpp`
 - **Fdc.hpp** (47 connections) — `src/io/Fdc.hpp`
 - **YM2149.hpp** (43 connections) — `src/core/YM2149.hpp`
 - **StateArchive.hpp** (41 connections) — `src/core/StateArchive.hpp`
-- **fuzz_diskimage.cpp** (34 connections) — `tests/fuzz_diskimage.cpp`
-- **Cpu68k.hpp** (32 connections) — `src/core/Cpu68k.hpp`
 - **fstream** (32 connections)
 - **Ikbd.hpp** (31 connections) — `src/io/Ikbd.hpp`
 - **fdc_mount_guard_logic.cpp** (27 connections) — `tests/fdc_mount_guard_logic.cpp`
 - **ipf_image_logic.cpp** (26 connections) — `tests/ipf_image_logic.cpp`
-- **stx_raw_track_wrap_logic.cpp** (26 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **functional** (24 connections)
 - **stx_absent_track_logic.cpp** (23 connections) — `tests/stx_absent_track_logic.cpp`
 - **Shifter.hpp** (22 connections) — `src/core/Shifter.hpp`
 - **stx_raw_track_overlay_logic.cpp** (22 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **MidiAcia.hpp** (21 connections) — `src/io/MidiAcia.hpp`
 - **stx_read_address_crc_logic.cpp** (21 connections) — `tests/stx_read_address_crc_logic.cpp`
-- **VideoCounter.cpp** (20 connections) — `src/core/VideoCounter.cpp`
+- **Audio.cpp** (18 connections) — `src/audio/Audio.cpp`
+- **DmaSound.hpp** (18 connections) — `src/core/DmaSound.hpp`
 - **stx_sector_dam_logic.cpp** (18 connections) — `tests/stx_sector_dam_logic.cpp`
-- *... and 131 more nodes in this community*
+- **Blitter.hpp** (17 connections) — `src/core/Blitter.hpp`
+- **Rtc.hpp** (17 connections) — `src/io/Rtc.hpp`
+- **stx_deleted_track_logic.cpp** (16 connections) — `tests/stx_deleted_track_logic.cpp`
+- **stx_sector_rewrite_logic.cpp** (16 connections) — `tests/stx_sector_rewrite_logic.cpp`
+- *... and 73 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (219 shared connections)
-- [Community 41](Community_41.md) (127 shared connections)
-- [Community 149](Community_149.md) (22 shared connections)
-- [Community 264](Community_264.md) (17 shared connections)
-- [Community 172](Community_172.md) (17 shared connections)
-- [Community 63](Community_63.md) (17 shared connections)
-- [Community 14](Community_14.md) (17 shared connections)
-- [Community 58](Community_58.md) (16 shared connections)
-- [Community 176](Community_176.md) (15 shared connections)
-- [Community 83](Community_83.md) (15 shared connections)
-- [Community 294](Community_294.md) (15 shared connections)
-- [Community 183](Community_183.md) (14 shared connections)
+- [Community 460](Community_460.md) (161 shared connections)
+- [Community 4](Community_4.md) (129 shared connections)
+- [Community 14](Community_14.md) (30 shared connections)
+- [Community 41](Community_41.md) (26 shared connections)
+- [Community 153](Community_153.md) (20 shared connections)
+- [Community 252](Community_252.md) (17 shared connections)
+- [Community 172](Community_172.md) (14 shared connections)
+- [Community 176](Community_176.md) (12 shared connections)
+- [Community 132](Community_132.md) (10 shared connections)
+- [Community 149](Community_149.md) (9 shared connections)
+- [Community 294](Community_294.md) (9 shared connections)
+- [Community 74](Community_74.md) (8 shared connections)
 
 ## Source Files
 
+- `src/audio/Audio.cpp`
+- `src/core/AudioMix.cpp`
 - `src/core/Blitter.hpp`
 - `src/core/Bus.hpp`
-- `src/core/Cpu68k.hpp`
+- `src/core/DmaSound.hpp`
+- `src/core/Framing.cpp`
+- `src/core/Pacing.hpp`
 - `src/core/Scheduler.hpp`
 - `src/core/Shifter.hpp`
 - `src/core/StateArchive.hpp`
-- `src/core/VideoCounter.cpp`
 - `src/core/YM2149.hpp`
-- `src/io/Acsi.hpp`
-- `src/io/DiskImageCodec.hpp`
 - `src/io/Fdc.hpp`
 - `src/io/Fpu.hpp`
 - `src/io/Ikbd.hpp`
+- `src/io/Isp1160.hpp`
 - `src/io/Mfp.hpp`
-- `src/io/MidiAcia.hpp`
+- `src/io/Rtc.hpp`
+- `src/io/Scu.hpp`
 - `src/io/StxImage.hpp`
-- `src/io/UsbDevice.hpp`
-- `tests/acia_odd_byte_logic.cpp`
-- `tests/acsi_capacity_limit_logic.cpp`
-- `tests/acsi_large_bounds_logic.cpp`
+- `src/io/UltraSatan.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 1767 (99%)
-- INFERRED: 11 (1%)
+- EXTRACTED: 1124 (100%)
+- INFERRED: 2 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,36 +1,32 @@
 # Community 268
 
-> 12 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **Guard** (9 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.guardAt()** (8 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.setEnableAt()** (7 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.isDisabledAt()** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **u32** (5 connections)
-- **.isEnabledAt()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.toggleAt()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.disableAt()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.enableAt()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **addr** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **enabled** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **ignore** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **Échelle des références** (10 connections) — `docs/REFERENCE_LADDER.md`
+- **L'échelon `rtl`** (1 connections) — `docs/REFERENCE_LADDER.md`
+- **Les documents primaires** (1 connections) — `docs/REFERENCE_LADDER.md`
+- **Les règles d'arbitrage** (1 connections) — `docs/REFERENCE_LADDER.md`
+- **Les verdicts hors étalons pixel** (1 connections) — `docs/REFERENCE_LADDER.md`
+- **Les échelons** (1 connections) — `docs/REFERENCE_LADDER.md`
+- **Quand le RTL se trompe (2026-11-04)** (1 connections) — `docs/REFERENCE_LADDER.md`
+- **Quand une fiche lue à la lettre bloque le logiciel réel (2026-11-04)** (1 connections) — `docs/REFERENCE_LADDER.md`
+- **Sans machine réelle** (1 connections) — `docs/REFERENCE_LADDER.md`
 
 ## Relationships
 
-- [Community 134](Community_134.md) (11 shared connections)
-- [Community 152](Community_152.md) (9 shared connections)
-- [Community 285](Community_285.md) (1 shared connections)
+- [Community 431](Community_431.md) (1 shared connections)
+- [Community 396](Community_396.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraDebugger.h`
+- `docs/REFERENCE_LADDER.md`
 
 ## Audit Trail
 
-- EXTRACTED: 33 (92%)
-- INFERRED: 3 (8%)
+- EXTRACTED: 10 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

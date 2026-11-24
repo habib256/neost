@@ -1,6 +1,6 @@
 # Community 9
 
-> 43 nodes
+> 46 nodes
 
 ## Key Concepts
 
@@ -18,6 +18,7 @@
 - **.getPC0()** (9 connections) — `extern/moira/Moira/Moira.h`
 - **.latchDb()** (9 connections) — `src/core/Cpu68k.cpp`
 - **.read8()** (9 connections) — `src/core/Cpu68k.cpp`
+- **Performance du cœur : ~2,4× sur la même machine, à sortie octet-identique (2026-08-02)** (9 connections) — `CHANGELOG.md`
 - **.udsDone()** (8 connections) — `src/core/Cpu68k.cpp`
 - **.willExecute()** (8 connections) — `src/core/Cpu68k.cpp`
 - **u8** (8 connections)
@@ -26,25 +27,24 @@
 - **.write16()** (7 connections) — `src/core/Cpu68k.cpp`
 - **.write8()** (7 connections) — `src/core/Cpu68k.cpp`
 - **.alignRamBus()** (6 connections) — `src/core/Cpu68k.cpp`
+- **.readIrqUserVector()** (6 connections) — `src/core/Cpu68k.cpp`
 - **.latchDb8()** (5 connections) — `src/core/Cpu68k.cpp`
-- **.read16OnReset()** (5 connections) — `src/core/Cpu68k.cpp`
-- **.superNow()** (5 connections) — `src/core/Cpu68k.cpp`
-- *... and 18 more nodes in this community*
+- *... and 21 more nodes in this community*
 
 ## Relationships
 
-- [Community 247](Community_247.md) (11 shared connections)
-- [Community 27](Community_27.md) (10 shared connections)
+- [Community 27](Community_27.md) (11 shared connections)
 - [Community 299](Community_299.md) (9 shared connections)
-- [Community 16](Community_16.md) (5 shared connections)
+- [Community 16](Community_16.md) (6 shared connections)
+- [Community 247](Community_247.md) (6 shared connections)
 - [Community 66](Community_66.md) (4 shared connections)
+- [Community 203](Community_203.md) (4 shared connections)
+- [Community 130](Community_130.md) (4 shared connections)
 - [Community 141](Community_141.md) (3 shared connections)
 - [Community 36](Community_36.md) (2 shared connections)
-- [Community 39](Community_39.md) (2 shared connections)
 - [Community 0](Community_0.md) (2 shared connections)
 - [Community 64](Community_64.md) (2 shared connections)
-- [Community 166](Community_166.md) (2 shared connections)
-- [Community 130](Community_130.md) (2 shared connections)
+- [Community 470](Community_470.md) (2 shared connections)
 
 ## Source Files
 
@@ -57,8 +57,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 141 (76%)
-- INFERRED: 45 (24%)
+- EXTRACTED: 145 (74%)
+- INFERRED: 52 (26%)
 - AMBIGUOUS: 0 (0%)
 
 ---

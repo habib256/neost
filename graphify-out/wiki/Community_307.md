@@ -12,7 +12,7 @@
 
 ## Relationships
 
-- [Community 4](Community_4.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
 - [Community 61](Community_61.md) (1 shared connections)
 - [Community 88](Community_88.md) (1 shared connections)
 

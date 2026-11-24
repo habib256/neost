@@ -1,59 +1,49 @@
 # Community 58
 
-> 39 nodes
+> 14 nodes
 
 ## Key Concepts
 
-- **Bus.cpp** (98 connections) — `src/core/Bus.cpp`
-- **.aciaOddByteIsChipCycle()** (7 connections) — `src/core/Bus.hpp`
-- **.megaSteCacheable()** (5 connections) — `src/core/Bus.hpp`
-- **.ioAccessWidth()** (4 connections) — `src/core/Bus.hpp`
-- **IoSpan** (3 connections) — `src/core/Bus.cpp`
-- **.wrPsg()** (3 connections) — `src/core/Bus.hpp`
-- **.rdIkbd()** (3 connections) — `src/core/Bus.hpp`
-- **.wrIkbd()** (3 connections) — `src/core/Bus.hpp`
-- **.rdMidi()** (3 connections) — `src/core/Bus.hpp`
-- **.wrMidi()** (3 connections) — `src/core/Bus.hpp`
-- **.stealBusCycles()** (3 connections) — `src/core/Bus.hpp`
-- **.serialize()** (3 connections) — `src/core/Bus.hpp`
-- **.megaSteCacheRead()** (3 connections) — `src/core/Bus.hpp`
-- **.megaSteCacheUpdate()** (3 connections) — `src/core/Bus.hpp`
-- **.read32()** (2 connections) — `src/core/Bus.hpp`
-- **.rdShifter()** (2 connections) — `src/core/Bus.hpp`
-- **.wrShifter()** (2 connections) — `src/core/Bus.hpp`
-- **.rdPsg()** (2 connections) — `src/core/Bus.hpp`
-- **.rdFdc()** (2 connections) — `src/core/Bus.hpp`
-- **.wrFdc()** (2 connections) — `src/core/Bus.hpp`
-- **.rdDmaSnd()** (2 connections) — `src/core/Bus.hpp`
-- **.wrDmaSnd()** (2 connections) — `src/core/Bus.hpp`
-- **.rdBlitter()** (2 connections) — `src/core/Bus.hpp`
-- **.wrBlitter()** (2 connections) — `src/core/Bus.hpp`
-- **.rdRtc()** (2 connections) — `src/core/Bus.hpp`
-- *... and 14 more nodes in this community*
+- **.syncTo()** (14 connections) — `src/core/Scheduler.hpp`
+- **12. CPU 68000 et intégration — `Cpu68k.cpp`, `extern/moira` ↔ `cpu/newcpu.c`, `gencpu.c`, `hatari-glue.c`** (6 connections) — `docs/HATARI_DIVERGENCES.md`
+- **.addStolenCycles()** (4 connections) — `src/core/Scheduler.hpp`
+- **A34 — un seul modèle d'exécution, et les 83 verrous du cœur sont enfin classés (2026-08-28)** (4 connections) — `CHANGELOG.md`
+- **Les cycles volés par le blitter avancent enfin l'horloge des timers (2026-08-25)** (4 connections) — `CHANGELOG.md`
+- **.armedInvariant()** (3 connections) — `src/core/Scheduler.hpp`
+- **.syncToRollingFrames()** (3 connections) — `src/core/Scheduler.hpp`
+- **A42 soldé : l'élection de l'IRQ MFP voit enfin tout le lot de dispatch (2026-09-03)** (3 connections) — `CHANGELOG.md`
+- **Super Hang-On : le vrai coupable était `MFP_UpdateTimers` — que j'avais porté puis retiré le matin même (2026-09-02)** (3 connections) — `CHANGELOG.md`
+- **rollCb_** (2 connections) — `src/core/Scheduler.hpp`
+- **Écarts voulus — ne pas réaligner** (2 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Verrous du cœur : verdicts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
-- [Community 14](Community_14.md) (36 shared connections)
-- [Community 102](Community_102.md) (16 shared connections)
-- [Community 203](Community_203.md) (12 shared connections)
-- [Community 301](Community_301.md) (9 shared connections)
-- [Community 4](Community_4.md) (7 shared connections)
-- [Community 186](Community_186.md) (7 shared connections)
-- [Community 441](Community_441.md) (4 shared connections)
-- [Community 454](Community_454.md) (4 shared connections)
-- [Community 449](Community_449.md) (3 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 39](Community_39.md) (7 shared connections)
+- [Community 130](Community_130.md) (4 shared connections)
+- [Community 221](Community_221.md) (2 shared connections)
+- [Community 449](Community_449.md) (1 shared connections)
+- [Community 392](Community_392.md) (1 shared connections)
 - [Community 218](Community_218.md) (1 shared connections)
+- [Community 468](Community_468.md) (1 shared connections)
+- [Community 434](Community_434.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
+- [Community 215](Community_215.md) (1 shared connections)
+- [Community 9](Community_9.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Bus.cpp`
-- `src/core/Bus.hpp`
+- `CHANGELOG.md`
+- `docs/HATARI_DIVERGENCES.md`
+- `src/core/Scheduler.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 135 (93%)
-- INFERRED: 10 (7%)
+- EXTRACTED: 20 (54%)
+- INFERRED: 17 (46%)
 - AMBIGUOUS: 0 (0%)
 
 ---

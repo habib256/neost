@@ -29,8 +29,7 @@
 
 ## Relationships
 
-- [Community 264](Community_264.md) (4 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 264](Community_264.md) (5 shared connections)
 
 ## Source Files
 

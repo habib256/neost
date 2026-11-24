@@ -302,7 +302,7 @@ par artefact ne publie QUE le bundle.
 Pour une démo hors ligne : `emcmake cmake -B build-web -DCMAKE_BUILD_TYPE=Release
 -DNEOST_WEB_FREE_ONLY=ON && cmake --build build-web --target neost-web` régénère `wasm/`.
 
-**Windows** — MinGW-w64 dans un shell MSYS2/MINGW64,
+**Windows** — MinGW-w64 dans un shell MSYS2/UCRT64,
 `NEOST_VERSION=<ver> packaging/windows/build_mingw.sh`. Tout est lié en statique et le
 script REFUSE le paquet s'il importe une DLL non système : une DLL manquante est
 invisible en CI (MSYS2 les a dans son `PATH`) et fatale au double-clic.

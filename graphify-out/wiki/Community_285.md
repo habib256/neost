@@ -1,41 +1,35 @@
 # Community 285
 
-> 11 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **MoiraDebugger.h** (12 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **SoftwareTraps** (8 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **SoftwareTrap** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.create()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **u16** (4 connections)
-- **.resolve()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.isLineAInstr()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.isLineFInstr()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **u16** (2 connections)
-- **instruction** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **traps** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.clearAllFileHandles()** (8 connections) — `src/io/GemdosHd.hpp`
+- **GemdosHd::GemdosHd()** (5 connections) — `src/io/GemdosHd.cpp`
+- **.unmount()** (4 connections) — `src/io/GemdosHd.hpp`
+- **.unforceFileHandle()** (4 connections) — `src/io/GemdosHd.hpp`
+- **.dropForcedTo()** (4 connections) — `src/io/GemdosHd.hpp`
+- **.clearInfOverride()** (3 connections) — `src/io/GemdosHd.hpp`
+- **setD0()** (2 connections) — `src/io/GemdosHd.cpp`
+- **Cpu68k** (2 connections)
+- **Bus** (1 connections)
 
 ## Relationships
 
-- [Community 211](Community_211.md) (4 shared connections)
-- [Community 282](Community_282.md) (3 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 134](Community_134.md) (2 shared connections)
-- [Community 141](Community_141.md) (1 shared connections)
-- [Community 57](Community_57.md) (1 shared connections)
-- [Community 76](Community_76.md) (1 shared connections)
-- [Community 268](Community_268.md) (1 shared connections)
-- [Community 152](Community_152.md) (1 shared connections)
+- [Community 36](Community_36.md) (7 shared connections)
+- [Community 17](Community_17.md) (5 shared connections)
+- [Community 444](Community_444.md) (2 shared connections)
+- [Community 218](Community_218.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraDebugger.h`
+- `src/io/GemdosHd.cpp`
+- `src/io/GemdosHd.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 30 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 14 (58%)
+- INFERRED: 10 (42%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,6 +1,6 @@
 # Community 155
 
-> 14 nodes
+> 15 nodes
 
 ## Key Concepts
 
@@ -16,26 +16,28 @@
 - **Moira::execPTest()** (2 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
 - **Moira::execPTest40()** (2 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
 - **fc** (2 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **mask** (2 connections) — `src/core/Shifter.hpp`
 - **Mode** (1 connections)
 - **u32** (1 connections)
 
 ## Relationships
 
 - [Community 0](Community_0.md) (1 shared connections)
-- [Community 288](Community_288.md) (1 shared connections)
 - [Community 380](Community_380.md) (1 shared connections)
 - [Community 33](Community_33.md) (1 shared connections)
-- [Community 333](Community_333.md) (1 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
 
 ## Source Files
 
 - `extern/moira/Moira/MoiraExecMMU_cpp.h`
 - `extern/moira/Moira/MoiraTypes.h`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (88%)
-- INFERRED: 3 (12%)
+- EXTRACTED: 24 (89%)
+- INFERRED: 3 (11%)
 - AMBIGUOUS: 0 (0%)
 
 ---
