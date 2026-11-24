@@ -1,5 +1,36 @@
 # Changelog — NeoST
 
+## 2026-11-24 — Web : disques durs dans la page, lien de cours, états avec disquettes
+
+Pour le cours d'assembleur 68000 de l'issue #45 (outils sur C:, travail des étudiants
+sur D:, postes où rien ne s'installe) : ce qui demandait une page intégratrice se fait
+désormais dans la page publique.
+
+- **Bloc « Hard disk (GEMDOS) »** (`web/shell.html`) : un dossier de l'hôte copié en C: ou
+  D: (`input webkitdirectory`, dossier racine retiré), D: vide, programme au boot,
+  **export `.zip`** de C:/D: écrit par la page (méthode stockée, CRC-32, noms UTF-8) et
+  **rechargement** d'une archive (stockée ou deflate par `DecompressionStream` ; dossiers
+  lettre → lecteurs, sinon C: ; déchets macOS écartés ; « .. » neutralisé). Garde de
+  départ et de rechargement étendue aux lecteurs.
+- **Lien de cours** : `?hd=<archive>&boot=<programme>&mono=1` — l'archive servie à côté
+  de la page remplit les lecteurs et le programme démarre, sans une ligne de code.
+- **Signal « prêt »** pour une page intégratrice : promesse `window.neostReady` et
+  événement `neost-ready` (la page occupe `neostOnReady`, qu'il ne faut pas remplacer).
+  README réécrit en conséquence.
+- **États avec disquettes** : *Save state* écrit un état autonome
+  (`Machine::saveStateWithMedia`) ; la reprise recrée une disquette déposée disparue
+  avec la page (`Fdc::recreateMediaFile`, option `recreateMissing`, jamais par-dessus un
+  fichier présent, chemin absolu sans « .. »), dans son conteneur (`.msa` encodée, `.dim`
+  avec en-tête). `stateWithMediaHeaderOk` valide aussi le CRC des lecteurs : un état
+  corrompu est refusé avant de toucher à la machine. Un `.state` nu reste accepté.
+- Build : le shell devient dépendance de lien de `neost-web` (`LINK_DEPENDS`) — modifié
+  seul, il ne régénérait pas `wasm/index.html`.
+- Banc web : scénarios `hdui` (contrôles du bloc, export relu octet par octet, archive
+  deflate d'un dossier de cours, lien de cours) et `statedisk` (disquette déposée revenue
+  d'un état après rechargement, `.state` nu accepté) ; `saves` et `gemdos` verts.
+  `neost-selftest` : recréation refusée par défaut, acceptée sur demande, conteneurs
+  `.msa` et `.dim`.
+
 ## 2026-11-24 — Frontière libretro : ce qu'un cinquième frontend exige du cœur
 
 Préparation d'un cœur libretro, sans une ligne de libretro (carte : `docs/LIBRETRO.md`).

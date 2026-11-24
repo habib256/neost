@@ -171,6 +171,15 @@ public:
     static constexpr uint64_t kForeignGen = ~uint64_t(0);
     void writeMedia(StateArchive& ar, int drive) const;
     static std::shared_ptr<const MediaCopy> readMediaCopy(StateArchive& ar);
+    // Recrée le fichier hôte d'une copie relue quand il N'EXISTE PLUS — cas du web, où
+    // une disquette déposée vit dans le FS virtuel de la page et disparaît au
+    // rechargement, alors que l'état autonome en porte les octets. Écrit l'image dans
+    // le conteneur que son extension annonce (.msa encodée, .dim avec en-tête, brute
+    // sinon), pour qu'un export du fichier reste honnête. N'écrase JAMAIS un fichier
+    // présent ; refuse un chemin relatif ou portant « .. » (le chemin vient d'un état,
+    // donc d'un fichier que l'utilisateur a pu recevoir) et une copie STX (rien à
+    // écrire). Vrai si le fichier existe en sortie.
+    static bool recreateMediaFile(const MediaCopy& copy);
     // Une commande est en cours sur un STX : ses dates suivent la piste réelle, on n'y
     // prend pas d'instantané. Sur un .ST le save-state porte la commande entière : l'exclure
     // aussi priverait de retour arrière les chargeurs qui lisent sans relâche.

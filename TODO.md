@@ -455,6 +455,13 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 - **Disquettes `.zip` et `.gz` ouvertes directement** · P2 ⭘ — monter l'image qu'elles contiennent sans
   décompression manuelle (cas Bruce Lee, 2026-11-13). BMAtariST le fait pour tous ses formats ; choisir
   l'image si l'archive en contient plusieurs, réécriture dans l'archive ou à côté, à trancher.
+- **Web : le travail des étudiants survit au rechargement** · P2 ⭘ *(proposé)* — C:/D: et
+  les disquettes déposées vivent dans le FS de la page ; l'export `.zip` et la garde de
+  départ protègent, mais un onglet fermé par erreur perd la séance. Garder `/hd` dans
+  IndexedDB (IDBFS) entre deux visites, avec un bouton pour l'effacer (poste partagé).
+- **Retour du cours d'assembleur (issue #45)** · P2 ⏸ retour — Devpac 3 et MonST sous
+  EmuTOS en C:/D: dans la page publique : ni testés par nous (logiciels commerciaux), ni
+  confirmés par l'enseignant. Ne pas en faire une réussite avant son retour.
 - **Vérifier un état sauvegardé juste après l'écriture** · P3 ⭘ — le relire et contrôler son CRC
   (déjà vérifié au chargement) ; un état raté est supprimé et le menu le dit, comme BMAtariST 0.1.1.
 - **Format `.scp` (SuperCard Pro, flux magnétique)** · P3 ⭘ — lu par BMAtariST via Hatari ; NeoST lit

@@ -298,6 +298,27 @@
     </fieldset>
 
     <fieldset>
+      <legend>Hard disk (GEMDOS)</legend>
+      <div class="row">
+        <label class="file" for="fileHdC" title="Copy a folder of this device into the page and use it as drive C: (tools, programs). Cold boot.">Folder as C:…</label>
+        <input type="file" id="fileHdC" webkitdirectory multiple>
+        <label class="file" for="fileHdD" title="Copy a folder of this device into the page and use it as drive D: (your work). Cold boot.">Folder as D:…</label>
+        <input type="file" id="fileHdD" webkitdirectory multiple>
+        <label class="file" for="fileHdZip" title="Load a .zip into the hard disk: an archive made of C/, D/… folders fills those drives (a Download C:/D: archive, for example); any other archive becomes C:. Cold boot.">Load .zip…</label>
+        <input type="file" id="fileHdZip">
+        <button id="btnHdEmptyD" title="Use a new empty drive D: for your work. Cold boot.">Empty D:</button>
+        <button id="btnHdZip" disabled title="Save C: and D: to your computer as a .zip, with everything the ST wrote to them. They only live in this page: they are lost when it is closed or reloaded.">⤓ Download C:/D: (.zip)</button>
+        <button id="btnHdOff" disabled title="Unmount C: and D: and discard their files from this page. Cold boot.">Remove</button>
+      </div>
+      <div class="row" style="margin-top:0.45rem">
+        <label for="hdAuto" style="font-size:0.78rem;color:var(--muted)">Start at boot</label>
+        <input type="text" id="hdAuto" spellcheck="false" autocomplete="off" placeholder="C:\DEVPAC\DEVPAC.PRG"
+               style="flex:1;min-width:160px"
+               title="Program the desktop starts at each boot, for example C:\DEVPAC\DEVPAC.PRG. Empty = none. Takes effect at the next boot.">
+      </div>
+    </fieldset>
+
+    <fieldset>
       <legend>Demos</legend>
       <div class="row">
         <select id="demoSel" title="Demoscene productions bundled with this page, each started in the machine, RAM and TOS it was checked with"></select>
@@ -309,7 +330,7 @@
     <fieldset>
       <legend>Saves</legend>
       <div class="row">
-        <button id="btnSaveState" title="Download the whole machine (CPU, RAM, chips) as a .state file. Floppies are not inside: keep the same image in A:.">⤓ Save state</button>
+        <button id="btnSaveState" title="Download the whole machine (CPU, RAM, chips) and the floppies in A: and B: as a .state file.">⤓ Save state</button>
         <button id="btnScreenshot" title="Download what the screen shows as a PNG">⤓ Screenshot</button>
         <label class="file touch-only" for="fileOpen" title="Pick a .state to restore, or a TOS image to boot">Open state / TOS…</label>
         <input type="file" id="fileOpen">
@@ -387,11 +408,12 @@
       <li><b>Keys the browser would take</b> (F1–F12, arrows, Space, Page Up/Down, Ctrl/Alt+letter) go to the ST while the screen has the focus or the mouse is captured: click the screen first.</li>
       <li><b>Game floppies</b>: "Mount A: + Reset" switches to a <b>real TOS</b> when one is available (EmuTOS boots system floppies only) — TOS 2.06 on STE/Mega STE, TOS 1.0x on ST. <b>This build bundles EmuTOS alone</b>, which is free software; original Atari TOS ROMs are not ours to ship. Most commercial games therefore need your own TOS image: <b>drop it on the screen</b> (<code>.img</code> / <code>.rom</code> / <code>.tos</code> / <code>.bin</code>). It is loaded in this page only — never uploaded — joins the ROM list and boots cold; a TOS 1.04 or older turns an STE back into an ST, as on the desktop. The bundled <b>demos</b> boot fine on EmuTOS.</li>
       <li><b>Demos</b>: pick one and press <b>Run demo</b>. The page reloads with the machine, the RAM and the TOS that demo was checked with — EmuTOS at 50 Hz, since these productions were written for PAL screens — and boots straight into it. The demos that do not run under EmuTOS are not offered here.</li>
-      <li><b>Save states</b>: <b>⤓ Save state</b> downloads the whole machine (CPU, RAM, every chip) as a <code>.state</code> file; drop it on the screen to come back to that instant. It restores only on the same machine model, RAM size and exact ROM image, and the floppies are not inside it: put the same image back in A: first (after a reload, drop it again).</li>
+      <li><b>Save states</b>: <b>⤓ Save state</b> downloads the whole machine (CPU, RAM, every chip) as a <code>.state</code> file; drop it on the screen to come back to that instant. It restores only on the same machine model, RAM size and exact ROM image. The floppies in A: and B: are inside it, writes included: after a reload, a floppy you had dropped comes back from the state (a <code>.stx</code> or <code>.ipf</code> image must be dropped again first). A hard disk folder (C:, D:) is not inside it.</li>
       <li><b>Touch screens</b>: <b>Touch mouse</b> (on by default on phones and tablets) turns the screen into a touchpad — drag to move, tap to click, tap with two fingers for a right click; hold <b>L</b> or <b>R</b> to keep a button down (dragging in GEM). <b>Touch joystick</b>: slide your finger on the pad (eight directions), <b>FIRE</b> and <b>SPACE</b> on the right, plugged into the port picked in the Joystick box. <b>ST keyboard</b>: Atari ST keys sent as they are; <b>Shift</b>, <b>Ctrl</b> and <b>Alt</b> stay down until the next key (tap again to release). Letters are labelled for the TOS language (AZERTY under a French TOS, QWERTZ under a German one). In full screen, the buttons at the top right open the keyboard and the joystick, and <b>✕</b> leaves. On a touch device, the <b>Boot floppy…</b>, <b>Insert floppy…</b> and <b>Open state / TOS…</b> buttons replace dropping a file.</li>
       <li><b>Screenshot</b>: saves what the screen shows — the cropped picture when Auto zoom is on — as a PNG, low resolution pixels doubled to keep the screen's shape.</li>
       <li><b>Drag and drop</b>: drop a <code>.st</code> / <code>.msa</code> / <code>.dim</code> / <code>.stx</code> / <code>.ipf</code> image onto the screen to <b>insert</b> it in A: without a reset — that is how you swap to "disk 2" mid-game. Hold <kbd>Shift</kbd> while dropping to mount it <b>and reboot</b>.</li>
       <li><b>Your floppies live in this page only</b>: what the ST writes to them (saved games…) is lost when the page is closed or reloaded. <b>⤓ Download A:</b> saves the floppy in A: with its writes (for <code>.stx</code>/<code>.ipf</code>, which are never rewritten, it saves the <code>.wd1772</code> file that holds the writes — Hatari reads it too).</li>
+      <li><b>Hard disk (GEMDOS)</b>: <b>Folder as C:…</b> and <b>Folder as D:…</b> copy a folder of your computer into the page and show it to the ST as a hard disk — tools on C:, your work on D:, for example. <b>Empty D:</b> gives a blank D:. <b>Start at boot</b> names a program the desktop launches at each boot (<code>C:\DEVPAC\DEVPAC.PRG</code>). Each change reboots the ST. Nothing is uploaded, and <b>the files live in this page only</b>: <b>⤓ Download C:/D: (.zip)</b> saves them, with what the ST wrote, before you close or reload it; <b>Load .zip…</b> brings such an archive back next time. A teacher can also give a link that sets everything up: <code>index.html?machine=st&amp;mem=1m&amp;mono=1&amp;hd=course.zip&amp;boot=C:\DEVPAC\DEVPAC.PRG</code> loads <code>course.zip</code> (served next to the page, with <code>C/</code> and <code>D/</code> folders) and starts the program. Pages that embed NeoST can do the same from JavaScript (README, "GEMDOS drives for pages embedding NeoST").</li>
       <li><b>Machine &amp; RAM</b>: fixed when the machine is built → changing them reloads the page (URL parameters <code>?machine=</code> and <code>?mem=</code>, shareable). You are asked first when a floppy of yours is in use.</li>
       <li><b>Sound</b>: browsers require a user gesture — the first click or key press anywhere on the page unlocks audio (YM2149 + STE DMA + drive noises).</li>
     </ul>
@@ -441,9 +463,9 @@
     // demande confirmation dès que la machine tourne ou qu'une disquette a été
     // déposée (le navigateur n'affiche la question qu'après une interaction réelle
     // avec la page). `leaving` = départ voulu, déjà confirmé (changement de machine).
-    var session = { live: false, userDisk: false, userRom: false, leaving: false };
+    var session = { live: false, userDisk: false, userRom: false, userHd: false, leaving: false };
     window.addEventListener('beforeunload', function (e) {
-      if (session.leaving || !(session.live || session.userDisk || session.userRom)) return;
+      if (session.leaving || !(session.live || session.userDisk || session.userRom || session.userHd)) return;
       e.preventDefault();
       e.returnValue = '';                 // requis par Chrome et Safari
     });
@@ -454,10 +476,12 @@
       var lost = [];
       if (session.userDisk) lost.push('the floppies you dropped, and everything the ST wrote to them');
       if (session.userRom)  lost.push('the TOS image you dropped (drop it again after the reload)');
+      if (session.userHd)   lost.push('the C:/D: hard disk folders, and everything the ST wrote to them');
       if (lost.length &&
           !window.confirm('Changing the ' + what + ' reloads the page: ' + lost.join(', and ') +
                           ' will be gone.\n\n' +
                           (session.userDisk ? 'Use "Download A:" first to keep the floppy. ' : '') +
+                          (session.userHd ? 'Use "Download C:/D:" first to keep the hard disk. ' : '') +
                           'Reload anyway?'))
         return false;
       session.leaving = true;
@@ -633,7 +657,15 @@
       if (window.neostApplyJoyDeadzone) neostApplyJoyDeadzone();   // zone morte du curseur
       initDongles();     // page Dongles : peuple les listes, rebranche le choix gardé
       if (window.neostKbdRelabel) neostKbdRelabel();   // clavier à l'écran : pays du TOS
+      hdFromUrl();       // lien de cours : ?hd= ?boot= ?mono=
+      neostReadyResolve();
+      window.dispatchEvent(new Event('neost-ready'));
     };
+    // Signal « prêt » pour une page qui embarque NeoST (README) : la page occupe
+    // elle-même window.neostOnReady ; l'intégrateur attend la promesse window.neostReady
+    // ou l'événement « neost-ready » sur window, puis remplit Module.FS.
+    var neostReadyResolve;
+    window.neostReady = new Promise(function (r) { neostReadyResolve = r; });
 
     // ===== Dongles ==============================================================
     // Même page que le bureau (Configuration → Dongles) et le menu Android : une clé
@@ -1248,6 +1280,9 @@
     var uploadNames = {};          // chemin MEMFS → nom d'origine du fichier déposé
     window.neostOnDriveA = function (p) {
       driveA = p || '';
+      // Une disquette déposée revenue d'un état (recréée dans /uploads) est à
+      // l'utilisateur : le départ de la page doit la protéger comme au dépôt.
+      if (/^\/uploads\//.test(driveA)) session.userDisk = true;
       var b = document.getElementById('btnDownloadA');
       if (b) b.disabled = !driveA;
     };
@@ -1477,6 +1512,333 @@
         focusScreen();
       });
     }
+
+    // ===== Disque dur GEMDOS : dossiers de l'utilisateur en C: et D: ============
+    // Le besoin vient d'un enseignant (issue #45) : outils sur C:, travail des étudiants
+    // sur D:, sur des postes où rien ne s'installe. Même mécanique que les pages
+    // intégratrices (README, « GEMDOS drives for pages embedding NeoST ») : les fichiers
+    // sont copiés dans /hd/C et /hd/D du FS de la page, puis neost_set_gemdos('/hd')
+    // monte chaque sous-dossier lettre (boot à froid). Rien ne quitte la page, tout
+    // disparaît au rechargement : d'où l'export .zip et la garde de départ.
+    var HD_ROOT = '/hd';
+    function hdPath(letter) { return HD_ROOT + '/' + letter; }
+    function fsIsDir(p) {
+      try { return Module.FS.isDir(Module.FS.stat(p).mode); } catch (e) { return false; }
+    }
+    function fsExists(p) { try { Module.FS.stat(p); return true; } catch (e) { return false; } }
+    function fsMkdirs(p) {
+      var cur = '';
+      p.split('/').forEach(function (part) {
+        if (!part) return;
+        cur += '/' + part;
+        if (!fsExists(cur)) Module.FS.mkdir(cur);
+      });
+    }
+    function fsRemoveTree(p) {
+      if (!fsExists(p)) return;
+      if (fsIsDir(p)) {
+        Module.FS.readdir(p).forEach(function (n) {
+          if (n !== '.' && n !== '..') fsRemoveTree(p + '/' + n);
+        });
+        Module.FS.rmdir(p);
+      } else Module.FS.unlink(p);
+    }
+    // Un composant de chemin venu du système de l'utilisateur : ni séparateur, ni
+    // caractère de contrôle (comparés par code : cf. la note de mountLocalFile sur
+    // l'échappement du caractère nul), ni « . » / « .. ».
+    function hdSegment(name) {
+      var out = '';
+      for (var i = 0; i < name.length; i++)
+        out += (name.charCodeAt(i) < 32 || name[i] === '\\' || name[i] === '/') ? '_' : name[i];
+      return (out === '' || out === '.' || out === '..') ? '_' : out;
+    }
+    // Lecteurs présents : sous-dossiers C à Z de /hd (règle du montage GEMDOS).
+    function hdLetters() {
+      if (!fsIsDir(HD_ROOT)) return [];
+      return Module.FS.readdir(HD_ROOT).filter(function (n) {
+        return /^[C-Z]$/.test(n) && fsIsDir(hdPath(n));
+      }).sort();
+    }
+    function hdRefresh() {
+      var any = hdLetters().length > 0;
+      document.getElementById('btnHdZip').disabled = !any;
+      document.getElementById('btnHdOff').disabled = !any;
+      if (any) session.userHd = true;
+    }
+    // Programme lancé au boot (champ « Start at boot ») : vide = aucun. Le cœur valide le
+    // chemin GEMDOS et garde l'ancien sur refus ; l'effet vient au boot suivant.
+    function hdSetAutostart() {
+      var v = document.getElementById('hdAuto').value.trim();
+      if (Module.ccall('neost_set_autostart', 'number', ['string'], [v || null]) === 1) return true;
+      Module.setStatus('Start at boot refused: "' + v + '" is not a GEMDOS program path ' +
+                       '(for example C:\\DEVPAC\\DEVPAC.PRG).');
+      return false;
+    }
+    // Monte les lettres présentes sous /hd (boot à froid), ou démonte s'il n'y en a plus.
+    function hdMount(what) {
+      if (!hdSetAutostart()) return false;
+      var letters = hdLetters();
+      var ok = Module.ccall('neost_set_gemdos', 'number', ['string', 'number'],
+                            [letters.length ? HD_ROOT : null, 0]) === 1;
+      hdRefresh();
+      if (!ok) { Module.setStatus('Cannot mount the hard disk (see the console).'); return false; }
+      setStatusOk(what + ' — cold boot. ' + (letters.length
+        ? 'Drives ' + letters.join(': ') + ': live in this page only: ⤓ Download C:/D: keeps them.'
+        : 'No hard disk.'));
+      focusScreen();
+      return true;
+    }
+    // Copie la sélection d'un <input webkitdirectory> dans /hd/<lettre> (la lettre est
+    // vidée d'abord), puis monte. webkitRelativePath commence par le dossier choisi :
+    // on le retire, son CONTENU devient la racine du lecteur.
+    function hdImport(letter, files) {
+      if (!ready || !files || !files.length) return;
+      var list = Array.prototype.slice.call(files);
+      var total = list.reduce(function (n, f) { return n + f.size; }, 0);
+      if (total > 256 * 1024 * 1024) {
+        Module.setStatus('Folder too large for the page (' + Math.round(total / 1048576) + ' MB, 256 MB at most).');
+        return;
+      }
+      var first = (list[0].webkitRelativePath || '').split('/')[0] || 'folder';
+      Module.setStatus('Copying ' + list.length + ' file(s) into ' + letter + ':…');
+      Promise.all(list.map(function (f) {
+        return f.arrayBuffer().then(function (b) { return [f, new Uint8Array(b)]; });
+      })).then(function (entries) {
+        try {
+          fsRemoveTree(hdPath(letter));
+          fsMkdirs(hdPath(letter));
+          entries.forEach(function (e) {
+            var rel = (e[0].webkitRelativePath || e[0].name).split('/');
+            if (rel.length > 1) rel.shift();
+            var dest = hdPath(letter) + '/' + rel.map(hdSegment).join('/');
+            fsMkdirs(dest.slice(0, dest.lastIndexOf('/')));
+            Module.FS.writeFile(dest, e[1]);
+          });
+        } catch (err) { Module.setStatus('Cannot copy the folder (' + err + ')'); hdRefresh(); return; }
+        hdMount(letter + ': ' + entries.length + ' file(s) from "' + first + '"');
+      }, function (err) { Module.setStatus('Cannot read the folder (' + err + ')'); });
+    }
+    ['C', 'D'].forEach(function (letter) {
+      document.getElementById('fileHd' + letter).addEventListener('change', function () {
+        var files = this.files;
+        hdImport(letter, files);
+        this.value = '';                       // re-choisir le même dossier redéclenche
+      });
+    });
+    document.getElementById('btnHdEmptyD').addEventListener('click', function () {
+      if (!ready) return;
+      if (fsIsDir(hdPath('D')) && Module.FS.readdir(hdPath('D')).length > 2 &&
+          !window.confirm('D: already holds files. Replace it with an empty D:? ' +
+                          'Use "Download C:/D:" first to keep them.')) return;
+      try { fsRemoveTree(hdPath('D')); fsMkdirs(hdPath('D')); }
+      catch (err) { Module.setStatus('Cannot create D: (' + err + ')'); return; }
+      hdMount('D: empty');
+    });
+    document.getElementById('btnHdOff').addEventListener('click', function () {
+      if (!ready || !hdLetters().length) return;
+      if (!window.confirm('Remove C: and D: and discard their files from this page? ' +
+                          'Use "Download C:/D:" first to keep them.')) return;
+      try { fsRemoveTree(HD_ROOT); } catch (err) { Module.setStatus('Cannot remove (' + err + ')'); return; }
+      session.userHd = false;
+      hdMount('Hard disk removed');
+    });
+    document.getElementById('hdAuto').addEventListener('change', function () {
+      if (ready && hdSetAutostart())
+        setStatusOk(this.value.trim() ? 'Start at boot: ' + this.value.trim() + ' (next boot).'
+                                      : 'Start at boot: none.');
+    });
+
+    // Lecture d'une archive .zip : méthodes « stockée » (0) et « deflate » (8, par le
+    // DecompressionStream du navigateur). Rend une promesse de [[chemin, Uint8Array |
+    // null (dossier)]]. Pas de ZIP64 ni de chiffrement : refusés avec leur motif.
+    // [B] PKWARE APPNOTE.TXT 6.3.x : fin du répertoire central (§ 4.3.16), entrées
+    // centrales (§ 4.3.12), en-tête local (§ 4.3.7), bit 11 = noms UTF-8 (§ 4.4.4).
+    function zipRead(bytes) {
+      var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), eocd = -1;
+      for (var i = bytes.length - 22; i >= 0 && i >= bytes.length - 22 - 65535; i--)
+        if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+      if (eocd < 0) return Promise.reject(new Error('not a .zip archive'));
+      var count = dv.getUint16(eocd + 10, true), p = dv.getUint32(eocd + 16, true);
+      var utf8 = new TextDecoder('utf-8'), legacy = new TextDecoder('windows-1252');
+      var jobs = [];
+      for (var n = 0; n < count; n++) {
+        if (p + 46 > bytes.length || dv.getUint32(p, true) !== 0x02014b50)
+          return Promise.reject(new Error('damaged .zip directory'));
+        var flags = dv.getUint16(p + 8, true), method = dv.getUint16(p + 10, true);
+        var csize = dv.getUint32(p + 20, true);
+        var nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true);
+        var clen = dv.getUint16(p + 32, true), local = dv.getUint32(p + 42, true);
+        var name = ((flags & 0x0800) ? utf8 : legacy).decode(bytes.subarray(p + 46, p + 46 + nlen));
+        p += 46 + nlen + xlen + clen;
+        if (local + 30 > bytes.length || dv.getUint32(local, true) !== 0x04034b50)
+          return Promise.reject(new Error('damaged .zip entry: ' + name));
+        var start = local + 30 + dv.getUint16(local + 26, true) + dv.getUint16(local + 28, true);
+        jobs.push(zipEntry(name, flags, method, bytes.subarray(start, start + csize)));
+      }
+      return Promise.all(jobs);
+    }
+    function zipEntry(name, flags, method, data) {
+      if (/\/$/.test(name)) return Promise.resolve([name, null]);
+      if (flags & 1) return Promise.reject(new Error(name + ' is encrypted'));
+      if (method === 0) return Promise.resolve([name, data.slice()]);
+      if (method !== 8 || typeof DecompressionStream === 'undefined')
+        return Promise.reject(new Error(name + ': unsupported compression (method ' + method + ')'));
+      var out = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      return new Response(out).arrayBuffer().then(function (b) { return [name, new Uint8Array(b)]; });
+    }
+    // Une archive dans le disque dur : faite de dossiers lettre (C/, D/… — celle de
+    // « Download C:/D: », ou un cours avec ses outils en C/) elle remplit ces lecteurs,
+    // les autres restent ; sinon elle devient C:. Même règle que le montage GEMDOS d'un
+    // dossier. Rend une promesse des lettres remplies ; ne monte pas.
+    function hdImportZip(bytes) {
+      return zipRead(bytes).then(function (entries) {
+        // Déchets des archiveurs de macOS écartés ; chaque composant nettoyé (hdSegment :
+        // « .. » et séparateurs neutralisés — une archive ne sort pas de son lecteur).
+        entries = entries.filter(function (e) {
+          return !/(^|\/)(__MACOSX|\.DS_Store)(\/|$)/.test(e[0]);
+        }).map(function (e) {
+          return [e[0].replace(/\\/g, '/').split('/').filter(function (x) { return x !== ''; }), e[1]];
+        }).filter(function (e) { return e[0].length > 0; });
+        // Archive d'un dossier entier (« Course/C/… », « Course/D/… ») : le dossier racine
+        // unique est retiré, comme celui qu'on choisit avec « Folder as C:… ».
+        var top = entries.length ? entries[0][0][0] : null;
+        if (top && !/^[C-Zc-z]$/.test(top) && entries.every(function (e) { return e[0][0] === top; }))
+          entries = entries.map(function (e) { return [e[0].slice(1), e[1]]; })
+                           .filter(function (e) { return e[0].length > 0; });
+        var total = entries.reduce(function (n, e) { return n + (e[1] ? e[1].length : 0); }, 0);
+        if (total > 256 * 1024 * 1024) throw new Error('archive too large (' + Math.round(total / 1048576) + ' MB, 256 MB at most)');
+        var lettered = entries.length > 0 && entries.every(function (e) {
+          return /^[C-Zc-z]$/.test(e[0][0]) && (e[0].length > 1 || e[1] === null);
+        });
+        var touched = {};
+        entries.forEach(function (e) {
+          var parts = e[0].slice();
+          var letter = lettered ? parts.shift().toUpperCase() : 'C';
+          if (!touched[letter]) {
+            touched[letter] = true;
+            fsRemoveTree(hdPath(letter));
+            fsMkdirs(hdPath(letter));
+          }
+          if (!parts.length) return;
+          var dest = hdPath(letter) + '/' + parts.map(hdSegment).join('/');
+          if (e[1] === null) { fsMkdirs(dest); return; }
+          fsMkdirs(dest.slice(0, dest.lastIndexOf('/')));
+          Module.FS.writeFile(dest, e[1]);
+        });
+        if (!Object.keys(touched).length) throw new Error('empty archive');
+        return Object.keys(touched).sort();
+      });
+    }
+    function hdLoadZip(bytes, label) {
+      Module.setStatus('Loading ' + label + '…');
+      return hdImportZip(bytes).then(function (letters) {
+        hdMount(label + ' → ' + letters.join(': ') + ':');
+        return letters;
+      }, function (err) {
+        hdRefresh();
+        Module.setStatus('Cannot load ' + label + ' (' + err.message + ')');
+        return null;
+      });
+    }
+    document.getElementById('fileHdZip').addEventListener('change', function () {
+      var f = this.files[0];
+      this.value = '';
+      if (!f || !ready) return;
+      if (!/\.zip$/i.test(f.name)) { Module.setStatus('Not a .zip archive: ' + f.name); return; }
+      if (f.size > 256 * 1024 * 1024) { Module.setStatus('Archive too large: ' + f.name); return; }
+      readLocalFile(f, function (bytes) { hdLoadZip(bytes, f.name); });
+    });
+
+    // Lien de cours, sans une ligne de code : ?hd=<archive .zip> (servie par le même site,
+    // ou par un autre qui l'autorise — CORS), ?boot=<programme lancé au boot>, ?mono=1
+    // (moniteur monochrome). Exemple : index.html?machine=st&mem=1m&mono=1&hd=course.zip
+    // &boot=C:\DEVPAC\DEVPAC.PRG — outils en C:, travail en D:, programme lancé.
+    function hdFromUrl() {
+      var url = urlParams.get('hd'), boot = urlParams.get('boot');
+      if (urlParams.get('mono') === '1' && !monoOn) document.getElementById('btnMono').click();
+      if (boot !== null) document.getElementById('hdAuto').value = boot;
+      if (!url) { if (boot !== null) hdSetAutostart(); return Promise.resolve(); }
+      Module.setStatus('Loading the hard disk ' + url + '…');
+      return fetch(url).then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.arrayBuffer();
+      }).then(function (b) {
+        return hdLoadZip(new Uint8Array(b), url.split('/').pop().split('?')[0] || url);
+      }).catch(function (err) {
+        Module.setStatus('Cannot load the hard disk ' + url + ' (' + err.message + ')');
+      });
+    }
+
+    // Archive .zip de C: et D: — méthode « stockée » (sans compression) : quelques
+    // dizaines de lignes, aucune bibliothèque, et les sources d'un étudiant pèsent peu.
+    // [B] PKWARE APPNOTE.TXT 6.3.x : en-têtes local (§ 4.3.7), central (§ 4.3.12) et de
+    // fin (§ 4.3.16) ; bit 11 du drapeau = noms UTF-8 (§ 4.4.4) ; CRC-32 IEEE (§ 4.4.7).
+    var zipCrcTable = null;
+    function zipCrc32(bytes) {
+      if (!zipCrcTable) {
+        zipCrcTable = new Uint32Array(256);
+        for (var n = 0; n < 256; n++) {
+          var c = n;
+          for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+          zipCrcTable[n] = c >>> 0;
+        }
+      }
+      var crc = 0xFFFFFFFF;
+      for (var i = 0; i < bytes.length; i++) crc = zipCrcTable[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+      return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+    function zipStore(entries) {          // entries : [[nom, Uint8Array | null (dossier)]]
+      var enc = new TextEncoder(), parts = [], central = [], offset = 0, d = new Date();
+      var dosTime = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+      var dosDate = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+      entries.forEach(function (e) {
+        var name = enc.encode(e[0]), data = e[1] || new Uint8Array(0), crc = zipCrc32(data);
+        var h = new DataView(new ArrayBuffer(30));
+        h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true);
+        h.setUint16(10, dosTime, true); h.setUint16(12, dosDate, true); h.setUint32(14, crc, true);
+        h.setUint32(18, data.length, true); h.setUint32(22, data.length, true);
+        h.setUint16(26, name.length, true);
+        parts.push(h, name, data);
+        var c = new DataView(new ArrayBuffer(46));
+        c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true);
+        c.setUint16(8, 0x0800, true); c.setUint16(12, dosTime, true); c.setUint16(14, dosDate, true);
+        c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true);
+        c.setUint16(28, name.length, true);
+        c.setUint32(38, e[1] ? 0 : 0x10, true);     // attribut MS-DOS « dossier »
+        c.setUint32(42, offset, true);
+        central.push(c, name);
+        offset += 30 + name.length + data.length;
+      });
+      var size = central.reduce(function (n, x) { return n + x.byteLength; }, 0);
+      var end = new DataView(new ArrayBuffer(22));
+      end.setUint32(0, 0x06054b50, true); end.setUint16(8, entries.length, true);
+      end.setUint16(10, entries.length, true); end.setUint32(12, size, true);
+      end.setUint32(16, offset, true);
+      return new Blob(parts.concat(central, [end]), { type: 'application/zip' });
+    }
+    // Les lecteurs C: et D: tels que le ST les a laissés, dossiers vides compris.
+    function hdZipBlob() {
+      var entries = [];
+      function walk(dir, rel) {
+        Module.FS.readdir(dir).sort().forEach(function (n) {
+          if (n === '.' || n === '..') return;
+          var p = dir + '/' + n;
+          if (fsIsDir(p)) { entries.push([rel + n + '/', null]); walk(p, rel + n + '/'); }
+          else entries.push([rel + n, Module.FS.readFile(p)]);
+        });
+      }
+      hdLetters().forEach(function (l) { entries.push([l + '/', null]); walk(hdPath(l), l + '/'); });
+      return zipStore(entries);
+    }
+    document.getElementById('btnHdZip').addEventListener('click', function () {
+      if (!ready || !hdLetters().length) return;
+      try {
+        var name = 'neost-hd-' + stamp() + '.zip';
+        downloadBlob(hdZipBlob(), name);
+        setStatusOk('Downloaded ' + name + ' (' + hdLetters().join(': ') + ':)');
+      } catch (err) { Module.setStatus('Cannot export the hard disk (' + err + ')'); }
+      focusScreen();
+    });
 
     // Capture : le cœur rend la vue affichée en RGBA, à la taille d'affichage.
     window.neostOnScreenshot = function (rgba, w, h) {

@@ -1659,9 +1659,13 @@ bool Machine::saveStateWithMedia(std::vector<uint8_t>& out) {
     return true;
 }
 
-bool Machine::loadStateWithMedia(const uint8_t* data, std::size_t n) {
-    lastStateError_.clear();
-    uint32_t magic = 0, len = 0, total = 0; uint16_t version = 0;
+// Découpe un état autonome : état intérieur [st, st+len) et lecteurs [media, media+mediaLen)
+// suivis de leur CRC. Faux (et motif) si le conteneur est invalide. Ne touche à rien.
+static bool splitMediaState(const uint8_t* data, std::size_t n, const uint8_t*& st,
+                            uint32_t& len, const uint8_t*& media, std::size_t& mediaLen,
+                            std::string& why) {
+    uint32_t magic = 0, total = 0; uint16_t version = 0;
+    len = 0;
     if (n >= kMediaStateHead) {
         std::memcpy(&magic, data, 4);
         std::memcpy(&version, data + 4, 2);
@@ -1671,20 +1675,40 @@ bool Machine::loadStateWithMedia(const uint8_t* data, std::size_t n) {
     if (magic == kMediaStateMagic && total <= n) n = total;   // remplissage final ignoré
     if (magic != kMediaStateMagic || total > n || n < kMediaStateHead + 4
         || len > n - kMediaStateHead - 4) {
-        lastStateError_ = "Not a NeoST state with floppy media";
+        why = "Not a NeoST state with floppy media";
         return false;
     }
-    if (version != kMediaStateVersion) {
-        lastStateError_ = "Unsupported NeoST media state version";
-        return false;
-    }
+    if (version != kMediaStateVersion) { why = "Unsupported NeoST media state version"; return false; }
+    st = data + kMediaStateHead;
+    media = st + len;
+    mediaLen = n - kMediaStateHead - len - 4;
+    return true;
+}
+
+bool Machine::isStateWithMedia(const uint8_t* data, std::size_t n) {
+    uint32_t magic = 0;
+    if (n >= 4) std::memcpy(&magic, data, 4);
+    return magic == kMediaStateMagic;
+}
+
+bool Machine::stateWithMediaHeaderOk(const uint8_t* data, std::size_t n) {
+    lastStateError_.clear();
+    const uint8_t* st; const uint8_t* media; uint32_t len; std::size_t mediaLen;
+    if (!splitMediaState(data, n, st, len, media, mediaLen, lastStateError_)) return false;
+    if (!stateHeaderOk(st, len)) return false;
+    uint32_t crc; std::memcpy(&crc, media + mediaLen, 4);
+    if (crc != stateCrc32(media, mediaLen)) { lastStateError_ = "State file is corrupt"; return false; }
+    return true;
+}
+
+bool Machine::loadStateWithMedia(const uint8_t* data, std::size_t n, bool recreateMissing) {
+    lastStateError_.clear();
+    const uint8_t* st; const uint8_t* media; uint32_t len; std::size_t mediaLen;
+    if (!splitMediaState(data, n, st, len, media, mediaLen, lastStateError_)) return false;
     if (parkedInInstruction()) { lastStateError_ = kParkedReason; return false; }
-    const uint8_t* st = data + kMediaStateHead;
     // L'en-tête AVANT les lecteurs : remonter une disquette réécrit son fichier hôte,
     // ce qu'un état refusé ensuite ne déferait pas (même ordre que Rewind::stepBack).
     if (!stateHeaderOk(st, len)) return false;
-    const uint8_t* media = st + len;
-    const std::size_t mediaLen = n - kMediaStateHead - len - 4;
     uint32_t crc; std::memcpy(&crc, media + mediaLen, 4);
     if (crc != stateCrc32(media, mediaLen)) {
         lastStateError_ = "State file is corrupt";
@@ -1694,6 +1718,10 @@ bool Machine::loadStateWithMedia(const uint8_t* data, std::size_t n) {
     const auto a = Fdc::readMediaCopy(ar);
     const auto b = a ? Fdc::readMediaCopy(ar) : nullptr;
     if (!a || !b || !ar.ok()) { lastStateError_ = "State file is inconsistent"; return false; }
+    if (recreateMissing && (!Fdc::recreateMediaFile(*a) || !Fdc::recreateMediaFile(*b))) {
+        lastStateError_ = "Floppy image is gone and cannot be recreated";
+        return false;
+    }
     if (!fdc.restoreMedia(0, *a) || !fdc.restoreMedia(1, *b)) {
         lastStateError_ = "Floppy image is gone";
         return false;

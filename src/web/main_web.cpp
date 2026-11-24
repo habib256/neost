@@ -1060,8 +1060,10 @@ EMSCRIPTEN_KEEPALIVE int neost_get_port_device(int port) {
 // page télécharge l'état en fichier .state et le recharge par dépôt sur l'écran. Rien ne
 // quitte la machine de l'utilisateur. Idée reprise de la copie ajfarrell75/atarist1
 // (2026-09-05), réécrite sur les garde-fous actuels (instruction garée, en-tête validé).
-// L'état ne contient PAS les disquettes (comme sur le bureau) : il faut la même image
-// dans A: — elle vit dans la page, et disparaît au rechargement.
+// Depuis le 2026-11-24, l'état est AUTONOME (Machine::saveStateWithMedia) : il porte le
+// contenu des deux lecteurs. Une disquette déposée vit dans le FS de la page et
+// disparaît au rechargement : la reprise la recrée depuis l'état (recreateMissing). Un
+// .state nu, d'avant ou du bureau, se recharge toujours (même image dans A: requise).
 static std::string g_stateError;   // motif du dernier refus, en anglais (interface)
 
 // Motif du dernier refus de neost_save_state / neost_load_state.
@@ -1076,7 +1078,7 @@ EMSCRIPTEN_KEEPALIVE int neost_save_state() {
     if (!g_machine) { g_stateError = "The machine is not running"; return 0; }
     g_machine->lastStateError_.clear();
     std::vector<uint8_t> st;
-    if (!g_machine->saveState(st)) {
+    if (!g_machine->saveStateWithMedia(st)) {
         g_stateError = g_machine->lastStateError().empty() ? "Cannot serialize the machine"
                                                            : g_machine->lastStateError();
         return 0;
@@ -1114,14 +1116,19 @@ EMSCRIPTEN_KEEPALIVE int neost_load_state(const char* path) {
     std::remove(path);
     if (data.empty()) { g_stateError = "Cannot read the state file"; return 0; }
     g_machine->lastStateError_.clear();
-    if (!g_machine->stateHeaderOk(data.data(), data.size())) {
+    const bool withMedia = Machine::isStateWithMedia(data.data(), data.size());
+    const bool headerOk = withMedia ? g_machine->stateWithMediaHeaderOk(data.data(), data.size())
+                                    : g_machine->stateHeaderOk(data.data(), data.size());
+    if (!headerOk) {
         g_stateError = g_machine->lastStateError().empty() ? "Not a NeoST state file"
                                                            : g_machine->lastStateError();
         return 0;
     }
-    whenUnparked([d = std::move(data)] {
+    whenUnparked([d = std::move(data), withMedia] {
         g_machine->lastStateError_.clear();
-        const bool ok = g_machine->loadState(d.data(), d.size());
+        const bool ok = withMedia
+            ? g_machine->loadStateWithMedia(d.data(), d.size(), /*recreateMissing=*/true)
+            : g_machine->loadState(d.data(), d.size());
         const std::string why = ok ? std::string() : g_machine->lastStateError();
         std::printf("[state] load %s%s%s\n", ok ? "OK" : "FAILED", ok ? "" : " : ", why.c_str());
         announceDriveA();

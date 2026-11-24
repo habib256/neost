@@ -33,6 +33,14 @@
 //               sur D: et relu dans le FS de la page, démontage, puis montage en
 //               plein blit garé quand JSPI est disponible. Sans JSPI, montage
 //               protégé en écriture puis déprotégé avec le même programme ;
+//    hdui     : bloc « Hard disk (GEMDOS) » de la page : D: vide, dossier copié en C:
+//               (sous-dossiers, dossier racine retiré), programme au boot depuis C:,
+//               fichier écrit sur D:, export .zip relu ici (noms, CRC, contenu), refus
+//               d'un chemin de boot invalide, retrait ; archive deflate chargée
+//               (déchets macOS écartés, « .. » contenu) ; lien de cours
+//               ?mono=1&hd=…&boot=… et signal neostReady / neost-ready ;
+//    statedisk : état autonome — une disquette déposée revient d'un .state après un
+//               rechargement de la page, avec son contenu ; un .state nu reste accepté ;
 //    touch    : souris, joystick et clavier tactiles par de vrais événements tactiles
 //               (CDP, Chrome seul) ; curseur GEM amené sur la barre de menus ;
 //               repli plein écran « immersif » sans l'API (Safari sur iPhone) ;
@@ -65,6 +73,7 @@ import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import zlib from 'node:zlib';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -127,6 +136,37 @@ function gemdosWriter() {
   code.forEach((word, i) => prg.writeUInt16BE(word, 28 + 2 * i));
   data.copy(prg, 28 + 2 * code.length);
   return Array.from(prg);
+}
+
+// Archive .zip « deflate » comme en produit un archiveur courant : entrées [nom, Buffer |
+// null (dossier)], méthode 8 pour les fichiers. Pour lire ce que la page n'écrit pas
+// elle-même (elle n'écrit que la méthode « stockée »).
+function deflateZip(entries) {
+  const crc32 = (b) => { let c = 0xFFFFFFFF;
+    for (const x of b) { c ^= x; for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xEDB88320 & -(c & 1)); }
+    return (c ^ 0xFFFFFFFF) >>> 0; };
+  const locals = [], central = [];
+  let off = 0;
+  for (const [name, data] of entries) {
+    const n = Buffer.from(name, 'utf8'), raw = data || Buffer.alloc(0);
+    const comp = data ? zlib.deflateRawSync(raw) : raw, method = data ? 8 : 0;
+    const h = Buffer.alloc(30);
+    h.writeUInt32LE(0x04034b50, 0); h.writeUInt16LE(20, 4); h.writeUInt16LE(0x0800, 6);
+    h.writeUInt16LE(method, 8); h.writeUInt32LE(crc32(raw), 14); h.writeUInt32LE(comp.length, 18);
+    h.writeUInt32LE(raw.length, 22); h.writeUInt16LE(n.length, 26);
+    locals.push(h, n, comp);
+    const c = Buffer.alloc(46);
+    c.writeUInt32LE(0x02014b50, 0); c.writeUInt16LE(20, 4); c.writeUInt16LE(20, 6);
+    c.writeUInt16LE(0x0800, 8); c.writeUInt16LE(method, 10); c.writeUInt32LE(crc32(raw), 16);
+    c.writeUInt32LE(comp.length, 20); c.writeUInt32LE(raw.length, 24); c.writeUInt16LE(n.length, 28);
+    c.writeUInt32LE(off, 42);
+    central.push(c, n);
+    off += 30 + n.length + comp.length;
+  }
+  const cd = Buffer.concat(central), end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(entries.length, 8); end.writeUInt16LE(entries.length, 10);
+  end.writeUInt32LE(cd.length, 12); end.writeUInt32LE(off, 16);
+  return Buffer.concat([...locals, cd, end]);
 }
 
 // -----------------------------------------------------------------------------
@@ -785,6 +825,161 @@ async function main() {
       if (verbose) console.log(cdp.logs.join('\n'));
       check(logsHave(/parked instruction abandoned/) && ld && ld[0] === 1 && lateFrames === 0,
             'mid-blit load: applied once the parked instruction unwinds');
+    }
+    if (want('hdui')) {
+      await loadPage(cdp, base, '?machine=st&mem=1m', {});
+      const status = () => cdp.ev("document.getElementById('status').textContent");
+      const btnState = () => cdp.ev(`['btnHdZip', 'btnHdOff'].map(i => document.getElementById(i).disabled)`);
+      check(JSON.stringify(await btnState()) === '[true,true]',
+            'Hard disk: export and remove disabled while nothing is mounted');
+      await cdp.ev(String.raw`(() => {
+        const auto = document.getElementById('hdAuto');
+        auto.value = 'BAD@'; auto.dispatchEvent(new Event('change')); return 1; })()`);
+      check(/^Start at boot refused/.test(await status()), 'Hard disk: invalid boot program refused');
+      // D: vide, puis un dossier « Course » copié en C: — son contenu devient la racine.
+      const imported = await cdp.ev(String.raw`(() => {
+        const auto = document.getElementById('hdAuto');
+        auto.value = 'C:\\TOOLS\\WRITE.PRG'; auto.dispatchEvent(new Event('change'));
+        document.getElementById('btnHdEmptyD').click();
+        const f = new File([new Uint8Array(${JSON.stringify(gemdosWriter())})], 'WRITE.PRG');
+        Object.defineProperty(f, 'webkitRelativePath', { value: 'Course/TOOLS/WRITE.PRG' });
+        hdImport('C', [f]);
+        return 1; })()`);
+      const deadline = Date.now() + 20000;
+      const result = "Module.FS.analyzePath('/hd/D/RESULT.TXT').exists ? Module.FS.readFile('/hd/D/RESULT.TXT', { encoding: 'utf8' }) : null";
+      let got = null;
+      while (imported && !(got = await cdp.ev(result)) && Date.now() < deadline) await sleep(100);
+      check(got === 'OK!\r\n' && await cdp.ev("Module.FS.analyzePath('/hd/C/TOOLS/WRITE.PRG').exists"),
+            'Hard disk: folder copied to C: (root folder dropped), boot program run, file written on D:');
+      check(JSON.stringify(await btnState()) === '[false,false]' && await cdp.ev('session.userHd === true'),
+            'Hard disk: export and remove enabled, leaving the page is guarded');
+      // L'export .zip, relu ici : en-têtes locaux, CRC-32 et contenu.
+      const b64 = await cdp.ev(`hdZipBlob().arrayBuffer().then(b => {
+        const u = new Uint8Array(b); let s = '';
+        for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+        return btoa(s); })`);
+      const zip = Buffer.from(b64 || '', 'base64');
+      const names = [], bad = [];
+      let off = 0, body = {};
+      while (off + 30 <= zip.length && zip.readUInt32LE(off) === 0x04034b50) {
+        const crc = zip.readUInt32LE(off + 14), size = zip.readUInt32LE(off + 18);
+        const nlen = zip.readUInt16LE(off + 26), xlen = zip.readUInt16LE(off + 28);
+        const name = zip.subarray(off + 30, off + 30 + nlen).toString('utf8');
+        const data = zip.subarray(off + 30 + nlen + xlen, off + 30 + nlen + xlen + size);
+        let c = 0xFFFFFFFF;
+        for (const byte of data) { c ^= byte; for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xEDB88320 & -(c & 1)); }
+        if (((c ^ 0xFFFFFFFF) >>> 0) !== crc) bad.push(name);
+        names.push(name); body[name] = data;
+        off += 30 + nlen + xlen + size;
+      }
+      const eocd = zip.length >= 22 && zip.readUInt32LE(zip.length - 22) === 0x06054b50
+        ? zip.readUInt16LE(zip.length - 12) : -1;
+      console.log(`[web-jspi] hdui: zip ${zip.length} bytes, ${JSON.stringify(names)}`);
+      check(JSON.stringify(names) === JSON.stringify(['C/', 'C/TOOLS/', 'C/TOOLS/WRITE.PRG', 'D/', 'D/RESULT.TXT'])
+            && bad.length === 0 && eocd === names.length && String(body['D/RESULT.TXT']) === 'OK!\r\n',
+            'Hard disk: .zip export holds C: and D:, CRCs and contents right');
+      await cdp.ev("window.confirm = () => true; document.getElementById('btnHdOff').click(); 1");
+      check(!(await cdp.ev("Module.FS.analyzePath('/hd').exists")) &&
+            JSON.stringify(await btnState()) === '[true,true]' && logsHave(/GEMDOS HDD unmounted/),
+            'Hard disk: remove unmounts and discards the files');
+
+      // Archive « deflate » d'un dossier de cours entier, avec ses déchets macOS et une
+      // entrée qui tente de sortir de son lecteur.
+      const course = deflateZip([
+        ['Course/', null], ['Course/C/', null], ['Course/C/TOOLS/', null],
+        ['Course/C/TOOLS/WRITE.PRG', Buffer.from(gemdosWriter())],
+        ['Course/C/README.TXT', Buffer.from('Devpac lives here.\r\n'.repeat(50))],
+        ['Course/D/', null], ['__MACOSX/Course/._WRITE.PRG', Buffer.from('junk')],
+        ['Course/.DS_Store', Buffer.from('junk')], ['Course/D/../../ESCAPE.TXT', Buffer.from('no')],
+      ]);
+      const loaded = await cdp.ev(`hdLoadZip(Uint8Array.from(atob('${course.toString('base64')}'), c => c.charCodeAt(0)), 'course.zip')`);
+      const tree = await cdp.ev(`(() => { const out = [];
+        const walk = (d) => Module.FS.readdir(d).forEach(n => { if (n === '.' || n === '..') return;
+          const p = d + '/' + n; out.push(p); if (Module.FS.isDir(Module.FS.stat(p).mode)) walk(p); });
+        walk('/hd'); return out.sort(); })()`);
+      console.log(`[web-jspi] hdui: loaded ${JSON.stringify(loaded)}, tree ${JSON.stringify(tree)}`);
+      check(JSON.stringify(loaded) === '["C","D"]' &&
+            tree.includes('/hd/C/TOOLS/WRITE.PRG') && tree.includes('/hd/C/README.TXT') &&
+            tree.includes('/hd/D') && !tree.some(p => /MACOSX|DS_Store/.test(p)) &&
+            tree.every(p => p.startsWith('/hd/C') || p.startsWith('/hd/D')) &&
+            (await cdp.ev("Module.FS.readFile('/hd/C/README.TXT', { encoding: 'utf8' }).length")) === 1000,
+            'Hard disk: deflate archive of a course folder fills C: and D:, junk dropped, ".." kept inside');
+
+      // Lien de cours : l'archive servie à côté de la page, monochrome, programme au boot.
+      const served = path.join(wasmDir, 'neost-course-test.zip');
+      fs.writeFileSync(served, course);
+      try {
+        await loadPage(cdp, base, String.raw`?machine=st&mem=1m&mono=1&hd=neost-course-test.zip&boot=C:\TOOLS\WRITE.PRG`, {});
+        const readyFlag = await cdp.ev("window.neostReady.then(() => 'resolved')");
+        const deadline2 = Date.now() + 25000;
+        let got2 = null;
+        while (!(got2 = await cdp.ev(result)) && Date.now() < deadline2) await sleep(100);
+        const mono = await cdp.ev("document.getElementById('btnMono').classList.contains('on')");
+        console.log(`[web-jspi] hdui: course link -> ${JSON.stringify([got2, mono, readyFlag, await status()])}`);
+        check(got2 === 'OK!\r\n' && mono === true && readyFlag === 'resolved',
+              'Hard disk: course link (?mono=1&hd=&boot=) runs the program from C: and writes D:');
+      } finally { fs.rmSync(served, { force: true }); }
+      if (verbose) console.log(cdp.logs.join('\n'));
+    }
+    if (want('statedisk')) {
+      // Une disquette DÉPOSÉE vit dans /uploads et disparaît au rechargement : l'état
+      // autonome la porte, et la reprise la recrée (Machine::loadStateWithMedia).
+      const helpers = () => cdp.ev(`(() => {
+        window.__sv = { saved: [], loaded: [] };
+        const s = window.neostOnStateSaved, l = window.neostOnStateLoaded;
+        window.neostOnStateSaved = (b) => { __sv.saved.push(b); s(b); };
+        window.neostOnStateLoaded = (ok, why) => { __sv.loaded.push([ok, why]); l(ok, why); };
+        window.__drop = (name, bytes) => {
+          const dt = new DataTransfer(); dt.items.add(new File([bytes], name));
+          document.getElementById('bezel').dispatchEvent(
+            new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+        };
+        window.__b64 = (u) => { let s = ''; for (let i = 0; i < u.length; i += 0x8000)
+          s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
+        window.__unb64 = (t) => { const s = atob(t); const a = new Uint8Array(s.length);
+          for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; };
+        return 1; })()`);
+      const waitFor = async (expr, ms = 8000) => {
+        const t0 = Date.now();
+        while (!(await cdp.ev(expr)) && Date.now() - t0 < ms) await sleep(25);
+        return cdp.ev(expr);
+      };
+      await loadPage(cdp, base, '?machine=st&mem=1m', {});
+      await sleep(1500);
+      await helpers();
+      await cdp.ev(`(() => { const d = Module.FS.readFile('/disks/diskA.st').slice();
+        d[0x3000] = 0xA5; __drop('Mine.st', d); return 1; })()`);
+      await waitFor("driveA === '/uploads/Mine.st'");
+      await cdp.ev("document.getElementById('btnSaveState').click()");
+      await waitFor('__sv.saved.length >= 1');
+      const saved = await cdp.ev('__b64(__sv.saved[0])');
+      const blob = Buffer.from(saved || '', 'base64');
+      check(blob.length > 1 << 20 && blob.readUInt32LE(0) === 0x4D54534E,
+            'state with media: saved with its NSTM container');
+
+      await loadPage(cdp, base, '?machine=st&mem=1m', {});
+      await sleep(1500);
+      await helpers();
+      check(!(await cdp.ev("Module.FS.analyzePath('/uploads/Mine.st').exists")),
+            'state with media: the dropped floppy is gone after the reload');
+      await cdp.ev(`__drop('slot.state', __unb64('${saved}'))`);
+      await waitFor('__sv.loaded.length >= 1');
+      const back = await cdp.ev(`[__sv.loaded[0], driveA,
+        Module.FS.analyzePath('/uploads/Mine.st').exists && Module.FS.readFile('/uploads/Mine.st')[0x3000],
+        session.userDisk, document.getElementById('btnDownloadA').disabled,
+        document.getElementById('status').textContent]`);
+      console.log(`[web-jspi] statedisk: ${JSON.stringify(back)}`);
+      check(back[0] && back[0][0] === 1 && back[1] === '/uploads/Mine.st' && back[2] === 0xA5 &&
+            back[3] === true && back[4] === false,
+            'state with media: the floppy comes back from the state, in A:, with its contents');
+
+      // Un .state nu (l'état intérieur du conteneur) reste accepté.
+      const len = blob.readUInt32LE(6);
+      const plain = blob.subarray(14, 14 + len).toString('base64');
+      await cdp.ev(`__drop('plain.state', __unb64('${plain}'))`);
+      await waitFor('__sv.loaded.length >= 2');
+      check((await cdp.ev('__sv.loaded[1][0]')) === 1, 'plain .state still restores');
+      if (verbose) console.log(cdp.logs.join('\n'));
     }
     if (want('demos')) {
       // Démos embarquées (table DEMOS de web/shell.html) : chacune dans SA configuration,

@@ -978,7 +978,9 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   avoir validé l'en-tête. Remplissage final toléré (taille fixe d'un frontend libretro).
   0,66 ms la sauvegarde et 0,76 ms la reprise, disquette de 720 Ko comprise. Hors du blob :
   disques durs et écritures STX, comme le `.state`. Gardé par `neost-selftest`
-  (`tests/libretro_frontier_logic.cpp`).
+  (`tests/libretro_frontier_logic.cpp`). Sur le web, le bouton *Save state* écrit cet
+  état, et la reprise recrée une disquette déposée disparue avec la page
+  (`Fdc::recreateMediaFile`, dans son conteneur .st/.msa/.dim) ; banc `--only statedisk`.
 - **Frontière libretro** (2026-11-24, `docs/LIBRETRO.md`) : `Machine::switchTos`,
   `armAudioClocks`, `freezeHostClocks`, `setJoysticks` (recettes que les frontends
   recopiaient) ; journaux du cœur détournables (`neost::log::setSink`) ; verrous du cadrage
@@ -1386,6 +1388,11 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   démarrage à froid. Le TOS exécute le C-INIT de la cartouche système, puis
   le bureau lit l'INF virtuel. Le montage et le démarrage attendent la fin
   d'une instruction suspendue par JSPI. Banc `check_web_jspi.mjs --only gemdos`.
+  Page publique (2026-11-24, issue #45) : bloc « Hard disk (GEMDOS) » — dossier de
+  l'hôte copié en C: ou D:, D: vide, programme au boot, export `.zip` de C:/D: (méthode
+  stockée) et rechargement d'une archive (stockée ou deflate, `DecompressionStream`) ;
+  lien de cours `?hd=<archive>&boot=<programme>&mono=1` ; signal `window.neostReady` /
+  `neost-ready` pour une page intégratrice. Banc `--only hdui`.
 - **Coexistence ACSI/GEMDOS** : résolution commune dans Machine au montage,
   reset et boot, même si l’image ACSI est montée après le dossier. Aucun
   changement de lettre pendant les appels ordinaires ; handles fermés au reset.

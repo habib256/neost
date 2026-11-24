@@ -343,8 +343,18 @@ public:
     //   · Taille constante tant que les médias ne changent pas, SAUF avec un disque dur
     //     GEMDOS, dont l'état grandit au boot (mesuré : +322 octets entre 200 et 400
     //     trames sous EmuTOS) — d'où le remplissage toléré.
+    //   · recreateMissing : une disquette dont le fichier n'existe plus est recréée depuis
+    //     le blob (Fdc::recreateMediaFile) au lieu de refuser — le web, où la disquette
+    //     déposée disparaît avec la page. Faux par défaut : sur un bureau, l'état ne
+    //     sème pas de fichiers chez l'utilisateur.
     bool saveStateWithMedia(std::vector<uint8_t>& out);
-    bool loadStateWithMedia(const uint8_t* data, std::size_t n);
+    bool loadStateWithMedia(const uint8_t* data, std::size_t n, bool recreateMissing = false);
+    // Le blob est-il un état autonome (magie "NSTM") ? Pour un frontend qui accepte les
+    // deux formats (.state nu et autonome).
+    static bool isStateWithMedia(const uint8_t* data, std::size_t n);
+    // L'en-tête de l'état intérieur serait-il accepté, et la partie lecteurs intacte
+    // (CRC) ? Comme stateHeaderOk, ne touche pas à la session (ni aux lecteurs).
+    bool stateWithMediaHeaderOk(const uint8_t* data, std::size_t n);
 
     // Accès direct aux composants (frontend, débogueur, headless).
     Bus       bus;

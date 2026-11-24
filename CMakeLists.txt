@@ -657,6 +657,9 @@ if(EMSCRIPTEN)
         # minification (tools/link.py : MINIFY_WASM_EXPORT_NAMES = 0, réglage interne).
         "-sDECLARE_ASM_MODULE_EXPORTS=0"
         "SHELL:--shell-file ${CMAKE_SOURCE_DIR}/web/shell.html")
+    # Le shell entre au LIEN : sans cette dépendance, une page modifiée seule n'était
+    # pas régénérée (wasm/index.html restait l'ancien jusqu'au prochain .cpp touché).
+    set_property(TARGET neost-web APPEND PROPERTY LINK_DEPENDS "${CMAKE_SOURCE_DIR}/web/shell.html")
     # Garde au lien : les ports Emscripten (GLFW…) livrent des fonctions non
     # implémentées sous forme de stubs abort("X not implemented.") qui se lient
     # SANS erreur. glfwGetKeyName en était un : la 1re lettre tapée tuait la page.

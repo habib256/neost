@@ -38,7 +38,8 @@ constexpr std::size_t kSize = 737280;   // 720 Ko : 80 pistes, 9 secteurs, 2 fac
 std::vector<uint8_t> makeImage(uint8_t fill) {
     std::vector<uint8_t> v(kSize, fill);
     v[0x13] = 0xA0; v[0x14] = 0x05;      // BPB : 1440 secteurs
-    v[0x18] = 9;    v[0x1A] = 2;         // 9 secteurs par piste, 2 faces
+    v[0x18] = 9;    v[0x19] = 0;         // 9 secteurs par piste (mot LE)
+    v[0x1A] = 2;    v[0x1B] = 0;         // 2 faces (mot LE)
     return v;
 }
 void writeFile(const std::string& path, const std::vector<uint8_t>& v) {
@@ -116,6 +117,38 @@ int testMediaState() {
     check(m->loadDisk(pathB), "mount B after the empty save");
     check(m->loadStateWithMedia(empty.data(), empty.size()), "load the empty-drive state");
     check(!m->fdc.inserted(0), "drive A empty again");
+
+    // Fichier de A disparu (page web rechargée) : refusé par défaut ; recréé depuis le
+    // blob sur demande, à l'identique, et jamais par-dessus un fichier présent.
+    m->fdc.eject(0);
+    fs::remove(pathA, ec);
+    check(!m->loadStateWithMedia(blob.data(), blob.size()), "missing floppy file refused by default");
+    check(!fs::exists(pathA), "nothing recreated by default");
+    check(m->loadStateWithMedia(blob.data(), blob.size(), /*recreateMissing=*/true),
+          "missing floppy file recreated on request");
+    check(readFile(pathA) == imageA, "recreated file holds the saved image");
+    check(Machine::isStateWithMedia(blob.data(), blob.size()) && m->stateWithMediaHeaderOk(blob.data(), blob.size()),
+          "media state recognised, header accepted");
+
+    // Même chose pour une .msa et une .dim : recréées DANS LEUR CONTENEUR (export honnête),
+    // puis remontées avec le même contenu.
+    for (const char* ext : {".msa", ".dim"}) {
+        const std::string other = (dir / (std::string("c") + ext)).string();
+        auto c = makeMachine();
+        writeFile(other, imageA);                       // contenu brut, reconnu au montage …
+        check(c->loadDisk(other), "mount the container path");
+        std::vector<uint8_t> st1;
+        check(c->saveStateWithMedia(st1), "save on the container path");
+        c->fdc.eject(0);
+        fs::remove(other, ec);                          // … puis disparu
+        check(c->loadStateWithMedia(st1.data(), st1.size(), true), "container recreated");
+        const auto bytes = readFile(other);
+        const bool tagged = std::string(ext) == ".msa" ? (bytes.size() > 2 && bytes[0] == 0x0E && bytes[1] == 0x0F)
+                                                       : (bytes.size() == imageA.size() + 32 && bytes[0] == 'B' && bytes[1] == 'B');
+        check(tagged, "recreated file carries its container header");
+        std::vector<uint8_t> st2;
+        check(c->saveStateWithMedia(st2) && st2 == st1, "recreated container mounts the same image");
+    }
 
     // Une autre Machine (même configuration) reprend le blob : rien ne dépend des
     // générations de la session qui l'a écrit.

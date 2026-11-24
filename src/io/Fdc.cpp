@@ -3804,6 +3804,51 @@ std::shared_ptr<const Fdc::MediaCopy> Fdc::readMediaCopy(StateArchive& ar) {
     return copy;
 }
 
+bool Fdc::recreateMediaFile(const MediaCopy& copy) {
+    namespace fs = std::filesystem;
+    if (copy.path.empty()) return true;                 // lecteur vide : rien à recréer
+    std::error_code ec;
+    const fs::path p(copy.path);
+    if (fs::exists(p, ec)) return true;
+    if (copy.stx || copy.image.empty() || !p.is_absolute()) return false;
+    for (const auto& part : p)
+        if (part == "..") return false;
+    // Le fichier dans SON conteneur, que l'extension annonce : la page exporte ce
+    // fichier tel quel (« Download A: »), et une .msa brute serait un mensonge pour
+    // Hatari ou un autre outil. Géométrie relue dans le BPB, comme writeBack.
+    const auto& img = copy.image;
+    const int spt   = img.size() > 0x1B ? img[0x18] | (img[0x19] << 8) : 0;
+    const int sides = img.size() > 0x1B ? img[0x1A] | (img[0x1B] << 8) : 0;
+    std::vector<uint8_t> file;
+    if (hasExtension(copy.path, ".msa")) {
+        if (!encodeMsa(img, spt, sides, file)) return false;
+    } else if (hasExtension(copy.path, ".dim")) {
+        // [D] En-tête lu par decodeDim (plus haut), d'après Hatari floppies/dim.c § « .DIM
+        // FILE FORMAT » @ f0736b24 : 'BB', non compressée, faces−1 en $06, secteurs par
+        // piste en $08, pistes de début ($0A) et de fin ($0C).
+        const std::size_t track = std::size_t(spt) * std::size_t(sides) * 512u;
+        if (spt < 1 || spt > 48 || sides < 1 || sides > 2 || img.size() % track
+            || img.size() / track < 1 || img.size() / track > 86) return false;
+        file.assign(32, 0);
+        file[0] = file[1] = 0x42;
+        file[0x06] = uint8_t(sides - 1);
+        file[0x08] = uint8_t(spt);
+        file[0x0C] = uint8_t(img.size() / track - 1);
+        file.insert(file.end(), img.begin(), img.end());
+    } else {
+        file = img;
+    }
+    fs::create_directories(p.parent_path(), ec);
+    std::ofstream o(p, std::ios::binary | std::ios::trunc);
+    if (!o) return false;
+    o.write(reinterpret_cast<const char*>(file.data()), std::streamsize(file.size()));
+    if (!o) return false;
+    o.close();
+    neost::log::err("[FDC] %s recreated from the state (%zu KB)\n",
+                    copy.path.c_str(), copy.image.size() / 1024);
+    return true;
+}
+
 std::size_t Fdc::mediaCopyBytes(const MediaCopy& copy) {
     std::size_t n = copy.image.size();
     for (const auto& [key, track] : copy.stOverride) {

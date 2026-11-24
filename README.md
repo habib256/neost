@@ -24,14 +24,37 @@ between colour and mono, **run one of the bundled demos** in the machine it was 
 Save the whole machine to a file and drop it back later. On a phone or a tablet, the screen
 becomes a touchpad, with a touch joystick and an Atari ST keyboard. No download, no account, no build.
 
+#### Hard disks in the browser (C:, D:)
+
+The page's **Hard disk (GEMDOS)** box turns folders of your computer into ST hard disks:
+**Folder as C:…** and **Folder as D:…** copy a folder into the page, **Empty D:** gives a
+blank work drive, **Start at boot** names a program the desktop launches
+(`C:\DEVPAC\DEVPAC.PRG`). Nothing is uploaded. The files live in the page only:
+**⤓ Download C:/D: (.zip)** saves them with everything the ST wrote, and **Load .zip…**
+brings that archive back next time.
+
+#### A course link, without writing code
+
+Serve the [WebAssembly ZIP](https://habib256.github.io/neost/NeoST-web-wasm.zip) from your
+web server, put your course archive next to `index.html`, and give students a link:
+
+```
+index.html?machine=st&mem=1m&mono=1&hd=course.zip&boot=C:\DEVPAC\DEVPAC.PRG
+```
+
+`hd=` loads a `.zip` (from the same site, or from one that allows it through CORS). An
+archive made of `C/`, `D/`… folders fills those drives; any other archive becomes C:; a
+single top folder around them (`Course/C/…`) is dropped. `boot=` starts a program at each
+boot, and `mono=1` selects the monochrome monitor. Students save their D: with
+**⤓ Download C:/D:** and load it back with **Load .zip…** at the next session.
+
 #### GEMDOS drives for pages embedding NeoST
 
-Download the current web bundle and serve the extracted files from your web server. [WebAssembly ZIP](https://habib256.github.io/neost/NeoST-web-wasm.zip)
-
-Once NeoST has started, populate the WebAssembly file system with `Module.FS`.
+Wait until NeoST is running, then populate the WebAssembly file system with `Module.FS`.
 For example, with `programBytes` holding a TOS executable:
 
 ```js
+await window.neostReady;            // or window.addEventListener('neost-ready', …)
 Module.FS.mkdir('/hd');
 Module.FS.mkdir('/hd/C');
 Module.FS.mkdir('/hd/D');
@@ -40,6 +63,7 @@ Module.ccall('neost_set_autostart', 'number', ['string'], [String.raw`C:\START.P
 Module.ccall('neost_set_gemdos', 'number', ['string', 'number'], ['/hd', 0]);
 ```
 
+The page itself uses `window.neostOnReady`: do not replace it, wait for `neostReady`.
 GEMDOS maps an ordinary directory to C:. A root containing only C–Z letter
 subdirectories maps each subdirectory to its drive. Pass `1` as the second argument
 to write-protect the entire mount. Read guest files back with `Module.FS.readFile`.
