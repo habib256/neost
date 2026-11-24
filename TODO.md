@@ -19,7 +19,8 @@ jalon est l'échange du cœur 68000 par le Moira de POM68K. Ce fichier est rang�
 à lui, en trois temps :
 
 1. **Avant l'échange** (§ 1 à 8) — tout ce que le cœur actuel n'empêche pas de fermer :
-   les puces autres que le CPU, la logithèque, le harnais, la livraison. Et d'abord **le
+   les puces autres que le CPU, la logithèque, le harnais, la livraison, **la frontière
+   d'un cœur libretro** (§ 7, cartographiée dans [`docs/LIBRETRO.md`](docs/LIBRETRO.md)). Et d'abord **le
    filet** (§ 2) : plus NeoST est mesuré finement avant l'échange, plus l'échange se juge
    vite et sans débat.
 2. **L'échange** (§ 9) — ce qui touche l'intérieur du cœur est **gelé** : un patch de plus
@@ -80,6 +81,7 @@ correction de fidélité.
 | **3. Logithèque** | Plus aucun plantage que le vrai matériel n'aurait pas | TOS 2.06 UK jugé (course réelle de la ROM), parcours étendus (son, STE, parties longues) → § 4 | P2 |
 | **4. Livrable** | Ce qui sert l'utilisateur sans toucher à l'émulation | Pilotes EtherNEC, EWeb par le NAT → § 6-7 | P2 |
 | **5. Terrain du TT/Falcon** | Préparer sans rien intégrer | Oracle et fiches TT/Falcon → § 10 ; A32 et inventaire faits (`docs/HYPOTHESES_ST.md`) | P2 |
+| **6. Frontière libretro** *(proposé)* | Qu'un cœur libretro soit un adaptateur mince, pas une cinquième copie des frontends | États rapides et médias dans l'état (bloquants), démarrage partagé, état de processus remis à neuf, puis le cœur lui-même → § 7, carte : [`docs/LIBRETRO.md`](docs/LIBRETRO.md) | P1 |
 
 **À ne pas entreprendre avant l'échange** : tout ce qui est au § 9 (prise d'IPL, IACK,
 amont Moira, `g_cur`, points chauds du cœur). Le reste est P3, ou attend une ressource
@@ -478,6 +480,7 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
   son 16 bits, touches USB, souris, manettes), Hatari s'y branche par `src/port/`. À lever : `EmuFiber`
   (mode sans fibre du web), `std::filesystem` absent de newlib, et d'abord la VITESSE de NeoST sur un
   Pi 4/5 (A12). Leur simulateur PC permet de mettre la couche au point sur Mac. Après l'échange du cœur.
+  Même frontière que le cœur libretro (ci-dessous) : son démarrage partagé et ses entrées neutres servent les deux.
 - **A12 — validation des paquets sur machines hôtes** · P1 ⏸ matériel — macOS arm64 passé (sauf
   le pas visuel en session graphique). Restent les pas 3 à 5 pour **Raspberry Pi** (aucun
   budget temps réel mesuré), **Windows** (jamais lancé hors CI), **APK** (QEMU seul) et
@@ -488,6 +491,69 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 - **Notarisation macOS** · P2 ⏸ décision (99 $/an) — `.app` scellé ad hoc ; manque Developer ID.
   Signature du `.zip` Windows écartée (token HSM, SmartScreen = un clic). ⚠ Le JIT de POM68K
   touchera au hardened runtime (`allow-jit`). → `docs/RELEASE.md`
+
+### Cœur libretro — préparer la frontière
+
+Un cœur libretro sera un **cinquième frontend** (`src/libretro/`, adaptateur seul ;
+`neost_core` ne dépend pas de libretro). Avant d'en écrire une ligne, sortir des frontends
+ce que chacun recopie et lever ce que libretro exige de plus qu'eux : un blob d'état
+appelé à chaque trame, plusieurs jeux par processus, aucune sortie propre. Carte point par
+point, mesures et `fichier:ligne` → [`docs/LIBRETRO.md`](docs/LIBRETRO.md). Rien ici ne
+touche l'intérieur du cœur 68000 : faisable avant l'échange.
+
+- **États sauvegardés assez rapides pour l'exécution anticipée** · P1 ⭘ *(proposé)* —
+  `saveState` ≈ 5,5 à 7 ms, `loadState` ≈ 7,6 à 13 ms, contre ≈ 1 ms par trame (mesuré le
+  2026-11-24, `--server`) : le *run-ahead* et le *netplay* en paient un de chaque par trame.
+  Profiler d'abord (CRC32 sur 1,35 Mo, en-tête, allocations, instantané GEMDOS), puis un
+  chemin en mémoire qui vise l'ordre d'une trame, sans changer le format des `.state`.
+- **Médias dans l'état sauvegardé** · P1 ⭘ *(proposé)* — les disquettes ne sont pas dans
+  l'état (le retour arrière les porte à part, `Rewind` + `Fdc::restoreMedia`) et
+  `Fdc::writeBack` recopie chaque écriture dans le fichier hôte : une trame anticipée qui
+  écrit sur la disquette laisse une trace que `loadState` ne défait pas. Il faut les pistes
+  écrites dans le blob et une recopie hôte différée (ou détournée vers le dossier de
+  sauvegardes du frontend).
+- **Démarrage d'une machine partagé** · P1 ⭘ *(proposé)* — `adjustMachineForTos` → `loadTos`
+  et son repli → pays clavier du TOS → horloges des écritures son (`psg`/`dmasnd.setCycleClock`,
+  **sans quoi la machine est muette**) → moniteur → reset, recopié dans `src/gui/AppInit.cpp`,
+  `src/web/main_web.cpp`, `src/android/main_android.cpp` et `src/headless/main_headless.cpp`,
+  et le changement de ROM dans trois d'entre eux. Une fonction du cœur, appelée par tous.
+- **État de processus remis à neuf** · P2 ⭘ *(proposé)* — `retro_unload_game` puis
+  `retro_load_game` dans le même processus : le quartz global (`Pacing.hpp`), les verrous
+  statiques du cadrage (`Framing.cpp`), le pays clavier (`StKeysSymbolic.cpp`) survivent à la
+  `Machine`. Les ranger dans des objets d'instance et garder par un test « construire,
+  jouer, détruire, reconstruire : même empreinte ». `g_cur` reste à A33 (§ 9).
+- **Date fixe pour une session déterministe** · P2 ⭘ *(proposé)* — RTC, IKBD et UltraSatan
+  partent de l'heure de l'hôte ; seul le headless les fige. Une option du cœur, pour que deux
+  machines en *netplay* ou un rejeu partent du même instant.
+- **Journaux du cœur vers un puits** · P2 ⭘ *(proposé)* — 244 `printf`/`fprintf(stderr)` dans
+  `src/core`, `src/io`, `src/util` ; libretro passe par `retro_log_printf`. Un puits dans
+  `util/Log.hpp`, `stderr` par défaut : sortie identique, les outils du harnais lisent `stderr`.
+- **Taille d'état constante sur une session** · P2 ⭘ *(proposé)* — 1 347 695 octets à 50 et
+  300 trames ; jamais vérifié après un changement de disquette, avec GEMDOS, `.stx` ou ACSI.
+  `retro_serialize_size` doit tenir toute la session. Une garde au palier `fast`.
+- **`neost_core` en code indépendant de la position** · P2 ⭘ *(proposé)* — bibliothèque
+  statique sans `-fPIC` : une `.so`/`.dylib`/`.dll` ne peut pas la lier. Bâtir le cœur PIC,
+  sans réseau (`NEOST_WITH_NET=OFF`, déjà le cas du web et d'Android) ; vérifier que les
+  chaînes du *buildbot* libretro acceptent le C++20 de Moira.
+- **Géométrie et cadence annoncées** · P3 ⭘ *(proposé)* — la cadence (50/60/71 Hz) et la
+  taille d'image se lisent à chaque trame ; libretro veut un événement « elles ont changé »
+  (`SET_SYSTEM_AV_INFO`, `SET_GEOMETRY`), sans suivre une trame isolée.
+- **Manettes : un seul point d'entrée** · P3 ⭘ *(proposé)* — `ikbd.setJoystick` +
+  `bus.setStePadInput` + `cpu.updateIpl` recopiés dans trois frontends ; les bits IKBD vivent
+  dans `src/io/JoystickInput.hpp`, qui inclut GLFW. Une méthode de `Machine` et un en-tête de
+  bits sans GLFW.
+- **Clavier : une table de position neutre** · P3 ⭘ *(proposé)* — GLFW (`StKeys.cpp`) et
+  Android ont chacun leur table touche → scancode ST ; libretro en ajouterait une troisième
+  (`RETROK_*`). Une table indexée par position (usage HID USB), chaque frontend n'y branchant
+  que sa traduction.
+- **Bruits du lecteur rendus en PCM** · P3 ⭘ *(proposé)* — `DriveSound` joue par son propre
+  moteur miniaudio ; libretro n'a qu'un flux. Rendre les bruits en échantillons mêlés à la
+  trame, utilisable aussi par Android.
+- **Cœur libretro `neost_libretro`** · P2 ⏸ frontière *(proposé)* — l'adaptateur : `retro_run`
+  sur `runFrame`, image XRGB8888 telle quelle, son `int16`, clavier, manettes, souris, MIDI,
+  changement de disque (`.m3u`), `.prg` par le démarrage automatique GEMDOS, EmuTOS seul livré
+  (TOS Atari dans le dossier système), options tirées des clés de `neost.cfg`. Attend les deux
+  P1 bloquants et le démarrage partagé.
 
 ---
 
@@ -514,6 +580,9 @@ Ce qui touche `src/core/Cpu68k.cpp` attend l'échange → § 9.
   ni les bords STOP_MIDDLE, ni `closure` passé en `hatari` (A41), **ni Moira ajusté pour égaler
   fx68k** : un écart du banc se tranche à une source plus haute ou reste écrit.
 - **Garder un contrôle par un autre contrôle** : A38 ne se traite pas avec un 18ᵉ outil.
+- **Écrire le cœur libretro avant sa frontière** *(proposé)* : sans les états rapides, les
+  médias dans l'état et le démarrage partagé, il naît cinquième copie des frontends et casse
+  au premier *run-ahead*. Et jamais de `libretro.h` dans `neost_core`.
 
 ---
 
