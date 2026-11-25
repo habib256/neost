@@ -26,6 +26,35 @@ Trois contraintes libretro sont plus dures que celles des frontends existants :
 3. **Aucune sortie propre** : ni fenêtre, ni périphérique audio, ni `stderr` comme
    canal officiel. L'image, le son et les journaux passent par des rappels.
 
+## Positionnement : un cœur ST qui n'est pas Hatari
+
+Relevé du 2026-11-25. Le RetroArch d'aujourd'hui a **deux** cœurs Atari ST, tous deux tirés
+d'Hatari 2.6.1 :
+
+- **`hatari`** (libretro/hatari) : `display_version = "tech preview"`, annonce `.ipf` ; sa page
+  de documentation libretro coche ✕ pour les états, le netplay et le retour arrière, alors que
+  son `.info` dit `savestate = "true"`. Le nom « hatari2014 » n'est pas un cœur : c'est la
+  branche de l'ancienne version (`hitari2014-mercurial`).
+- **`hatarib`** (bbbradsmith/hatariB, v1.1 du 2026-10-15) : se dit remplaçant du premier. États
+  « seamless, allowing run-ahead and netplay », retour arrière, netplay. L'IPF et le CTR exigent
+  que l'utilisateur fournisse **capsimg 5.1** (bibliothèque SPS non libre) dans le dossier
+  système, avec un détour pour Android. Son README prévient : le netplay peut diverger après
+  des accès disque sur une image IPF.
+
+Les états rapides, l'anticipation et le netplay **ne suffisent donc pas** à distinguer NeoST :
+hatariB les annonce déjà. Les arguments tiennent si chacun porte sa preuve :
+
+| Argument | Ce qui le prouve dans NeoST | Ce qui manque |
+|---|---|---|
+| **Un autre moteur** | 68000 Moira, plan mémoire (`Bus`) et puces écrits pour NeoST ; Hatari n'y est qu'une référence lue et un oracle de grade D. Les modules portés d'Hatari (Pasti, `StxImage`) le disent dans leur en-tête. Chaque verdict du harnais nomme son échelon (`docs/REFERENCE_LADDER.md`) : un écart avec Hatari tranché par une fiche technique ou le RTL reste un écart | — |
+| **IPF sans bibliothèque à fournir** | Décodeur libre dans le cœur (`src/io/IpfImage.*`, adapté de MAME, BSD-3) : rien à déposer dans le dossier système, Android compris | **Un seul titre IPF validé** (*Hammerfist*) — « Campagne IPF » ; pas de DPLL pendant l'émulation (`docs/IMPLEMENTED.md`, « Images IPF ») |
+| **Netplay fiable sur IPF** | Les bits faibles tirent d'un générateur xorshift **sérialisé** (`Fdc::rng_`) : deux pairs relisent les mêmes octets | Les **écritures** sur IPF et STX vont dans le `.wd1772` compagnon, hors de l'état — « Écritures STX et IPF dans l'état autonome » |
+| **Déterminisme démontré** | Contrat écrit (`docs/OPENDST.md` § 1), horloges hôte figées (`freezeHostClocks`), `--state-hash-every` et `tools/run_determinism.py` au palier `fast`, reprise d'état comprise | Le déclarer au frontend : `savestate_features = "deterministic"` dans le `.info` |
+| **États bon marché** | 0,41 / 0,52 ms par sauvegarde / reprise pour une trame ≈ 1 ms (mesures plus bas) : avec une trame d'anticipation, chaque trame affichée coûte deux trames émulées, une sauvegarde et une reprise, ≈ 2,9 ms | Aucun chiffre en face pour hatariB — « Mesure face à hatariB » |
+
+Rien de cette section ne parle du futur cœur 68000 ni du TT et du Falcon : le cœur libretro se
+présente sur ce qu'il fait le jour où il paraît.
+
 ## La carte, point par point
 
 | Besoin libretro | Ce que NeoST offre | Verdict |
@@ -38,7 +67,7 @@ Trois contraintes libretro sont plus dures que celles des frontends existants :
 | Horodatage des écritures son | `Machine::armAudioClocks()`, contrat de drainage écrit dans `Machine.hpp` | **Prêt** |
 | Bruits du lecteur dans le même flux | `DriveSound` joue par son propre moteur miniaudio | **Ouvert** — « Bruits du lecteur rendus en PCM » |
 | `retro_serialize` rapide | `saveState` 0,41 ms, `loadState` 0,52 ms ; avec les disquettes 0,66 et 0,76 ms ; une trame ≈ 1 ms (mesures ci-dessous) | **Prêt** |
-| Le blob contient tout ce qui change | `Machine::saveStateWithMedia` / `loadStateWithMedia` : l'état `.state` intact, les deux lecteurs et un CRC | **Prêt**, sauf les écritures STX — « Écritures STX dans l'état autonome » |
+| Le blob contient tout ce qui change | `Machine::saveStateWithMedia` / `loadStateWithMedia` : l'état `.state` intact, les deux lecteurs et un CRC | **Prêt**, sauf les écritures STX et IPF — « Écritures STX et IPF dans l'état autonome » |
 | `retro_serialize_size` fixe | Conteneur à longueur inscrite, remplissage final ignoré ; taille constante tant que les médias ne changent pas, sauf GEMDOS (+322 octets au boot sous EmuTOS) | **Prêt** (borne à poser par l'adaptateur) |
 | État refusé pendant un blit HOG garé | `saveState` rend faux tant qu'une instruction est garée (`Machine::kParkedReason`) | **À adapter** : `retro_serialize` rend faux, RetroArch saute la trame |
 | `retro_load_game` / `retro_unload_game` répétés | Machine reconstruite = même état (gardé par `neost-selftest`) ; restent process-globaux le quartz (`setClocks`), le pays clavier (`stkeys`) et `g_cur` du CPU (A33, § 9) | **Prêt** avec les règles ci-dessous |
