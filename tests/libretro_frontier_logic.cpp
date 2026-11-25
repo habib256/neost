@@ -57,6 +57,11 @@ std::unique_ptr<Machine> makeMachine() {
     const uint8_t rom[] = {0, 1, 0, 0, 0, 0xE0, 0, 8, 0x60, 0xFE};   // BRA sur place
     std::copy(std::begin(rom), std::end(rom), m->bus.rom.begin());
     m->reset();
+    // Horloges RTC, IKBD et UltraSatan figées, comme l'adaptateur les fige : lues sur
+    // l'heure de l'hôte, elles faisaient différer deux machines construites de part et
+    // d'autre d'un changement de seconde (machine-reconstruct, rouge par intermittence
+    // sous ASan, plus lent).
+    m->freezeHostClocks();
     return m;
 }
 }  // namespace
