@@ -516,7 +516,8 @@ touche l'intérieur du cœur 68000 : faisable avant l'échange.
   `retro_serialize` sur les états autonomes complétés à une borne, clavier, manettes, souris,
   MIDI, changement de disque (`.m3u`), `.prg` par le démarrage automatique GEMDOS, EmuTOS seul
   livré (TOS Atari dans le dossier système), options tirées des clés de `neost.cfg`. Bâti avec
-  `NEOST_PIC` et un script de version qui n'exporte que les `retro_*`.
+  `NEOST_PIC` et un script de version qui n'exporte que les `retro_*`. Fichier `.info` avec
+  `savestate_features = "deterministic"` (netplay et anticipation permis par le frontend).
 - **Clavier : une table de position neutre** · P3 ⭘ *(proposé)* — GLFW (`StKeys.cpp`) et
   Android ont chacun leur table touche → scancode ST ; libretro en ajouterait une troisième
   (`RETROK_*`). Une table indexée par position (usage HID USB), chaque frontend n'y branchant
@@ -524,9 +525,18 @@ touche l'intérieur du cœur 68000 : faisable avant l'échange.
 - **Bruits du lecteur rendus en PCM** · P3 ⭘ *(proposé)* — `DriveSound` joue par son propre
   moteur miniaudio ; libretro n'a qu'un flux. Rendre les bruits en échantillons mêlés à la
   trame, utilisable aussi par Android.
-- **Écritures STX dans l'état autonome** · P3 ⭘ *(proposé)* — une image STX n'y porte que son
-  chemin : ses écritures vivent dans le `.wd1772` compagnon, qu'une reprise ne défait pas (même
-  limite que le retour arrière). Rare : sauvegardes de scores sur disquette protégée.
+- **Écritures STX et IPF dans l'état autonome** · P2 ⭘ *(proposé)* — une image STX ou IPF
+  (montée sur le chemin STX) n'y porte que son chemin : ses écritures vivent dans le `.wd1772`
+  compagnon, qu'une reprise ne défait pas (même limite que le retour arrière). Pour le netplay
+  et l'anticipation de libretro, c'est une divergence entre pairs dès qu'un jeu écrit
+  (sauvegardes de scores sur disquette protégée) ; le netplay IPF fiable est un argument du
+  cœur (`docs/LIBRETRO.md`, « Positionnement »).
+- **Campagne IPF** · P2 ⏸ médias — un seul titre IPF validé (*Hammerfist*). Passer un lot
+  d'IPF fourni par l'auteur au boot et au premier écran de jeu, noter ce que l'absence de
+  DPLL pendant l'émulation fait tomber. Préalable à toute annonce « IPF sans capsimg ».
+- **Mesure face à hatariB** · P3 ⭘ *(proposé)* — taille et coût d'un état, coût d'une trame
+  d'anticipation, sur le même Mac et le même contenu, pour que l'argument « états bon
+  marché » porte des chiffres des deux côtés.
 - **Android : bits joystick nommés** · P3 ⭘ *(proposé)* — `readPad` (`main_android.cpp`) compose
   l'octet en littéraux ; `io/StJoyBits.hpp` les nomme désormais sans GLFW.
 
