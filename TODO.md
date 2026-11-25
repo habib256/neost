@@ -534,11 +534,11 @@ Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
   teste le matériel par la valeur lue (sans faute) reste sur ST : « STE » dans le nom (mot
   isolé ou `(STE)`), ou l'option. Recenser les titres de la collection qui le font.
 - **Campagne : les titres qui restent** · P2 ⏸ médias — `tools/libretro_corpus.py` (81
-  images, 2026-11-25) : 52 écrans de jeu sous TOS Atari, 48 sous EmuTOS. À instruire, chacun
-  contre Hatari avant toute conclusion (méthode imposée) : **Epic** (disque 1, noir sous les
-  deux TOS), **Golden Axe** (D1, noir), **Great Giana Sisters** et **Vroom** original (bureau
-  sous TOS 1.04, jeu sous EmuTOS : autorun de `GIANA.PRG` fait, programme qui rend la main ?),
-  **New Zealand Story** (4 Mo exigés, `docs/CASE_STUDIES.md` : une RAM automatique ?).
+  images, 2026-11-25) : 54 écrans de jeu sous TOS Atari, 48 sous EmuTOS. Tranchés : Great
+  Giana Sisters (bureau partout, comme Hatari) et Vroom original (repli de TOS). À
+  instruire, chacun contre Hatari avant toute conclusion (méthode imposée) : **Epic**
+  (disque 1, noir sous les deux TOS, disquette sans catalogue FAT), **Golden Axe** (D1,
+  noir), **New Zealand Story** (4 Mo exigés, `docs/CASE_STUDIES.md` : une RAM automatique ?).
   Le classement automatique sous-estime : relire la planche (`--sheet`).
 - **Mémoire automatique ?** · P3 ⭘ *(proposé)* — New Zealand Story (D-Bug) exige 4 Mo, Blood
   Money 1 Mo. Comme la machine automatique : un programme qui écrit au-delà de la RAM et

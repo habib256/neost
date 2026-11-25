@@ -526,6 +526,39 @@ def case_ste_name(module, work):
     return "racer_ste_v1.st → STE, Stellar Steel.st → ST"
 
 
+def case_tos_fallback(module, work):
+    """Repli de TOS : une disquette qui devait démarrer seule (programme dans \\AUTO) et
+    n'offre rien d'autre laisse la machine au bureau — redémarrage avec un autre TOS,
+    sans boucle (les TOS déjà essayés ne reviennent pas)."""
+    c, media = core(module, work)
+    quit_prg = media / "QUIT.PRG"
+    write_prg(quit_prg, [0x4267, 0x4E41])          # clr.w -(sp) ; trap #1 : Pterm0
+    write_floppy(media / "Boots.st", {"AUTO/QUIT.PRG": quit_prg.read_bytes(), "DATA.BIN": b"x" * 100})
+    assert c.load(media / "Boots.st")
+    c.run(3000)
+    restarts = [m for m in c.messages if "did not start with" in m]
+    assert len(restarts) == 1, c.messages
+    assert "EmuTOS FR" in restarts[0] and "restarted with EmuTOS US" in restarts[0], restarts
+    return restarts[0]
+
+
+def case_sibling_disks(module, work):
+    """Disquettes sœurs : « (Disk 1 of 2) »/« (Disk 2 of 2) » forment une liste ; un
+    original et son crack (« [cr Elite] ») ne la forment pas."""
+    c, media = core(module, work / "a")
+    for n in ("Game (Disk 1 of 2).st", "Game (Disk 2 of 2).st", "Other (1991).st", "Other (1991)[cr Elite].st"):
+        shutil.copy(media / "diskA.st", media / n)
+    assert c.load(media / "Game (Disk 1 of 2).st")
+    assert c.disk.get_num_images() == 2, c.disk.get_num_images()
+    c.close()
+    c, media = core(module, work / "b")
+    for n in ("Other (1991).st", "Other (1991)[cr Elite].st"):
+        shutil.copy(media / "diskA.st", media / n)
+    assert c.load(media / "Other (1991).st")
+    assert c.disk.get_num_images() == 1, c.disk.get_num_images()
+    return "Disk 1/2 paired; original and crack kept apart"
+
+
 CASES = {n[5:]: f for n, f in sorted(globals().items()) if n.startswith("case_")}
 
 

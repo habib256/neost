@@ -370,6 +370,15 @@ struct Session {
     // un périphérique absent (cf. checkMissingHardware). Un seul redémarrage par contenu.
     std::string content;
     uint64_t ioFaultsSeen = 0;                     // Bus::missingIoFaults déjà examinées
+    // Repli de TOS (cf. checkBootFailed) : la disquette devait démarrer seule, n'offre rien
+    // à lancer, et la machine reste au bureau GEM. TOS déjà essayés pour ce contenu, et
+    // celui imposé au prochain chargement.
+    bool bootExpected = false;
+    int64_t framesSinceLoad = 0;
+    int desktopSeen = 0;
+    std::vector<std::string> triedTos;
+    std::string tosOverride;
+    MachineType lastMachine = MachineType::St;
     int restarts = 0;                              // redémarrages sur une autre machine
     bool machineForced = false;
     MachineType forcedMachine = MachineType::St;
@@ -450,15 +459,57 @@ bool isFloppyExt(const std::string& e) {
     return e == ".st" || e == ".msa" || e == ".dim" || e == ".stx" || e == ".ipf";
 }
 bool isHardDiskExt(const std::string& e) { return e == ".hd" || e == ".vhd"; }
+
+// Un programme quelconque (même ambigu ou utilitaire) à la racine ou dans un dossier :
+// l'utilisateur a alors de quoi faire au bureau, ce n'est pas un démarrage raté.
+bool rootHasProgram(const neost::FloppyCatalog& cat) {
+    auto prog = [](const neost::FloppyEntry& e) {
+        if (e.attr & 0x10) return false;
+        std::string x = e.name.substr(e.name.rfind('.') == std::string::npos ? e.name.size() : e.name.rfind('.'));
+        for (char& c : x) c = char(std::tolower(static_cast<unsigned char>(c)));
+        return x == ".prg" || x == ".tos" || x == ".app" || x == ".ttp" || x == ".gtp";
+    };
+    for (const auto& e : cat.root) if (prog(e)) return true;
+    for (const auto& [name, entries] : cat.folders) for (const auto& e : entries) if (prog(e)) return true;
+    return false;
+}
 bool isProgramExt(const std::string& e) {
     return e == ".prg" || e == ".tos" || e == ".ttp" || e == ".app" || e == ".gtp";
 }
 
 // Liste .m3u : un chemin par ligne, relatif au dossier de la liste ; « chemin|nom » donne
 // un libellé (comme POM2) ; # commente.
-// Les autres disquettes du même jeu, dans le même dossier (« Disk 1 of 3 », faces a/b :
-// MediaScan::areSiblingImages), triées par nom : R3 et Disc Control les trouvent sans
-// liste .m3u. La disquette chargée garde sa place dans l'ordre.
+// Un jeton d'indice de disquette : « 1 », « b », « d2 », « disk3 », « side a ».
+bool diskIndexToken(std::string t) {
+    for (const char* p : {"disk", "disc", "side", "face", "d", "s"})
+        if (t.size() > std::strlen(p) && t.rfind(p, 0) == 0) { t = t.substr(std::strlen(p)); break; }
+    if (t.size() == 1 && t[0] >= 'a' && t[0] <= 'h') return true;
+    if (t.empty() || t.size() > 2) return false;
+    for (char c : t) if (!std::isdigit(static_cast<unsigned char>(c))) return false;
+    return std::atoi(t.c_str()) <= 9;
+}
+
+// Deux images sœurs (MediaScan::areSiblingImages) qui ne diffèrent que par un INDICE de
+// disquette : « (Disk 1 of 3) »/« (Disk 2 of 3) », « _a »/« _b », « -D1 »/« -D2 ». Pas
+// l'original et son crack (« [cr Elite] » : Vroom), ni deux compilations numérotées
+// (« fuzcd077 »/« fuzcd078 »). Noms en minuscules, sans extension.
+bool sameGameOtherDisk(const std::string& a, const std::string& b) {
+    if (a == b || !neost::areSiblingImages(a, b)) return false;
+    std::size_t i = 0;
+    while (i < a.size() && i < b.size() && a[i] == b[i]) ++i;
+    auto token = [i](const std::string& s) {
+        auto alnum = [](char c) { return std::isalnum(static_cast<unsigned char>(c)) != 0; };
+        std::size_t lo = i, hi = i;
+        while (lo > 0 && alnum(s[lo - 1])) --lo;
+        while (hi < s.size() && alnum(s[hi])) ++hi;
+        return s.substr(lo, hi - lo);
+    };
+    return diskIndexToken(token(a)) && diskIndexToken(token(b));
+}
+
+// Les autres disquettes du même jeu, dans le même dossier (sameGameOtherDisk), triées par
+// nom : R3 et Disc Control les trouvent sans liste .m3u. La disquette chargée garde sa
+// place dans l'ordre.
 std::vector<Disk> siblingDisks(const std::string& path, unsigned& index) {
     std::vector<std::string> names;
     const fs::path p(path);
@@ -468,7 +519,8 @@ std::vector<Disk> siblingDisks(const std::string& path, unsigned& index) {
         if (!e.is_regular_file(ec)) continue;
         const std::string n = lower(e.path().filename().string());
         if (!isFloppyExt(extOf(n))) continue;
-        if (n == self || neost::areSiblingImages(self, n)) names.push_back(e.path().string());
+        if (n == self || sameGameOtherDisk(fs::path(self).stem().string(), fs::path(n).stem().string()))
+            names.push_back(e.path().string());
         if (names.size() > 16) break;
     }
     std::sort(names.begin(), names.end(), [](const std::string& a, const std::string& b) {
@@ -550,6 +602,13 @@ bool chooseTos(const std::string& contentPath, std::string& tosPath, MachineType
     }
     const std::string mOpt = optionValue("neost_machine", "auto");
     const std::string tOpt = optionValue("neost_tos", "auto");
+    if (tOpt == "auto" && !g_s.tosOverride.empty()) {
+        // Repli de TOS en cours (checkBootFailed) : la machine reste celle de l'essai
+        // précédent, ou celle que la machine automatique a imposée.
+        tosPath = g_s.tosOverride;
+        if (!parseMachine(mOpt, machine)) machine = g_s.machineForced ? g_s.forcedMachine : g_s.lastMachine;
+        return true;
+    }
     bool autoMachine = !parseMachine(mOpt, machine);
     if (autoMachine && g_s.machineForced) { machine = g_s.forcedMachine; autoMachine = false; }
 
@@ -944,6 +1003,7 @@ bool checkMissingHardware() {
          m.cpu.halted() ? "68000 halted" : "unhandled bus error", where, machineLabel(want));
     g_s.machineForced = true;
     g_s.forcedMachine = want;
+    g_s.tosOverride.clear();          // le TOS d'un repli ne fait peut-être pas tourner `want`
     ++g_s.restarts;
     const std::string content = g_s.content;
     if (!loadContent(content.empty() ? nullptr : content.c_str())) { g_s.machine.reset(); return false; }
@@ -1302,6 +1362,7 @@ bool loadContent(const char* path) {
     g_s.playlist.clear();
     g_s.diskIndex = 0;
     g_s.ejected = true;
+    g_s.bootExpected = false;
     std::string what;
     if (ext == ".m3u") {
         g_s.playlist = readM3u(content);
@@ -1354,10 +1415,22 @@ bool loadContent(const char* path) {
             logf(RETRO_LOG_DEBUG, "A: %s, %s, root:%s, AUTO: %zu entries\n", read ? "catalogue read" : "no catalogue",
                  cat.bootable ? "boot sector executable" : "boot sector not executable", list.c_str(),
                  cat.autoFolder.size());
+            std::string prg;
             if (read) {
-                const std::string prg = neost::pickAutoStartProgram(cat, fs::path(g_s.playlist[i].path).stem().string());
+                prg = neost::pickAutoStartProgram(cat, fs::path(g_s.playlist[i].path).stem().string());
                 if (!prg.empty() && m.gemdos.setAutoStart(prg)) what += " · starts " + prg;
             }
+            // Disquette qui devait démarrer seule (boot exécutable ou programme dans \AUTO)
+            // et n'offre rien à lancer depuis le bureau : si le bureau apparaît, le
+            // démarrage a échoué avec ce TOS (cf. checkBootFailed).
+            bool autoPrg = false;
+            for (const auto& e : cat.autoFolder) {
+                const std::string ext = lower(fs::path(e.name).extension().string());
+                autoPrg |= ext == ".prg" || ext == ".tos" || ext == ".app";
+            }
+            // Seulement la PREMIÈRE disquette d'une liste : « Disk 2 of 2 » chargée seule
+            // est une disquette de données, faite pour ne pas démarrer (Maupiti Island).
+            g_s.bootExpected = i == 0 && prg.empty() && (cat.bootable || autoPrg) && !rootHasProgram(cat);
         }
     }
 
@@ -1370,6 +1443,10 @@ bool loadContent(const char* path) {
     g_s.mouseL = g_s.mouseR = false;
     g_s.stateBound = 0;
     g_s.tosPath = tos;
+    g_s.lastMachine = m.machineType();
+    if (std::find(g_s.triedTos.begin(), g_s.triedTos.end(), tos) == g_s.triedTos.end()) g_s.triedTos.push_back(tos);
+    g_s.framesSinceLoad = 0;
+    g_s.desktopSeen = 0;
     g_s.timingGrace = kTimingGraceFrames;
     g_s.ioFaultsSeen = 0;
     g_s.loaded = true;
@@ -1397,8 +1474,51 @@ void publishMemoryMap() {
     g_env(RETRO_ENVIRONMENT_SET_MEMORY_MAPS, &map);
 }
 
+// Repli de TOS : une disquette qui devait démarrer seule (boot exécutable ou \AUTO),
+// sans rien d'autre à lancer, laisse la machine au bureau GEM — ce TOS ne la fait pas
+// démarrer (Vroom de Lankhor sous TOS 1.04, dans NeoST comme dans Hatari, quand 1.00,
+// 1.02, 2.06 et EmuTOS la lancent). L'utilisateur n'aurait rien d'autre à faire : on
+// redémarre avec un autre TOS de la même machine, deux fois au plus, TOS « Automatic »
+// seulement. Le bureau se voit à son tableau Line-A (Machine::desktopMousePosition),
+// stable une seconde, au moins 10 s après le démarrage. Ne dépend que de l'état émulé.
+bool checkBootFailed() {
+    if (!g_s.bootExpected || g_s.triedTos.size() >= 3) return false;
+    if (optionValue("neost_tos", "auto") != "auto") return false;
+    Machine& m = *g_s.machine;
+    if (++g_s.framesSinceLoad < 500 || g_s.framesSinceLoad % 50) return false;
+    int x, y, w, h;
+    if (!m.desktopMousePosition(x, y, w, h)) { g_s.desktopSeen = 0; return false; }
+    if (++g_s.desktopSeen < 2) return false;
+    // Un autre TOS pour cette machine, jamais essayé : TosChoice, sur les seuls restants.
+    const std::string dir = systemNeostDir();
+    std::vector<std::string> files;
+    std::vector<neost::TosInfo> infos;
+    for (const auto& f : g_tosFiles) {
+        const std::string p = (fs::path(dir) / f).string();
+        neost::TosInfo t;
+        if (std::find(g_s.triedTos.begin(), g_s.triedTos.end(), p) != g_s.triedTos.end()) continue;
+        if (neost::readTosInfo(p, t)) { files.push_back(p); infos.push_back(t); }
+    }
+    neost::TosInfo cur;
+    const bool haveCur = neost::readTosInfo(g_s.tosPath, cur);
+    const int i = neost::pickTosForMachine(m.machineType(), haveCur ? &cur : nullptr, infos);
+    g_s.bootExpected = false;                   // une décision par chargement
+    if (i < 0) return false;
+    const std::string before = tosLabel(g_s.tosPath);
+    g_s.tosOverride = files[std::size_t(i)];
+    const std::string content = g_s.content;
+    logf(RETRO_LOG_INFO, "the disk left the machine at the desktop with %s: retrying with %s\n", before.c_str(),
+         tosLabel(g_s.tosOverride).c_str());
+    if (!loadContent(content.empty() ? nullptr : content.c_str())) { g_s.machine.reset(); return false; }
+    notify("The disk did not start with " + before + ": restarted with " + tosLabel(g_s.tosPath), 6000);
+    publishMemoryMap();
+    return true;
+}
+
 bool loadContentOrDrop(const char* path) {
     g_s.content = path ? path : "";
+    g_s.triedTos.clear();
+    g_s.tosOverride.clear();
     if (loadContent(path)) { publishMemoryMap(); return true; }
     g_s.machine.reset();
     g_s.playlist.clear();
@@ -1598,7 +1718,10 @@ RETRO_API void retro_run(void) {
     }
     // Redémarrée sur une autre machine : une trame de la nouvelle avant de montrer quoi
     // que ce soit (son tampon d'image n'existe qu'après sa première trame).
-    if (checkMissingHardware()) { g_s.machine->cpu.updateIpl(); g_s.machine->runFrame(); }
+    if (checkMissingHardware() || (g_s.machine && checkBootFailed())) {
+        g_s.machine->cpu.updateIpl();
+        g_s.machine->runFrame();
+    }
     if (!g_s.machine) { if (g_canDupe) g_video(nullptr, 320, 200, 0); return; }
     int av = 3;
     const bool known = g_env(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &av);

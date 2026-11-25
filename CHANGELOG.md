@@ -1,5 +1,21 @@
 # Changelog — NeoST
 
+## 2026-11-25 — Libretro : repli de TOS, disquettes sœurs strictes
+
+- **Repli de TOS** : une première disquette qui devait démarrer seule (boot exécutable ou
+  `\AUTO`), sans autre programme, laissant la machine au bureau GEM (tableau Line-A, stable
+  une seconde, après 10 s), redémarre avec un autre TOS de la même machine, deux fois au
+  plus, en TOS « Automatic ». Vroom (Lankhor, relocation tronquée, bureau sous TOS 1.04 chez
+  NeoST comme chez Hatari) roule sous TOS 1.02 ou EmuTOS. Cas `tos_fallback` (un `\AUTO` qui
+  rend la main : EmuTOS FR → EmuTOS US, sans boucle).
+- **Disquettes sœurs** : seulement si le jeton qui diffère est un indice de disquette. Vroom
+  et son crack, ou deux compilations Fuzion, ne forment plus de fausse liste. Cas
+  `sibling_disks`.
+- **Confrontation à Hatari** : Great Giana Sisters (`--auto A:\GIANA.PRG`, TOS 1.04) finit au
+  même bureau chez les deux, 0,0 % aux trames 1000 à 3000 (`docs/CASE_STUDIES.md`).
+- Campagne : **54** écrans de jeu sous TOS Atari (52 avant), 48 sous EmuTOS ; une passe sous
+  TOS 1.02 (`--tos tos102`) en donne 43, le démarrage automatique exigeant TOS 1.04.
+
 ## 2026-11-25 — Libretro : campagne de compatibilité, autorun et machine automatique revus
 
 - **`tools/libretro_corpus.py`** : 81 images privées (`disks/st`, `disks/stx`) passées dans
