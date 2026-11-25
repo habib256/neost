@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <functional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace neost {
@@ -31,6 +32,8 @@ struct FloppyCatalog {
     bool bootable = false;               // secteur de boot exécutable (somme $1234)
     std::vector<FloppyEntry> root;       // répertoire racine
     std::vector<FloppyEntry> autoFolder; // contenu de \AUTO (vide sans dossier AUTO)
+    // Dossiers de la racine (hors AUTO) et leur contenu, 16 au plus.
+    std::vector<std::pair<std::string, std::vector<FloppyEntry>>> folders;
 };
 
 // Lit un secteur LOGIQUE de 512 octets ; faux s'il manque.
@@ -40,12 +43,17 @@ using SectorReader = std::function<bool(int lsn, uint8_t* out512)>;
 // GEMDOS) ; `bootable` est alors tout de même renseigné quand le secteur a été lu.
 bool readFloppyCatalog(const SectorReader& read, FloppyCatalog& out);
 
-// Le programme à lancer depuis A:, « A:\GAME.PRG », ou vide :
-//  · disquette amorçable → vide (le secteur de boot lance le jeu) ;
-//  · programmes dans \AUTO → vide (le TOS les lance au boot, même sans boot exécutable) ;
-//  · sinon les programmes de la racine (.PRG, .TOS, .APP ; pas .TTP, qui attend des
-//    paramètres), utilitaires écartés (INSTALL, SETUP, README…) : s'il en reste UN, lui.
-//    Plusieurs : celui dont le nom commence comme `hint` (nom de l'image), sinon vide.
+// Le programme à lancer depuis A:, « A:\GAME.PRG », ou vide. Le démarrage automatique
+// part du BUREAU : un secteur de boot ou un programme de \AUTO qui lance le jeu ne rend
+// jamais la main, et rien n'est lancé en double ; celui qui la rend (signature de
+// cracker, anti-virus, pilote) laisse venir le bureau, qui lance alors le jeu. Ni le
+// boot exécutable ni \AUTO n'empêchent donc le choix (corpus du 2026-11-25 : Pirates,
+// Stormlords, Simulcra… portent un boot de cracker qui rend la main).
+//  · les programmes de la racine (.PRG, .TOS, .APP ; pas .TTP, qui attend des
+//    paramètres), utilitaires écartés (INSTALL, SETUP, README…) : s'il en reste UN, lui ;
+//    plusieurs : celui dont le nom commence comme `hint` (nom de l'image), sinon vide ;
+//  · aucun à la racine : l'unique programme d'un unique dossier qui en porte
+//    (« A:\RICK_DAN.GER\RICKLOAD.TOS »).
 std::string pickAutoStartProgram(const FloppyCatalog& cat, const std::string& hint = std::string());
 
 }  // namespace neost

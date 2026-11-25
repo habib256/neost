@@ -1193,13 +1193,21 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   stockés ou deflate, gzip à un membre (FEXTRA, FNAME, FCOMMENT, FHCRC), CRC-32 et tailles
   vérifiés, chemins absolus ou à « .. » refusés. Deflate : stb_image compilé en statique.
   Ouvertes par le cœur libretro ; le GUI ne s'en sert pas encore (TODO § 7).
+- **Registre absent : la dernière faute retenue par le `Bus`** (2026-11-25) :
+  `lastMissingIoFault`, `lastMissingIoPc`, `lastMissingIoVector`, `missingIoFaults`, posés
+  par l'étage « carte ioMem » de `busFaultNSlow` (pas la protection superviseur ni une
+  écriture interdite) avec le PC de l'instruction et le vecteur 2 en vigueur. Diagnostic
+  hors état ; sert la machine automatique du cœur libretro (le CPU ne garde que sa dernière
+  faute, qu'un double défaut écrase).
 - **Catalogue de disquette** (2026-11-25, `io/FloppyCatalog.*`, lecteur
   `Fdc::readLogicalSector`, test `testFloppyCatalog` de `neost-selftest`). Secteur de boot
   exécutable (somme des 256 mots = `$1234`), BPB, racine FAT12 et dossier `\AUTO` (chaîne
   FAT suivie), sur `.st/.msa/.dim` comme sur STX/IPF (secteur trouvé par son champ ID).
-  `pickAutoStartProgram` : rien si la disquette s'amorce ou porte un programme dans `\AUTO` ;
-  sinon l'unique programme de jeu de la racine (`.PRG/.TOS/.APP`, utilitaires écartés, nom de
-  l'image en départage). Sert l'autorun du cœur libretro.
+  `pickAutoStartProgram` : l'unique programme de jeu de la racine (`.PRG/.TOS/.APP`,
+  utilitaires écartés, nom de l'image en départage), à défaut l'unique programme d'un unique
+  dossier ; un boot exécutable ou un `\AUTO` n'y font plus obstacle (le démarrage
+  automatique part du bureau, qu'un boot qui lance le jeu n'atteint jamais). Sert
+  l'autorun du cœur libretro.
 - **Images IPF (SPS / CAPS)** (2026-10-22, `io/IpfImage.*`, test `tests/ipf_image_logic.cpp`).
   Décodeur LIBRE, adapté de MAME `src/lib/formats/ipf_dsk.cpp` (BSD-3, O. Galibert) — PAS
   de libcapsimage (licence SPS non libre ; c'est elle qu'Hatari charge, et l'oracle local

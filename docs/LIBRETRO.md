@@ -52,17 +52,25 @@ dans `packaging/libretro/shaders/`. Il est jugé sans RetroArch :
 
 Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
 
-- **La machine automatique.** Un programme qui lit un périphérique absent (son DMA du STE
-  sur un ST…) sans gestionnaire de bus error à lui redémarre sur la machine qui le porte
-  (`Cpu68k::lastFault` et `mmioNeedsBetterMachine`, déjà utilisés par le bandeau du GUI).
-  Deux signatures : le 68000 arrêté (TOS Atari), ou une faute prise par une instruction en
-  RAM quand le vecteur 2 pointe encore dans la ROM (EmuTOS ne s'arrête pas). Les sondes du
-  TOS (PC en ROM) et celles d'un programme qui rattrape la faute (vecteur en RAM) passent.
-  Stardust (STE seulement, nom TOSEC sans « STE ») démarre ainsi sans réglage.
-- **L'autorun des disquettes non amorçables** (`io/FloppyCatalog`) : secteur de boot non
-  exécutable, rien dans `\AUTO`, un seul programme de jeu à la racine (utilitaires
-  écartés, le nom de l'image départage) → lancé par le démarrage automatique GEMDOS,
-  sans rien écrire sur la disquette. Bubble Ghost démarre ainsi.
+- **La machine automatique.** Un programme qui lit un registre absent du modèle (son DMA
+  du STE sur un ST…) sans gestionnaire de bus error à lui redémarre sur la machine qui le
+  porte (`mmioNeedsBetterMachine`, déjà utilisé par le bandeau du GUI), deux fois au plus
+  (Mega ST pour le blitter, puis STE). La faute vient du `Bus` (`lastMissingIoFault`, étage
+  « registre absent » de `busFaultNSlow`, ni la protection superviseur ni une écriture
+  interdite), avec le PC de l'instruction et le vecteur 2 **en vigueur à cet instant**.
+  Deux signatures : le 68000 arrêté (TOS Atari ; sa dernière faute est l'erreur d'adresse
+  sur la pile, d'où le registre retenu par le `Bus`), ou une faute prise en RAM avec un
+  vecteur en ROM (EmuTOS ne s'arrête pas). Les sondes du TOS (PC en ROM) et celles d'un
+  programme qui pose son gestionnaire le temps de sonder passent. ⚠ La première version
+  lisait le vecteur en FIN de trame : Wings of Death, qui rend le vecteur au TOS dans la
+  même trame, redémarrait à tort en Mega ST (corpus du 2026-11-25 ; cas `probe_restored`).
+  Le mot « STE » isolé dans le nom démarre aussi en STE (Faster).
+- **L'autorun** (`io/FloppyCatalog`) : un seul programme de jeu à la racine (utilitaires
+  écartés, le nom de l'image départage), à défaut l'unique programme d'un unique dossier
+  → lancé par le démarrage automatique GEMDOS, sans rien écrire sur la disquette. Il part
+  du bureau : un boot ou un `\AUTO` qui lance le jeu ne rend jamais la main, celui qui la
+  rend (boot de cracker) laisse le bureau lancer le jeu. Bubble Ghost, Pirates,
+  Stormlords, Simulcra, Rick Dangerous (`RICK_DAN.GER\RICKLOAD.TOS`) démarrent ainsi.
 - **Les disquettes sœurs** (`MediaScan::areSiblingImages`) forment seules la liste : la
   face B de Rainbow Islands est à un R3.
 - **Le chargement accéléré** : jusqu'à huit trames émulées par trame de l'hôte tant
@@ -107,6 +115,14 @@ Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
 - **Un TOS choisi** parmi ceux du dossier système (`TosChoice`), Atari PAL d'abord. Il
   compte : Stunt Car Racer tourne sous TOS 1.02 et 1.04 et retombe au bureau sous
   EmuTOS 192 Ko (vérifié au headless, même résultat).
+
+**Campagne de compatibilité** (`tools/libretro_corpus.py`, médias privés, local) : 81
+images de `disks/st` et `disks/stx`, 3 000 trames chacune avec Espace et un tir, écran final
+classé et planche contact. Le 2026-11-25 : **52 écrans de jeu sous TOS Atari** (TOS 1.04 UK
+choisi seul), **48 sous EmuTOS** ; les écrans « autre » sont souvent des jeux (menu de
+Pirates, titre de Bolo, trainers). Avant les correctifs du jour : 49 et 45. Un vrai TOS
+gagne Flood, James Pond II, Lemmings, Nitro, Pang et Stunt Car Racer ; il perd Great Giana
+Sisters et Vroom (original), qui tournent sous EmuTOS.
 
 Restent ouverts au TODO (§ 7, « Cœur libretro ») : le MIDI, le disque dur ACSI dans
 l'état, l'essai sur les autres hôtes (Pi, Android, Windows, Linux), un module macOS

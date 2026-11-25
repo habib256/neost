@@ -369,7 +369,8 @@ struct Session {
     // Machine automatique : le contenu, et la machine imposée après un arrêt du 68000 sur
     // un périphérique absent (cf. checkMissingHardware). Un seul redémarrage par contenu.
     std::string content;
-    uint32_t faultSeenAddr = 0, faultSeenPc = 0;   // dernière faute examinée
+    uint64_t ioFaultsSeen = 0;                     // Bus::missingIoFaults déjà examinées
+    int restarts = 0;                              // redémarrages sur une autre machine
     bool machineForced = false;
     MachineType forcedMachine = MachineType::St;
 } g_s;
@@ -513,11 +514,16 @@ bool parseMachine(const std::string& v, MachineType& out) {
     return false;
 }
 
-// Les noms TOSEC marquent les titres STE : « (STe) », « [STE] ».
+// Les noms marquent les titres STE : « (STe) », « [STE] » chez TOSEC, ou le mot STE isolé
+// (« faster_atari_ste_v_1_0.st », « Demo STE.st ») — pas « Stellar » ni « Steel ».
 bool contentWantsSte(const std::string& path) {
-    const std::string n = lower(fs::path(path).filename().string());
-    return n.find("(ste)") != std::string::npos || n.find("[ste]") != std::string::npos
-        || n.find("(ste ") != std::string::npos || n.find("ste only") != std::string::npos;
+    const std::string n = lower(fs::path(path).stem().string());
+    for (std::size_t i = n.find("ste"); i != std::string::npos; i = n.find("ste", i + 1)) {
+        const bool before = i == 0 || !std::isalnum(static_cast<unsigned char>(n[i - 1]));
+        const bool after = i + 3 >= n.size() || !std::isalnum(static_cast<unsigned char>(n[i + 3]));
+        if (before && after) return true;
+    }
+    return false;
 }
 
 std::size_t parseRam(const std::string& v) {
@@ -894,48 +900,51 @@ void publishMemoryMap();
 // est dans son droit.
 bool checkMissingHardware() {
     Machine& m = *g_s.machine;
-    if (g_s.machineForced) return false;
-    const Cpu68k::Fault f = m.cpu.lastFault();
-    if (!f.valid || (f.addr == g_s.faultSeenAddr && f.pc == g_s.faultSeenPc && !m.cpu.halted())) return false;
-    g_s.faultSeenAddr = f.addr;
-    g_s.faultSeenPc = f.pc;
+    if (g_s.restarts >= 2) return false;
+    // Une NOUVELLE faute sur un registre absent du modèle (Bus::missingIoFaults) : la
+    // protection superviseur et les écritures interdites n'en sont pas.
+    const uint64_t count = m.bus.missingIoFaults();
+    if (count == g_s.ioFaultsSeen) return false;
+    g_s.ioFaultsSeen = count;
+    const uint32_t addr = m.bus.lastMissingIoFault() & 0xFFFFFFu;
     MissingHw miss{};
-    if (!mmioNeedsBetterMachine(f.addr, m.machineType(), miss)) return false;
+    if (!mmioNeedsBetterMachine(addr, m.machineType(), miss)) return false;
     // Deux signatures d'un programme qui ne survivra pas : le 68000 arrêté (double faute,
-    // TOS Atari), ou une bus error prise par une instruction en RAM alors que le vecteur 2
-    // pointe encore dans la ROM — le programme n'a pas posé de gestionnaire, la faute va
-    // au TOS (EmuTOS ne s'arrête pas, il affiche son écran d'erreur). Les sondes du TOS
-    // (PC en ROM) et celles d'un programme qui rattrape la faute (vecteur en RAM) passent.
-    const auto& ram = m.bus.ram;
-    const uint32_t vec2 = ram.size() > 11 ? (uint32_t(ram[8]) << 24 | uint32_t(ram[9]) << 16 |
-                                             uint32_t(ram[10]) << 8 | ram[11]) & 0xFFFFFFu : 0;
-    const bool inRom = [](uint32_t a) { return a >= 0xE00000u && a < 0xFF0000u; }(vec2);
-    // `vector` n'est renseigné que pour la faute qui a doublé (Cpu68k::Fault) : 0 ou 2
-    // désignent ici une bus error, 3 une erreur d'adresse, qu'aucune machine ne corrige.
-    const bool unhandled = f.vector != 3 && (f.pc & 0xFFFFFFu) < ram.size() && inRom;
-    logf(RETRO_LOG_DEBUG, "fault on the %s at $%06X, PC=$%06X, vector %d, handler $%06X%s\n", miss.chip,
-         unsigned(f.addr & 0xFFFFFFu), unsigned(f.pc & 0xFFFFFFu), f.vector, unsigned(vec2),
-         m.cpu.halted() ? ", 68000 halted" : "");
+    // TOS Atari — sa dernière faute est alors l'erreur d'adresse sur la pile, d'où le
+    // registre retenu par le Bus), ou une faute prise par une instruction en RAM alors
+    // que le vecteur 2 EN VIGUEUR À CET INSTANT pointait dans la ROM : le programme n'a
+    // pas posé de gestionnaire, la faute va au TOS (EmuTOS ne s'arrête pas). Les sondes
+    // du TOS (PC en ROM) et celles d'un programme qui pose son gestionnaire le temps de
+    // sonder (Wings of Death : vecteur en RAM pendant la faute, rendu au TOS ensuite)
+    // passent. Le vecteur de FIN de trame trompait : il est déjà rendu au TOS.
+    const uint32_t pc = m.bus.lastMissingIoPc(), vec2 = m.bus.lastMissingIoVector();
+    const bool inRom = vec2 >= 0xE00000u && vec2 < 0xFF0000u;
+    const bool unhandled = pc < m.bus.ram.size() && inRom;
+    logf(RETRO_LOG_DEBUG, "fault on the %s at $%06X, PC=$%06X, handler $%06X%s%s\n", miss.chip, unsigned(addr),
+         unsigned(pc), unsigned(vec2), m.cpu.halted() ? ", 68000 halted" : "", unhandled ? ", unhandled" : "");
     if (!m.cpu.halted() && !unhandled) return false;
     const bool autoMachine = optionValue("neost_machine", "auto") == "auto";
     MachineType want;
     const std::string needs = miss.needs;
     if (needs == "ste") want = MachineType::Ste;
     else if (needs == "megaste") want = MachineType::MegaSte;
-    else if (needs == "megast or ste") want = MachineType::MegaSt;   // même TOS que le ST
+    // Blitter : le Mega ST d'abord (même famille de TOS que le ST) ; si le programme
+    // touche ensuite au STE, le second redémarrage le fera passer en STE.
+    else if (needs == "megast or ste") want = MachineType::MegaSt;
     else return false;                                               // FPU absent : rien à choisir
     char where[96];
-    std::snprintf(where, sizeof where, "%s at $%06X", miss.chip, unsigned(f.addr & 0xFFFFFFu));
+    std::snprintf(where, sizeof where, "%s at $%06X", miss.chip, unsigned(addr));
     if (!autoMachine) {
-        notify(std::string("68000 halted: the program needs the ") + where + ". Set Machine to " + machineLabel(want),
+        notify(std::string("The program needs the ") + where + ". Set Machine to " + machineLabel(want),
                10000, RETRO_LOG_WARN);
-        g_s.machineForced = true;   // dit une fois
+        g_s.restarts = 2;           // dit une fois
         return false;
     }
     logf(RETRO_LOG_INFO, "%s on the %s: restarting as %s\n",
          m.cpu.halted() ? "68000 halted" : "unhandled bus error", where, machineLabel(want));
     g_s.machineForced = true;
     g_s.forcedMachine = want;
+    ++g_s.restarts;
     const std::string content = g_s.content;
     if (!loadContent(content.empty() ? nullptr : content.c_str())) { g_s.machine.reset(); return false; }
     notify(std::string("This program needs the ") + miss.chip + ": restarted as " + machineLabel(want), 6000);
@@ -1362,7 +1371,7 @@ bool loadContent(const char* path) {
     g_s.stateBound = 0;
     g_s.tosPath = tos;
     g_s.timingGrace = kTimingGraceFrames;
-    g_s.faultSeenAddr = g_s.faultSeenPc = 0;
+    g_s.ioFaultsSeen = 0;
     g_s.loaded = true;
 
     if (!archiveNote.empty()) what += " (" + archiveNote + ")";
@@ -1556,6 +1565,7 @@ RETRO_API bool retro_load_game_special(unsigned, const retro_game_info*, size_t)
 RETRO_API void retro_unload_game(void) {
     g_s.machine.reset();
     g_s.machineForced = false;
+    g_s.restarts = 0;
     g_s.playlist.clear();
     g_s.loaded = false;
 }
