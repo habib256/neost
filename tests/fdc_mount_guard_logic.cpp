@@ -13,6 +13,7 @@
 #include "core/YM2149.hpp"
 #include "io/Fdc.hpp"
 #include "io/Mfp.hpp"
+#include "core/StateArchive.hpp"
 #include <algorithm>
 #include <cstdio>
 #include <filesystem>
@@ -293,6 +294,61 @@ void acsiStateCases(Checks& c, const fs::path& dir) {
         c.equal("sans ACSI des deux côtés : accepté", same->stateHeaderOk(s0.data(), s0.size()), true);
     }
 }
+// Écritures d'une STX dans l'état autonome (v2, 2026-11-25) et le retour arrière : un
+// WRITE SECTOR réel sur la STX minimale, une copie de média avant et une après ; reprendre
+// l'une ou l'autre rend l'overlay et le fichier compagnon .wd1772 de CE moment, et un READ
+// SECTOR relit le bon contenu. Même chose par le format d'état (writeMedia/readMediaCopy) ;
+// un état v1, sans overlay, laisse celui du lecteur tel quel. Sans le correctif, la copie
+// ne portait que le chemin : reprendre « avant » gardait l'écriture.
+void stxOverlayStateCases(Checks& c, const fs::path& dir) {
+    const fs::path stx = dir / "save.stx", wd = dir / "save.wd1772";
+    writeFile(stx, stxImage());
+    Rig r;
+    r.fdc.setHostWriteBack(true);
+    c.equal("STX état : montage", r.fdc.loadImage(stx.string()), true);
+    auto command = [&](bool write, uint8_t cmd, uint32_t addr) {
+        r.select(5);
+        r.reg(4, 1); r.dma(write, 1, addr);
+        return r.cmd(write, cmd);
+    };
+    const auto before = r.fdc.copyMedia(0);
+    c.equal("STX état : copie d'avant sans overlay", Fdc::mediaCopyBytes(*before), 0);
+    std::fill(r.bus.ram.begin() + 0x20000, r.bus.ram.begin() + 0x20200, uint8_t(0x5A));
+    c.equal("STX état : WRITE SECTOR sans erreur", command(true, 0xA8, 0x20000) & 0x5C, 0);
+    c.equal("STX état : .wd1772 écrit", fs::exists(wd), true);
+    const auto after = r.fdc.copyMedia(0);
+    c.equal("STX état : copie d'après porte l'overlay", Fdc::mediaCopyBytes(*after) > 0, true);
+    // Par le format d'état : écrire le lecteur, relire une copie étrangère.
+    std::vector<uint8_t> blob;
+    { StateArchive ar = StateArchive::saver(blob); r.fdc.writeMedia(ar, 0); }
+    std::shared_ptr<const Fdc::MediaCopy> fromState, fromV1;
+    { StateArchive ar = StateArchive::loader(blob.data(), blob.size()); fromState = Fdc::readMediaCopy(ar); }
+    c.equal("STX état : relu du format v2", fromState != nullptr, true);
+
+    c.equal("STX état : reprise d'avant", r.fdc.restoreMedia(0, *before), true);
+    c.equal("STX état : avant = sans overlay", Fdc::mediaCopyBytes(*r.fdc.copyMedia(0)), 0);
+    c.equal("STX état : avant = sans .wd1772", fs::exists(wd), false);
+    std::fill(r.bus.ram.begin() + 0x30000, r.bus.ram.begin() + 0x30200, uint8_t(0));
+    command(false, 0x88, 0x30000);
+    c.equal("STX état : avant relit l'original", r.bus.ram[0x30000 + 17], 0xA5);
+
+    c.equal("STX état : reprise par l'état", fromState && r.fdc.restoreMedia(0, *fromState), true);
+    c.equal("STX état : .wd1772 rétabli", fs::exists(wd), true);
+    std::fill(r.bus.ram.begin() + 0x30000, r.bus.ram.begin() + 0x30200, uint8_t(0));
+    command(false, 0x88, 0x30000);
+    c.equal("STX état : l'état relit l'écriture", r.bus.ram[0x30000 + 17], 0x5A);
+
+    // État v1 : même octets lus comme une v1 (l'overlay y serait absent) — ici on relit
+    // un lecteur STX écrit SANS overlay, dans l'ancien sens « chemin seul ».
+    r.fdc.restoreMedia(0, *before);
+    std::vector<uint8_t> v1;
+    { StateArchive ar = StateArchive::saver(v1); r.fdc.writeMedia(ar, 0); }
+    r.fdc.restoreMedia(0, *after);
+    { StateArchive ar = StateArchive::loader(v1.data(), v1.size()); fromV1 = Fdc::readMediaCopy(ar, false); }
+    c.equal("STX état : v1 relu", fromV1 != nullptr, true);
+    c.equal("STX état : v1 garde l'overlay du lecteur", fromV1 && r.fdc.restoreMedia(0, *fromV1)
+            && Fdc::mediaCopyBytes(*r.fdc.copyMedia(0)) > 0, true);
+}
 }  // namespace
 
 int testFdcMountGuards() {
@@ -304,6 +360,7 @@ int testFdcMountGuards() {
     noDiskCases(c);
     stxReadOnlyCase(c, dir.path);
     acsiStateCases(c, dir.path);
+    stxOverlayStateCases(c, dir.path);
     std::fprintf(stderr, "[fdc-mount-guard] %d checks, %d FAIL\n", c.count, c.failures);
     return c.failures;
 }

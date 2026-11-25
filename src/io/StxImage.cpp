@@ -72,6 +72,22 @@ void StxImage::buildSectorsSimple(Track& trk, const uint8_t* p) {
     }
 }
 
+bool StxImage::resetOverlay() {
+    // Durées de tour d'une IPF : posées par Fdc::loadImage APRÈS le parse, elles ne sont
+    // pas dans les octets bruts.
+    struct Rev { int track, side; uint16_t bytes; };
+    std::vector<Rev> revs;
+    for (const Track& t : tracks_)
+        if (!t.added && t.revolutionBytes) revs.push_back({t.trackNumber & 0x7F, t.trackNumber >> 7, t.revolutionBytes});
+    std::vector<uint8_t> raw = buf_;
+    saveSectors.clear();
+    saveTracks.clear();
+    if (!parse(std::move(raw))) return false;
+    for (const Rev& r : revs)
+        if (Track* t = findTrack(r.track, r.side)) t->revolutionBytes = r.bytes;
+    return true;
+}
+
 bool StxImage::parse(std::vector<uint8_t> raw) {
     buf_ = std::move(raw);
     valid_ = false;
@@ -448,7 +464,7 @@ static inline uint32_t rd32be(const uint8_t* p) {
     return (uint32_t(p[0]) << 24) | (uint32_t(p[1]) << 16) | (uint32_t(p[2]) << 8) | p[3];
 }
 
-bool StxImage::saveWd1772(const std::string& path) const {
+std::vector<uint8_t> StxImage::overlayBytes() const {
     // Piste ajoutée (absente de l'image d'origine) → blocs NSCT/NTRK, hors compteurs
     // de l'en-tête (cf. l'en-tête de section : Hatari indexe ses tableaux sur eux).
     auto added = [this](uint8_t track, uint8_t side) {
@@ -470,7 +486,7 @@ bool StxImage::saveWd1772(const std::string& path) const {
         if (ss.used) { nbUsed++; if (hatariSect(ss)) nbSect++; }
     for (const SaveTrack& st : saveTracks)
         if (!added(st.track, st.side)) nbTrck++;
-    if (nbUsed == 0 && saveTracks.empty()) return true;   // rien à sauver → pas de fichier
+    if (nbUsed == 0 && saveTracks.empty()) return {};     // rien à sauver
 
     std::vector<uint8_t> out;
     out.insert(out.end(), {'W','D','1','7','7','2'});
@@ -510,6 +526,12 @@ bool StxImage::saveWd1772(const std::string& path) const {
         out.insert(out.end(), st.data.begin(), st.data.end());
     }
 
+    return out;
+}
+
+bool StxImage::saveWd1772(const std::string& path) const {
+    const std::vector<uint8_t> out = overlayBytes();
+    if (out.empty()) return true;                         // rien à sauver → pas de fichier
     // Atomique (tmp + rename), comme le .msa : le fichier porte TOUTES les écritures
     // faites sur la STX, et une erreur au milieu d'une réécriture en place (disque
     // plein, support retiré) les perdait d'un coup.
@@ -547,7 +569,11 @@ bool StxImage::loadWd1772(const std::string& path) {
     std::vector<uint8_t> in(static_cast<std::size_t>(n));
     f.read(reinterpret_cast<char*>(in.data()), n);
     if (!f || f.gcount() != n) return false;              // lecture courte : image douteuse
+    return loadOverlayBytes(in, path);
+}
 
+bool StxImage::loadOverlayBytes(const std::vector<uint8_t>& in, const std::string& path) {
+    if (in.size() < 16) return false;
     if (std::memcmp(in.data(), "WD1772", 6) != 0) return false;
     if (in[6] != 1 || in[7] != 0) {                       // version/révision inconnues
         neost::log::err("[STX] %s: unsupported .wd1772 version %d.%d\n",

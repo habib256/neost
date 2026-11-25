@@ -150,6 +150,13 @@ public:
     // secteur (par piste/face/bitPosition) et chaque TRCK à sa piste.
     bool saveWd1772(const std::string& path) const;
     bool loadWd1772(const std::string& path);
+    // Le même contenu en OCTETS (format .wd1772 ; vide : aucun overlay). Sert les états
+    // autonomes et le retour arrière, qui portent ainsi les écritures d'une STX/IPF.
+    std::vector<uint8_t> overlayBytes() const;
+    bool loadOverlayBytes(const std::vector<uint8_t>& in, const std::string& what);
+    // Revient à l'image d'ORIGINE, sans aucune écriture : reparse les octets bruts gardés
+    // (les pistes ajoutées disparaissent), durées de tour d'une IPF conservées.
+    bool resetOverlay();
     Sector* findSectorByPosition(int track, int side, uint16_t bitPos);
 
     // Réinterprète le flux WRITE TRACK associé à `t` (saveTracks[t.saveTrackIndex])

@@ -549,13 +549,13 @@ Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
 - **Disque dur ACSI dans l'état** · P3 ⭘ *(proposé)* — une image `.hd` montée par le cœur
   libretro est écrite au fil de l'eau, hors de l'état : un retour arrière ou une trame
   d'anticipation ne défait pas une écriture, et deux joueurs en réseau divergent dès que le
-  programme écrit sur C:. Même famille que l'item suivant.
-- **Écritures STX et IPF dans l'état autonome** · P2 ⭘ *(proposé)* — une image STX ou IPF
-  (montée sur le chemin STX) n'y porte que son chemin : ses écritures vivent dans le `.wd1772`
-  compagnon, qu'une reprise ne défait pas (même limite que le retour arrière). Pour le netplay
-  et l'anticipation de libretro, c'est une divergence entre pairs dès qu'un jeu écrit
-  (sauvegardes de scores sur disquette protégée) ; le netplay IPF fiable est un argument du
-  cœur (`docs/LIBRETRO.md`, « Positionnement »).
+  programme écrit sur C:. L'en-tête d'état exige en outre la même image (empreinte ACSI) :
+  vérifier qu'un invité de netplay, avec SA copie, n'est pas refusé.
+- **Retour arrière : franchir les écritures STX** · P3 ⭘ *(proposé)* — depuis le 2026-11-25,
+  une copie de média porte l'overlay d'écriture d'une STX/IPF (format `.wd1772`) et
+  `restoreMedia` le rejoue : le retour arrière (`core/Rewind.cpp`) pourrait reculer au-delà
+  d'une sauvegarde de jeu au lieu de vider son anneau (`stxWrites`). Changer la règle et
+  le cas `--rewind-test` qui la garde, sur le GUI, le web et Android ensemble.
 - **Campagne IPF** · P2 ⏸ médias — un seul titre IPF validé (*Hammerfist*). Passer un lot
   d'IPF fourni par l'auteur au boot et au premier écran de jeu, noter ce que l'absence de
   DPLL pendant l'émulation fait tomber. Préalable à toute annonce « IPF sans capsimg ».

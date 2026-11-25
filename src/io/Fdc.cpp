@@ -3644,8 +3644,11 @@ struct Fdc::MediaCopy {
     std::string path;                                   // "" = lecteur vide
     bool        stx = false;
     bool        hostWriteBack = true;                   // réglage de la disquette (cf. FloppyDisk)
-    std::vector<uint8_t> image;                         // contenu .ST (vide pour un STX)
+    // Contenu .ST ; pour une STX/IPF, son overlay d'écriture au format .wd1772 (vide :
+    // aucune écriture).
+    std::vector<uint8_t> image;
     std::map<int, FloppyDisk::StOverrideTrack> stOverride;
+    bool        overlayKnown = true;                    // faux : état v1, overlay STX non porté
 };
 
 std::shared_ptr<const Fdc::MediaCopy> Fdc::copyMedia(int drive) const {
@@ -3658,6 +3661,8 @@ std::shared_ptr<const Fdc::MediaCopy> Fdc::copyMedia(int drive) const {
     if (!copy->stx) {
         copy->image      = dk.image;
         copy->stOverride = dk.stOverride;
+    } else if (dk.stx) {
+        copy->image = dk.stx->overlayBytes();
     }
     return copy;
 }
@@ -3724,7 +3729,26 @@ bool Fdc::restoreMedia(int drive, const MediaCopy& copy) {
         if (!loadImage(path, drive)) return false;
     }
     dk.hostWriteBack = copy.hostWriteBack;              // remonté : garde sa protection
-    if (!copy.stx) {
+    if (copy.stx) {
+        // Les écritures d'une STX/IPF : l'overlay de la copie remplace celui du lecteur
+        // (reprise d'un état, retour arrière, invité d'un jeu en réseau). Égaux — le cas
+        // de chaque trame d'anticipation — rien ne bouge.
+        if (copy.overlayKnown && dk.stx) {
+            const std::vector<uint8_t> cur = dk.stx->overlayBytes();
+            if (cur != copy.image) {
+                if (!dk.stx->resetOverlay()) return false;
+                if (!copy.image.empty()) dk.stx->loadOverlayBytes(copy.image, dk.path);
+                dk.sides = dk.stx->sides();
+                touchMedia(dk);
+                // Le fichier compagnon revient au même instant, comme writeBack pour une .st.
+                if (!dk.wd1772Path.empty() && hostWriteBack_ && dk.hostWriteBack) {
+                    std::error_code ec;
+                    if (copy.image.empty()) std::filesystem::remove(dk.wd1772Path, ec);
+                    else dk.stx->saveWd1772(dk.wd1772Path);
+                }
+            }
+        }
+    } else {
         // Le fichier hôte ne se réécrit que là où son contenu DIFFÈRE de la copie. Tant
         // que la recopie est active, dk.image est le fichier (relu par loadImage, ou tenu
         // à jour par writeBack à chaque écriture) : comparer à dk.image, c'est comparer
@@ -3821,12 +3845,15 @@ void Fdc::writeMedia(StateArchive& ar, int drive) const {
     std::vector<uint8_t> none;
     std::map<int, FloppyDisk::StOverrideTrack> noOverride;
     const bool body = present && !stx;
-    ar.vec(body ? const_cast<std::vector<uint8_t>&>(dk.image) : none);
+    // STX/IPF : l'overlay d'écriture (format .wd1772) tient la place de l'image.
+    std::vector<uint8_t> overlay;
+    if (present && stx && dk.stx) overlay = dk.stx->overlayBytes();
+    ar.vec(body ? const_cast<std::vector<uint8_t>&>(dk.image) : (stx ? overlay : none));
     archOverrides(ar, body ? const_cast<std::map<int, FloppyDisk::StOverrideTrack>&>(dk.stOverride)
                            : noOverride);
 }
 
-std::shared_ptr<const Fdc::MediaCopy> Fdc::readMediaCopy(StateArchive& ar) {
+std::shared_ptr<const Fdc::MediaCopy> Fdc::readMediaCopy(StateArchive& ar, bool stxOverlay) {
     auto copy = std::make_shared<MediaCopy>();
     uint8_t present = 0, stx = 0, hwb = 1;
     ar(present); ar(stx); ar(hwb);
@@ -3836,8 +3863,10 @@ std::shared_ptr<const Fdc::MediaCopy> Fdc::readMediaCopy(StateArchive& ar) {
     ar.check(present <= 1 && stx <= 1 && hwb <= 1, "media: flags");
     ar.check(present ? !copy->path.empty() : (copy->path.empty() && copy->image.empty()),
              "media: path and presence");
-    ar.check(!stx || copy->image.empty(), "media: STX carries no image");
+    // État v1 : une STX n'y portait que son chemin (image vide), son overlay est inconnu.
+    ar.check(!stx || stxOverlay || copy->image.empty(), "media: STX carries no image");
     if (!ar.ok()) return nullptr;
+    copy->overlayKnown = !stx || stxOverlay;
     copy->gen = kForeignGen;
     copy->stx = stx != 0;
     copy->hostWriteBack = hwb != 0;
