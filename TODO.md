@@ -503,35 +503,38 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 
 ### Cœur libretro
 
-Un cœur libretro sera un **cinquième frontend** (`src/libretro/`, adaptateur seul ;
-`neost_core` ne dépend pas de libretro). Sa frontière est préparée depuis le 2026-11-24 :
-états rapides et autonomes (disquettes comprises, remplissage toléré), recettes partagées
-(`switchTos`, `armAudioClocks`, `freezeHostClocks`, `setJoysticks`), journaux détournables,
-cadrage et annonce de géométrie par instance, cœur PIC dans une `.so`. Carte point par point,
-mesures et règles de l'adaptateur → [`docs/LIBRETRO.md`](docs/LIBRETRO.md). Rien ici ne
-touche l'intérieur du cœur 68000 : faisable avant l'échange.
+Le **cinquième frontend** existe depuis le 2026-11-25 : `src/libretro/neost_libretro.cpp`
+(`-DNEOST_PIC=ON -DNEOST_BUILD_LIBRETRO=ON`), zoom adaptatif par la géométrie, options en
+catégories, copies privées des disquettes, chargement accéléré, machine automatique,
+autorun des disquettes non amorçables, disquettes sœurs, shaders slang. Jugé par
+`tools/run_libretro.py` et `tools/check_slang.py`, en CI (job « Cœur libretro »). État et
+règles → [`docs/LIBRETRO.md`](docs/LIBRETRO.md) ; guide → `packaging/libretro/README.md`.
+Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
 
-- **Cœur libretro `neost_libretro`** · P2 ⭘ *(proposé)* — l'adaptateur, selon les règles de
-  `docs/LIBRETRO.md` : `retro_run` sur `runFrame`, image XRGB8888 telle quelle, son `int16`,
-  `retro_serialize` sur les états autonomes complétés à une borne, clavier, manettes, souris,
-  MIDI, changement de disque (`.m3u`), `.prg` par le démarrage automatique GEMDOS, EmuTOS seul
-  livré (TOS Atari dans le dossier système), options tirées des clés de `neost.cfg`. Bâti avec
-  `NEOST_PIC` et un script de version qui n'exporte que les `retro_*`. Fichier `.info` avec
-  `savestate_features = "deterministic"` (netplay et anticipation permis par le frontend) ;
-  options rangées et traduites en français, ports clavier et souris pour le netplay, copies
-  privées des disquettes dans *Save Files*, notification au démarrage, témoin du lecteur
-  (tableau « Le reste du métier » de `docs/LIBRETRO.md`).
-- **Image libretro : zoom adaptatif par la géométrie** · P2 ⭘ *(proposé)* — rogner la
-  trame envoyée sur `stContentRegion` (pointeur et `pitch`, sans copie), `SET_GEOMETRY` à
-  chaque changement de région avec l'aspect du bureau (`(cW·sx)/(cH·sy)`), maximum annoncé
-  640 × 400, hystérésis comptée sur les seules trames montrées, latch hors de l'état. Option
-  *Cadrage* : adaptatif, zone active fixe, cadre entier. Règles → `docs/LIBRETRO.md`,
-  « L'image : zoom adaptatif et shaders ».
-- **Shaders slang de NeoST** · P2 ⭘ *(proposé)* — porter `CrtEffectStack` en slang avec les
-  passes de câble et de bloom de POM2, une seule source pour le bureau et le module.
-  Préréglage de cœur automatique (SC1224 ou SM124 selon `OriginalSize.y`), préréglages
-  `neost-sc1224`, `neost-sm124`, `neost-peritel` ; défauts gradés comme le code. Vérifier le
-  pilote GLES de RetroArch (Pi, Android) et livrer des `.glslp` s'il le faut.
+- **Le module dans un vrai RetroArch** · P1 ⭘ — tout n'a été joué que par le frontend
+  ctypes. Charger le module et les shaders dans RetroArch (bureau, puis Android et Pi) :
+  zoom et `SET_GEOMETRY` à l'écran, préréglage de cœur chargé seul, bascule SC1224/SM124,
+  anticipation et retour arrière à la main. Vérifier le pilote GLES (Pi, Android), qui ne
+  lit que le GLSL, et livrer des `.glslp` s'il le faut.
+- **Options en français** · P2 ⭘ — `SET_CORE_OPTIONS_V2_INTL`, comme POM2 : l'anglais reste
+  la référence (CLAUDE.md), le français s'affiche quand RetroArch est en français.
+- **Clavier pour le netplay** · P2 ⭘ — le netplay de RetroArch n'envoie pas les touches
+  reçues par `SET_KEYBOARD_CALLBACK`. Un port « clavier » lu comme périphérique à chaque trame
+  (le port 3 de POM2), et un port « souris » (port 4).
+- **Machine automatique : la carte mémoire suit** · P3 ⭘ — après un redémarrage sur une
+  autre machine, `bus.ram` est réallouée : un frontend qui garde le pointeur de
+  `retro_get_memory_data` (triches) lit l'ancienne. Annoncer `SET_MEMORY_MAPS` et la republier.
+- **Machine automatique : au-delà du son DMA** · P3 ⭘ — la détection repose sur
+  `mmioNeedsBetterMachine` (son DMA, joypads, blitter, SCU, SCC, cache). Un jeu STE qui
+  teste le matériel par la valeur lue (sans faute) reste sur ST : `(STE)` dans le nom, ou
+  l'option. Recenser les titres de la collection qui le font.
+- **EmuTOS face au TOS Atari dans le cœur** · P2 ⏸ médias — Stunt Car Racer tourne sous
+  TOS 1.02/1.04 et retombe au bureau sous EmuTOS 192 Ko (headless comme module). Passer la
+  collection sous les deux et dresser la liste ; la notice dit déjà qu'un vrai TOS fait
+  tourner plus de jeux.
+- **Shaders : le bureau rattrape le module** · P3 ⭘ — `CrtEffectStack` n'a ni la passe de
+  câble ni le halo, que le slang a repris de POM2 ; et le choix automatique du moniteur
+  (SC1224/SM124 selon la hauteur) n'existe qu'en slang. Une seule source pour les deux.
 - **Rapport d'aspect selon la cadence** · P3 ⭘ *(proposé)* — le bureau et le futur module
   supposent qu'un pixel de basse résolution vaut 2 × 2 pixels mono. Sur un téléviseur, la
   zone active ne garde pas le même aspect à 50 et à 60 Hz (lignes visibles et durée utile de
@@ -541,8 +544,10 @@ touche l'intérieur du cœur 68000 : faisable avant l'échange.
   le préréglage `neost-rf` (modulateur des STFM). N'existe ni dans NeoST ni dans POM2 (NTSC
   Apple II seulement).
 - **Banc netplay du module** · P2 ⭘ *(proposé)* — l'équivalent de `tools/libretro_netplay.py`
-  de POM2 : deux instances du module, mêmes entrées, état identique à l'octet, un joueur qui
-  rejoint en cours de partie ; en CI. Le déterminisme est l'argument du cœur.
+  de POM2 : deux instances du module (deux processus), mêmes entrées, état identique à
+  l'octet, un joueur qui rejoint en cours de partie ; en CI. `run_libretro.py` ne rejoue
+  qu'un état dans une instance. Le déterminisme est l'argument du cœur. Les chemins des
+  copies privées diffèrent d'un joueur à l'autre : vérifier qu'un état les reprend.
 - **Clavier : une table de position neutre** · P3 ⭘ *(proposé)* — GLFW (`StKeys.cpp`) et
   Android ont chacun leur table touche → scancode ST ; libretro en ajouterait une troisième
   (`RETROK_*`). Une table indexée par position (usage HID USB), chaque frontend n'y branchant

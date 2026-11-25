@@ -1,5 +1,47 @@
 # Changelog — NeoST
 
+## 2026-11-25 — Libretro : le cœur `neost_libretro`
+
+Le cinquième frontend, selon `docs/LIBRETRO.md` : un module qui n'exporte que les 25
+`retro_*` (`-DNEOST_PIC=ON -DNEOST_BUILD_LIBRETRO=ON`, script de version sous ELF), avec son
+`.info` (`savestate_features = "deterministic"`), un guide (`packaging/libretro/README.md`)
+et des shaders slang.
+
+- **Image** : trame rognée sur `stContentRegion` sans copie, `SET_GEOMETRY` après trois
+  trames identiques, maximum 640 × 400, aspect du bureau (1,6 en basse, moyenne et mono),
+  hystérésis comptée sur les seules trames montrées. Option *Framing* : adaptatif, zone
+  active, cadre entier. La cadence annoncée est celle que le TOS établira (en-tête 50/60 Hz) :
+  la Glue démarre à 60 Hz, et l'annoncer réinitialisait deux fois le pilote au boot ; une
+  grâce de 120 trames retient les changements de cadence.
+- **Système** : TOS choisi par `TosChoice` dans `system/neost/` (Atari PAL d'abord, puis
+  EmuTOS), quartz de la ROM (`resolveQuartz auto` : 59,958 Hz pour un ST américain), RAM,
+  moniteur, horloge hôte ou figée.
+- **Machine automatique** : un programme qui lit un périphérique absent sans gestionnaire
+  de bus error à lui redémarre sur la machine qui le porte (68000 arrêté sous TOS Atari, ou
+  faute prise en RAM avec le vecteur 2 dans la ROM sous EmuTOS). Stardust démarre en STE.
+- **Disquettes** : copie privée dans `saves/neost/disks/` (l'original n'est jamais écrit),
+  interface de changement étendue, `.m3u` à libellés, disquettes sœurs reconnues par
+  `MediaScan::areSiblingImages` (Rainbow Islands A → B par R3), témoin du lecteur,
+  **chargement accéléré** (jusqu'à 8 trames émulées par trame hôte moteur allumé : 63 au
+  lieu de 370 pour la première lecture de `PDATS295.msa`), **autorun** des disquettes non
+  amorçables à un seul programme (Bubble Ghost). Programmes `.prg/.tos/.app` sur C:,
+  cartouches `.stc`.
+- **Entrées** : RetroPad → joystick (A = haut pour sauter, réglable), touches sur Y/X/Start/
+  Select/L/R, souris au stick droit et L2/R2, clavier positionnel `RETROK` → scancode ST,
+  descripteurs.
+- **Cœur** : `Fdc::motorOn()` (bit S7 du registre d'état) et `Fdc::readLogicalSector()`
+  (lecture hors émulation, STX/IPF compris) ; **`io/FloppyCatalog`** (secteur de boot
+  exécutable, catalogue FAT12, dossier `\AUTO`, choix du programme), testé dans
+  `neost-selftest` sur une image synthétique.
+- **Shaders** (`packaging/libretro/shaders/`) : les cinq passes slang de POM2 (câble, halo,
+  verre, présentation) portées au ST — horloge des points déduite de l'image (8, 16,
+  32 MHz), moniteur choisi par la hauteur (SC1224 sous 300 lignes, SM124 au-delà), masque
+  en triades. Préréglages `neost-auto`, `-sc1224`, `-sm124`, `-peritel` et préréglage de cœur
+  `presets/NeoST/NeoST.slangp`. Réglages ajustés à l'œil marqués `[F]`.
+- **Bancs** : `tools/run_libretro.py` (13 cas, frontend ctypes `tools/libretro_frontend.py`,
+  médias libres) et `tools/check_slang.py` (SPIR-V par glslangValidator, préréglages) ;
+  job CI « Cœur libretro ». Jamais lancé dans un vrai RetroArch à ce jour.
+
 ## 2026-11-25 — Web : bundle local allégé, Blue Period retirée
 
 - **Build web local** (`NEOST_WEB_FREE_ONLY=OFF`) : il embarquait `roms/` et `disks/` en

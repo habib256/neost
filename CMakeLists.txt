@@ -137,6 +137,7 @@ add_library(neost_core STATIC
     src/io/Acsi.cpp
     src/io/Scc.cpp
     src/io/MediaScan.cpp src/io/CompDisks.cpp
+    src/io/FloppyCatalog.cpp  # catalogue d'une disquette, programme à lancer
     src/io/Ne2000.cpp
     src/io/UltraSatan.cpp
     src/io/Isp1160.cpp
@@ -191,6 +192,26 @@ if(NEOST_PIC)
     add_executable(neost-shared-probe-run tests/shared_probe_run.cpp)
     target_link_libraries(neost-shared-probe-run PRIVATE neost-shared-probe)
 endif()
+# Cœur libretro (docs/LIBRETRO.md) : un cinquième frontend, adaptateur seul
+# (src/libretro/). Exige le cœur PIC. Le module n'exporte que les retro_* (visibilité
+# cachée, script de version sous ELF) ; son .info est recopié à côté.
+option(NEOST_BUILD_LIBRETRO "Cœur libretro neost_libretro (exige NEOST_PIC)" OFF)
+if(NEOST_BUILD_LIBRETRO)
+    if(NOT NEOST_PIC)
+        message(FATAL_ERROR "NEOST_BUILD_LIBRETRO exige -DNEOST_PIC=ON")
+    endif()
+    add_library(neost_libretro SHARED src/libretro/neost_libretro.cpp)
+    target_link_libraries(neost_libretro PRIVATE neost_core)
+    target_compile_definitions(neost_libretro PRIVATE NEOST_VERSION_STR="${NEOST_VERSION_STR}")
+    target_compile_options(neost_libretro PRIVATE ${NEOST_STRICT_OPTS})
+    set_target_properties(neost_libretro PROPERTIES PREFIX "" OUTPUT_NAME neost_libretro
+        CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+    if(NOT APPLE AND NOT WIN32)
+        target_link_options(neost_libretro PRIVATE
+            "-Wl,--version-script=${CMAKE_SOURCE_DIR}/src/libretro/link.T" "-Wl,--no-undefined")
+    endif()
+    configure_file(src/libretro/neost_libretro.info "${CMAKE_BINARY_DIR}/neost_libretro.info" COPYONLY)
+endif()
 # (Cpu68k.cpp est traité à part : il inclut l'en-tête tiers Moira.h → C++20 sans
 #  -Wpedantic strict, cf. le bloc Moira plus bas.)
 set_source_files_properties(
@@ -198,7 +219,7 @@ set_source_files_properties(
     src/core/Bus.cpp src/core/Shifter.cpp src/core/VideoGlue.cpp
     src/core/VideoCounter.cpp src/core/YM2149.cpp src/core/DmaSound.cpp
     src/core/Blitter.cpp
-    src/core/Machine.cpp src/core/EmuFiber.cpp src/core/Rewind.cpp src/core/Tracer.cpp src/core/Symbols.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp src/io/StxImage.cpp src/io/WrittenTrack.cpp src/io/IpfImage.cpp src/io/Rtc.cpp src/io/MidiAcia.cpp src/io/Fpu.cpp src/io/GemdosHd.cpp src/io/Acsi.cpp src/io/Scc.cpp src/io/MediaScan.cpp src/io/CompDisks.cpp src/io/Ne2000.cpp src/io/UltraSatan.cpp src/io/Isp1160.cpp src/io/CartridgeKey.cpp src/io/PortDevices.cpp src/io/DongleTable.cpp src/core/Framing.cpp src/core/TosChoice.cpp src/core/BitmapView.cpp src/util/HostPath.cpp src/util/Crc32.cpp src/util/Log.cpp src/util/ConfigPath.cpp src/util/RomProbe.cpp src/gui/AppConfig.cpp
+    src/core/Machine.cpp src/core/EmuFiber.cpp src/core/Rewind.cpp src/core/Tracer.cpp src/core/Symbols.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp src/io/StxImage.cpp src/io/WrittenTrack.cpp src/io/IpfImage.cpp src/io/Rtc.cpp src/io/MidiAcia.cpp src/io/Fpu.cpp src/io/GemdosHd.cpp src/io/Acsi.cpp src/io/Scc.cpp src/io/MediaScan.cpp src/io/CompDisks.cpp src/io/FloppyCatalog.cpp src/io/Ne2000.cpp src/io/UltraSatan.cpp src/io/Isp1160.cpp src/io/CartridgeKey.cpp src/io/PortDevices.cpp src/io/DongleTable.cpp src/core/Framing.cpp src/core/TosChoice.cpp src/core/BitmapView.cpp src/util/HostPath.cpp src/util/Crc32.cpp src/util/Log.cpp src/util/ConfigPath.cpp src/util/RomProbe.cpp src/gui/AppConfig.cpp
     PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
 
 # =============================================================================

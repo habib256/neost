@@ -987,6 +987,15 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   tenus par l'appelant (`FramingLatch`) ; annonce de géométrie et de cadence
   (`pacing::AvTracker`) ; bits joystick sans GLFW (`io/StJoyBits.hpp`) ; option `NEOST_PIC`
   (cœur PIC à visibilité cachée, lié dans une `.so` par `neost-shared-probe`, CI Linux).
+- **Cœur libretro `neost_libretro`** (2026-11-25, `src/libretro/neost_libretro.cpp`,
+  `-DNEOST_PIC=ON -DNEOST_BUILD_LIBRETRO=ON`) : 25 `retro_*` exportés ; zoom adaptatif par
+  rognage et `SET_GEOMETRY` ; cadence du TOS annoncée d'emblée ; TOS choisi dans
+  `system/neost/` ; machine automatique (redémarrage sur le matériel qu'un programme lit sans
+  gestionnaire) ; copies privées des disquettes, `.m3u`, disquettes sœurs, R3 ; chargement
+  accéléré moteur allumé ; autorun des disquettes non amorçables ; programmes sur C: ;
+  états autonomes complétés à une borne ; souris au stick droit ; options v2. Shaders slang
+  dans `packaging/libretro/shaders/`. Bancs `tools/run_libretro.py`, `tools/check_slang.py`
+  (CI « Cœur libretro »). Détail et limites → `docs/LIBRETRO.md`, « Où en est le cœur ».
 - **Oracle différentiel NeoST↔Hatari** (`tools/opendst_oracle.py`) : le même script
   d'entrées rejoué des deux côtés, images comparées, décalage de boot mesuré en deux
   passes. Repose sur `tools/hatari_neost_oracle.patch` (script joystick daté par VBL +
@@ -1172,6 +1181,13 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   fichier hôte est en lecture seule. Un `.dim` à en-tête non standard (extension `.dim`,
   signature `BB`) perd son en-tête et se monte en lecture seule. Une image n'entre que dans
   un lecteur à la fois (`Fdc::loadImage`, `.wd1772` partagé compris).
+- **Catalogue de disquette** (2026-11-25, `io/FloppyCatalog.*`, lecteur
+  `Fdc::readLogicalSector`, test `testFloppyCatalog` de `neost-selftest`). Secteur de boot
+  exécutable (somme des 256 mots = `$1234`), BPB, racine FAT12 et dossier `\AUTO` (chaîne
+  FAT suivie), sur `.st/.msa/.dim` comme sur STX/IPF (secteur trouvé par son champ ID).
+  `pickAutoStartProgram` : rien si la disquette s'amorce ou porte un programme dans `\AUTO` ;
+  sinon l'unique programme de jeu de la racine (`.PRG/.TOS/.APP`, utilitaires écartés, nom de
+  l'image en départage). Sert l'autorun du cœur libretro.
 - **Images IPF (SPS / CAPS)** (2026-10-22, `io/IpfImage.*`, test `tests/ipf_image_logic.cpp`).
   Décodeur LIBRE, adapté de MAME `src/lib/formats/ipf_dsk.cpp` (BSD-3, O. Galibert) — PAS
   de libcapsimage (licence SPS non libre ; c'est elle qu'Hatari charge, et l'oracle local

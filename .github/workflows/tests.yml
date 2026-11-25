@@ -77,6 +77,33 @@ jobs:
           fi
           grep -F 'NEOST_WITH_NET=OFF' nat-off.log
 
+  # ----------------------------------------------------------------- libretro --
+  # Le cœur libretro (docs/LIBRETRO.md) : module bâti, n'exportant que les retro_*,
+  # joué par le frontend ctypes de tools/run_libretro.py (médias libres seulement),
+  # et ses shaders slang compilés en SPIR-V comme RetroArch le fait.
+  libretro:
+    name: Cœur libretro (module, banc, shaders)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - name: Outils
+        run: sudo apt-get update && sudo apt-get install -y glslang-tools
+      - name: Compiler le module
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DNEOST_PIC=ON -DNEOST_BUILD_LIBRETRO=ON
+          cmake --build build -j"$(nproc)" --target neost_libretro
+      - name: Exports — les retro_* seuls
+        run: |
+          nm -D --defined-only build/neost_libretro.so | awk '$2 ~ /[TWVBD]/ {print $3}' \
+            | grep -vE '^_(init|fini)$' | sort -u | tee exports.txt
+          test "$(grep -vc '^retro_' exports.txt)" = 0
+          test "$(wc -l < exports.txt)" = 25
+      - name: Banc du module
+        run: python3 tools/run_libretro.py --module build/neost_libretro.so
+      - name: Shaders slang
+        run: python3 tools/check_slang.py
+
   # -------------------------------------------------------------------- pixel --
   pixel:
     name: Palier PIXEL (--tier full)

@@ -99,6 +99,8 @@ cmake --build build -j        # cibles : neost (GUI), neost-headless, neost-self
                               #          neost_core / neost_net (libs)
 ./build/neost                 # auto : dernier ROM (neost.cfg) ou EmuTOS US
 ./build/neost <rom> <disk.st>
+# cœur libretro (docs/LIBRETRO.md) : cible neost_libretro, banc tools/run_libretro.py
+cmake -B build-libretro -DCMAKE_BUILD_TYPE=Release -DNEOST_PIC=ON -DNEOST_BUILD_LIBRETRO=ON
 ```
 
 Sous-modules : `extern/imgui`, `extern/miniaudio`. `extern/moira` est **vendorisé**

@@ -54,6 +54,7 @@
 #include "util/MouseScale.hpp"
 #include "core/MachineType.hpp"
 #include "core/TosChoice.hpp"
+#include "io/FloppyCatalog.hpp"
 #include "core/Machine.hpp"
 #include "android/AndroidRoms.hpp"
 #include <filesystem>
@@ -623,6 +624,85 @@ static void testTosChoice() {
     checkBool("Mega ST + tos206uk → Mega STE", neost::pickMachineForTos(MachineType::MegaSt, c[9]) == MachineType::MegaSte, true);
     checkBool("STE + tos206uk → STE (convient)", neost::pickMachineForTos(MachineType::Ste, c[9]) == MachineType::Ste, true);
     checkBool("STE + TOS 3.06 (TT) → STE (refusé au chargement)", neost::pickMachineForTos(MachineType::Ste, c[10]) == MachineType::Ste, true);
+}
+
+// Image FAT12 720 Ko synthétique (BPB d'un 2 faces 9 secteurs, comme tools/make_floppy.py)
+// pour les règles de io/FloppyCatalog : quel programme lancer d'une disquette.
+namespace {
+struct FatImage {
+    std::vector<uint8_t> img = std::vector<uint8_t>(1440 * 512, 0);
+    static constexpr int kRoot = (1 + 2 * 3) * 512, kData = kRoot + 7 * 512;
+    int slot = 0, next = 2;
+    FatImage() {
+        auto le = [&](int off, int v) { img[off] = uint8_t(v); img[off + 1] = uint8_t(v >> 8); };
+        img[0] = 0x60; img[1] = 0x1C;
+        le(0x0B, 512); img[0x0D] = 2; le(0x0E, 1); img[0x10] = 2; le(0x11, 112);
+        le(0x13, 1440); img[0x15] = 0xF9; le(0x16, 3); le(0x18, 9); le(0x1A, 2);
+        fat(0, 0xFF9); fat(1, 0xFFF);
+    }
+    void fat(int idx, int val) {
+        for (int base : {512, 512 + 3 * 512}) {
+            const int off = base + idx * 3 / 2;
+            if (idx & 1) { img[off] = uint8_t((img[off] & 0x0F) | ((val << 4) & 0xF0)); img[off + 1] = uint8_t(val >> 4); }
+            else { img[off] = uint8_t(val); img[off + 1] = uint8_t((img[off + 1] & 0xF0) | ((val >> 8) & 0x0F)); }
+        }
+    }
+    static void entry(uint8_t* e, const char* name, const char* ext, uint8_t attr, int cluster) {
+        std::memset(e, ' ', 11);
+        std::memcpy(e, name, std::strlen(name));
+        std::memcpy(e + 8, ext, std::strlen(ext));
+        e[11] = attr; e[26] = uint8_t(cluster); e[27] = uint8_t(cluster >> 8);
+    }
+    void file(const char* name, const char* ext) {
+        const int c = next++;
+        fat(c, 0xFFF);
+        entry(img.data() + kRoot + 32 * slot++, name, ext, 0x20, c);
+    }
+    void autoFolder(const char* prg) {   // \AUTO avec un programme
+        const int c = next++;
+        fat(c, 0xFFF);
+        entry(img.data() + kRoot + 32 * slot++, "AUTO", "", 0x10, c);
+        uint8_t* d = img.data() + kData + (c - 2) * 2 * 512;
+        entry(d, ".", "", 0x10, c);
+        entry(d + 32, "..", "", 0x10, 0);
+        entry(d + 64, prg, "PRG", 0x20, next++);
+    }
+    void bootable() {   // somme des 256 mots big-endian = $1234
+        uint16_t sum = 0;
+        for (int i = 0; i < 510; i += 2) sum = uint16_t(sum + ((img[i] << 8) | img[i + 1]));
+        const uint16_t w = uint16_t(0x1234 - sum);
+        img[510] = uint8_t(w >> 8); img[511] = uint8_t(w);
+    }
+    std::string pick(const std::string& hint = std::string()) const {
+        neost::FloppyCatalog cat;
+        const auto rd = [this](int lsn, uint8_t* out) {
+            if (std::size_t(lsn + 1) * 512 > img.size()) return false;
+            std::memcpy(out, img.data() + std::size_t(lsn) * 512, 512);
+            return true;
+        };
+        if (!neost::readFloppyCatalog(rd, cat)) return "<no catalogue>";
+        return neost::pickAutoStartProgram(cat, hint);
+    }
+};
+}  // namespace
+
+static void testFloppyCatalog() {
+    std::printf("Catalogue de disquette : programme à lancer (io/FloppyCatalog)\n");
+    { FatImage f; f.file("GAME", "PRG"); f.file("README", "TXT");
+      checkStr("un seul programme, boot non exécutable → lui", f.pick(), "A:\\GAME.PRG"); }
+    { FatImage f; f.file("GAME", "PRG"); f.bootable();
+      checkStr("secteur de boot exécutable → rien (il lance le jeu)", f.pick(), ""); }
+    { FatImage f; f.autoFolder("LOADER"); f.file("GAME", "PRG");
+      checkStr("programme dans \\AUTO → rien (le TOS le lance)", f.pick(), ""); }
+    { FatImage f; f.file("INSTALL", "PRG"); f.file("GAME", "TOS");
+      checkStr("utilitaire écarté → le jeu", f.pick(), "A:\\GAME.TOS"); }
+    { FatImage f; f.file("MENU", "PRG"); f.file("GHOST", "PRG");
+      checkStr("deux programmes sans indice → rien", f.pick(), "");
+      checkStr("deux programmes, nom de l'image « Ghost (1987) » → GHOST", f.pick("Ghost (1987)"), "A:\\GHOST.PRG"); }
+    { FatImage f; f.file("TOOL", "TTP");
+      checkStr("un .TTP attend des paramètres → rien", f.pick(), ""); }
+    { FatImage f; f.img[0x0B] = 0; f.img[0x0C] = 1;   // 256 octets par secteur
+      checkStr("BPB incohérent → pas de catalogue", f.pick(), "<no catalogue>"); }
 }
 
 static void testTosImageLoad() {
@@ -4338,6 +4418,7 @@ int main() {
     testMissingHwHint();
     testTosImageLoad();
     testTosChoice();
+    testFloppyCatalog();
     testAudioRefill();
     testConfigParser();
     testStKeysCountries();

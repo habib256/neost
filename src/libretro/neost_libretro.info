@@ -1,0 +1,44 @@
+# Software Information
+display_name = "Atari - ST/STE/Mega ST/Mega STE (NeoST)"
+authors = "VERHILLE Arnaud"
+supported_extensions = "st|msa|dim|stx|ipf|m3u|prg|tos|ttp|app|gtp|stc"
+corename = "NeoST"
+categories = "Emulator"
+license = "GPLv3"
+permissions = ""
+display_version = "dev"
+
+# Hardware Information
+manufacturer = "Atari"
+systemname = "ST/STE/Mega ST/Mega STE"
+systemid = "atari_st"
+
+# Libretro Features
+database = "Atari - ST"
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+is_experimental = "true"
+
+# BIOS / Firmware
+firmware_count = 2
+firmware0_desc = "neost/etos192us.img (EmuTOS 192 KB, ST and Mega ST)"
+firmware0_path = "neost/etos192us.img"
+firmware0_opt = "true"
+firmware1_desc = "neost/etos256us.img (EmuTOS 256 KB, STE and Mega STE)"
+firmware1_path = "neost/etos256us.img"
+firmware1_opt = "true"
+
+notes = "(!) Put EmuTOS or your own TOS images in system/neost.|(!) Floppies are copied once to saves/neost/disks; the originals are never written."
+
+description = "NeoST emulates the Atari ST, STE, Mega ST and Mega STE with a cycle-exact 68000 and chips modelled against the silicon. It reads ST, MSA, DIM, Pasti STX and IPF floppies without any extra library, starts GEMDOS programs directly, frames the picture adaptively and keeps states small and deterministic for run-ahead and netplay."
