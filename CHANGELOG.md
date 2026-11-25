@@ -1,5 +1,25 @@
 # Changelog — NeoST
 
+## 2026-11-25 — Libretro : campagne de compatibilité, autorun et machine automatique revus
+
+- **`tools/libretro_corpus.py`** : 81 images privées (`disks/st`, `disks/stx`) passées dans
+  le module, sous EmuTOS puis avec un TOS Atari, écran final classé (jeu, bureau, noir,
+  autre) et planche contact. Avant correctifs : 49 écrans de jeu sous TOS Atari, 45 sous
+  EmuTOS ; après : **52 et 48**.
+- **Autorun** : un boot exécutable ou un `\AUTO` n'empêchent plus le choix — le démarrage
+  automatique part du bureau, qu'un boot qui lance le jeu n'atteint jamais ; les boots de
+  cracker qui rendent la main bloquaient Pirates, Stormlords, Simulcra, Killing Game Show,
+  Bolo. Et l'unique programme d'un unique dossier (`RICK_DAN.GER\RICKLOAD.TOS`).
+  `FloppyCatalog` lit désormais les dossiers de la racine.
+- **Machine automatique** : la faute vient du `Bus` (registre absent, avec le PC et le
+  vecteur 2 **à l'instant de la faute**) au lieu de la dernière faute du CPU. Corrige deux
+  défauts : Stardust sous TOS 1.04 (le double défaut écrasait la faute du son DMA : écran
+  noir sans redémarrage) et Wings of Death (sonde du blitter avec un gestionnaire rendu au
+  TOS dans la même trame : redémarrage à tort en Mega ST). Deux redémarrages au plus
+  (Mega ST puis STE : systematic_error). Le mot « STE » isolé dans le nom démarre en STE
+  (Faster).
+- Banc : cas `probe_restored`, `ste_name` (24 cas) ; selftest du catalogue revu.
+
 ## 2026-11-25 — Libretro : premier essai dans un vrai RetroArch
 
 - **macOS, RetroArch 1.22.2 Metal (M1)** : le module charge en natif et lance Bubble Ghost

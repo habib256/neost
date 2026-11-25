@@ -302,6 +302,15 @@ public:
         return busFaultNSlow(addr, n, write);
     }
     bool busFaultNSlow(uint32_t addr, unsigned n, bool write) const;
+    // Dernière faute sur un registre IO ABSENT du modèle courant (étage 4 : la carte
+    // ioMem, pas la protection superviseur ni une écriture interdite), et leur compte.
+    // Pour un frontend qui veut dire QUEL matériel manquait : le CPU ne garde que sa
+    // dernière faute, qu'un double défaut écrase par l'erreur d'adresse sur la pile
+    // (cas Stardust sous TOS 1.04). Diagnostic, hors de l'état.
+    uint32_t lastMissingIoFault() const { return lastMissingIo_; }
+    uint32_t lastMissingIoPc() const { return lastMissingIoPc_; }          // instruction fautive
+    uint32_t lastMissingIoVector() const { return lastMissingIoVector_; }  // vecteur 2 à cet instant
+    uint64_t missingIoFaults() const { return missingIoCount_; }
 
     // Auto-test DÉTERMINISTE du modèle de bus error (whitelist par octet) : vérifie
     // que RAM/ROM/cartouche ne fautent pas, que $FF0000-$FF7FFF et les trous fautent,
@@ -655,6 +664,9 @@ private:
     // Carte de bus error de l'espace IO ($FF8000-$FFFFFF), 1 octet par adresse
     // (1 = bus error, 0 = registre câblé ou « void »). Construite à la demande
     // depuis les tables Hatari (ioMemTabST/STE) selon `machine`. Cf. buildIoFault.
+    mutable uint32_t             lastMissingIo_  = 0;   // cf. lastMissingIoFault
+    mutable uint32_t             lastMissingIoPc_ = 0, lastMissingIoVector_ = 0;
+    mutable uint64_t             missingIoCount_ = 0;
     mutable std::vector<uint8_t> ioFault_;
     mutable MachineType          ioFaultMachine_ = MachineType::St;
     mutable bool                 ioFaultBuilt_   = false;

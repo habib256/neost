@@ -659,10 +659,11 @@ struct FatImage {
         fat(c, 0xFFF);
         entry(img.data() + kRoot + 32 * slot++, name, ext, 0x20, c);
     }
-    void autoFolder(const char* prg) {   // \AUTO avec un programme
+    void autoFolder(const char* prg) { folder("AUTO", prg); }   // \AUTO avec un programme
+    void folder(const char* name, const char* prg) {             // dossier avec un programme
         const int c = next++;
         fat(c, 0xFFF);
-        entry(img.data() + kRoot + 32 * slot++, "AUTO", "", 0x10, c);
+        entry(img.data() + kRoot + 32 * slot++, name, "", 0x10, c);
         uint8_t* d = img.data() + kData + (c - 2) * 2 * 512;
         entry(d, ".", "", 0x10, c);
         entry(d + 32, "..", "", 0x10, 0);
@@ -763,10 +764,19 @@ static void testFloppyCatalog() {
     std::printf("Catalogue de disquette : programme à lancer (io/FloppyCatalog)\n");
     { FatImage f; f.file("GAME", "PRG"); f.file("README", "TXT");
       checkStr("un seul programme, boot non exécutable → lui", f.pick(), "A:\\GAME.PRG"); }
+    // Le démarrage automatique part du BUREAU : un boot ou un \AUTO qui lance le jeu ne
+    // rend jamais la main ; celui qui la rend (boot de cracker, corpus du 2026-11-25 :
+    // Pirates, Stormlords) laisse venir le bureau, qui lance le jeu.
     { FatImage f; f.file("GAME", "PRG"); f.bootable();
-      checkStr("secteur de boot exécutable → rien (il lance le jeu)", f.pick(), ""); }
+      checkStr("boot exécutable : le programme quand même", f.pick(), "A:\\GAME.PRG"); }
     { FatImage f; f.autoFolder("LOADER"); f.file("GAME", "PRG");
-      checkStr("programme dans \\AUTO → rien (le TOS le lance)", f.pick(), ""); }
+      checkStr("programme dans \\AUTO : la racine quand même", f.pick(), "A:\\GAME.PRG"); }
+    { FatImage f; f.autoFolder("GAME");
+      checkStr("seulement \\AUTO : rien (le TOS le lance)", f.pick(), ""); }
+    { FatImage f; f.folder("RICK_DAN", "RICKLOAD"); f.file("README", "TXT");
+      checkStr("rien à la racine : l'unique programme d'un dossier", f.pick(), "A:\\RICK_DAN\\RICKLOAD.PRG"); }
+    { FatImage f; f.folder("ONE", "A"); f.folder("TWO", "B");
+      checkStr("deux dossiers à programme : rien", f.pick(), ""); }
     { FatImage f; f.file("INSTALL", "PRG"); f.file("GAME", "TOS");
       checkStr("utilitaire écarté → le jeu", f.pick(), "A:\\GAME.TOS"); }
     { FatImage f; f.file("MENU", "PRG"); f.file("GHOST", "PRG");

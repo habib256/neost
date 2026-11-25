@@ -494,6 +494,38 @@ def case_netplay_keyboard(module, work):
     return f"background {before} -> {after} after 'a' on the keyboard port"
 
 
+def case_probe_restored(module, work):
+    """Le motif de Wings of Death : poser un gestionnaire, sonder, remettre le vecteur du
+    TOS dans la même trame. En fin de trame le vecteur est de nouveau en ROM ; seul celui
+    EN VIGUEUR pendant la faute (Bus::lastMissingIoVector) dit que le programme la rattrape."""
+    c, media = core(module, work)
+    # move.l $8.w,a1 ; lea handler(pc),a0 ; move.l a0,$8.w ; lecture du son DMA ;
+    # cont: move.l a1,$8.w ; bra.s * ; handler: lea 14(sp),sp ; bra.s cont
+    words = SUPER + [0x2278, 0x0008, 0x41FA, 0x0010, 0x21C8, 0x0008] + READ_DMA_SOUND + \
+        [0x21C9, 0x0008] + LOOP + [0x4FEF, 0x000E, 0x60F4]
+    write_prg(media / "PROBE2.PRG", words)
+    assert c.load(media / "PROBE2.PRG")
+    c.run(1500)
+    assert not any("restarted" in m or "needs" in m for m in c.messages), c.messages
+    vec = int.from_bytes(c.ram()[8:12], "big") & 0xFFFFFF
+    assert vec >= 0xE00000, f"vector not restored: ${vec:06X}"
+    return f"probe with a handler, vector restored to ${vec:06X}: still an Atari ST"
+
+
+def case_ste_name(module, work):
+    """Le mot STE isolé dans le nom démarre en STE ; « Stellar » ne le fait pas."""
+    c, media = core(module, work / "a")
+    shutil.copy(media / "diskA.st", media / "racer_ste_v1.st")
+    assert c.load(media / "racer_ste_v1.st")
+    assert c.messages[0].startswith("Atari STE"), c.messages
+    c.close()
+    c, media = core(module, work / "b")
+    shutil.copy(media / "diskA.st", media / "Stellar Steel.st")
+    assert c.load(media / "Stellar Steel.st")
+    assert c.messages[0].startswith("Atari ST "), c.messages
+    return "racer_ste_v1.st → STE, Stellar Steel.st → ST"
+
+
 CASES = {n[5:]: f for n, f in sorted(globals().items()) if n.startswith("case_")}
 
 

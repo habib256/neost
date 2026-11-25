@@ -83,23 +83,19 @@ bool readFloppyCatalog(const SectorReader& read, FloppyCatalog& out) {
         if (end) break;
     }
 
-    // \AUTO : suivre la chaîne FAT12 de son premier cluster (bornée).
-    auto it = std::find_if(out.root.begin(), out.root.end(), [](const FloppyEntry& e) {
-        return (e.attr & 0x10) && upper(e.name) == "AUTO";
-    });
-    if (it == out.root.end()) return true;
-    // Le premier cluster n'est pas gardé dans FloppyEntry : relire l'entrée.
-    int cluster = -1;
-    for (int s = 0; s < rootSectors && cluster < 0; ++s) {
+    // Dossiers de la racine : suivre la chaîne FAT12 de leur premier cluster (bornée).
+    std::vector<std::pair<std::string, int>> dirs;
+    for (int s = 0; s < rootSectors && dirs.size() < 17; ++s) {
         if (!read(rootStart + s, sec)) break;
-        for (int i = 0; i < 512; i += 32) {
+        bool end = false;
+        for (int i = 0; i < 512 && dirs.size() < 17; i += 32) {
+            if (sec[i] == 0x00) { end = true; break; }
             FloppyEntry e;
-            if (parseEntry(sec + i, e) && (e.attr & 0x10) && upper(e.name) == "AUTO") {
-                cluster = le16(sec + i + 26);
-                break;
-            }
+            if (parseEntry(sec + i, e) && (e.attr & 0x10)) dirs.push_back({e.name, le16(sec + i + 26)});
         }
+        if (end) break;
     }
+    if (dirs.empty()) return true;
     std::vector<uint8_t> fat(std::size_t(spf) * 512);
     for (int s = 0; s < spf; ++s)
         if (!read((reserved ? reserved : 1) + s, fat.data() + std::size_t(s) * 512)) return true;
@@ -109,23 +105,27 @@ bool readFloppyCatalog(const SectorReader& read, FloppyCatalog& out) {
         const int v = fat[off] | (fat[off + 1] << 8);
         return (c & 1) ? (v >> 4) : (v & 0xFFF);
     };
-    for (int hops = 0; cluster >= 2 && cluster < 0xFF0 && hops < 32; ++hops, cluster = next(cluster)) {
-        for (int k = 0; k < spc; ++k) {
-            if (!read(dataStart + (cluster - 2) * spc + k, sec)) return true;
-            for (int i = 0; i < 512; i += 32) {
-                if (sec[i] == 0x00) return true;
-                FloppyEntry e;
-                if (parseEntry(sec + i, e)) out.autoFolder.push_back(e);
+    for (const auto& [name, first] : dirs) {
+        std::vector<FloppyEntry> entries;
+        bool done = false;
+        for (int hops = 0, cluster = first; !done && cluster >= 2 && cluster < 0xFF0 && hops < 32;
+             ++hops, cluster = next(cluster)) {
+            for (int k = 0; k < spc && !done; ++k) {
+                if (!read(dataStart + (cluster - 2) * spc + k, sec)) { done = true; break; }
+                for (int i = 0; i < 512; i += 32) {
+                    if (sec[i] == 0x00) { done = true; break; }
+                    FloppyEntry e;
+                    if (parseEntry(sec + i, e)) entries.push_back(e);
+                }
             }
         }
+        if (upper(name) == "AUTO") out.autoFolder = std::move(entries);
+        else if (out.folders.size() < 16) out.folders.push_back({name, std::move(entries)});
     }
     return true;
 }
 
 std::string pickAutoStartProgram(const FloppyCatalog& cat, const std::string& hint) {
-    if (cat.bootable) return std::string();
-    for (const FloppyEntry& e : cat.autoFolder)
-        if (!(e.attr & 0x10) && isProgram(e.name)) return std::string();
     std::vector<std::string> progs;
     for (const FloppyEntry& e : cat.root)
         if (!(e.attr & 0x10) && isProgram(e.name) && !isUtility(e.name)) progs.push_back(e.name);
@@ -147,7 +147,19 @@ std::string pickAutoStartProgram(const FloppyCatalog& cat, const std::string& hi
         }
         if (bestLen >= 3 && ties == 1) return "A:\\" + best;
     }
-    return std::string();
+    if (!progs.empty()) return std::string();
+    // Aucun programme à la racine : l'unique programme d'un unique dossier qui en porte.
+    std::string only;
+    int folders = 0;
+    for (const auto& [name, entries] : cat.folders) {
+        std::vector<std::string> inside;
+        for (const FloppyEntry& e : entries)
+            if (!(e.attr & 0x10) && isProgram(e.name) && !isUtility(e.name)) inside.push_back(e.name);
+        if (inside.empty()) continue;
+        if (++folders > 1 || inside.size() > 1) return std::string();
+        only = "A:\\" + name + "\\" + inside.front();
+    }
+    return only;
 }
 
 }  // namespace neost

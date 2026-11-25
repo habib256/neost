@@ -802,6 +802,16 @@ bool Bus::busFaultNSlow(uint32_t addr, unsigned n, bool write) const {
     //    que si TOUS ses octets fautent.
     for (unsigned i = 0; i < n; ++i)
         if (!busFault(addr + i)) return false;
+    // Registre ABSENT de ce modèle (et non accès interdit) : retenu pour le frontend
+    // (cf. lastMissingIoFault), avec l'instruction fautive et le vecteur de bus error
+    // EN VIGUEUR À CET INSTANT — celui que le 68000 va prendre. Un programme qui pose
+    // son gestionnaire, sonde et remet le vecteur du TOS dans la même trame (Wings of
+    // Death) laisse en fin de trame un vecteur trompeur. Chemin lent, espace IO seul.
+    lastMissingIo_ = addr;
+    lastMissingIoPc_ = cpu ? (cpu->pc() & stmap::ADDR_MASK) : 0;
+    lastMissingIoVector_ = ram.size() > 11 ? ((uint32_t(ram[8]) << 24 | uint32_t(ram[9]) << 16 |
+                                               uint32_t(ram[10]) << 8 | ram[11]) & stmap::ADDR_MASK) : 0;
+    ++missingIoCount_;
     return true;
 }
 

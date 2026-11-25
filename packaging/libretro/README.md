@@ -60,12 +60,14 @@ Delete that copy to start afresh.
   draws there. The aspect ratio stays the same when the resolution changes.
   **Video → Framing** also offers the active area alone, or the full frame.
 - **The right machine.** With **System → Machine** on *Automatic*, content
-  tagged `(STE)` starts on an STE. A program that touches STE or Mega STE
+  whose name says STE (`(STE)`, `_ste_`) starts on an STE. A program that touches STE or Mega STE
   hardware on an ST without expecting it to be missing restarts on the machine
   it needs, and a notification says so.
-- **Programs on non-booting floppies start by themselves.** Many game disks
-  do not boot: you double-click the game on the desktop. When such a disk
-  holds a single game program, NeoST starts it for you
+- **Programs on floppies start by themselves.** Many game disks do not boot a
+  game: you double-click it on the desktop, sometimes after a cracker's boot
+  screen. When a disk holds a single game program (at its root, or alone in a
+  folder), NeoST starts it from the desktop for you; a disk whose boot sector
+  launches the game never reaches the desktop, so nothing starts twice
   (**Media → Start the program**).
 - **Fast floppy loading.** While the floppy controller is busy with a disk,
   and no key or button is held, NeoST runs up to eight Atari frames per host
