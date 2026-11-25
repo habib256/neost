@@ -137,6 +137,10 @@ monochrome. Other presets in `shaders_slang/neost`:
 
 Every setting can be changed in **Quick Menu → Shaders → Shader Parameters**.
 The shaders need the Vulkan, Metal, Direct3D 11/12 or GL core video driver.
+On macOS, install RetroArch's Metal build (`brew install --cask retroarch-metal`:
+the plain `retroarch` cask is Intel-only and OpenGL-only, without slang shaders)
+and keep its default **Vulkan** video driver: with the **Metal** driver, RetroArch
+1.22.2 runs very slowly unless the trackpad button is held, whatever the core.
 The persistence counts presented frames: for a 50 Hz game on a 60 Hz screen,
 turn on **Sync to Exact Content Framerate** or use a variable refresh display.
 

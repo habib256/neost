@@ -41,7 +41,14 @@ dans `packaging/libretro/shaders/`. Il est jugé sans RetroArch :
   état rejoué à l'identique, trames cachées ;
 - `tools/check_slang.py` compile chaque étape des shaders en SPIR-V (glslangValidator) et
   contrôle les préréglages ;
-- le job « Cœur libretro » de la CI fait les deux, et vérifie les exports.
+- le job « Cœur libretro » de la CI fait les deux, et vérifie les exports ;
+- `tools/retroarch_try.sh` le lance dans un **vrai RetroArch**, configuration isolée. Passé
+  le 2026-11-25 sous macOS (RetroArch 1.22.2 Metal, M1), pilotes Vulkan et Metal : autorun
+  de Bubble Ghost, options en français, 320 × 200 à 1,6 annoncés d'emblée, aucune annonce
+  de géométrie ni de cadence ensuite, préréglage de cœur chargé seul et ses 5 passes
+  compilées, image en jeu avec lignes de balayage et courbure (captures F8). RetroArch
+  relance lui-même ses pilotes peu après le démarrage pour appliquer le préréglage ; le
+  frontend de test, qui enregistre chaque annonce, n'en relève aucune du cœur.
 
 Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
 
@@ -102,7 +109,8 @@ Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
   EmuTOS 192 Ko (vérifié au headless, même résultat).
 
 Restent ouverts au TODO (§ 7, « Cœur libretro ») : le MIDI, le disque dur ACSI dans
-l'état, l'essai du module et des shaders dans un vrai RetroArch.
+l'état, l'essai sur les autres hôtes (Pi, Android, Windows, Linux), un module macOS
+universel.
 
 ## Positionnement : un cœur ST qui n'est pas Hatari
 

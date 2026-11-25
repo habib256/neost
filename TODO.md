@@ -514,11 +514,21 @@ disquettes sœurs, ports clavier et souris du netplay, shaders slang. Jugé par
 règles → [`docs/LIBRETRO.md`](docs/LIBRETRO.md) ; guide → `packaging/libretro/README.md`.
 Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
 
-- **Le module dans un vrai RetroArch** · P1 ⭘ — tout n'a été joué que par le frontend
-  ctypes. Charger le module et les shaders dans RetroArch (bureau, puis Android et Pi) :
-  zoom et `SET_GEOMETRY` à l'écran, préréglage de cœur chargé seul, bascule SC1224/SM124,
-  anticipation et retour arrière à la main. Vérifier le pilote GLES (Pi, Android), qui ne
-  lit que le GLSL, et livrer des `.glslp` s'il le faut.
+- **Le module dans un vrai RetroArch : Pi, Android, Windows, Linux** · P1 ⭘ — passé le 2026-11-25
+  sur **macOS** (RetroArch 1.22.2 Metal, M1, `tools/retroarch_try.sh`) : chargement natif,
+  autorun de Bubble Ghost (STX), options en français, géométrie 320 × 200 à 1,6 annoncée
+  d'emblée, préréglage `presets/NeoST/NeoST.slangp` chargé seul et ses 5 passes compilées
+  sous Vulkan (MoltenVK) et Metal, captures F8 avec lignes de balayage et courbure. Restent
+  les autres hôtes, le pilote GLES (Pi, Android ; il ne lit que le GLSL), et l'anticipation
+  et le retour arrière joués à la main. Sous macOS, `--max-frames-ss` ne capture rien (Vulkan
+  comme Metal) : capturer par F8 en jeu. Le pilote **Metal** de RetroArch (1.22.2, macOS)
+  ralentit tout, accélération du chargement coupée comprise, sauf bouton du touchpad tenu
+  (Cocoa fait alors tourner sa boucle autrement) ; Vulkan charge seul. Défaut de RetroArch,
+  pas du cœur : la notice conseille Vulkan.
+- **Module macOS universel** · P2 ⭘ *(proposé)* — le cask `retroarch` de Homebrew est
+  x86_64 et OpenGL seul (pilote `gl`, sans slang) ; `retroarch-metal` est universel. Un
+  module arm64 seul ne charge pas dans le premier : bâtir `neost_libretro.dylib` pour
+  `arm64;x86_64` (`CMAKE_OSX_ARCHITECTURES`) dans le paquet.
 - **Machine automatique : au-delà du son DMA** · P3 ⭘ — la détection repose sur
   `mmioNeedsBetterMachine` (son DMA, joypads, blitter, SCU, SCC, cache). Un jeu STE qui
   teste le matériel par la valeur lue (sans faute) reste sur ST : `(STE)` dans le nom, ou
