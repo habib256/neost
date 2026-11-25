@@ -509,7 +509,8 @@
     // passent en argv (Module.arguments → main de main_web.cpp), la machine bootant
     // directement dessus. Les démos qui ne tournent pas sous EmuTOS ne sont PAS ici
     // (Infinite Live of the Blitter, The LoSTE Screens ; Punish Your Machine non vérifié
-    // au-delà de son menu) — cf. CMakeLists.txt, NEOST_WEB_CATALOG_DEMOS.
+    // au-delà de son menu) — cf. CMakeLists.txt, NEOST_WEB_CATALOG_DEMOS. Blue Period
+    // (STE 2 Mo) en est sortie le 2026-11-25 à la demande du mainteneur.
     var DEMOS = [
       { id: 'cuddly', title: 'The Cuddly Demos — The Carebears', file: '/disks/cuddly_demos.msa',
         machine: 'st', mem: '512k', rom: '/roms/etos192fr.img' },
@@ -524,9 +525,7 @@
       { id: 'ika', title: 'Ika I Compofylla — Newline', file: '/disks/ika_compofylla.st',
         machine: 'st', mem: '1m', rom: '/roms/etos192fr.img' },
       { id: 'shforstv', title: 'shforstv — Paulo Simoes', file: '/disks/shforstv.st',
-        machine: 'st', mem: '1m', rom: '/roms/etos192fr.img', hint: 'Press Space to start the scrolling.' },
-      { id: 'blueperiod', title: 'Blue Period — Paradox (STE)', file: '/disks/blue_period.st',
-        machine: 'ste', mem: '2m', rom: '/roms/etos256fr.img' }
+        machine: 'st', mem: '1m', rom: '/roms/etos192fr.img', hint: 'Press Space to start the scrolling.' }
     ];
     function findDemo(id) {
       for (var i = 0; i < DEMOS.length; i++) if (DEMOS[i].id === id) return DEMOS[i];

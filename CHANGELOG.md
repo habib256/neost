@@ -1,5 +1,16 @@
 # Changelog — NeoST
 
+## 2026-11-25 — Web : bundle local allégé, Blue Period retirée
+
+- **Build web local** (`NEOST_WEB_FREE_ONLY=OFF`) : il embarquait `roms/` et `disks/` en
+  entier, soit 194 Mo d'`index.data` téléchargés et gardés en mémoire à chaque chargement,
+  dont 16 seulement atteignables (les menus ne lisent que la racine des dossiers). Il
+  embarque désormais la liste libre, plus les fichiers à la racine de `roms/` et `disks/`
+  aux extensions des menus : **21 Mo**. Les démos du menu « Demos », qui manquaient au
+  build local, y sont désormais (le scénario `demos` du banc y passe).
+- **Blue Period** (STE 2 Mo) sort des démos de la page, à la demande du mainteneur : sept
+  démos restent. L'étalon `blue_period` du harnais est inchangé.
+
 ## 2026-11-24 — Web : disques durs dans la page, lien de cours, états avec disquettes
 
 Pour le cours d'assembleur 68000 de l'issue #45 (outils sur C:, travail des étudiants

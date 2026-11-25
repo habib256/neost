@@ -282,7 +282,9 @@ python3 -m http.server -d wasm 8000
 ```
 
 `-DNEOST_WEB_FREE_ONLY=ON` restreint le FS virtuel aux contenus libres (c'est ce que fait
-la CI). La page hôte est `web/shell.html` ; `wasm/index.html` est l'artefact GÉNÉRÉ, pas
+la CI). Sans lui (défaut, build local), la page reçoit en plus les fichiers à la **racine**
+de `roms/` et de `disks/` que ses menus listent ; les sous-dossiers (`disks/st`,
+`disks/stx`, `disks/etalons`…) n'y sont pas, puisque les menus ne les verraient pas. La page hôte est `web/shell.html` ; `wasm/index.html` est l'artefact GÉNÉRÉ, pas
 la source.
 
 ⚠ **`wasm/` n'est PLUS dans le dépôt** (2026-08-23) : il est gitignoré. La démo en ligne

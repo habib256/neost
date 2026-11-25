@@ -80,9 +80,8 @@ configuration the page gives them:
 | `suretrip49.msa`      | Suretrip 49%        | Checkpoint         |      |
 | `ika_compofylla.st`   | Ika I Compofylla    | Newline            |      |
 | `shforstv.st`         | shforstv            | Paulo Simoes       | 2006 |
-| `blue_period.st`      | Blue Period         | Paradox            |      |
 
-`ika_compofylla.st`, `shforstv.st` and `blue_period.st` are FAT12 containers holding the
+`ika_compofylla.st` and `shforstv.st` are FAT12 containers holding the
 original program unmodified in `AUTO\` (see `disks/etalons/demos/README.txt`).
 
 They are included as freely-distributed demoscene works — productions released to be

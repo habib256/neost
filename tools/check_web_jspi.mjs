@@ -990,7 +990,7 @@ async function main() {
       await loadPage(cdp, base, '', {});
       const demos = await cdp.ev('DEMOS');
       // Secondes avant la capture : le premier écran parlant de chaque démo (relevé au headless).
-      const wait = { suretrip: 35, blueperiod: 35 };
+      const wait = { suretrip: 35 };
       for (const d of demos) {
         await loadPage(cdp, base, `?machine=${d.machine}&mem=${d.mem}&demo=${d.id}`, {});
         const page = await cdp.ev(`[document.getElementById('romSel').value, driveA,
@@ -1023,7 +1023,7 @@ async function main() {
       }
       // Le bouton : il recharge la page dans la configuration de la démo choisie.
       await loadPage(cdp, base, '', {});
-      await cdp.ev("(() => { const s = document.getElementById('demoSel'); s.value = 'blueperiod'; " +
+      await cdp.ev("(() => { const s = document.getElementById('demoSel'); s.value = 'cuddly'; " +
                    "s.dispatchEvent(new Event('change')); document.getElementById('btnDemo').click(); return 1; })()");
       let url = '';
       for (let i = 0; i < 100; i++) {
@@ -1036,7 +1036,7 @@ async function main() {
         } catch {}
       }
       console.log(`[web-jspi] demos: Run demo button -> ${url}`);
-      check(/machine=ste/.test(url) && /mem=2m/.test(url) && /demo=blueperiod/.test(url),
+      check(/machine=st(&|$)/.test(url) && /mem=512k/.test(url) && /demo=cuddly/.test(url),
             'Run demo button: reloads with the demo configuration');
     }
     if (want('touch') && browser !== 'chrome') {

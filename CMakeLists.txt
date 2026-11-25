@@ -673,8 +673,8 @@ if(EMSCRIPTEN)
     # déploiement PUBLIC (GitHub Pages / artefact web-wasm), on n'embarque que la
     # liste autorisée des paquets (EmuTOS GPL + TOS 1.02/1.62 UK des profils
     # 520 ST / 1040 STE + diskA généré) — jamais les autres TOS ni les jeux sous
-    # copyright. En local (défaut), on embarque tout roms/ et disks/ pour le confort
-    # de test.
+    # copyright. En local (défaut), on y ajoute ce que les menus de la page voient :
+    # les fichiers à la RACINE de roms/ et de disks/ (cf. plus bas).
     option(NEOST_WEB_FREE_ONLY "WASM : n'embarquer que les ROM/disquettes du paquet" OFF)
     # Même NOM et même polarité que packaging/stage_free_data.sh, à dessein : le
     # bundle web est 100 % LIBRE PAR DÉFAUT depuis la purge du 2026-08-30, comme les
@@ -685,93 +685,116 @@ if(EMSCRIPTEN)
     # le YAML. NEOST_PACKAGE_NO_ATARI_TOS=0 les ré-embarque depuis des copies LOCALES
     # (gitignorées, cf. tools/private_assets.sh) — paquet personnel, jamais release.
     option(NEOST_PACKAGE_NO_ATARI_TOS "Paquet 100 % libre : aucun TOS Atari embarqué" ON)
-    if(NEOST_WEB_FREE_ONLY)
-        set(NEOST_WEB_PRELOAD
-            roms/etos192us.img
-            roms/etos192fr.img
-            # EmuTOS 256 Ko : GPL lui aussi, et INDISPENSABLE au STE/Mega STE — sans lui
-            # le frontend web se rabat sur l'EmuTOS 192 Ko, qui se présente en TOS 1.4 et
-            # fait rétrograder la machine en ST (adjustMachineForTos) : le mode STE du
-            # paquet public était donc silencieusement inopérant. Les paquets bureau, eux,
-            # embarquent bien les 4 (packaging/stage_free_data.sh) — c'est l'incohérence
-            # entre les deux listes qui était le bug. Coût : +512 Ko sur 40 Mo de marge.
-            roms/etos256us.img
-            roms/etos256fr.img
-            roms/drivesound
-            disks/diskA.st)
-        if(NOT NEOST_PACKAGE_NO_ATARI_TOS)
-            # TOS 1.02 UK / 1.62 UK : profils 520 ST et 1040 STE.
-            list(APPEND NEOST_WEB_PRELOAD roms/tos102uk.img roms/tos162uk.img)
+    # La liste libre est embarquée dans LES DEUX modes : le build local y gagne les démos
+    # du menu « Demos », qu'il n'avait pas (elles sont montées à plat sous /disks).
+    set(NEOST_WEB_PRELOAD
+        roms/etos192us.img
+        roms/etos192fr.img
+        # EmuTOS 256 Ko : GPL lui aussi, et INDISPENSABLE au STE/Mega STE — sans lui
+        # le frontend web se rabat sur l'EmuTOS 192 Ko, qui se présente en TOS 1.4 et
+        # fait rétrograder la machine en ST (adjustMachineForTos) : le mode STE du
+        # paquet public était donc silencieusement inopérant. Les paquets bureau, eux,
+        # embarquent bien les 4 (packaging/stage_free_data.sh) — c'est l'incohérence
+        # entre les deux listes qui était le bug. Coût : +512 Ko sur 40 Mo de marge.
+        roms/etos256us.img
+        roms/etos256fr.img
+        roms/drivesound
+        disks/diskA.st)
+    if(NOT NEOST_PACKAGE_NO_ATARI_TOS)
+        # TOS 1.02 UK / 1.62 UK : profils 520 ST et 1040 STE.
+        list(APPEND NEOST_WEB_PRELOAD roms/tos102uk.img roms/tos162uk.img)
+    endif()
+    # Démos de démonstration : les trois productions demoscene que la purge du
+    # 2026-08-30 a délibérément gardées. MÊME liste que packaging/stage_free_data.sh
+    # pour les paquets bureau — les deux doivent rester d'accord, c'est justement
+    # une divergence entre ces deux listes qui avait rendu le mode STE du paquet
+    # web silencieusement inopérant. +1,9 Mo sur 40 Mo de marge.
+    # ⚠ Montées À PLAT dans /disks, pas sous /disks/etalons/ : le sélecteur de
+    # disquette du shell fait un FS.readdir('/disks') NON RÉCURSIF (web/shell.html,
+    # populateSelect) — dans un sous-dossier elles seraient embarquées mais
+    # INVISIBLES dans le menu.
+    set(NEOST_WEB_DEMOS
+        disks/etalons/cuddly_demos.msa
+        disks/etalons/nocooper.msa
+        disks/etalons/closure.msa)
+    # Cubase Lite n'est PAS embarqué dans le web (décision du mainteneur, 2026-11-13) :
+    # sa disquette se lance sous TOS 1.04 (DESKTOP.INF #Z, cf. THIRD-PARTY.txt) et ne
+    # fonctionne pas sous EmuTOS — or le web n'a que EmuTOS (NEOST_WEB_FREE_ONLY). Le
+    # proposer dans le menu, c'était offrir un logiciel qui ne démarre pas. Les paquets
+    # bureau le gardent (stage_free_data.sh) : l'utilisateur peut y poser son TOS.
+
+    # Manquer une donnée doit se dire AU CONFIGURE, en nommant le fichier :
+    # laissée au file_packager, l'absence sort au LIEN, noyée dans la ligne de
+    # commande em++ complète.
+    function(neost_web_preload src dst)
+        if(NOT EXISTS "${CMAKE_SOURCE_DIR}/${src}")
+            message(FATAL_ERROR
+                "WASM : donnée à embarquer absente : ${src} "
+                "(TOS Atari ? ils sont hors dépôt — cf. tools/private_assets.sh)")
         endif()
-        # Démos de démonstration : les trois productions demoscene que la purge du
-        # 2026-08-30 a délibérément gardées. MÊME liste que packaging/stage_free_data.sh
-        # pour les paquets bureau — les deux doivent rester d'accord, c'est justement
-        # une divergence entre ces deux listes qui avait rendu le mode STE du paquet
-        # web silencieusement inopérant. +1,9 Mo sur 40 Mo de marge.
-        # ⚠ Montées À PLAT dans /disks, pas sous /disks/etalons/ : le sélecteur de
-        # disquette du shell fait un FS.readdir('/disks') NON RÉCURSIF (web/shell.html,
-        # populateSelect) — dans un sous-dossier elles seraient embarquées mais
-        # INVISIBLES dans le menu.
-        set(NEOST_WEB_DEMOS
-            disks/etalons/cuddly_demos.msa
-            disks/etalons/nocooper.msa
-            disks/etalons/closure.msa)
-        # Cubase Lite n'est PAS embarqué dans le web (décision du mainteneur, 2026-11-13) :
-        # sa disquette se lance sous TOS 1.04 (DESKTOP.INF #Z, cf. THIRD-PARTY.txt) et ne
-        # fonctionne pas sous EmuTOS — or le web n'a que EmuTOS (NEOST_WEB_FREE_ONLY). Le
-        # proposer dans le menu, c'était offrir un logiciel qui ne démarre pas. Les paquets
-        # bureau le gardent (stage_free_data.sh) : l'utilisateur peut y poser son TOS.
-
-        # Manquer une donnée doit se dire AU CONFIGURE, en nommant le fichier :
-        # laissée au file_packager, l'absence sort au LIEN, noyée dans la ligne de
-        # commande em++ complète.
-        function(neost_web_preload src dst)
-            if(NOT EXISTS "${CMAKE_SOURCE_DIR}/${src}")
-                message(FATAL_ERROR
-                    "WASM : donnée à embarquer absente : ${src} "
-                    "(TOS Atari ? ils sont hors dépôt — cf. tools/private_assets.sh)")
-            endif()
-            target_link_options(neost-web PRIVATE
-                "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/${src}@${dst}")
-        endfunction()
-
-        foreach(item IN LISTS NEOST_WEB_PRELOAD)
-            neost_web_preload("${item}" "/${item}")
-        endforeach()
-        foreach(item IN LISTS NEOST_WEB_DEMOS)
-            get_filename_component(demo_name "${item}" NAME)
-            neost_web_preload("${item}" "/disks/${demo_name}")
-        endforeach()
-        # Démos du catalogue d'étalons (2026-11-18), web SEULEMENT : chacune a été jouée sous
-        # EmuTOS FR (le seul TOS du bundle public) dans la configuration que la page lui
-        # applique (web/shell.html, table DEMOS : machine, RAM, EmuTOS 50 Hz). Celles qui
-        # n'y tournent pas restent dehors : Infinite Live of the Blitter (retour au bureau),
-        # The LoSTE Screens (bloqué sur LOADING), Punish Your Machine (parties du menu non
-        # vérifiées). Les paquets bureau n'en ont pas besoin : on y pose son propre TOS.
-        # Les noms sources ont des espaces, que « SHELL:--preload-file » découperait : copie
-        # au configure sous un nom simple, embarquée depuis le dossier de build.
-        set(NEOST_WEB_CATALOG_DEMOS
-            "Blue Period - Paradox (STE 2MB).st|blue_period.st"
-            "Suretrip 49 percent - Checkpoint (ST 1MB).msa|suretrip49.msa"
-            "The Overscan Demos - Paulo Simoes (ST 1MB).st|overscan_demos.st"
-            "Ika I Compofylla - Newline (ST 1MB).st|ika_compofylla.st"
-            "shforstv - Paulo Simoes (ST 1MB).st|shforstv.st")
-        foreach(entry IN LISTS NEOST_WEB_CATALOG_DEMOS)
-            string(REPLACE "|" ";" pair "${entry}")
-            list(GET pair 0 demo_src)
-            list(GET pair 1 demo_dst)
-            set(demo_path "${CMAKE_SOURCE_DIR}/disks/etalons/demos/${demo_src}")
-            if(NOT EXISTS "${demo_path}")
-                message(FATAL_ERROR "WASM : démo à embarquer absente : ${demo_path}")
-            endif()
-            configure_file("${demo_path}" "${CMAKE_BINARY_DIR}/webdemos/${demo_dst}" COPYONLY)
-            target_link_options(neost-web PRIVATE
-                "SHELL:--preload-file ${CMAKE_BINARY_DIR}/webdemos/${demo_dst}@/disks/${demo_dst}")
-        endforeach()
-    else()
         target_link_options(neost-web PRIVATE
-            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/roms@/roms"
-            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/disks@/disks")
+            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/${src}@${dst}")
+    endfunction()
+
+    foreach(item IN LISTS NEOST_WEB_PRELOAD)
+        neost_web_preload("${item}" "/${item}")
+    endforeach()
+    foreach(item IN LISTS NEOST_WEB_DEMOS)
+        get_filename_component(demo_name "${item}" NAME)
+        neost_web_preload("${item}" "/disks/${demo_name}")
+    endforeach()
+    # Démos du catalogue d'étalons (2026-11-18), web SEULEMENT : chacune a été jouée sous
+    # EmuTOS FR (le seul TOS du bundle public) dans la configuration que la page lui
+    # applique (web/shell.html, table DEMOS : machine, RAM, EmuTOS 50 Hz). Celles qui
+    # n'y tournent pas restent dehors : Infinite Live of the Blitter (retour au bureau),
+    # The LoSTE Screens (bloqué sur LOADING), Punish Your Machine (parties du menu non
+    # vérifiées). Les paquets bureau n'en ont pas besoin : on y pose son propre TOS.
+    # Blue Period (Paradox, STE 2 Mo) retirée le 2026-11-25 à la demande du mainteneur.
+    # Les noms sources ont des espaces, que « SHELL:--preload-file » découperait : copie
+    # au configure sous un nom simple, embarquée depuis le dossier de build.
+    set(NEOST_WEB_CATALOG_DEMOS
+        "Suretrip 49 percent - Checkpoint (ST 1MB).msa|suretrip49.msa"
+        "The Overscan Demos - Paulo Simoes (ST 1MB).st|overscan_demos.st"
+        "Ika I Compofylla - Newline (ST 1MB).st|ika_compofylla.st"
+        "shforstv - Paulo Simoes (ST 1MB).st|shforstv.st")
+    foreach(entry IN LISTS NEOST_WEB_CATALOG_DEMOS)
+        string(REPLACE "|" ";" pair "${entry}")
+        list(GET pair 0 demo_src)
+        list(GET pair 1 demo_dst)
+        set(demo_path "${CMAKE_SOURCE_DIR}/disks/etalons/demos/${demo_src}")
+        if(NOT EXISTS "${demo_path}")
+            message(FATAL_ERROR "WASM : démo à embarquer absente : ${demo_path}")
+        endif()
+        configure_file("${demo_path}" "${CMAKE_BINARY_DIR}/webdemos/${demo_dst}" COPYONLY)
+        target_link_options(neost-web PRIVATE
+            "SHELL:--preload-file ${CMAKE_BINARY_DIR}/webdemos/${demo_dst}@/disks/${demo_dst}")
+    endforeach()
+
+    # Build local : en plus, les fichiers à la RACINE de roms/ et de disks/ que les
+    # menus listent (web/shell.html, populateSelect : FS.readdir NON récursif, mêmes
+    # extensions). Jusqu'au 2026-11-25 on embarquait roms/ et disks/ EN ENTIER :
+    # 194 Mo d'index.data, téléchargés et gardés en mémoire à chaque chargement, dont
+    # 16 seulement atteignables — disks/st, disks/stx, disks/etalons, disks/midi,
+    # roms/gm et roms/mt32 étaient embarqués mais invisibles.
+    if(NOT NEOST_WEB_FREE_ONLY)
+        file(GLOB local_roms LIST_DIRECTORIES false CONFIGURE_DEPENDS
+             RELATIVE "${CMAKE_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}/roms/*")
+        file(GLOB local_disks LIST_DIRECTORIES false CONFIGURE_DEPENDS
+             RELATIVE "${CMAKE_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}/disks/*")
+        list(FILTER local_roms INCLUDE REGEX "\\.([iI][mM][gG]|[rR][oO][mM]|[tT][oO][sS]|[bB][iI][nN])$")
+        list(FILTER local_disks INCLUDE REGEX "\\.([sS][tT]|[mM][sS][aA]|[dD][iI][mM]|[sS][tT][xX]|[iI][pP][fF])$")
+        set(local_items ${local_roms} ${local_disks})
+        list(REMOVE_ITEM local_items ${NEOST_WEB_PRELOAD})   # déjà embarqués
+        foreach(item IN LISTS local_items)
+            # Les guillemets protègent les noms à espaces (« TOS v1.02 (1987)… ») du
+            # découpage de « SHELL: ». Un « @ » couperait la paire source@destination.
+            if(item MATCHES "@|\"")
+                message(WARNING "WASM : ${item} ignoré (nom avec @ ou guillemet)")
+                continue()
+            endif()
+            target_link_options(neost-web PRIVATE
+                "SHELL:--preload-file \"${CMAKE_SOURCE_DIR}/${item}@/${item}\"")
+        endforeach()
     endif()
     return()   # sous Emscripten on ne construit QUE le cœur + le frontend web
 endif()
