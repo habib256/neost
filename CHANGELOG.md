@@ -1,5 +1,23 @@
 # Changelog — NeoST
 
+## 2026-11-25 — Libretro : premier essai dans un vrai RetroArch
+
+- **macOS, RetroArch 1.22.2 Metal (M1)** : le module charge en natif et lance Bubble Ghost
+  (STX) seul ; options en français ; 320 × 200 à 1,6 et 50,05 Hz annoncés d'emblée, sans
+  autre annonce ; préréglage `presets/NeoST/NeoST.slangp` trouvé seul, 5 passes slang
+  compilées sous Vulkan (MoltenVK) et sous Metal ; captures F8 en jeu avec lignes de
+  balayage et courbure.
+- `tools/retroarch_try.sh` : ne force plus `glcore` (absent des versions macOS), pilote
+  au choix par `RA_VIDEO_DRIVER`, refus clair d'un RetroArch d'une autre architecture
+  (le cask `retroarch` est x86_64 et OpenGL seul : prendre `retroarch-metal`), bruits du
+  lecteur fournis, résumé du journal sans MoltenVK, options du cœur isolées
+  (`core_options_path`, réglables par `RA_CORE_OPTIONS`), historique coupé.
+  `--max-frames-ss` ne capture rien sous macOS : F8 en jeu.
+- Pilote **Metal** de RetroArch : tout est très ralenti, que l'accélération du chargement
+  soit active ou coupée, sauf bouton du touchpad tenu ; avec **Vulkan**, Bubble Ghost charge
+  seul. Défaut de RetroArch sous macOS, pas du cœur (au frontend de test, le titre vient en
+  380 trames). La notice conseille Vulkan.
+
 ## 2026-11-25 — Écritures des disquettes protégées dans l'état
 
 - **État autonome v2** : une STX/IPF y porte son overlay d'écriture (format `.wd1772`,
