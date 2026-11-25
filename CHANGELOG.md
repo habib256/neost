@@ -1,5 +1,15 @@
 # Changelog — NeoST
 
+## 2026-11-25 — Libretro : bruits du lecteur, carte mémoire
+
+- **Bruits du lecteur** dans le flux de la trame : `audio/DriveSoundMix` (cœur, WAV PCM
+  8/16 bits lus et rééchantillonnés sans bibliothèque). Le ronron suit l'état du moteur
+  (rampe de 10 ms), les pas et les déplacements de tête sont des événements du FDC joués
+  pour les seules trames entendues. Lecteur vide : silence. Options « Drive sounds » et
+  volume (75 % par défaut) ; échantillons dans `system/neost/drivesound`. Cas `drive_sound`.
+- **Carte mémoire** : `SET_MEMORY_MAPS` (ST-RAM grand-boutiste à l'adresse 0), republiée
+  après un redémarrage sur une autre machine ; vérifié dans le cas `needs_ste`.
+
 ## 2026-11-25 — Libretro : disques durs, toucher, un invité rejoint l'hôte
 
 - **Netplay entre deux machines** : un état nomme ses disquettes par leur chemin absolu,

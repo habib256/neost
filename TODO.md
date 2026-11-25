@@ -519,9 +519,6 @@ Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
   zoom et `SET_GEOMETRY` à l'écran, préréglage de cœur chargé seul, bascule SC1224/SM124,
   anticipation et retour arrière à la main. Vérifier le pilote GLES (Pi, Android), qui ne
   lit que le GLSL, et livrer des `.glslp` s'il le faut.
-- **Machine automatique : la carte mémoire suit** · P3 ⭘ — après un redémarrage sur une
-  autre machine, `bus.ram` est réallouée : un frontend qui garde le pointeur de
-  `retro_get_memory_data` (triches) lit l'ancienne. Annoncer `SET_MEMORY_MAPS` et la republier.
 - **Machine automatique : au-delà du son DMA** · P3 ⭘ — la détection repose sur
   `mmioNeedsBetterMachine` (son DMA, joypads, blitter, SCU, SCC, cache). Un jeu STE qui
   teste le matériel par la valeur lue (sans faute) reste sur ST : `(STE)` dans le nom, ou
@@ -545,9 +542,10 @@ Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
   Android ont chacun leur table touche → scancode ST ; libretro en ajouterait une troisième
   (`RETROK_*`). Une table indexée par position (usage HID USB), chaque frontend n'y branchant
   que sa traduction.
-- **Bruits du lecteur rendus en PCM** · P3 ⭘ *(proposé)* — `DriveSound` joue par son propre
-  moteur miniaudio ; libretro n'a qu'un flux. Rendre les bruits en échantillons mêlés à la
-  trame, utilisable aussi par Android.
+- **Android : bruits du lecteur** · P3 ⭘ *(proposé)* — `audio/DriveSoundMix` (cœur, PCM
+  sans bibliothèque) les rend déjà pour le cœur libretro ; l'APK n'a qu'un flux SDL et ne
+  les joue pas. Le brancher comme `neost_libretro.cpp` (événements des trames entendues,
+  moteur suivi par trame).
 - **Disque dur ACSI dans l'état** · P3 ⭘ *(proposé)* — une image `.hd` montée par le cœur
   libretro est écrite au fil de l'eau, hors de l'état : un retour arrière ou une trame
   d'anticipation ne défait pas une écriture, et deux joueurs en réseau divergent dès que le

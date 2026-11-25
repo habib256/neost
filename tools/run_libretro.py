@@ -319,6 +319,9 @@ def case_needs_ste(module, work):
     assert c.load(media / "NEEDSTE.PRG")
     c.run(1500)
     assert any("restarted as Atari STE" in m for m in c.messages), c.messages
+    # La carte mémoire suit la Machine neuve (triches, succès).
+    assert len(c.memory_maps) == 2, c.memory_maps
+    assert c.memory_maps[-1] == (c.lib.retro_get_memory_data(2), c.lib.retro_get_memory_size(2)), c.memory_maps
     return c.messages[-1]
 
 
@@ -451,6 +454,21 @@ def case_touch_pointer(module, work):
     after = white()
     assert after > before + 8000, f"white pixels {before} -> {after}: the window did not open"
     return f"double tap on drive A: {before} -> {after} white pixels (window open)"
+
+
+def case_drive_sound(module, work):
+    """Bruits du lecteur : un boot sur disquette (EmuTOS muet) porte nettement plus de son
+    avec eux que sans ; les trames cachées de l'anticipation ne sonnent pas."""
+    energies = {}
+    for opt in ("enabled", "disabled"):
+        c, media = core(module, work / opt, {"neost_drive_sound": opt, "neost_fast_floppy": "disabled"})
+        shutil.copytree(ROOT / "roms" / "drivesound" / "epson_smd480l", work / opt / "system" / "neost" / "drivesound")
+        assert c.load(media / "diskA.st")
+        c.measure_audio = True
+        c.run(400)
+        energies[opt] = c.audio_energy / max(1, c.audio_frames)
+    assert energies["enabled"] > 4 * max(energies["disabled"], 1.0), energies
+    return f"mean |sample| with drive sounds {energies['enabled']:.0f}, without {energies['disabled']:.0f}"
 
 
 def case_netplay_keyboard(module, work):
