@@ -27,6 +27,15 @@ runs more games than EmuTOS: Stunt Car Racer, for one, needs it.
 The TOS also sets the video standard: a US TOS runs at 60 Hz, a European one at
 50 Hz. Most ST games were written for 50 Hz.
 
+## Drive sounds
+
+Copy NeoST's `roms/drivesound/epson_smd480l` folder to `system/neost/drivesound`
+to hear the drive: motor, head steps and seeks, recorded from a real Epson
+SMD-480L drive by Stefan jL (from STeem SSE, freeware; keep this credit when
+you pass the samples on). **Media → Drive sounds** turns them off and
+**Drive sound volume** sets their level. The drive stays silent while it is
+empty, and with run-ahead each step is heard once.
+
 ## Content
 
 | File | What happens |
@@ -62,6 +71,8 @@ Delete that copy to start afresh.
   and no key or button is held, NeoST runs up to eight Atari frames per host
   frame. The emulation stays exact; only the waiting is shorter (a 330 KB
   program loads about twice as fast).
+- **Cheats and memory tools** see the ST-RAM at address 0, big-endian as on the
+  68000, even after an automatic restart on another machine.
 - **Exact states.** A save state weighs 2 to 4 MB with its floppies, takes
   under a millisecond on a recent computer, and replays exactly: run-ahead,
   rewind and netplay work.

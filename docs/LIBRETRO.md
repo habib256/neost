@@ -79,6 +79,13 @@ Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
   contenu vient de l'état. `tools/libretro_netplay.py` le prouve en deux processus aux
   dossiers distincts, ceux de l'hôte effacés avant que l'invité ne le rejoigne à la trame
   500 : image et RAM identiques pendant 400 trames (CI).
+- **Les bruits du lecteur** dans le flux de la trame (`audio/DriveSoundMix`, cœur, sans
+  bibliothèque) : échantillons Epson de `roms/drivesound` posés dans
+  `system/neost/drivesound`. Le ronron suit l'état du moteur à chaque trame entendue (juste
+  après une reprise d'état), les pas sont des événements du FDC joués seulement pour une
+  trame entendue (une fois sous anticipation). Lecteur vide : silence, choix d'agrément.
+- **La carte mémoire** (`SET_MEMORY_MAPS`, ST-RAM grand-boutiste à 0) republiée après un
+  redémarrage sur une autre machine.
 - **Les disques durs** `.hd`/`.vhd` en ACSI 0 (copie privée) : EmuTOS monte la partition
   et lance `C:\AUTO`.
 - **Le toucher** : option « Touch moves the GEM pointer » (active sur Android) —
@@ -88,9 +95,8 @@ Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
   compte : Stunt Car Racer tourne sous TOS 1.02 et 1.04 et retombe au bureau sous
   EmuTOS 192 Ko (vérifié au headless, même résultat).
 
-Restent ouverts au TODO (§ 7, « Cœur libretro ») : les bruits du lecteur, le MIDI, les
-écritures STX/IPF et ACSI dans l'état, l'essai du module et des shaders dans un vrai
-RetroArch.
+Restent ouverts au TODO (§ 7, « Cœur libretro ») : le MIDI, les écritures STX/IPF et ACSI
+dans l'état, l'essai du module et des shaders dans un vrai RetroArch.
 
 ## Positionnement : un cœur ST qui n'est pas Hatari
 
@@ -131,7 +137,7 @@ présente sur ce qu'il fait le jour où il paraît.
 | Annonce de taille et de cadence (`SET_GEOMETRY`, `SET_SYSTEM_AV_INFO`) | `neost::pacing::AvTracker` (`src/core/Pacing.hpp`) : annonce après trois trames identiques, distingue taille et cadence, `fps()` suit le quartz | **Prêt** |
 | Son `audio_sample_batch` en `int16` | `neost::mixEmulatedFrame` (`src/core/AudioMix.hpp`) rend du `float` stéréo ; `AudioPacer::samplesForFrame` avec coussin et file à 0 donne le débit exact sans asservissement (`src/core/Pacing.hpp:185`) | **Prêt** (conversion `float` → `int16` dans l'adaptateur) |
 | Horodatage des écritures son | `Machine::armAudioClocks()`, contrat de drainage écrit dans `Machine.hpp` | **Prêt** |
-| Bruits du lecteur dans le même flux | `DriveSound` joue par son propre moteur miniaudio | **Ouvert** — « Bruits du lecteur rendus en PCM » |
+| Bruits du lecteur dans le même flux | `DriveSound` joue par son propre moteur miniaudio ; `audio/DriveSoundMix` rend du PCM | **Fait** pour libretro ; Android ouvert |
 | `retro_serialize` rapide | `saveState` 0,41 ms, `loadState` 0,52 ms ; avec les disquettes 0,66 et 0,76 ms ; une trame ≈ 1 ms (mesures ci-dessous) | **Prêt** |
 | Le blob contient tout ce qui change | `Machine::saveStateWithMedia` / `loadStateWithMedia` : l'état `.state` intact, les deux lecteurs et un CRC | **Prêt**, sauf les écritures STX et IPF — « Écritures STX et IPF dans l'état autonome » |
 | `retro_serialize_size` fixe | Conteneur à longueur inscrite, remplissage final ignoré ; taille constante tant que les médias ne changent pas, sauf GEMDOS (+322 octets au boot sous EmuTOS) | **Prêt** (borne à poser par l'adaptateur) |

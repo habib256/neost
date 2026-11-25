@@ -3,7 +3,7 @@
 #  retroarch_try.sh — Le cœur libretro de NeoST dans un VRAI RetroArch, isolé.
 #
 #  Monte une configuration jetable (dossier système avec EmuTOS, sauvegardes,
-#  shaders de packaging/libretro/shaders, pilote glcore, son coupé) sans toucher
+#  shaders de packaging/libretro/shaders, bruits du lecteur, pilote glcore) sans toucher
 #  à celle de l'utilisateur, lance le module sur un contenu et garde une capture
 #  GPU (shaders compris) à la trame demandée, avec le journal de RetroArch.
 #  C'est l'item « Le module dans un vrai RetroArch » du TODO (§ 7).
@@ -34,6 +34,7 @@ W="$ROOT/build-libretro/retroarch-try"
 rm -rf "$W"
 mkdir -p "$W/system/neost" "$W/saves" "$W/states" "$W/shots" "$W/info"
 cp "$ROOT"/roms/etos192fr.img "$ROOT"/roms/etos192us.img "$ROOT"/roms/etos256fr.img "$ROOT"/roms/etos256us.img "$W/system/neost/"
+cp -R "$ROOT/roms/drivesound/epson_smd480l" "$W/system/neost/drivesound"
 cp "$ROOT/src/libretro/neost_libretro.info" "$W/info/"
 cp -R "$ROOT/packaging/libretro/shaders" "$W/shaders"
 cat > "$W/retroarch.cfg" <<EOF
@@ -50,7 +51,6 @@ video_gpu_screenshot = "true"
 video_fullscreen = "false"
 video_scale = "3.000000"
 aspect_ratio_index = "22"
-audio_driver = "null"
 config_save_on_exit = "false"
 pause_nonactive = "false"
 EOF

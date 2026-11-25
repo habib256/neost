@@ -33,7 +33,7 @@ ENV = {
     "GET_CORE_OPTIONS_VERSION": 52, "GET_DISK_CONTROL_INTERFACE_VERSION": 57,
     "SET_DISK_CONTROL_EXT_INTERFACE": 58, "GET_MESSAGE_INTERFACE_VERSION": 59,
     "SET_MESSAGE_EXT": 60, "SET_CORE_OPTIONS_V2": 67, "GET_LANGUAGE": 39,
-    "SET_CORE_OPTIONS_V2_INTL": 68,
+    "SET_CORE_OPTIONS_V2_INTL": 68, "SET_MEMORY_MAPS": 36 | EXP,
 }
 CMD = {v: k for k, v in ENV.items()}
 
@@ -97,11 +97,14 @@ class Core:
         self.messages, self.geometries, self.av_infos = [], [], []
         self.frame = None            # (largeur, hauteur, octets XRGB8888 serrés)
         self.audio_frames = 0
+        self.audio_energy = 0              # somme des |échantillons| (si measure_audio)
+        self.measure_audio = False
         self.pad = {0: set(), 1: set()}
         self.mouse = [0, 0, False, False]
         self.right_stick = [0, 0]
         self.keys = set()                  # RETROK tenus sur le port clavier (relu)
         self.pointer = None                # (x, y) en -0x7FFF..0x7FFF tant que « touché »
+        self.memory_maps = []              # (ptr, len) du 1er descripteur de chaque SET_MEMORY_MAPS
         self.keyboard = None
         self.disk = None
         self.led = {}
@@ -146,6 +149,11 @@ class Core:
             return True
         if name == "GET_CORE_OPTIONS_VERSION":
             C.cast(data, C.POINTER(C.c_uint))[0] = 2
+            return True
+        if name == "SET_MEMORY_MAPS":
+            descs = C.cast(data, C.POINTER(C.c_void_p))[0]            # retro_memory_map.descriptors
+            words = C.cast(descs, C.POINTER(C.c_uint64))              # flags, ptr, offset, start, select, disconnect, len
+            self.memory_maps.append((words[1], words[6]))
             return True
         if name == "GET_LANGUAGE":
             C.cast(data, C.POINTER(C.c_uint))[0] = self.language
@@ -209,6 +217,11 @@ class Core:
 
     def _audio(self, data, frames):
         self.audio_frames += frames
+        if self.measure_audio:
+            from array import array
+            pcm = array("h")
+            pcm.frombytes(C.string_at(data, frames * 4))
+            self.audio_energy += sum(abs(v) for v in pcm)
         return frames
 
     def _input(self, port, device, index, ident):

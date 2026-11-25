@@ -38,6 +38,7 @@
 #include <system_error>
 #include <vector>
 
+#include "audio/DriveSoundMix.hpp"
 #include "core/AudioMix.hpp"
 #include "core/Framing.hpp"
 #include "core/Machine.hpp"
@@ -256,6 +257,14 @@ void buildOptions(int lang) {
     defs.push_back(def("neost_mouse_speed", T("Mouse speed", "Vitesse de la souris"), nullptr, "input",
         {{"50", "50 %"}, {"75", "75 %"}, {"100", "100 %"}, {"150", "150 %"}, {"200", "200 %"}, {"300", "300 %"}},
         "100"));
+    defs.push_back(def("neost_drive_sound", T("Drive sounds", "Bruits du lecteur"),
+        T("The motor, the head steps and the seeks of a real Epson drive (samples by Stefan jL, from STeem SSE), "
+          "in system/neost/drivesound. Silent while the drive is empty.",
+          "Le moteur, les pas et les déplacements de tête d'un vrai lecteur Epson (échantillons de Stefan jL, "
+          "de STeem SSE), dans system/neost/drivesound. Silencieux lecteur vide."),
+        "media", {{"enabled", on}, {"disabled", off}}, "enabled"));
+    defs.push_back(def("neost_drive_volume", T("Drive sound volume", "Volume des bruits du lecteur"), nullptr, "media",
+        {{"25", "25 %"}, {"50", "50 %"}, {"75", "75 %"}, {"100", "100 %"}, {"150", "150 %"}, {"200", "200 %"}}, "75"));
     defs.push_back(def("neost_autorun", T("Start the program (restart)", "Lancer le programme (redémarrage)"),
         T("A floppy that does not boot by itself but holds one game program: start it from the desktop, "
           "as a double-click would.",
@@ -289,6 +298,8 @@ struct RuntimeOptions {
 #endif
     int mouseSpeed = 100;
     bool fastFloppy = true;
+    bool driveSound = true;
+    float driveVolume = 0.75f;
 } g_opt;
 
 void readRuntimeOptions() {
@@ -308,6 +319,8 @@ void readRuntimeOptions() {
 #endif
     g_opt.mouseSpeed = std::max(25, std::min(400, std::atoi(optionValue("neost_mouse_speed", "100").c_str())));
     g_opt.fastFloppy = optionValue("neost_fast_floppy", "enabled") != "disabled";
+    g_opt.driveSound = optionValue("neost_drive_sound", "enabled") != "disabled";
+    g_opt.driveVolume = float(std::atoi(optionValue("neost_drive_volume", "75").c_str())) / 100.0f;
 }
 
 // =============================================================================
@@ -341,6 +354,10 @@ struct Session {
     struct PointerAction { int x, y; bool left; };
     std::vector<PointerAction> pointerQueue;
     bool pointerHeld = false;
+    // Bruits du lecteur : événements du FDC recueillis pendant les trames émulées, joués
+    // seulement si la trame est entendue (cf. retro_run).
+    neost::DriveSoundMix drive;
+    std::vector<FdcSound> fdcEvents;
     int pointerX = 0, pointerY = 0;
     bool loaded = false;
     // Cadence annoncée au frontend (cycles par trame). Au démarrage, la Glue tourne à
@@ -701,6 +718,7 @@ void presentAudio(bool heard) {
     float* st = neost::mixEmulatedFrame(m.psg, &m.dmasnd, machineHasDmaSound(m.bus.machine),
                                         uint32_t(n), kSampleRate, fc, g_s.mix);
     if (!st || !heard) return;
+    if (g_opt.driveSound && g_s.drive.loaded()) g_s.drive.mix(st, n, g_opt.driveVolume);
     g_s.pcm.resize(std::size_t(n) * 2);
     for (std::size_t i = 0; i < g_s.pcm.size(); ++i) {
         const float v = std::max(-1.0f, std::min(1.0f, st[i]));
@@ -866,6 +884,7 @@ bool applyPointer(Machine& m) {
 }
 
 bool loadContent(const char* path);
+void publishMemoryMap();
 
 // Machine automatique : un programme qui lit un périphérique absent du profil (son DMA
 // du STE sur un ST…) prend une bus error, que le TOS 1.x double en arrêt du 68000 —
@@ -920,6 +939,7 @@ bool checkMissingHardware() {
     const std::string content = g_s.content;
     if (!loadContent(content.empty() ? nullptr : content.c_str())) { g_s.machine.reset(); return false; }
     notify(std::string("This program needs the ") + miss.chip + ": restarted as " + machineLabel(want), 6000);
+    publishMemoryMap();
     return true;
 }
 
@@ -1261,6 +1281,11 @@ bool loadContent(const char* path) {
     // Un état d'un autre joueur (jeu en réseau) nomme SES copies privées : chercher ici
     // la copie de même nom, sinon la disquette de même nom de la liste (copiée alors).
     m.fdc.setMediaPathResolver([](const std::string& foreign) { return resolveForeignDisk(foreign); });
+    m.fdc.setSoundSink([](FdcSound e) { if (g_s.fdcEvents.size() < 256) g_s.fdcEvents.push_back(e); });
+    g_s.fdcEvents.clear();
+    g_s.drive.reset();
+    if (!g_s.drive.loaded() && !g_systemDir.empty())
+        g_s.drive.load((fs::path(systemNeostDir()) / "drivesound").string(), kSampleRate);
     m.mfp.setColorMonitor(optionValue("neost_monitor", "color") != "mono");
     m.armAudioClocks();
     if (optionValue("neost_clock", "host") == "fixed") m.freezeHostClocks();
@@ -1347,9 +1372,25 @@ bool loadContent(const char* path) {
     return true;
 }
 
+// Carte mémoire (triches, succès) : la ST-RAM, en grand-boutiste (le 68000), à
+// l'adresse 0. Republiée après tout redémarrage sur une autre machine : la Machine
+// neuve a un autre tampon (TODO « Machine automatique : la carte mémoire suit »).
+void publishMemoryMap() {
+    if (!g_env || !g_s.machine) return;
+    static retro_memory_descriptor desc[1];
+    static retro_memory_map map{desc, 1};
+    desc[0] = retro_memory_descriptor{};
+    desc[0].flags = RETRO_MEMDESC_SYSTEM_RAM | RETRO_MEMDESC_BIGENDIAN;
+    desc[0].ptr = g_s.machine->bus.ram.data();
+    desc[0].start = 0;
+    desc[0].len = g_s.machine->bus.ram.size();
+    desc[0].addrspace = "RAM";
+    g_env(RETRO_ENVIRONMENT_SET_MEMORY_MAPS, &map);
+}
+
 bool loadContentOrDrop(const char* path) {
     g_s.content = path ? path : "";
-    if (loadContent(path)) return true;
+    if (loadContent(path)) { publishMemoryMap(); return true; }
     g_s.machine.reset();
     g_s.playlist.clear();
     return false;
@@ -1553,6 +1594,15 @@ RETRO_API void retro_run(void) {
     const bool known = g_env(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &av);
     const bool shown = !known || (av & 1);
     const bool heard = !known || (av & 2);
+    // Bruits du lecteur : seulement pour une trame entendue (l'exécution anticipée rejoue
+    // les trames cachées sans les faire sonner deux fois). Lecteur vide : silence, choix
+    // d'agrément — le vrai moteur, lui, tourne faute d'impulsion d'index.
+    if (heard && g_opt.driveSound) {
+        Machine& mm = *g_s.machine;
+        for (FdcSound e : g_s.fdcEvents) g_s.drive.onEvent(e);
+        g_s.drive.setMotor(mm.fdc.motorOn() && (mm.fdc.inserted(0) || mm.fdc.inserted(1)));
+    }
+    g_s.fdcEvents.clear();
     presentVideo(shown);
     presentAudio(heard);
     const bool led = g_s.machine->fdc.motorOn();
