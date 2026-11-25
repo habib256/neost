@@ -517,7 +517,32 @@ touche l'intérieur du cœur 68000 : faisable avant l'échange.
   MIDI, changement de disque (`.m3u`), `.prg` par le démarrage automatique GEMDOS, EmuTOS seul
   livré (TOS Atari dans le dossier système), options tirées des clés de `neost.cfg`. Bâti avec
   `NEOST_PIC` et un script de version qui n'exporte que les `retro_*`. Fichier `.info` avec
-  `savestate_features = "deterministic"` (netplay et anticipation permis par le frontend).
+  `savestate_features = "deterministic"` (netplay et anticipation permis par le frontend) ;
+  options rangées et traduites en français, ports clavier et souris pour le netplay, copies
+  privées des disquettes dans *Save Files*, notification au démarrage, témoin du lecteur
+  (tableau « Le reste du métier » de `docs/LIBRETRO.md`).
+- **Image libretro : zoom adaptatif par la géométrie** · P2 ⭘ *(proposé)* — rogner la
+  trame envoyée sur `stContentRegion` (pointeur et `pitch`, sans copie), `SET_GEOMETRY` à
+  chaque changement de région avec l'aspect du bureau (`(cW·sx)/(cH·sy)`), maximum annoncé
+  640 × 400, hystérésis comptée sur les seules trames montrées, latch hors de l'état. Option
+  *Cadrage* : adaptatif, zone active fixe, cadre entier. Règles → `docs/LIBRETRO.md`,
+  « L'image : zoom adaptatif et shaders ».
+- **Shaders slang de NeoST** · P2 ⭘ *(proposé)* — porter `CrtEffectStack` en slang avec les
+  passes de câble et de bloom de POM2, une seule source pour le bureau et le module.
+  Préréglage de cœur automatique (SC1224 ou SM124 selon `OriginalSize.y`), préréglages
+  `neost-sc1224`, `neost-sm124`, `neost-peritel` ; défauts gradés comme le code. Vérifier le
+  pilote GLES de RetroArch (Pi, Android) et livrer des `.glslp` s'il le faut.
+- **Rapport d'aspect selon la cadence** · P3 ⭘ *(proposé)* — le bureau et le futur module
+  supposent qu'un pixel de basse résolution vaut 2 × 2 pixels mono. Sur un téléviseur, la
+  zone active ne garde pas le même aspect à 50 et à 60 Hz (lignes visibles et durée utile de
+  la ligne différentes) : poser l'aspect sur l'horloge pixel du ST et les normes PAL/NTSC,
+  avec leurs sources, en option *Aspect : moniteur / téléviseur*.
+- **Sortie RF : composite PAL** · P3 ⭘ *(proposé)* — codage et décodage composite PAL pour
+  le préréglage `neost-rf` (modulateur des STFM). N'existe ni dans NeoST ni dans POM2 (NTSC
+  Apple II seulement).
+- **Banc netplay du module** · P2 ⭘ *(proposé)* — l'équivalent de `tools/libretro_netplay.py`
+  de POM2 : deux instances du module, mêmes entrées, état identique à l'octet, un joueur qui
+  rejoint en cours de partie ; en CI. Le déterminisme est l'argument du cœur.
 - **Clavier : une table de position neutre** · P3 ⭘ *(proposé)* — GLFW (`StKeys.cpp`) et
   Android ont chacun leur table touche → scancode ST ; libretro en ajouterait une troisième
   (`RETROK_*`). Une table indexée par position (usage HID USB), chaque frontend n'y branchant

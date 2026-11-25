@@ -104,6 +104,116 @@ présente sur ce qu'il fait le jour où il paraît.
    `Machine`, `setSink(nullptr)` au déchargement.
 5. **Cadrage** : un `FramingLatch` par session, `reset()` au changement de jeu.
 
+## L'image : zoom adaptatif et shaders
+
+Relevé du 2026-11-25. C'est là que le cœur doit dépasser les cœurs Hatari, et là que le cœur
+libretro de POM2 (`~/src/pom2/libretro`) sert d'étalon. POM2 n'a pas de zoom à résoudre : son
+image est fixe (280 ou 560 × 192). Ses shaders, en revanche, sont le niveau à atteindre :
+
+- **cinq passes slang** (`pom2-cable`, `pom2-bloom-h`/`-v`, `pom2-glass`, `pom2-present`),
+  portées de la passe CRT du bureau « avec le même code, les mêmes défauts et les mêmes
+  préréglages » ; la rémanence relit la sortie précédente de sa propre passe (*feedback*) ;
+- **un préréglage par moniteur** (composite, monochrome vert ou blanc, RGB Péritel) ;
+- **un préréglage de cœur** (`presets/POM2/POM2.slangp`) que RetroArch charge seul pour POM2,
+  une fois les shaders activés ;
+- **tous les réglages en direct** (*Shader Parameters*), sous Vulkan, Metal, D3D11/12 et GL core.
+
+NeoST part de plus près qu'il n'y paraît : `CrtEffectStack` est la passe « verre » de POM2,
+déjà portée pour le bureau, mais réduite à `CrtParams` : ni la passe de câble analogique, ni
+le bloom. Ses trois préréglages (`light`, `arcade`, `phosphor`) ne sont pas des moniteurs ST.
+
+### Zoom adaptatif : ce que libretro permet
+
+Le cœur ne voit pas l'écran : il ne connaît ni la taille ni les proportions de la fenêtre de
+RetroArch. La règle du kiosque (la hauteur pilote l'échelle, les bordures latérales en trop
+sont rognées selon la largeur de l'écran) ne se transpose donc pas telle quelle. Il reste
+deux leviers, et ils suffisent :
+
+1. **Rogner l'image envoyée.** `video_refresh` reçoit un pointeur dans le tampon du Shifter et
+   le `pitch` du tampon entier : la région de `stContentRegion` part sans copie, centrée à
+   `(largeur − cW) / 2`.
+2. **Annoncer la géométrie.** `SET_GEOMETRY` (base et rapport d'aspect) à chaque changement de
+   région : RetroArch recalcule son cadre sans réinitialiser le pilote vidéo. `AvTracker`
+   n'annonce qu'après trois trames identiques, et `FramingLatch` ne change de cadre que
+   franchement, avec hystérésis : quelques annonces par scène au plus.
+
+Les règles qui en découlent :
+
+- **Un maximum qui couvre tout.** `retro_get_system_av_info` annonce `max_width × max_height =
+  640 × 400`, le plus grand tampon du Shifter (`geometryFor` : basse résolution 416 × 276 avec
+  ses bordures, moyenne 640 × 200, mono 640 × 400). Une géométrie hors de ce cadre forcerait
+  `SET_SYSTEM_AV_INFO`, qui réinitialise le pilote. Celui-ci n'est permis qu'au changement de
+  cadence (50, 60, 71 Hz), rare.
+- **L'aspect se calcule comme au bureau.** `aspect = (cW · sx) / (cH · sy)`, avec `sx = 2` si le
+  tampon fait au plus 480 px de large et `sy = 2` s'il fait au plus 300 lignes
+  (`src/gui/StScreenView.cpp`). La zone active basse (320 × 200), moyenne (640 × 200) et mono
+  (640 × 400) donne alors le même 1,6 : un passage du bureau GEM en moyenne à un jeu en basse
+  résolution ne fait pas sauter l'image. C'est le gain le plus visible face au cadre fixe.
+- **Le cadre ne suit que les trames montrées.** `stContentRegion` compte son hystérésis en
+  trames : l'appeler sur les trames cachées de l'exécution anticipée
+  (`GET_AUDIO_VIDEO_ENABLE` sans le bit vidéo) l'accélérerait d'autant. Le latch ne va pas
+  dans l'état : il appartient à celui qui regarde, si bien que deux joueurs en réseau peuvent
+  cadrer différemment sans diverger.
+- **Le latch repart à froid au chargement d'un jeu**, pas à la reprise d'un état : un retour
+  arrière sur une démo à bordures ouvertes ne doit pas refaire l'attaque de l'hystérésis.
+- **Une option « Cadrage »** : *Adaptatif* (défaut, la règle de `Framing.cpp`), *Zone active
+  fixe*, *Cadre entier* (l'équivalent de F10). Limite : la moyenne résolution et la mono n'ont
+  pas encore de bordures dans le tampon, si bien que le cadre entier change d'aspect avec
+  la résolution.
+- **L'échelle entière de RetroArch** porte sur la base annoncée : une zone active de 200
+  lignes passe en ×5 sur un écran de 1080 lignes, une démo à bordures ouvertes (276 lignes)
+  en ×3. L'écart vient du contenu, le cœur n'y peut rien.
+
+### Shaders : ce qu'un shader slang peut savoir
+
+Un shader slang ne reçoit du cœur que l'image : `OriginalSize`, `SourceSize`, `FrameCount`.
+Aucun canal ne lui dit « mode mono » ou « 50 Hz ». Le tampon de NeoST le dit pourtant par sa
+taille, parce qu'il garde une ligne par ligne de balayage. Au-delà de 300 lignes, c'est la
+mono à 71 Hz ; en deçà, la couleur à 200 lignes, avec ou sans bordures, zoom compris. Le seuil
+est celui du bureau.
+
+D'où le plan des shaders :
+
+- **Un préréglage de cœur automatique** (`presets/NeoST/NeoST.slangp`, mécanisme de POM2). Il
+  bascule seul entre le **moniteur couleur SC1224** (scanlines entre les 200 lignes, masque à
+  points) et le **SM124 monochrome** (blanc, pas de scanlines visibles à 400 lignes, pas de
+  masque), selon `OriginalSize.y`. Un jeu qui passe du bureau mono à la couleur change
+  d'écran comme sur la machine, quand on rebranchait l'autre moniteur.
+- **Des préréglages par sortie** : `neost-sc1224`, `neost-sm124`, `neost-peritel` (RGB sur
+  téléviseur Péritel, la sortie des STF en France : la bande passante du câble adoucit la
+  moyenne résolution), puis `neost-rf` (modulateur PAL des STFM). Ce dernier demande un codage
+  composite PAL qui n'existe nulle part dans le code, ni dans NeoST ni dans POM2 (POM2 code
+  du NTSC Apple II) : c'est un chantier à part.
+- **Une seule source.** Les passes slang et `CrtEffectStack` partagent le même code et les
+  mêmes défauts, comme dans POM2. Le bureau gagne au passage le câble et le bloom.
+- **Des réglages sourcés.** Chaque défaut d'un préréglage de moniteur porte son grade, comme le
+  reste du code : pas de masque, pas de rémanence, pas de pas de triade sans source. Un
+  défaut ajusté à l'œil s'écrit `[F]`.
+- **La rémanence se compte en trames présentées.** Le *feedback* est mis à jour à chaque trame
+  de l'hôte. Un contenu à 50 Hz sur un écran à 60 Hz voit donc des trames doublées, et une
+  image qui mélange deux trames alternées (couleurs par scintillement) bat. Le remède est
+  côté RetroArch (cadence exacte du contenu, VRR) ; la notice du cœur doit le dire.
+- **Les pilotes.** Le slang couvre Vulkan, Metal, D3D et GL core. Le Raspberry Pi et une
+  partie des appareils Android tournent souvent sous le pilote GLES de RetroArch, qui ne lit
+  que le GLSL. Une borne Pi est un usage de NeoST : à vérifier, et sinon livrer des `.glslp`.
+
+### Le reste du métier, à hauteur de POM2
+
+Ce que le cœur de POM2 fait en plus de l'image, et dont NeoST a besoin pour égaler son niveau :
+
+| POM2 | Pour NeoST |
+|---|---|
+| Options rangées en catégories, traduites en français (`SET_CORE_OPTIONS_V2_INTL`) | Les clés de `neost.cfg`, rangées : Système, Image, Son, Entrées, Disquettes |
+| Port 3 « clavier pour le netplay » lu comme un périphérique, port 4 « souris pour le netplay » | Le clavier et la souris du ST, indispensables au netplay hors manette |
+| Profils de manette par jeu (touches nommées dans *Controls*) | La ludothèque du kiosque et `CompDisks.json` nomment déjà les titres |
+| Copies privées des disquettes dans *Save Files*, l'original jamais écrit, noms portables | `fdc.setHostWriteBack(false)` (règle 3) et un dossier par jeu |
+| Notification au démarrage : machine, cartes, états disponibles | Machine, TOS, 50/60 Hz, médias montés |
+| Témoin du lecteur (`GET_LED_INTERFACE`) ; bruits du lecteur entendus une fois sous anticipation | « Bruits du lecteur rendus en PCM » |
+| `.zip`/`.gz` ouverts comme leur contenu ; `.m3u` | « Disquettes `.zip` et `.gz` ouvertes directement » |
+| `tools/libretro_netplay.py` en CI : deux instances, mêmes entrées, état identique, rejoindre en cours de partie | Le déterminisme est notre argument : le banc doit exister avant la première annonce |
+| CI qui démarre RetroArch avec le module, le tue pendant le boot et vérifie la reprise ; cœur statique Emscripten testé sous Node ; armhf sous QEMU | Les mêmes cibles que nos paquets, plus le web |
+| Rapport de compatibilité daté | Une campagne de titres jouée par le module, pas par le headless |
+
 ## Mesures : coût d'un état face à une trame
 
 Le 2026-11-24, `neost_core` Release, Mac arm64, EmuTOS 192 Ko US en ST 1 Mo, 300 trames
