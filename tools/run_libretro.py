@@ -47,14 +47,15 @@ def sandbox(work):
     shutil.copy(ROOT / "disks" / "diskA.st", media / "diskA.st")
     shutil.copy(ROOT / "disks" / "PDATS295.msa", media / "PDATS295.msa")
     shutil.copytree(ROOT / "disks" / "CHUCHU_L", media / "CHUCHU_L")
+    shutil.copy(ROOT / "disks" / "CHUCHU_L.ZIP", media / "CHUCHU_L.ZIP")
     (media / "two.m3u").write_text("diskA.st|Boot disk\nPDATS295.msa|Public domain\n")
     return work / "system", work / "saves", media
 
 
-def core(module, work, options=None, av_enable=3):
+def core(module, work, options=None, av_enable=3, language=0):
     from libretro_frontend import Core
     system, saves, media = sandbox(work)
-    return Core(module, system, saves, options or {}, av_enable), media
+    return Core(module, system, saves, options or {}, av_enable, language), media
 
 
 def write_prg(path, words):
@@ -64,8 +65,9 @@ def write_prg(path, words):
     path.write_bytes(head + text + bytes(4))   # relocation : long nul = aucune
 
 
-def write_floppy(path, files):
-    """Disquette FAT12 720 Ko NON amorçable, `files` = {"NOM.EXT": octets} à la racine."""
+def fat12_volume(files):
+    """Volume FAT12 de 720 Ko (BPB d'une disquette 2 faces, 9 secteurs), NON amorçable.
+    `files` = {"NOM.EXT" ou "DOSSIER/NOM.EXT": octets} ; un niveau de dossiers."""
     import struct
     img = bytearray(1440 * 512)
     img[0:2] = b"\x60\x1c"
@@ -83,20 +85,66 @@ def write_floppy(path, files):
                 img[off + 1] = (img[off + 1] & 0xF0) | ((val >> 8) & 0x0F)
     fat(0, 0xFF9)
     fat(1, 0xFFF)
-    cluster = 2
-    for slot, (name, content) in enumerate(files.items()):
-        base, ext = name.split(".")
-        e = root + slot * 32
-        img[e:e + 11] = (base.ljust(8) + ext.ljust(3)).encode()
-        img[e + 11] = 0x20
+    state = {"cluster": 2}
+
+    def entry(at, name, attr, cluster, size):
+        base, _, ext = name.partition(".")
+        img[at:at + 11] = (base.ljust(8) + ext.ljust(3)).encode()
+        img[at + 11] = attr
+        struct.pack_into("<HI", img, at + 26, cluster, size)
+
+    def alloc(content):
+        c = state["cluster"]
         n = max(1, (len(content) + 1023) // 1024)
-        struct.pack_into("<HI", img, e + 26, cluster, len(content))
-        off = data + (cluster - 2) * 1024
+        off = data + (c - 2) * 1024
         img[off:off + len(content)] = content
         for k in range(n):
-            fat(cluster + k, cluster + k + 1 if k + 1 < n else 0xFFF)
-        cluster += n
-    path.write_bytes(bytes(img))
+            fat(c + k, c + k + 1 if k + 1 < n else 0xFFF)
+        state["cluster"] += n
+        return c
+
+    dirs, slot = {}, 0
+    for path, content in files.items():
+        folder, _, name = path.rpartition("/")
+        if folder and folder not in dirs:
+            c = alloc(bytes(1024))
+            entry(root + slot * 32, folder, 0x10, c, 0)
+            slot += 1
+            d = data + (c - 2) * 1024
+            entry(d, ".", 0x10, c, 0)
+            entry(d + 32, "..", 0x10, 0, 0)
+            img[d:d + 11] = b".          "
+            img[d + 32:d + 43] = b"..         "
+            dirs[folder] = [d, 2]
+        c = alloc(content)
+        if folder:
+            d, n = dirs[folder]
+            entry(d + n * 32, name, 0x20, c, len(content))
+            dirs[folder][1] += 1
+        else:
+            entry(root + slot * 32, name, 0x20, c, len(content))
+            slot += 1
+    return bytes(img)
+
+
+def write_floppy(path, files):
+    """Disquette FAT12 720 Ko NON amorçable (cf. fat12_volume)."""
+    path.write_bytes(fat12_volume(files))
+
+
+def write_hard_disk(path, files):
+    """Disque dur ACSI : secteur racine Atari (taille du disque à $1C2, table de partitions
+    à $1C6 : drapeau, « GEM », début, taille, en grand-boutiste) et UNE partition FAT12
+    au secteur 2. Non amorçable sous TOS Atari (pas de pilote) ; EmuTOS la monte seul."""
+    import struct
+    vol = fat12_volume(files)
+    sectors = 2 + len(vol) // 512
+    rootsec = bytearray(512)
+    struct.pack_into(">I", rootsec, 0x1C2, sectors)
+    rootsec[0x1C6] = 0x01
+    rootsec[0x1C7:0x1CA] = b"GEM"
+    struct.pack_into(">II", rootsec, 0x1CA, 2, len(vol) // 512)
+    path.write_bytes(bytes(rootsec) + bytes(512) + vol)
 
 
 SUPER = [0x42A7, 0x3F3C, 0x0020, 0x4E41, 0x5C8F]          # Super(0) : mode superviseur
@@ -179,22 +227,23 @@ def case_floppy_private_copy(module, work):
 
 
 def case_fast_floppy(module, work):
-    """Chargement accéléré : moins de trames hôte pour lire la disquette, même état émulé."""
-    def frames_until_motor_off(opts):
+    """Chargement accéléré : ChuChu Rocket (330 Ko) copié sur une disquette non amorçable,
+    lancé par l'autorun ; trames de l'hôte jusqu'à son premier écran coloré."""
+    def frames_to_title(opts):
         c, media = core(module, work / opts["neost_fast_floppy"], opts)
-        assert c.load(media / "PDATS295.msa")
-        seen_on = False
-        for n in range(1, 3000):
+        files = {p.name: p.read_bytes() for p in sorted((media / "CHUCHU_L").iterdir())}
+        write_floppy(media / "ChuChu.st", files)
+        assert c.load(media / "ChuChu.st")
+        assert "starts A:\\CHUCHU.TOS" in c.messages[0], c.messages
+        for n in range(1, 6000):
             c.run(1)
-            on = bool(c.led.get(0))
-            seen_on |= on
-            if seen_on and not on:
+            if n % 10 == 0 and len(set(c.frame[2][i:i + 3] for i in range(0, len(c.frame[2]), 4 * 13))) > 8:
                 return n
         return None
-    fast = frames_until_motor_off({"neost_fast_floppy": "enabled"})
-    slow = frames_until_motor_off({"neost_fast_floppy": "disabled"})
+    fast = frames_to_title({"neost_fast_floppy": "enabled"})
+    slow = frames_to_title({"neost_fast_floppy": "disabled"})
     assert fast and slow and fast < slow, f"fast {fast}, slow {slow}"
-    return f"first drive activity over after {fast} host frames (fast) vs {slow} (exact speed)"
+    return f"ChuChu Rocket title after {fast} host frames (fast) vs {slow} (exact speed)"
 
 
 def case_program(module, work):
@@ -300,6 +349,131 @@ def case_autorun(module, work):
     red = sum(1 for i in range(0, len(raw), 4) if raw[i + 2] > 200 and raw[i + 1] < 40 and raw[i] < 40)
     assert red > w * h * 0.3, f"{red} red pixels of {w * h}"
     return c.messages[0]
+
+
+def case_zip_program(module, work):
+    """Un jeu GEMDOS zippé : l'arbre extrait une fois, le programme démarre sur C:."""
+    c, media = core(module, work)
+    assert c.load(media / "CHUCHU_L.ZIP")
+    assert "on C:" in c.messages[0] and "files on C:" in c.messages[0], c.messages
+    c.run(900)
+    assert c.lit_fraction() > 0.3
+    return c.messages[0]
+
+
+def case_zip_disks(module, work):
+    """Un zip de deux disquettes : une liste, dans l'ordre des noms ; R3 passe à la suivante."""
+    import zipfile
+    c, media = core(module, work)
+    with zipfile.ZipFile(media / "Two disks.zip", "w", zipfile.ZIP_DEFLATED) as z:
+        z.write(media / "diskA.st", "Game (Disk 1 of 2).st")
+        z.write(media / "PDATS295.msa", "Game (Disk 2 of 2).msa")
+    assert c.load(media / "Two disks.zip")
+    assert c.disk.get_num_images() == 2, c.disk.get_num_images()
+    assert "2 disks in the archive" in c.messages[0], c.messages
+    c.run(60)
+    c.pad[0] = {"R3"}
+    c.run(2)
+    c.pad[0] = set()
+    c.run(2)
+    assert c.disk.get_image_index() == 1
+    unpacked = work / "saves" / "neost" / "archives" / "Two disks"
+    assert (unpacked / "Game (Disk 1 of 2).st").exists(), list(unpacked.iterdir())
+    return c.messages[0]
+
+
+def case_gzip(module, work):
+    """Une disquette .st.gz : décompressée une fois, montée en A:."""
+    import gzip
+    c, media = core(module, work)
+    (media / "diskA.st.gz").write_bytes(gzip.compress((media / "diskA.st").read_bytes()))
+    assert c.load(media / "diskA.st.gz")
+    assert "A: diskA.st" in c.messages[0], c.messages
+    c.run(300)
+    return c.messages[0]
+
+
+def case_options_french(module, work):
+    """RetroArch en français : options traduites (SET_CORE_OPTIONS_V2_INTL), anglais sinon."""
+    c, _ = core(module, work, language=2)
+    assert c.option_labels == ("local", "Machine (redémarrage)"), c.option_labels
+    return f"french labels: {c.option_labels[1]}"
+
+
+def case_fast_floppy_idle(module, work):
+    """Lecteur vide (moteur jamais coupé, faute d'index) : pas d'accélération. Une touche
+    tenue 4 trames donne UN caractère, comme sans accélération."""
+    c, media = core(module, work)
+    write_prg(media / "KEY.PRG", SUPER + [0x3F3C, 0x0001, 0x4E41, 0x548F, 0x31C0, 0x8240, 0x60F2])
+    assert c.load(media / "KEY.PRG")
+    c.run(900)
+    c.key("a", True); c.run(4); c.key("a", False); c.run(20)
+    # L'écho de Cconin s'écrit en haut à gauche, avant le titre « KEY.PRG » (x ≥ 120) :
+    # un « q » fait une dizaine de points d'encre, une touche répétée en ferait dix fois plus.
+    w, h, raw = c.frame
+    ink = sum(1 for x in range(100) for y in range(1, 10)
+              if raw[(y * w + x) * 4] < 40 and raw[(y * w + x) * 4 + 1] < 40)
+    assert 0 < ink < 30, f"{ink} ink pixels in the echo line: the key repeated"
+    return f"one echoed character ({ink} ink pixels), drive empty, motor on"
+
+
+def case_hard_disk(module, work):
+    """Image de disque dur (.hd) : montée en ACSI 0, EmuTOS lit sa partition et lance
+    C:\\AUTO\\RED.PRG au démarrage (fond rouge)."""
+    c, media = core(module, work)
+    prg = media / "RED.PRG"
+    write_prg(prg, SUPER + [0x31FC, 0x0700, 0x8240] + LOOP)
+    write_hard_disk(media / "Games.hd", {"AUTO/RED.PRG": prg.read_bytes(), "README.TXT": b"hd\r\n"})
+    assert c.load(media / "Games.hd")
+    assert "ACSI hard disk Games.hd" in c.messages[0], c.messages
+    c.run(1500)
+    w, h, raw = c.frame
+    red = sum(1 for i in range(0, len(raw), 4) if raw[i + 2] > 200 and raw[i + 1] < 40 and raw[i] < 40)
+    assert red > w * h * 0.3, f"{red} red pixels of {w * h}: C:\\AUTO not run"
+    assert (work / "saves" / "neost" / "harddisks" / "Games.hd").exists(), "no private copy"
+    return c.messages[0]
+
+
+def case_touch_pointer(module, work):
+    """Option « Touch moves the GEM pointer » : un double tap sur l'icône du lecteur A du
+    bureau EmuTOS ouvre sa fenêtre (zone blanche unie au milieu de l'écran)."""
+    c, media = core(module, work, {"neost_pointer": "enabled"})
+    assert c.load(media / "diskA.st")
+    c.run(700)
+    def white():
+        w, h, raw = c.frame
+        return sum(1 for y in range(60, 180) for x in range(60, 300)
+                   if raw[(y * w + x) * 4] > 200 and raw[(y * w + x) * 4 + 1] > 200 and raw[(y * w + x) * 4 + 2] > 200)
+    before = white()
+    icon = (36 / 320, 30 / 200)          # icône « DISQUE A » d'EmuTOS FR, basse résolution
+    c.touch(*icon, hold=2, after=2)
+    c.touch(*icon, hold=2, after=120)
+    after = white()
+    assert after > before + 8000, f"white pixels {before} -> {after}: the window did not open"
+    return f"double tap on drive A: {before} -> {after} white pixels (window open)"
+
+
+def case_netplay_keyboard(module, work):
+    """Port 3 « clavier pour le netplay » : la touche tenue est relue chaque trame ; un
+    rappel clavier est alors ignoré (le netplay de RetroArch ne l'enverrait pas)."""
+    c, media = core(module, work)
+    # Super ; boucle : Cconin → d0 ; move.w d0,$FFFF8240.w (couleur 0 = code ASCII) ; bra
+    write_prg(media / "KEY.PRG", SUPER + [0x3F3C, 0x0001, 0x4E41, 0x548F, 0x31C0, 0x8240, 0x60F2])
+    assert c.load(media / "KEY.PRG")
+    c.set_port(2, 3)                     # RETRO_DEVICE_KEYBOARD
+    c.run(900)
+    def colour0():
+        # Couleur la plus présente : le fond (couleur 0, tramée avec du vert au bureau).
+        from collections import Counter
+        w, h, raw = c.frame
+        return Counter((raw[i + 2], raw[i + 1], raw[i]) for i in range(0, len(raw), 4 * 7)).most_common(1)[0][0]
+    before = colour0()
+    c.key("b", True); c.run(5); c.key("b", False); c.run(20)   # rappel : ignoré
+    assert colour0() == before, f"callback key reached the ST: {before} -> {colour0()}"
+    c.keys = {ord("a")}; c.run(4); c.keys = set(); c.run(20)  # port 3 : « a » = $61
+    after = colour0()
+    assert after != before, f"polled key not seen: {after}"
+    return f"background {before} -> {after} after 'a' on the keyboard port"
 
 
 CASES = {n[5:]: f for n, f in sorted(globals().items()) if n.startswith("case_")}

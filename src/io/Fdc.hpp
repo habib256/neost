@@ -64,6 +64,11 @@ public:
     // Branche le « puits » de sons mécaniques (cf. FdcSound). Optionnel : sans
     // sink, le FDC reste silencieux. Posé par le frontend (thread émulation).
     void setSoundSink(std::function<void(FdcSound)> fn) { soundSink_ = std::move(fn); }
+    // Où trouver, CHEZ CE FRONTEND, une disquette qu'un état autonome nomme par un chemin
+    // absent d'ici (restoreMedia) : l'état d'un autre joueur en réseau désigne SES
+    // fichiers. Le résolveur rend un chemin local (vide : rien) ; le contenu, lui, vient
+    // de l'état (une .st y est entière). Sans résolveur, le chemin de l'état seul.
+    void setMediaPathResolver(std::function<std::string(const std::string&)> fn) { mediaResolver_ = std::move(fn); }
 
     // « FDC rapide » (équivalent de `hatari --fastfdc`) : divise les délais de
     // COMMANDE et de TRANSFERT par un facteur fixe pour accélérer les accès disque
@@ -147,6 +152,13 @@ public:
     // Register », bit S7 Motor On). Sert au témoin du lecteur et au chargement accéléré
     // du cœur libretro.
     bool motorOn() const { return (str_ & 0x80) != 0; }
+    // Une commande disquette en cours sur un lecteur qui porte un média : la machine
+    // ATTEND le disque. Le moteur seul ne le dit pas — sans disquette, le WD1772 ne voit
+    // aucune impulsion d'index et ne coupe jamais le moteur. Sert le chargement accéléré
+    // du cœur libretro.
+    bool floppyCommandActive() const {
+        return command_ != 0 && driveSel_ >= 0 && drive_[driveSel_].present();
+    }
     // Secteur LOGIQUE `lsn` (512 octets) de la disquette montée, lu HORS émulation : ni
     // la tête, ni l'horloge, ni l'état ne bougent. Pour un frontend qui veut le
     // catalogue d'une image (io/FloppyCatalog). STX/IPF : géométrie tirée du BPB du
@@ -571,6 +583,7 @@ private:
     int64_t  nowCyc() const { return sched_ ? sched_->liveNow() : 0; }
 
     std::function<void(FdcSound)> soundSink_;    // bruits mécaniques (cosmétique)
+    std::function<std::string(const std::string&)> mediaResolver_;   // cf. setMediaPathResolver
 
     Bus&     bus_;
     YM2149&  psg_;

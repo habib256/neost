@@ -1,5 +1,46 @@
 # Changelog — NeoST
 
+## 2026-11-25 — Libretro : disques durs, toucher, un invité rejoint l'hôte
+
+- **Netplay entre deux machines** : un état nomme ses disquettes par leur chemin absolu,
+  celui des copies privées de l'hôte, absent chez l'invité. `Fdc::setMediaPathResolver`
+  (cœur) : un chemin absent est demandé au frontend, qui rend le sien ; le module cherche
+  la copie privée, la disquette d'archive ou celle de la liste de même nom. Nouveau banc
+  `tools/libretro_netplay.py` (CI) : hôte et invité en deux processus aux dossiers
+  distincts, ceux de l'hôte effacés, invité écarté de 37 trames puis rejoignant à la trame
+  500 — image et RAM identiques pendant 400 trames.
+- **Disques durs** `.hd`/`.vhd` en contenu : ACSI 0, copie privée dans
+  `saves/neost/harddisks/`. Cas `hard_disk` : image fabriquée par le banc (secteur racine
+  Atari, partition GEM FAT12), EmuTOS lance `C:\AUTO\RED.PRG`.
+- **Toucher** : option « Touch moves the GEM pointer » (active sur Android),
+  `RETRO_DEVICE_POINTER` → `Machine::desktopMouseMove` avec une file d'actions. Cas
+  `touch_pointer` : un double tap ouvre la fenêtre du lecteur A.
+- Banc : constructeur FAT12 à sous-dossiers (`fat12_volume`), 21 cas.
+
+## 2026-11-25 — Libretro : archives, options en français, netplay au clavier
+
+- **Correctif du chargement accéléré** (poussé le même jour) : il suivait le **moteur** du
+  lecteur. Lecteur vide, le WD1772 ne voit aucune impulsion d'index et ne coupe jamais le
+  moteur : un programme sur C: tournait huit fois trop vite, et une touche tenue quatre
+  trames de l'hôte en durait trente-deux, que le TOS répétait (dix échos au lieu d'un).
+  L'accélération suit désormais une **commande en cours sur une disquette**
+  (`Fdc::floppyCommandActive`) et se coupe dès qu'une entrée est tenue. *ChuChu Rocket*
+  (330 Ko sur disquette) : titre en 1 020 trames de l'hôte au lieu de 2 190. Cas
+  `fast_floppy_idle` au banc.
+- **Archives** : `util/Archive` (cœur, sans bibliothèque) liste et extrait un `.zip`
+  (stocké, deflate) et décompresse un `.gz`, CRC vérifiés, chemins à risque refusés
+  (zip-slip) ; deflate de stb_image compilé en statique. Le cœur libretro les décompresse
+  une fois dans `saves/neost/archives/<nom>/` sans jamais réécrire un fichier extrait :
+  liste `.m3u` de l'archive, sinon ses disquettes en liste, sinon son programme sur C:
+  (`CHUCHU_L.ZIP`), sinon son dossier en C:. `block_extract = true`.
+- **Options en français** par `SET_CORE_OPTIONS_V2_INTL` quand RetroArch est en français ;
+  l'anglais reste la référence.
+- **Netplay** : port 3 « Keyboard (for netplay) » (clavier relu à chaque trame, rappels
+  ignorés, touches relâchées au changement de mode), port 4 « Mouse (for netplay) ».
+- Banc : 19 cas (`fast_floppy` mesure un vrai chargement, `fast_floppy_idle`,
+  `netplay_keyboard`, `options_french`, `zip_program`, `zip_disks`, `gzip`) ; tests
+  `testArchives` dans `neost-selftest`.
+
 ## 2026-11-25 — Libretro : le cœur `neost_libretro`
 
 Le cinquième frontend, selon `docs/LIBRETRO.md` : un module qui n'exporte que les 25

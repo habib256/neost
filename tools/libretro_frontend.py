@@ -32,7 +32,8 @@ ENV = {
     "GET_AUDIO_VIDEO_ENABLE": 47 | EXP, "GET_INPUT_BITMASKS": 51 | EXP,
     "GET_CORE_OPTIONS_VERSION": 52, "GET_DISK_CONTROL_INTERFACE_VERSION": 57,
     "SET_DISK_CONTROL_EXT_INTERFACE": 58, "GET_MESSAGE_INTERFACE_VERSION": 59,
-    "SET_MESSAGE_EXT": 60, "SET_CORE_OPTIONS_V2": 67,
+    "SET_MESSAGE_EXT": 60, "SET_CORE_OPTIONS_V2": 67, "GET_LANGUAGE": 39,
+    "SET_CORE_OPTIONS_V2_INTL": 68,
 }
 CMD = {v: k for k, v in ENV.items()}
 
@@ -84,19 +85,23 @@ class DiskControlExt(C.Structure):
 
 
 class Core:
-    def __init__(self, module, system_dir, save_dir, options=None, av_enable=3):
+    def __init__(self, module, system_dir, save_dir, options=None, av_enable=3, language=0):
         self.lib = C.CDLL(str(module))
         self.system = str(system_dir).encode()
         self.saves = str(save_dir).encode()
         self.options = {k: str(v).encode() for k, v in (options or {}).items()}
         self.options_changed = False
         self.av_enable = av_enable
+        self.language = language           # RETRO_LANGUAGE_* (0 anglais, 2 français)
+        self.option_labels = None          # (langue, libellé de la 1re option) reçus
         self.messages, self.geometries, self.av_infos = [], [], []
         self.frame = None            # (largeur, hauteur, octets XRGB8888 serrés)
         self.audio_frames = 0
         self.pad = {0: set(), 1: set()}
         self.mouse = [0, 0, False, False]
         self.right_stick = [0, 0]
+        self.keys = set()                  # RETROK tenus sur le port clavier (relu)
+        self.pointer = None                # (x, y) en -0x7FFF..0x7FFF tant que « touché »
         self.keyboard = None
         self.disk = None
         self.led = {}
@@ -141,6 +146,16 @@ class Core:
             return True
         if name == "GET_CORE_OPTIONS_VERSION":
             C.cast(data, C.POINTER(C.c_uint))[0] = 2
+            return True
+        if name == "GET_LANGUAGE":
+            C.cast(data, C.POINTER(C.c_uint))[0] = self.language
+            return True
+        if name == "SET_CORE_OPTIONS_V2_INTL":
+            us, local = C.cast(data, C.POINTER(C.c_void_p))[0], C.cast(data, C.POINTER(C.c_void_p))[1]
+            chosen = local or us
+            defs = C.cast(chosen, C.POINTER(C.c_void_p))[1]          # retro_core_options_v2.definitions
+            desc = C.cast(defs, C.POINTER(C.c_char_p))[1]             # 1re définition, champ desc
+            self.option_labels = ("local" if local else "us", desc.decode("utf-8"))
             return True
         if name in ("SET_CORE_OPTIONS_V2", "SET_SUPPORT_NO_GAME", "SET_INPUT_DESCRIPTORS",
                     "SET_CONTROLLER_INFO", "SET_VARIABLES"):
@@ -202,6 +217,12 @@ class Core:
             if ident == 256:   # RETRO_DEVICE_ID_JOYPAD_MASK
                 return sum(1 << PAD[b] for b in held)
             return int(any(PAD[b] == ident for b in held))
+        if device == 6 and port == 0:     # RETRO_DEVICE_POINTER : X, Y, PRESSED
+            if self.pointer is None:
+                return 0
+            return [self.pointer[0], self.pointer[1], 1][ident] if ident < 3 else 0
+        if device == 3:   # RETRO_DEVICE_KEYBOARD
+            return int(port == 2 and ident in self.keys)
         if device == DEVICE_MOUSE and port == 0:
             return [self.mouse[0], self.mouse[1], int(self.mouse[2]), int(self.mouse[3])][ident] if ident < 4 else 0
         if device == DEVICE_ANALOG and port == 0 and index == 1:
@@ -225,6 +246,16 @@ class Core:
         self.av = (av.geometry.base_width, av.geometry.base_height, round(av.geometry.aspect, 4),
                    round(av.timing.fps, 4), av.timing.sample_rate)
         return bool(ok)
+
+    def touch(self, fx, fy, hold=2, after=3):
+        """Toucher bref à (fx, fy), fractions 0..1 de l'image montrée."""
+        self.pointer = (int(fx * 0xFFFE) - 0x7FFF, int(fy * 0xFFFE) - 0x7FFF)
+        self.run(hold)
+        self.pointer = None
+        self.run(after)
+
+    def set_port(self, port, device):
+        self.lib.retro_set_controller_port_device(port, device)
 
     def set_option(self, key, value):
         self.options[key] = str(value).encode()

@@ -34,8 +34,9 @@ The TOS also sets the video standard: a US TOS runs at 60 Hz, a European one at
 | `.st`, `.msa`, `.dim`, `.stx` (Pasti), `.ipf` | Inserted in drive A. Other disks of the same game in the same folder (`Disk 1 of 3`, `_a`/`_b`) join a playlist. |
 | `.m3u` | A playlist, one disk per line; `disk.st|Label` names it. |
 | `.prg`, `.tos`, `.app`, `.gtp`, `.ttp` | Its folder becomes drive C:, and the program starts by itself. |
+| `.hd`, `.vhd` | A hard disk image on ACSI target 0, copied once to `saves/neost/harddisks/`. EmuTOS mounts its partitions by itself; an Atari TOS needs a driver on the disk. |
 | `.stc` | A cartridge. |
-| `.zip` | RetroArch opens it for the core. |
+| `.zip`, `.gz` | Unpacked once into `saves/neost/archives/`. Its own `.m3u`, else its floppies as a playlist, else its program (a zipped GEMDOS game) on C:. Files already unpacked are never overwritten, so game saves survive. |
 
 IPF images need no extra library: NeoST has its own decoder.
 
@@ -57,9 +58,10 @@ Delete that copy to start afresh.
   do not boot: you double-click the game on the desktop. When such a disk
   holds a single game program, NeoST starts it for you
   (**Media → Start the program**).
-- **Fast floppy loading.** While the drive motor turns, NeoST runs up to eight
-  Atari frames per host frame. The emulation stays exact; only the waiting is
-  shorter.
+- **Fast floppy loading.** While the floppy controller is busy with a disk,
+  and no key or button is held, NeoST runs up to eight Atari frames per host
+  frame. The emulation stays exact; only the waiting is shorter (a 330 KB
+  program loads about twice as fast).
 - **Exact states.** A save state weighs 2 to 4 MB with its floppies, takes
   under a millisecond on a recent computer, and replays exactly: run-ahead,
   rewind and netplay work.
@@ -81,7 +83,24 @@ Delete that copy to start afresh.
 
 The second RetroPad is joystick port 0. The keyboard and the host mouse work
 too; turn on **Game Focus** (Scroll Lock) if RetroArch's hotkeys take your keys.
-Help is F11 or Print Screen, Undo is F12 or End.
+Help is F11 or Print Screen, Undo is F12 or End. Keys follow their position, as on a real ST:
+pick the TOS of your keyboard's country (EmuTOS FR for an AZERTY keyboard) and the
+letters and digits type what they show.
+
+**Netplay.** RetroArch's netplay sends the state of controller ports, never
+typed keys. Set **Port 3 → Keyboard (for netplay)** for games played at the
+keyboard and **Port 4 → Mouse (for netplay)** for the mouse; both players need
+the same content and the same core options.
+
+A player who joins takes the host's state and stays in step, even though each
+keeps the floppies in their own save folder: NeoST finds its own copy of a disk
+by its name. Both need the same disk image under the same file name.
+
+**Touch screens.** With **Input → Touch moves the GEM pointer** (on by default
+on Android), a tap on the GEM desktop or in a GEM program puts the mouse pointer
+there and clicks; a double tap opens. Games keep the relative mouse.
+
+**Language.** The core options appear in French when RetroArch is in French.
 
 ## Shaders
 

@@ -101,6 +101,8 @@ jobs:
           test "$(wc -l < exports.txt)" = 25
       - name: Banc du module
         run: python3 tools/run_libretro.py --module build/neost_libretro.so
+      - name: Netplay — un invité rejoint l'hôte et le suit trame pour trame
+        run: python3 tools/libretro_netplay.py --module build/neost_libretro.so
       - name: Shaders slang
         run: python3 tools/check_slang.py
 
