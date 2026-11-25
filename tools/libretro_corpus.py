@@ -35,6 +35,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 EXTS = {".st", ".msa", ".dim", ".stx", ".ipf", ".zip", ".gz"}
 EMUTOS = ["etos192fr.img", "etos256fr.img"]
 ATARI = ["tos104uk.img", "tos162uk.img", "tos206uk.img"]
+# --tos tos102 : le même jeu avec TOS 1.02 à la place de 1.04 pour le ST.
+TOS_SETS = {"emutos": [], "atari": ATARI, "tos102": ["tos102uk.img", "tos162uk.img", "tos206uk.img"]}
 
 
 def classify(frame):
@@ -60,7 +62,7 @@ def run_one(args):
     try:
         system = work / "system" / "neost"
         system.mkdir(parents=True)
-        for t in EMUTOS + (ATARI if tos == "atari" else []):
+        for t in EMUTOS + TOS_SETS[tos]:
             if (ROOT / "roms" / t).exists():
                 shutil.copy(ROOT / "roms" / t, system / t)
         (work / "saves").mkdir()
@@ -105,7 +107,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--module", type=Path)
     ap.add_argument("--disks", nargs="+", default=["disks/st", "disks/stx"])
-    ap.add_argument("--tos", choices=["emutos", "atari"], default="emutos")
+    ap.add_argument("--tos", choices=sorted(TOS_SETS), default="emutos")
     ap.add_argument("--frames", type=int, default=3000)
     ap.add_argument("--jobs", type=int, default=max(1, (mp.cpu_count() or 2) - 1))
     ap.add_argument("--out", type=Path, required=True)

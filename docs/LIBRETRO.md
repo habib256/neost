@@ -71,8 +71,17 @@ Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
   du bureau : un boot ou un `\AUTO` qui lance le jeu ne rend jamais la main, celui qui la
   rend (boot de cracker) laisse le bureau lancer le jeu. Bubble Ghost, Pirates,
   Stormlords, Simulcra, Rick Dangerous (`RICK_DAN.GER\RICKLOAD.TOS`) démarrent ainsi.
-- **Les disquettes sœurs** (`MediaScan::areSiblingImages`) forment seules la liste : la
-  face B de Rainbow Islands est à un R3.
+- **Les disquettes sœurs** forment seules la liste : la face B de Rainbow Islands est à un
+  R3. Sœurs au sens de `MediaScan::areSiblingImages`, ET différant par un indice de
+  disquette (« Disk 1 »/« Disk 2 », « _a »/« _b », « -D1 »/« -D2 ») : l'original et son crack
+  (Vroom, « [cr Elite] ») ou deux compilations numérotées (« fuzcd077 »/« fuzcd078 ») ne
+  forment plus de fausse liste.
+- **Le repli de TOS** : une PREMIÈRE disquette qui devait démarrer seule (boot exécutable
+  ou programme dans `\AUTO`) et n'offre rien d'autre à lancer, quand la machine reste au
+  bureau GEM (tableau Line-A, stable une seconde, après 10 s), redémarre avec un autre TOS
+  de la même machine (`TosChoice` sur les TOS non essayés), deux fois au plus, TOS
+  « Automatic » seulement. Vroom (Lankhor) : bureau sous TOS 1.04 — comme chez Hatari, sa
+  relocation est tronquée (`docs/CASE_STUDIES.md`) —, la course sous TOS 1.02 ou EmuTOS.
 - **Le chargement accéléré** : jusqu'à huit trames émulées par trame de l'hôte tant
   qu'une commande du contrôleur est en cours sur une disquette (`Fdc::floppyCommandActive`)
   et qu'aucune entrée n'est tenue ; le nombre dépend de l'état émulé et des entrées, donc
@@ -118,11 +127,13 @@ Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
 
 **Campagne de compatibilité** (`tools/libretro_corpus.py`, médias privés, local) : 81
 images de `disks/st` et `disks/stx`, 3 000 trames chacune avec Espace et un tir, écran final
-classé et planche contact. Le 2026-11-25 : **52 écrans de jeu sous TOS Atari** (TOS 1.04 UK
+classé et planche contact. Le 2026-11-25 : **54 écrans de jeu sous TOS Atari** (TOS 1.04 UK
 choisi seul), **48 sous EmuTOS** ; les écrans « autre » sont souvent des jeux (menu de
 Pirates, titre de Bolo, trainers). Avant les correctifs du jour : 49 et 45. Un vrai TOS
-gagne Flood, James Pond II, Lemmings, Nitro, Pang et Stunt Car Racer ; il perd Great Giana
-Sisters et Vroom (original), qui tournent sous EmuTOS.
+gagne Flood, James Pond II, Lemmings, Nitro, Pang et Stunt Car Racer ; Vroom (original)
+passe par le repli de TOS. Great Giana Sisters finit au bureau partout, comme chez Hatari.
+Une passe sous TOS 1.02 (`--tos tos102`) fait pire (43) : le démarrage automatique depuis
+le bureau exige TOS 1.04 ou EmuTOS, chez NeoST comme chez Hatari.
 
 Restent ouverts au TODO (§ 7, « Cœur libretro ») : le MIDI, le disque dur ACSI dans
 l'état, l'essai sur les autres hôtes (Pi, Android, Windows, Linux), un module macOS
