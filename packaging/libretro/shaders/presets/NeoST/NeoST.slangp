@@ -1,0 +1,5 @@
+# NeoST for RetroArch — the core preset RetroArch loads by itself for NeoST
+# (Settings > Video > Shaders on, "Auto-load presets" on). It follows the
+# picture: SC1224 colour monitor for colour modes, SM124 for monochrome.
+# A core preset saved from Quick Menu > Shaders takes precedence.
+#reference "../../shaders_slang/neost/neost-auto.slangp"

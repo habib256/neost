@@ -143,6 +143,15 @@ public:
     void detachUltraSatan() { acsi_.detachUltraSatan(); }
     int  usatanFirstTarget() const { return acsi_.usatanFirstTarget(); }
     bool inserted(int drive = 0) const { return drive_[drive & 1].present(); }
+    // Moteur du lecteur en marche : bit 7 du registre d'état ([B] WD177X-00, « Status
+    // Register », bit S7 Motor On). Sert au témoin du lecteur et au chargement accéléré
+    // du cœur libretro.
+    bool motorOn() const { return (str_ & 0x80) != 0; }
+    // Secteur LOGIQUE `lsn` (512 octets) de la disquette montée, lu HORS émulation : ni
+    // la tête, ni l'horloge, ni l'état ne bougent. Pour un frontend qui veut le
+    // catalogue d'une image (io/FloppyCatalog). STX/IPF : géométrie tirée du BPB du
+    // secteur de boot, secteur trouvé par son champ ID. Faux si absent ou illisible.
+    bool readLogicalSector(int drive, int lsn, uint8_t* out512) const;
     const std::string& mountedPath(int drive = 0) const { return drive_[drive & 1].path; }
 
     // --- Retour arrière (core/Rewind) -------------------------------------------

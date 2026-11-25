@@ -1,0 +1,40 @@
+# NeoST for RetroArch — SM124 monochrome monitor, forced: sharp white text with a slight glow.
+# [F] Glow and tint set by eye, not measured on an SM124.
+
+shaders = 5
+
+shader0 = shaders/neost-cable.slang
+alias0 = NeoSTCable
+filter_linear0 = true
+wrap_mode0 = clamp_to_edge
+scale_type0 = source
+scale0 = 1.0
+
+shader1 = shaders/neost-bloom-h.slang
+filter_linear1 = true
+wrap_mode1 = clamp_to_edge
+scale_type1 = source
+scale1 = 1.0
+
+shader2 = shaders/neost-bloom-v.slang
+filter_linear2 = true
+wrap_mode2 = clamp_to_edge
+scale_type2 = source
+scale2 = 1.0
+
+shader3 = shaders/neost-glass.slang
+alias3 = NeoSTGlass
+filter_linear3 = true
+wrap_mode3 = clamp_to_edge
+scale_type3 = viewport
+scale3 = 1.0
+
+shader4 = shaders/neost-present.slang
+filter_linear4 = false
+scale_type4 = viewport
+scale4 = 1.0
+
+parameters = "NEOST_MONITOR;NEOST_BLOOM;NEOST_PERSISTENCE"
+NEOST_MONITOR = 2.0
+NEOST_BLOOM = 0.20
+NEOST_PERSISTENCE = 0.25

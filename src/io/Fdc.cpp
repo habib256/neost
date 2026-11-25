@@ -3662,6 +3662,36 @@ std::shared_ptr<const Fdc::MediaCopy> Fdc::copyMedia(int drive) const {
     return copy;
 }
 
+bool Fdc::readLogicalSector(int drive, int lsn, uint8_t* out512) const {
+    const FloppyDisk& dk = drive_[drive & 1];
+    if (lsn < 0 || !out512 || !dk.present()) return false;
+    if (dk.imgType != FloppyDisk::IMG_STX) {
+        const std::size_t off = std::size_t(lsn) * 512u;
+        if (off + 512u > dk.image.size()) return false;
+        std::memcpy(out512, dk.image.data() + off, 512);
+        return true;
+    }
+    if (!dk.stx) return false;
+    auto find = [&](int track, int side, int sector) -> const uint8_t* {
+        const StxImage::Track* t = dk.stx->findTrack(track, side);
+        if (!t) return nullptr;
+        for (const StxImage::Sector& sc : t->sectorsView())
+            if (sc.idSector == sector && sc.pData && sc.sectorSize == 512) return sc.pData;
+        return nullptr;
+    };
+    const uint8_t* boot = find(0, 0, 1);
+    if (!boot) return false;
+    // [B] BPB du secteur de boot (Atari « ST Hardware Reference », GEMDOS) : secteurs
+    // par piste à $18, faces à $1A, petit-boutistes.
+    const int spt = boot[0x18] | (boot[0x19] << 8);
+    const int heads = boot[0x1A] | (boot[0x1B] << 8);
+    if (spt < 1 || spt > 40 || heads < 1 || heads > 2) return false;
+    const uint8_t* p = find(lsn / (spt * heads), (lsn / spt) % heads, lsn % spt + 1);
+    if (!p) return false;
+    std::memcpy(out512, p, 512);
+    return true;
+}
+
 bool Fdc::restoreMedia(int drive, const MediaCopy& copy) {
     FloppyDisk& dk = drive_[drive & 1];
     const bool foreign = copy.gen == kForeignGen;       // relue d'un état autonome

@@ -26,6 +26,49 @@ Trois contraintes libretro sont plus dures que celles des frontends existants :
 3. **Aucune sortie propre** : ni fenêtre, ni périphérique audio, ni `stderr` comme
    canal officiel. L'image, le son et les journaux passent par des rappels.
 
+## Où en est le cœur
+
+Le 2026-11-25, le module existe : `src/libretro/neost_libretro.cpp`, bâti par
+`-DNEOST_PIC=ON -DNEOST_BUILD_LIBRETRO=ON` (cible `neost_libretro`), n'exportant que les 25
+`retro_*`. Son guide d'utilisation est `packaging/libretro/README.md` ; ses shaders sont
+dans `packaging/libretro/shaders/`. Il est jugé sans RetroArch :
+
+- `tools/run_libretro.py` le joue par un frontend ctypes (`tools/libretro_frontend.py`,
+  sur le modèle de celui de POM2), un cas par processus, avec les seuls médias libres du
+  dépôt : démarrage à 50 et 60 Hz annoncés d'emblée, cadrage, mono, copie privée des
+  disquettes, chargement accéléré, programme sur C:, liste `.m3u`, autorun d'une disquette
+  non amorçable, machine automatique (redémarrage en STE, sonde rattrapée laissée sur ST),
+  état rejoué à l'identique, trames cachées ;
+- `tools/check_slang.py` compile chaque étape des shaders en SPIR-V (glslangValidator) et
+  contrôle les préréglages ;
+- le job « Cœur libretro » de la CI fait les deux, et vérifie les exports.
+
+Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
+
+- **La machine automatique.** Un programme qui lit un périphérique absent (son DMA du STE
+  sur un ST…) sans gestionnaire de bus error à lui redémarre sur la machine qui le porte
+  (`Cpu68k::lastFault` et `mmioNeedsBetterMachine`, déjà utilisés par le bandeau du GUI).
+  Deux signatures : le 68000 arrêté (TOS Atari), ou une faute prise par une instruction en
+  RAM quand le vecteur 2 pointe encore dans la ROM (EmuTOS ne s'arrête pas). Les sondes du
+  TOS (PC en ROM) et celles d'un programme qui rattrape la faute (vecteur en RAM) passent.
+  Stardust (STE seulement, nom TOSEC sans « STE ») démarre ainsi sans réglage.
+- **L'autorun des disquettes non amorçables** (`io/FloppyCatalog`) : secteur de boot non
+  exécutable, rien dans `\AUTO`, un seul programme de jeu à la racine (utilitaires
+  écartés, le nom de l'image départage) → lancé par le démarrage automatique GEMDOS,
+  sans rien écrire sur la disquette. Bubble Ghost démarre ainsi.
+- **Les disquettes sœurs** (`MediaScan::areSiblingImages`) forment seules la liste : la
+  face B de Rainbow Islands est à un R3.
+- **Le chargement accéléré** : jusqu'à huit trames émulées par trame de l'hôte tant que le
+  moteur du lecteur tourne ; le nombre dépend de l'état émulé, donc rejouable. 63 trames
+  de l'hôte au lieu de 370 pour la première lecture de `PDATS295.msa`.
+- **Un TOS choisi** parmi ceux du dossier système (`TosChoice`), Atari PAL d'abord. Il
+  compte : Stunt Car Racer tourne sous TOS 1.02 et 1.04 et retombe au bureau sous
+  EmuTOS 192 Ko (vérifié au headless, même résultat).
+
+Restent ouverts au TODO (§ 7, « Cœur libretro ») : la traduction des options, le port
+clavier du netplay, les bruits du lecteur, le MIDI, les écritures STX/IPF dans l'état, le
+banc netplay à deux instances, l'essai des shaders dans un vrai RetroArch.
+
 ## Positionnement : un cœur ST qui n'est pas Hatari
 
 Relevé du 2026-11-25. Le RetroArch d'aujourd'hui a **deux** cœurs Atari ST, tous deux tirés
@@ -69,7 +112,7 @@ présente sur ce qu'il fait le jour où il paraît.
 | `retro_serialize` rapide | `saveState` 0,41 ms, `loadState` 0,52 ms ; avec les disquettes 0,66 et 0,76 ms ; une trame ≈ 1 ms (mesures ci-dessous) | **Prêt** |
 | Le blob contient tout ce qui change | `Machine::saveStateWithMedia` / `loadStateWithMedia` : l'état `.state` intact, les deux lecteurs et un CRC | **Prêt**, sauf les écritures STX et IPF — « Écritures STX et IPF dans l'état autonome » |
 | `retro_serialize_size` fixe | Conteneur à longueur inscrite, remplissage final ignoré ; taille constante tant que les médias ne changent pas, sauf GEMDOS (+322 octets au boot sous EmuTOS) | **Prêt** (borne à poser par l'adaptateur) |
-| État refusé pendant un blit HOG garé | `saveState` rend faux tant qu'une instruction est garée (`Machine::kParkedReason`) | **À adapter** : `retro_serialize` rend faux, RetroArch saute la trame |
+| État refusé pendant un blit HOG garé | `saveState` rend faux tant qu'une instruction est garée (`Machine::kParkedReason`) | **Fait** : `retro_serialize` rend faux, RetroArch saute la trame |
 | `retro_load_game` / `retro_unload_game` répétés | Machine reconstruite = même état (gardé par `neost-selftest`) ; restent process-globaux le quartz (`setClocks`), le pays clavier (`stkeys`) et `g_cur` du CPU (A33, § 9) | **Prêt** avec les règles ci-dessous |
 | Déterminisme (netplay, rejeu) | `Machine::freezeHostClocks()` : RTC, IKBD et UltraSatan au 1er janvier 2026, 12:00 | **Prêt** |
 | Journaux `retro_log_printf` | `neost::log::setSink` (`src/util/Log.hpp`) : tous les journaux du cœur | **Prêt** |
@@ -78,10 +121,10 @@ présente sur ce qu'il fait le jour où il paraît.
 | Souris (`RETRO_DEVICE_MOUSE`, relative) | `Machine::mouseEvent(dx, dy, gauche, droit)` | **Prêt** |
 | MIDI (`RETRO_ENVIRONMENT_GET_MIDI_INTERFACE`) | ACIA MIDI et ponts hôtes (`src/audio/MidiInHost.*`, `MidiOutHost.*`) | **À adapter** : un pont de plus à côté de CoreMIDI, ALSA et winmm |
 | Contenu | `.st/.msa/.dim/.stx/.ipf` par chemin (`Fdc::loadImage`) ; `.prg` par le GEMDOS et le démarrage automatique (`neost_set_autostart` du web) ; cartouche brute ou `.stc` (`Bus::loadCart`) | **Prêt** avec `need_fullpath = true` |
-| Interface de changement de disque (`.m3u`) | `Fdc::loadImage(path, drive)` et l'éjection | **À adapter** |
+| Interface de changement de disque (`.m3u`) | `Fdc::loadImage(path, drive)` et l'éjection | **Fait** : interface étendue, `.m3u` à libellés, disquettes sœurs, R3 |
 | BIOS dans le dossier système | `Machine::switchTos(path, machine demandée)` | **Prêt** (seul EmuTOS peut accompagner le cœur) |
-| Options du cœur | `neost.cfg` analysé par `src/gui/AppConfig.cpp`, déjà dans `neost_core` | **À adapter** : options dérivées des clés de `neost.cfg` |
-| Carte mémoire (succès, triches) | `bus.ram` est un `std::vector` **réalloué** par `Machine::reconfigure` | **À adapter** : republier le pointeur après toute reconfiguration |
+| Options du cœur | `neost.cfg` analysé par `src/gui/AppConfig.cpp`, déjà dans `neost_core` | **Fait** (options v2 en quatre catégories, en anglais) ; traduction ouverte |
+| Carte mémoire (succès, triches) | `bus.ram` est un `std::vector` **réalloué** par `Machine::reconfigure` | **Fait** pour `retro_get_memory_data` ; le redémarrage sur une autre machine change le pointeur (ouvert) |
 | Bibliothèque partagée | Option `NEOST_PIC` : cœur PIC à visibilité cachée ; `neost-shared-probe` le prouve (CI Linux x86_64, un seul symbole exporté) | **Prêt** (l'adaptateur ajoute un script de version) |
 | Fil unique | `EmuFiber` : ucontext (Linux, macOS), fibres Win32, fil dédié (Android, ASan), JSPI (web) ; libretro-common fournit `libco` | **À adapter** si une plate-forme visée n'a aucun des dorsaux |
 
