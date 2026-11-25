@@ -188,10 +188,11 @@ public:
     // readMediaCopy relit le même format en copie restaurable. Une copie relue porte une
     // génération ÉTRANGÈRE (kForeignGen) : les générations ne valent qu'à l'intérieur
     // d'une session, et une égalité fortuite avec celle du lecteur sauterait la remontée.
-    // Une image STX n'y porte que son chemin : ses écritures vivent dans le .wd1772.
+    // Une image STX/IPF y porte son chemin et son overlay d'écriture (format .wd1772) ;
+    // `stxOverlay` faux relit un état v1, où l'overlay manquait (il reste alors tel quel).
     static constexpr uint64_t kForeignGen = ~uint64_t(0);
     void writeMedia(StateArchive& ar, int drive) const;
-    static std::shared_ptr<const MediaCopy> readMediaCopy(StateArchive& ar);
+    static std::shared_ptr<const MediaCopy> readMediaCopy(StateArchive& ar, bool stxOverlay = true);
     // Recrée le fichier hôte d'une copie relue quand il N'EXISTE PLUS — cas du web, où
     // une disquette déposée vit dans le FS virtuel de la page et disparaît au
     // rechargement, alors que l'état autonome en porte les octets. Écrit l'image dans

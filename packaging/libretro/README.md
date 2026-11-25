@@ -75,7 +75,8 @@ Delete that copy to start afresh.
   68000, even after an automatic restart on another machine.
 - **Exact states.** A save state weighs 2 to 4 MB with its floppies, takes
   under a millisecond on a recent computer, and replays exactly: run-ahead,
-  rewind and netplay work.
+  rewind and netplay work. It also carries what a game wrote on a protected
+  (STX or IPF) floppy, so a high score saved on the disk rewinds with the game.
 
 ## Controls
 

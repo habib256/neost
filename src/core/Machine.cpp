@@ -1627,7 +1627,8 @@ void Machine::freezeHostClocks() {
 
 // --- États autonomes (cf. Machine.hpp) --------------------------------------------------
 static constexpr uint32_t kMediaStateMagic   = 0x4D54534Eu;   // "NSTM" en petit-boutiste
-static constexpr uint16_t kMediaStateVersion = 1;
+// v2 (2026-11-25) : une STX/IPF porte son overlay d'écriture. v1 se relit (overlay inconnu).
+static constexpr uint16_t kMediaStateVersion = 2;
 // magic(4) version(2) longueur de l'état(4) longueur totale(4) | état | lecteurs A et B |
 // CRC-32 des lecteurs(4). La longueur totale permet un remplissage final, ignoré à la
 // reprise : libretro veut une taille d'état FIXE sur la session (retro_serialize_size),
@@ -1663,7 +1664,7 @@ bool Machine::saveStateWithMedia(std::vector<uint8_t>& out) {
 // suivis de leur CRC. Faux (et motif) si le conteneur est invalide. Ne touche à rien.
 static bool splitMediaState(const uint8_t* data, std::size_t n, const uint8_t*& st,
                             uint32_t& len, const uint8_t*& media, std::size_t& mediaLen,
-                            std::string& why) {
+                            std::string& why, uint16_t* versionOut = nullptr) {
     uint32_t magic = 0, total = 0; uint16_t version = 0;
     len = 0;
     if (n >= kMediaStateHead) {
@@ -1678,7 +1679,8 @@ static bool splitMediaState(const uint8_t* data, std::size_t n, const uint8_t*& 
         why = "Not a NeoST state with floppy media";
         return false;
     }
-    if (version != kMediaStateVersion) { why = "Unsupported NeoST media state version"; return false; }
+    if (version < 1 || version > kMediaStateVersion) { why = "Unsupported NeoST media state version"; return false; }
+    if (versionOut) *versionOut = version;
     st = data + kMediaStateHead;
     media = st + len;
     mediaLen = n - kMediaStateHead - len - 4;
@@ -1704,7 +1706,8 @@ bool Machine::stateWithMediaHeaderOk(const uint8_t* data, std::size_t n) {
 bool Machine::loadStateWithMedia(const uint8_t* data, std::size_t n, bool recreateMissing) {
     lastStateError_.clear();
     const uint8_t* st; const uint8_t* media; uint32_t len; std::size_t mediaLen;
-    if (!splitMediaState(data, n, st, len, media, mediaLen, lastStateError_)) return false;
+    uint16_t version = 0;
+    if (!splitMediaState(data, n, st, len, media, mediaLen, lastStateError_, &version)) return false;
     if (parkedInInstruction()) { lastStateError_ = kParkedReason; return false; }
     // L'en-tête AVANT les lecteurs : remonter une disquette réécrit son fichier hôte,
     // ce qu'un état refusé ensuite ne déferait pas (même ordre que Rewind::stepBack).
@@ -1715,8 +1718,8 @@ bool Machine::loadStateWithMedia(const uint8_t* data, std::size_t n, bool recrea
         return false;
     }
     StateArchive ar = StateArchive::loader(media, mediaLen);
-    const auto a = Fdc::readMediaCopy(ar);
-    const auto b = a ? Fdc::readMediaCopy(ar) : nullptr;
+    const auto a = Fdc::readMediaCopy(ar, version >= 2);
+    const auto b = a ? Fdc::readMediaCopy(ar, version >= 2) : nullptr;
     if (!a || !b || !ar.ok()) { lastStateError_ = "State file is inconsistent"; return false; }
     if (recreateMissing && (!Fdc::recreateMediaFile(*a) || !Fdc::recreateMediaFile(*b))) {
         lastStateError_ = "Floppy image is gone and cannot be recreated";

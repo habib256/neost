@@ -1,5 +1,20 @@
 # Changelog — NeoST
 
+## 2026-11-25 — Écritures des disquettes protégées dans l'état
+
+- **État autonome v2** : une STX/IPF y porte son overlay d'écriture (format `.wd1772`,
+  `StxImage::overlayBytes`). À la reprise, `Fdc::restoreMedia` compare l'overlay de l'état
+  à celui du lecteur ; différent, l'image revient à l'origine (`StxImage::resetOverlay`, qui
+  reparse les octets gardés et rétablit les durées de tour d'une IPF) puis l'overlay de
+  l'état est rejoué, et le fichier compagnon réécrit ou effacé. Égaux — chaque trame
+  d'anticipation —, rien ne bouge. Un état v1 se relit, son overlay inconnu laissé tel quel.
+  Les copies du retour arrière portent aussi l'overlay ; sa barrière `stxWrites` reste
+  (TODO § 7, « Retour arrière : franchir les écritures STX »).
+- Test `stxOverlayStateCases` : WRITE SECTOR réel sur une STX minimale, copie d'avant et
+  d'après, aller-retour par le format d'état ; reprendre l'avant relit `$A5`, l'état d'après
+  relit `$5A`, le `.wd1772` suit. Contrôle sur Lethal Xcess (STX) dans le cœur libretro :
+  200 trames rejouées à l'identique depuis un état pris en plein chargement.
+
 ## 2026-11-25 — Libretro : bruits du lecteur, carte mémoire
 
 - **Bruits du lecteur** dans le flux de la trame : `audio/DriveSoundMix` (cœur, WAV PCM

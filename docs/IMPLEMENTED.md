@@ -1181,6 +1181,13 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   fichier hôte est en lecture seule. Un `.dim` à en-tête non standard (extension `.dim`,
   signature `BB`) perd son en-tête et se monte en lecture seule. Une image n'entre que dans
   un lecteur à la fois (`Fdc::loadImage`, `.wd1772` partagé compris).
+- **Écritures STX/IPF dans les copies de média et l'état autonome** (2026-11-25, état v2) :
+  `StxImage::overlayBytes`/`loadOverlayBytes` (le format `.wd1772` en mémoire),
+  `resetOverlay` (retour à l'image d'origine, durées de tour d'IPF conservées) ;
+  `Fdc::copyMedia`/`writeMedia` portent l'overlay, `restoreMedia` le rejoue et réécrit ou
+  efface le compagnon `.wd1772`. Un état v1 se relit, overlay du lecteur laissé tel quel.
+  Test `stxOverlayStateCases` (`tests/fdc_mount_guard_logic.cpp`). Le retour arrière garde
+  sa barrière `stxWrites` (TODO § 7).
 - **Archives `.zip` et `.gz`** (2026-11-25, `util/Archive.*`, test `testArchives` de
   `neost-selftest`) : répertoire central du zip (pas de zip64 ni de multi-volume), membres
   stockés ou deflate, gzip à un membre (FEXTRA, FNAME, FCOMMENT, FHCRC), CRC-32 et tailles

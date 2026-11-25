@@ -86,6 +86,12 @@ Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
   trame entendue (une fois sous anticipation). Lecteur vide : silence, choix d'agrément.
 - **La carte mémoire** (`SET_MEMORY_MAPS`, ST-RAM grand-boutiste à 0) republiée après un
   redémarrage sur une autre machine.
+- **Les écritures des disquettes protégées dans l'état** (état autonome v2) : une STX/IPF y
+  porte son overlay d'écriture au format `.wd1772` (`StxImage::overlayBytes`) ; à la
+  reprise, s'il diffère de celui du lecteur, l'image revient à l'origine
+  (`StxImage::resetOverlay`, durées de tour d'une IPF gardées) et l'overlay de l'état est
+  rejoué, fichier compagnon compris. Un état v1 se relit (overlay laissé tel quel). Les
+  sauvegardes d'un jeu protégé ne divergent plus entre joueurs ni sous l'anticipation.
 - **Les disques durs** `.hd`/`.vhd` en ACSI 0 (copie privée) : EmuTOS monte la partition
   et lance `C:\AUTO`.
 - **Le toucher** : option « Touch moves the GEM pointer » (active sur Android) —
@@ -95,8 +101,8 @@ Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
   compte : Stunt Car Racer tourne sous TOS 1.02 et 1.04 et retombe au bureau sous
   EmuTOS 192 Ko (vérifié au headless, même résultat).
 
-Restent ouverts au TODO (§ 7, « Cœur libretro ») : le MIDI, les écritures STX/IPF et ACSI
-dans l'état, l'essai du module et des shaders dans un vrai RetroArch.
+Restent ouverts au TODO (§ 7, « Cœur libretro ») : le MIDI, le disque dur ACSI dans
+l'état, l'essai du module et des shaders dans un vrai RetroArch.
 
 ## Positionnement : un cœur ST qui n'est pas Hatari
 
@@ -120,7 +126,7 @@ hatariB les annonce déjà. Les arguments tiennent si chacun porte sa preuve :
 |---|---|---|
 | **Un autre moteur** | 68000 Moira, plan mémoire (`Bus`) et puces écrits pour NeoST ; Hatari n'y est qu'une référence lue et un oracle de grade D. Les modules portés d'Hatari (Pasti, `StxImage`) le disent dans leur en-tête. Chaque verdict du harnais nomme son échelon (`docs/REFERENCE_LADDER.md`) : un écart avec Hatari tranché par une fiche technique ou le RTL reste un écart | — |
 | **IPF sans bibliothèque à fournir** | Décodeur libre dans le cœur (`src/io/IpfImage.*`, adapté de MAME, BSD-3) : rien à déposer dans le dossier système, Android compris | **Un seul titre IPF validé** (*Hammerfist*) — « Campagne IPF » ; pas de DPLL pendant l'émulation (`docs/IMPLEMENTED.md`, « Images IPF ») |
-| **Netplay fiable sur IPF** | Les bits faibles tirent d'un générateur xorshift **sérialisé** (`Fdc::rng_`) : deux pairs relisent les mêmes octets | Les **écritures** sur IPF et STX vont dans le `.wd1772` compagnon, hors de l'état — « Écritures STX et IPF dans l'état autonome » |
+| **Netplay fiable sur IPF** | Les bits faibles tirent d'un générateur xorshift **sérialisé** (`Fdc::rng_`) : deux pairs relisent les mêmes octets ; les **écritures** sur IPF et STX voyagent dans l'état (v2, 2026-11-25) | — |
 | **Déterminisme démontré** | Contrat écrit (`docs/OPENDST.md` § 1), horloges hôte figées (`freezeHostClocks`), `--state-hash-every` et `tools/run_determinism.py` au palier `fast`, reprise d'état comprise | Le déclarer au frontend : `savestate_features = "deterministic"` dans le `.info` |
 | **États bon marché** | 0,41 / 0,52 ms par sauvegarde / reprise pour une trame ≈ 1 ms (mesures plus bas) : avec une trame d'anticipation, chaque trame affichée coûte deux trames émulées, une sauvegarde et une reprise, ≈ 2,9 ms | Aucun chiffre en face pour hatariB — « Mesure face à hatariB » |
 
@@ -139,7 +145,7 @@ présente sur ce qu'il fait le jour où il paraît.
 | Horodatage des écritures son | `Machine::armAudioClocks()`, contrat de drainage écrit dans `Machine.hpp` | **Prêt** |
 | Bruits du lecteur dans le même flux | `DriveSound` joue par son propre moteur miniaudio ; `audio/DriveSoundMix` rend du PCM | **Fait** pour libretro ; Android ouvert |
 | `retro_serialize` rapide | `saveState` 0,41 ms, `loadState` 0,52 ms ; avec les disquettes 0,66 et 0,76 ms ; une trame ≈ 1 ms (mesures ci-dessous) | **Prêt** |
-| Le blob contient tout ce qui change | `Machine::saveStateWithMedia` / `loadStateWithMedia` : l'état `.state` intact, les deux lecteurs et un CRC | **Prêt**, sauf les écritures STX et IPF — « Écritures STX et IPF dans l'état autonome » |
+| Le blob contient tout ce qui change | `Machine::saveStateWithMedia` / `loadStateWithMedia` : l'état `.state` intact, les deux lecteurs (et l'overlay d'écriture d'une STX/IPF depuis la v2) et un CRC | **Prêt**, sauf un disque dur ACSI — « Disque dur ACSI dans l'état » |
 | `retro_serialize_size` fixe | Conteneur à longueur inscrite, remplissage final ignoré ; taille constante tant que les médias ne changent pas, sauf GEMDOS (+322 octets au boot sous EmuTOS) | **Prêt** (borne à poser par l'adaptateur) |
 | État refusé pendant un blit HOG garé | `saveState` rend faux tant qu'une instruction est garée (`Machine::kParkedReason`) | **Fait** : `retro_serialize` rend faux, RetroArch saute la trame |
 | `retro_load_game` / `retro_unload_game` répétés | Machine reconstruite = même état (gardé par `neost-selftest`) ; restent process-globaux le quartz (`setClocks`), le pays clavier (`stkeys`) et `g_cur` du CPU (A33, § 9) | **Prêt** avec les règles ci-dessous |
