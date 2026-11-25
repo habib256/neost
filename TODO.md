@@ -452,9 +452,11 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 *Après la 0.6.5 : idées relevées le 2026-11-13 dans [BMAtariST v0.1.1](https://github.com/jhonnaker1/bmatarist/releases/tag/v0.1.1)
 (Hatari non modifié, bare metal sur Raspberry Pi avec Circle, GPL-3.0 comme NeoST).*
 
-- **Disquettes `.zip` et `.gz` ouvertes directement** · P2 ⭘ — monter l'image qu'elles contiennent sans
-  décompression manuelle (cas Bruce Lee, 2026-11-13). BMAtariST le fait pour tous ses formats ; choisir
-  l'image si l'archive en contient plusieurs, réécriture dans l'archive ou à côté, à trancher.
+- **Disquettes `.zip` et `.gz` ouvertes directement (GUI, borne, web)** · P2 ⭘ — monter l'image
+  qu'elles contiennent sans décompression manuelle (cas Bruce Lee, 2026-11-13). Le cœur sait les
+  lire (`util/Archive`, 2026-11-25) et le cœur libretro les ouvre déjà (décompressées une fois dans
+  ses sauvegardes) ; reste le GUI : choisir l'image si l'archive en contient plusieurs, réécriture
+  dans l'archive ou à côté, à trancher.
 - **Web : le travail des étudiants survit au rechargement** · P2 ⭘ *(proposé)* — C:/D: et
   les disquettes déposées vivent dans le FS de la page ; l'export `.zip` et la garde de
   départ protègent, mais un onglet fermé par erreur perd la séance. Garder `/hd` dans
@@ -505,8 +507,9 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 
 Le **cinquième frontend** existe depuis le 2026-11-25 : `src/libretro/neost_libretro.cpp`
 (`-DNEOST_PIC=ON -DNEOST_BUILD_LIBRETRO=ON`), zoom adaptatif par la géométrie, options en
-catégories, copies privées des disquettes, chargement accéléré, machine automatique,
-autorun des disquettes non amorçables, disquettes sœurs, shaders slang. Jugé par
+catégories (anglais, français), copies privées des disquettes, archives `.zip`/`.gz`,
+chargement accéléré, machine automatique, autorun des disquettes non amorçables,
+disquettes sœurs, ports clavier et souris du netplay, shaders slang. Jugé par
 `tools/run_libretro.py` et `tools/check_slang.py`, en CI (job « Cœur libretro »). État et
 règles → [`docs/LIBRETRO.md`](docs/LIBRETRO.md) ; guide → `packaging/libretro/README.md`.
 Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
@@ -516,11 +519,6 @@ Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
   zoom et `SET_GEOMETRY` à l'écran, préréglage de cœur chargé seul, bascule SC1224/SM124,
   anticipation et retour arrière à la main. Vérifier le pilote GLES (Pi, Android), qui ne
   lit que le GLSL, et livrer des `.glslp` s'il le faut.
-- **Options en français** · P2 ⭘ — `SET_CORE_OPTIONS_V2_INTL`, comme POM2 : l'anglais reste
-  la référence (CLAUDE.md), le français s'affiche quand RetroArch est en français.
-- **Clavier pour le netplay** · P2 ⭘ — le netplay de RetroArch n'envoie pas les touches
-  reçues par `SET_KEYBOARD_CALLBACK`. Un port « clavier » lu comme périphérique à chaque trame
-  (le port 3 de POM2), et un port « souris » (port 4).
 - **Machine automatique : la carte mémoire suit** · P3 ⭘ — après un redémarrage sur une
   autre machine, `bus.ram` est réallouée : un frontend qui garde le pointeur de
   `retro_get_memory_data` (triches) lit l'ancienne. Annoncer `SET_MEMORY_MAPS` et la republier.
@@ -543,11 +541,6 @@ Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
 - **Sortie RF : composite PAL** · P3 ⭘ *(proposé)* — codage et décodage composite PAL pour
   le préréglage `neost-rf` (modulateur des STFM). N'existe ni dans NeoST ni dans POM2 (NTSC
   Apple II seulement).
-- **Banc netplay du module** · P2 ⭘ *(proposé)* — l'équivalent de `tools/libretro_netplay.py`
-  de POM2 : deux instances du module (deux processus), mêmes entrées, état identique à
-  l'octet, un joueur qui rejoint en cours de partie ; en CI. `run_libretro.py` ne rejoue
-  qu'un état dans une instance. Le déterminisme est l'argument du cœur. Les chemins des
-  copies privées diffèrent d'un joueur à l'autre : vérifier qu'un état les reprend.
 - **Clavier : une table de position neutre** · P3 ⭘ *(proposé)* — GLFW (`StKeys.cpp`) et
   Android ont chacun leur table touche → scancode ST ; libretro en ajouterait une troisième
   (`RETROK_*`). Une table indexée par position (usage HID USB), chaque frontend n'y branchant
@@ -555,6 +548,10 @@ Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
 - **Bruits du lecteur rendus en PCM** · P3 ⭘ *(proposé)* — `DriveSound` joue par son propre
   moteur miniaudio ; libretro n'a qu'un flux. Rendre les bruits en échantillons mêlés à la
   trame, utilisable aussi par Android.
+- **Disque dur ACSI dans l'état** · P3 ⭘ *(proposé)* — une image `.hd` montée par le cœur
+  libretro est écrite au fil de l'eau, hors de l'état : un retour arrière ou une trame
+  d'anticipation ne défait pas une écriture, et deux joueurs en réseau divergent dès que le
+  programme écrit sur C:. Même famille que l'item suivant.
 - **Écritures STX et IPF dans l'état autonome** · P2 ⭘ *(proposé)* — une image STX ou IPF
   (montée sur le chemin STX) n'y porte que son chemin : ses écritures vivent dans le `.wd1772`
   compagnon, qu'une reprise ne défait pas (même limite que le retour arrière). Pour le netplay

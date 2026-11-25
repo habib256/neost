@@ -32,6 +32,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <system_error>
@@ -45,6 +46,7 @@
 #include "core/TosChoice.hpp"
 #include "io/FloppyCatalog.hpp"
 #include "io/MediaScan.hpp"
+#include "util/Archive.hpp"
 #include "io/StJoyBits.hpp"
 #include "util/Log.hpp"
 
@@ -150,18 +152,33 @@ void scanTosFiles() {
     if (g_tosFiles.size() > 120) g_tosFiles.resize(120);
 }
 
-retro_core_option_v2_category g_categories[] = {
-    {"system", "System", "Machine, operating system and memory. Changes apply at the next restart."},
-    {"video", "Video", "Framing of the Atari picture."},
-    {"input", "Input", "Joypad, mouse and keyboard."},
-    {"media", "Media", "Floppy disks."},
-    {nullptr, nullptr, nullptr},
+// Deux jeux de libellés : l'anglais est la référence (interface en anglais, CLAUDE.md),
+// le français s'affiche quand RetroArch est en français (SET_CORE_OPTIONS_V2_INTL), comme
+// le cœur de POM2. Clés et valeurs ne changent pas avec la langue.
+retro_core_option_v2_category g_categories[2][5] = {
+    {
+        {"system", "System", "Machine, operating system and memory. Changes apply at the next restart."},
+        {"video", "Video", "Framing of the Atari picture."},
+        {"input", "Input", "Joypad, mouse and keyboard."},
+        {"media", "Media", "Floppy disks and archives."},
+        {nullptr, nullptr, nullptr},
+    },
+    {
+        {"system", "Système", "Machine, système d'exploitation et mémoire. Pris en compte au prochain redémarrage."},
+        {"video", "Image", "Cadrage de l'image de l'Atari."},
+        {"input", "Commandes", "Manette, souris et clavier."},
+        {"media", "Supports", "Disquettes et archives."},
+        {nullptr, nullptr, nullptr},
+    },
 };
 
-std::vector<retro_core_option_v2_definition> g_defs;
+std::vector<retro_core_option_v2_definition> g_defs[2];   // [0] anglais, [1] français
 
-void buildOptions() {
-    g_defs.clear();
+void buildOptions(int lang) {
+    const bool fr = lang == 1;
+    auto T = [fr](const char* en, const char* f) { return fr ? f : en; };
+    std::vector<retro_core_option_v2_definition>& defs = g_defs[lang];
+    defs.clear();
     auto def = [](const char* key, const char* desc, const char* info, const char* cat,
                   std::initializer_list<retro_core_option_value> vals, const char* dflt) {
         retro_core_option_v2_definition d{};
@@ -173,55 +190,86 @@ void buildOptions() {
         d.default_value = dflt;
         return d;
     };
-    g_defs.push_back(def("neost_machine", "Machine (restart)",
-        "Automatic: an STE for content tagged (STE), otherwise the model the chosen TOS runs, an ST by default.",
+    const char* on = T("Enabled", "Activé");
+    const char* off = T("Disabled", "Désactivé");
+    defs.push_back(def("neost_machine", T("Machine (restart)", "Machine (redémarrage)"),
+        T("Automatic: an STE for content tagged (STE), otherwise the model the chosen TOS runs, an ST by default. "
+          "A program that needs STE or Mega STE hardware restarts on it.",
+          "Automatique : un STE pour un contenu marqué (STE), sinon le modèle du TOS choisi, un ST par défaut. "
+          "Un programme qui a besoin du matériel du STE ou du Mega STE redémarre dessus."),
         "system",
-        {{"auto", "Automatic"}, {"st", "520/1040 ST"}, {"megast", "Mega ST"},
+        {{"auto", T("Automatic", "Automatique")}, {"st", "520/1040 ST"}, {"megast", "Mega ST"},
          {"ste", "STE"}, {"megaste", "Mega STE"}}, "auto"));
     {
-        retro_core_option_v2_definition d = def("neost_tos", "TOS (restart)",
-            "Images found in the system folder, subfolder neost. Automatic: the TOS the machine shipped with when present "
-            "(PAL before NTSC), otherwise EmuTOS.",
-            "system", {{"auto", "Automatic"}}, "auto");
+        retro_core_option_v2_definition d = def("neost_tos", T("TOS (restart)", "TOS (redémarrage)"),
+            T("Images found in the system folder, subfolder neost. Automatic: the TOS the machine shipped with when "
+              "present (PAL before NTSC), otherwise EmuTOS. A real TOS runs more games than EmuTOS.",
+              "Images trouvées dans le dossier système, sous-dossier neost. Automatique : le TOS d'origine de la "
+              "machine s'il est là (PAL avant NTSC), sinon EmuTOS. Un vrai TOS fait tourner plus de jeux qu'EmuTOS."),
+            "system", {{"auto", T("Automatic", "Automatique")}}, "auto");
         std::size_t i = 1;
         for (const auto& f : g_tosFiles) {
             if (i + 1 >= RETRO_NUM_CORE_OPTION_VALUES_MAX) break;
             d.values[i++] = {f.c_str(), nullptr};
         }
         d.values[i] = {nullptr, nullptr};
-        g_defs.push_back(d);
+        defs.push_back(d);
     }
-    g_defs.push_back(def("neost_ram", "Memory (restart)", "ST-RAM size.", "system",
-        {{"512k", "512 KB"}, {"1m", "1 MB"}, {"2m", "2 MB"}, {"4m", "4 MB"}}, "1m"));
-    g_defs.push_back(def("neost_monitor", "Monitor (restart)",
-        "Colour (SC1224) for games, monochrome (SM124) for high-resolution software.", "system",
-        {{"color", "Colour"}, {"mono", "Monochrome"}}, "color"));
-    g_defs.push_back(def("neost_clock", "Clock (restart)",
-        "Host time, or 1 January 2026 at noon for runs that must repeat exactly.", "system",
-        {{"host", "Host time"}, {"fixed", "Fixed"}}, "host"));
-    g_defs.push_back(def("neost_framing", "Framing",
-        "Adaptive: the active screen fills the picture, and opens to the borders when a demo draws in them. "
-        "Active area: never the borders. Full frame: always the borders.",
-        "video", {{"adaptive", "Adaptive"}, {"active", "Active area"}, {"full", "Full frame"}}, "adaptive"));
-    g_defs.push_back(def("neost_pad_a", "Button A",
-        "Many games jump with the joystick pushed up.", "input",
-        {{"up", "Joystick up (jump)"}, {"space", "Space"}, {"fire", "Fire"}}, "up"));
-    g_defs.push_back(def("neost_mouse_stick", "Mouse on the right stick",
-        "The right analog stick moves the Atari mouse; L2 and R2 are its buttons.", "input",
-        {{"enabled", "Enabled"}, {"disabled", "Disabled"}}, "enabled"));
-    g_defs.push_back(def("neost_mouse_speed", "Mouse speed", nullptr, "input",
+    defs.push_back(def("neost_ram", T("Memory (restart)", "Mémoire (redémarrage)"),
+        T("ST-RAM size. Some games need 1 MB, a few 4 MB.", "Taille de la ST-RAM. Certains jeux veulent 1 Mo, quelques-uns 4 Mo."),
+        "system", {{"512k", T("512 KB", "512 Ko")}, {"1m", T("1 MB", "1 Mo")}, {"2m", T("2 MB", "2 Mo")},
+                   {"4m", T("4 MB", "4 Mo")}}, "1m"));
+    defs.push_back(def("neost_monitor", T("Monitor (restart)", "Moniteur (redémarrage)"),
+        T("Colour (SC1224) for games, monochrome (SM124) for high-resolution software.",
+          "Couleur (SC1224) pour les jeux, monochrome (SM124) pour les logiciels en haute résolution."),
+        "system", {{"color", T("Colour", "Couleur")}, {"mono", T("Monochrome", "Monochrome")}}, "color"));
+    defs.push_back(def("neost_clock", T("Clock (restart)", "Horloge (redémarrage)"),
+        T("Host time, or 1 January 2026 at noon for runs that must repeat exactly.",
+          "L'heure de l'ordinateur, ou le 1er janvier 2026 à midi pour des parties qui doivent se rejouer à l'identique."),
+        "system", {{"host", T("Host time", "Heure de l'ordinateur")}, {"fixed", T("Fixed", "Figée")}}, "host"));
+    defs.push_back(def("neost_framing", T("Framing", "Cadrage"),
+        T("Adaptive: the active screen fills the picture, and opens to the borders when a demo draws in them. "
+          "Active area: never the borders. Full frame: always the borders.",
+          "Adaptatif : l'écran actif remplit l'image, et s'ouvre aux bordures quand une démo y dessine. "
+          "Zone active : jamais les bordures. Cadre entier : toujours les bordures."),
+        "video", {{"adaptive", T("Adaptive", "Adaptatif")}, {"active", T("Active area", "Zone active")},
+                  {"full", T("Full frame", "Cadre entier")}}, "adaptive"));
+    defs.push_back(def("neost_pad_a", T("Button A", "Bouton A"),
+        T("Many games jump with the joystick pushed up.", "Beaucoup de jeux sautent manche poussé vers le haut."),
+        "input", {{"up", T("Joystick up (jump)", "Manche vers le haut (saut)")}, {"space", T("Space", "Espace")},
+                  {"fire", T("Fire", "Tir")}}, "up"));
+    defs.push_back(def("neost_mouse_stick", T("Mouse on the right stick", "Souris au stick droit"),
+        T("The right analog stick moves the Atari mouse; L2 and R2 are its buttons.",
+          "Le stick analogique droit déplace la souris de l'Atari ; L2 et R2 sont ses boutons."),
+        "input", {{"enabled", on}, {"disabled", off}}, "enabled"));
+    defs.push_back(def("neost_pointer", T("Touch moves the GEM pointer", "Le toucher déplace le pointeur GEM"),
+        T("On the GEM desktop and in GEM programs, a touch (or a click on RetroArch's pointer) puts the "
+          "mouse pointer there and clicks. Games keep the relative mouse.",
+          "Sur le bureau GEM et dans les programmes GEM, un toucher (ou un clic sur le pointeur de RetroArch) "
+          "y place le pointeur de la souris et clique. Les jeux gardent la souris relative."),
+        "input", {{"enabled", on}, {"disabled", off}},
+#if defined(__ANDROID__)
+        "enabled"));
+#else
+        "disabled"));
+#endif
+    defs.push_back(def("neost_mouse_speed", T("Mouse speed", "Vitesse de la souris"), nullptr, "input",
         {{"50", "50 %"}, {"75", "75 %"}, {"100", "100 %"}, {"150", "150 %"}, {"200", "200 %"}, {"300", "300 %"}},
         "100"));
-    g_defs.push_back(def("neost_autorun", "Start the program (restart)",
-        "A floppy that does not boot by itself but holds one game program: start it from the desktop, "
-        "as a double-click would.",
-        "media", {{"enabled", "Enabled"}, {"disabled", "Disabled"}}, "enabled"));
-    g_defs.push_back(def("neost_fast_floppy", "Fast floppy loading",
-        "While the drive motor turns, run up to 8 Atari frames per host frame. The emulation stays exact: "
-        "only the waiting is shorter.",
-        "media", {{"enabled", "Enabled"}, {"disabled", "Disabled"}}, "enabled"));
+    defs.push_back(def("neost_autorun", T("Start the program (restart)", "Lancer le programme (redémarrage)"),
+        T("A floppy that does not boot by itself but holds one game program: start it from the desktop, "
+          "as a double-click would.",
+          "Une disquette qui ne démarre pas seule mais porte un seul programme de jeu : le lancer depuis le "
+          "bureau, comme un double-clic."),
+        "media", {{"enabled", on}, {"disabled", off}}, "enabled"));
+    defs.push_back(def("neost_fast_floppy", T("Fast floppy loading", "Chargement accéléré"),
+        T("While the drive motor turns, run up to 8 Atari frames per host frame. The emulation stays exact: "
+          "only the waiting is shorter.",
+          "Tant que le moteur du lecteur tourne, jusqu'à 8 trames de l'Atari par trame de l'ordinateur. "
+          "L'émulation reste exacte : seule l'attente raccourcit."),
+        "media", {{"enabled", on}, {"disabled", off}}, "enabled"));
     retro_core_option_v2_definition end{};
-    g_defs.push_back(end);
+    defs.push_back(end);
 }
 
 std::string optionValue(const char* key, const char* dflt) {
@@ -234,6 +282,11 @@ struct RuntimeOptions {
     enum class Framing { Adaptive, Active, Full } framing = Framing::Adaptive;
     enum class PadA { Up, Space, Fire } padA = PadA::Up;
     bool mouseStick = true;
+#if defined(__ANDROID__)
+    bool pointer = true;
+#else
+    bool pointer = false;
+#endif
     int mouseSpeed = 100;
     bool fastFloppy = true;
 } g_opt;
@@ -248,6 +301,11 @@ void readRuntimeOptions() {
                : a == "fire"  ? RuntimeOptions::PadA::Fire
                               : RuntimeOptions::PadA::Up;
     g_opt.mouseStick = optionValue("neost_mouse_stick", "enabled") != "disabled";
+#if defined(__ANDROID__)
+    g_opt.pointer = optionValue("neost_pointer", "enabled") != "disabled";
+#else
+    g_opt.pointer = optionValue("neost_pointer", "disabled") == "enabled";
+#endif
     g_opt.mouseSpeed = std::max(25, std::min(400, std::atoi(optionValue("neost_mouse_speed", "100").c_str())));
     g_opt.fastFloppy = optionValue("neost_fast_floppy", "enabled") != "disabled";
 }
@@ -276,6 +334,14 @@ struct Session {
     bool mouseL = false, mouseR = false;
     double mouseFracX = 0, mouseFracY = 0;
     bool ledOn = false;
+    bool inputHeld = false;                // une entrée tenue cette trame (cf. retro_run)
+    // Pointeur absolu (toucher) : actions en file, servies quand le curseur GEM a atteint
+    // leur position (Machine::desktopMouseMove) — un tap plus court que le trajet du
+    // curseur garderait sinon son appui sans son clic.
+    struct PointerAction { int x, y; bool left; };
+    std::vector<PointerAction> pointerQueue;
+    bool pointerHeld = false;
+    int pointerX = 0, pointerY = 0;
     bool loaded = false;
     // Cadence annoncée au frontend (cycles par trame). Au démarrage, la Glue tourne à
     // 60 Hz jusqu'à ce que le TOS écrive $FF820A : annoncer ce passage réinitialiserait
@@ -296,10 +362,22 @@ constexpr int kTimingGraceFrames = 120;
 // jamais écrit (docs/LIBRETRO.md, « Le reste du métier »). Les écritures STX/IPF vont
 // dans le `.wd1772` voisin de la copie. Sans dossier de sauvegardes, l'original est
 // monté et la recopie vers le fichier hôte coupée.
-std::string privateCopy(const std::string& original) {
+// Le dossier de NeoST dans les sauvegardes de RetroArch (vide sans dossier de sauvegardes).
+fs::path neostSaveDir() { return g_saveDir.empty() ? fs::path() : fs::path(g_saveDir) / "neost"; }
+
+bool insideSaveDir(const std::string& path) {
+    if (g_saveDir.empty()) return false;
+    const std::string base = (neostSaveDir() / "").lexically_normal().string();
+    const std::string p = fs::path(path).lexically_normal().string();
+    return p.compare(0, base.size(), base) == 0;
+}
+
+std::string privateCopy(const std::string& original, const char* sub = "disks") {
     if (g_saveDir.empty()) return std::string();
+    // Déjà à nous (disquette sortie d'une archive) : c'est elle, la copie privée.
+    if (insideSaveDir(original)) return original;
     std::error_code ec;
-    const fs::path dir = fs::path(g_saveDir) / "neost" / "disks";
+    const fs::path dir = neostSaveDir() / sub;
     fs::create_directories(dir, ec);
     const fs::path dst = dir / fs::path(original).filename();
     if (!fs::exists(dst, ec)) {
@@ -322,6 +400,28 @@ bool mountDisk(int drive, const std::string& original) {
     return true;
 }
 
+// cf. setMediaPathResolver (loadContent). Par nom de fichier : la copie privée de ce
+// joueur, une disquette extraite d'archive, ou une disquette de la liste.
+std::string resolveForeignDisk(const std::string& foreign) {
+    const std::string name = fs::path(foreign).filename().string();
+    if (name.empty()) return {};
+    std::error_code ec;
+    if (!g_saveDir.empty()) {
+        const fs::path own = neostSaveDir() / "disks" / name;
+        if (fs::exists(own, ec)) return own.string();
+        const fs::path arch = neostSaveDir() / "archives";
+        for (auto it = fs::recursive_directory_iterator(arch, ec); !ec && it != fs::recursive_directory_iterator();
+             it.increment(ec))
+            if (it->is_regular_file(ec) && it->path().filename() == name) return it->path().string();
+    }
+    for (const Disk& d : g_s.playlist)
+        if (fs::path(d.path).filename() == name) {
+            const std::string copy = privateCopy(d.path);
+            return copy.empty() ? d.path : copy;
+        }
+    return {};
+}
+
 std::string diskLabel(unsigned i) {
     if (i >= g_s.playlist.size()) return std::string();
     const Disk& d = g_s.playlist[i];
@@ -331,6 +431,7 @@ std::string diskLabel(unsigned i) {
 bool isFloppyExt(const std::string& e) {
     return e == ".st" || e == ".msa" || e == ".dim" || e == ".stx" || e == ".ipf";
 }
+bool isHardDiskExt(const std::string& e) { return e == ".hd" || e == ".vhd"; }
 bool isProgramExt(const std::string& e) {
     return e == ".prg" || e == ".tos" || e == ".ttp" || e == ".app" || e == ".gtp";
 }
@@ -660,10 +761,48 @@ uint8_t scancodeFor(unsigned k) {
     }
 }
 
+// Ports du netplay (comme le cœur de POM2) : le netplay de RetroArch n'envoie que l'état
+// des ports, jamais les touches reçues par rappel. Port 3 réglé sur le clavier : le
+// clavier est relu à chaque trame et les rappels sont ignorés ; port 4 sur la souris :
+// la souris est lue là. Laissés à « None », clavier et souris viennent de l'hôte.
+constexpr unsigned kKeyboardPort = 2, kMousePort = 3;
+unsigned g_portDevice[4] = {RETRO_DEVICE_JOYPAD, RETRO_DEVICE_JOYPAD, RETRO_DEVICE_NONE, RETRO_DEVICE_NONE};
+bool polledKeyboard() { return (g_portDevice[kKeyboardPort] & RETRO_DEVICE_MASK) == RETRO_DEVICE_KEYBOARD; }
+std::array<bool, 128> g_keyHeld{};   // scancodes tenus par le clavier relu
+std::array<bool, 128> g_cbHeld{};    // scancodes tenus par les rappels clavier
+
 void RETRO_CALLCONV onKeyboard(bool down, unsigned keycode, uint32_t, uint16_t) {
-    if (!g_s.machine) return;
+    if (!g_s.machine || polledKeyboard()) return;
     const uint8_t sc = scancodeFor(keycode);
-    if (sc) g_s.machine->keyEvent(sc, down);
+    if (!sc) return;
+    if (sc < g_cbHeld.size()) g_cbHeld[sc] = down;
+    g_s.machine->keyEvent(sc, down);
+}
+
+bool anyKeyHeld() {
+    for (std::size_t i = 1; i < 128; ++i)
+        if (g_keyHeld[i] || g_cbHeld[i]) return true;
+    return false;
+}
+
+// Clavier relu (port 3) : chaque RETROK de la table, OU par scancode (Ctrl gauche et
+// droit, F11/Help…), fronts seulement.
+void pollKeyboard(Machine& m) {
+    std::array<bool, 128> now{};
+    for (unsigned k = 1; k < RETROK_LAST; ++k) {
+        const uint8_t sc = scancodeFor(k);
+        if (sc && sc < now.size() && g_inputState(kKeyboardPort, RETRO_DEVICE_KEYBOARD, 0, k)) now[sc] = true;
+    }
+    for (std::size_t sc = 1; sc < now.size(); ++sc)
+        if (now[sc] != g_keyHeld[sc]) m.keyEvent(uint8_t(sc), now[sc]);
+    g_keyHeld = now;
+}
+
+void releasePolledKeys() {
+    if (g_s.machine)
+        for (std::size_t sc = 1; sc < g_keyHeld.size(); ++sc)
+            if (g_keyHeld[sc]) g_s.machine->keyEvent(uint8_t(sc), false);
+    g_keyHeld.fill(false);
 }
 
 constexpr uint32_t bit(unsigned id) { return 1u << id; }
@@ -693,6 +832,38 @@ uint8_t joyBits(uint32_t pad, bool aIsUp, bool aIsFire) {
 }
 
 void insertNextDisk();
+
+// Toucher → pointeur GEM (option « Touch moves the GEM pointer »). Coordonnées
+// RETRO_DEVICE_POINTER (-0x7FFF..0x7FFF sur l'image montrée) → point du tampon dans le
+// cadre envoyé → point de l'écran ST (zone active). Vrai tant que le pointeur a la main.
+bool applyPointer(Machine& m) {
+    const bool pressed = g_inputState(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) != 0;
+    if (g_s.rw > 0 && pressed) {
+        const int px = g_inputState(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
+        const int py = g_inputState(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
+        const Shifter& sh = m.shifter;
+        const int bx = g_s.rx + int((int64_t(px) + 0x7FFF) * g_s.rw / 0xFFFF);
+        const int by = g_s.ry + int((int64_t(py) + 0x7FFF) * g_s.rh / 0xFFFF);
+        g_s.pointerX = bx - (sh.width() - sh.activeWidth()) / 2;
+        g_s.pointerY = by - sh.activeTop();
+        // Basse résolution : le tampon est à un point par pixel ; la mono et la moyenne
+        // aussi (640 de large). Rien à mettre à l'échelle.
+    }
+    if (pressed && !g_s.pointerHeld) g_s.pointerQueue.push_back({g_s.pointerX, g_s.pointerY, true});
+    if (!pressed && g_s.pointerHeld) g_s.pointerQueue.push_back({g_s.pointerX, g_s.pointerY, false});
+    g_s.pointerHeld = pressed;
+    if (!g_s.pointerQueue.empty()) {
+        const auto& a = g_s.pointerQueue.front();
+        if (m.desktopMouseMove(a.x, a.y, a.left, false)) g_s.pointerQueue.erase(g_s.pointerQueue.begin());
+        // Hors du bureau GEM (un jeu) : desktopMouseMove refuse ; la file ne doit pas
+        // retenir la souris indéfiniment.
+        int x, y, w, h;
+        if (!m.desktopMousePosition(x, y, w, h)) g_s.pointerQueue.clear();
+        return true;
+    }
+    if (pressed) { m.desktopMouseMove(g_s.pointerX, g_s.pointerY, true, false); return true; }   // glisser
+    return false;
+}
 
 bool loadContent(const char* path);
 
@@ -792,11 +963,16 @@ void applyInput() {
     g_s.padPrev[0] = p0;
     g_s.padPrev[1] = p1;
 
-    // Souris : celle de l'hôte, plus le stick droit, boutons gauche/droit ou L2/R2.
-    double dx = g_inputState(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
-    double dy = g_inputState(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
-    bool l = g_inputState(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) != 0;
-    bool r = g_inputState(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT) != 0;
+    if (polledKeyboard()) pollKeyboard(m);
+    const bool pointerBusy = g_opt.pointer && applyPointer(m);
+
+    // Souris : celle de l'hôte (ou du port 4 réglé pour le netplay), plus le stick droit,
+    // boutons gauche/droit ou L2/R2.
+    const unsigned mp = (g_portDevice[kMousePort] & RETRO_DEVICE_MASK) == RETRO_DEVICE_MOUSE ? kMousePort : 0;
+    double dx = g_inputState(mp, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
+    double dy = g_inputState(mp, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
+    bool l = g_inputState(mp, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) != 0;
+    bool r = g_inputState(mp, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT) != 0;
     if (g_opt.mouseStick) {
         auto axis = [](int v) {
             const double a = double(v) / 32768.0;
@@ -816,6 +992,8 @@ void applyInput() {
     const int ix = int(g_s.mouseFracX), iy = int(g_s.mouseFracY);
     g_s.mouseFracX -= ix;
     g_s.mouseFracY -= iy;
+    g_s.inputHeld = p0 || p1 || l || r || anyKeyHeld() || pointerBusy;
+    if (pointerBusy) return;   // le pointeur absolu a la souris cette trame
     if (ix || iy || l != g_s.mouseL || r != g_s.mouseR) {
         m.mouseEvent(ix, iy, l, r);
         g_s.mouseL = l;
@@ -923,14 +1101,149 @@ void insertNextDisk() {
 // =============================================================================
 //  Chargement d'un contenu
 // =============================================================================
+// =============================================================================
+//  Archives (.zip, .gz) : décompressées UNE fois dans saves/neost/archives/<nom>/
+// =============================================================================
+// Ce qu'on charge d'une archive (util/Archive) :
+//  · sa propre liste .m3u ;
+//  · sinon ses disquettes : une seule → elle ; plusieurs → une liste écrite à côté ;
+//  · sinon ses programmes (un jeu GEMDOS zippé) : l'arbre entier ; le programme si un
+//    seul est sûr, sinon le dossier, monté en C: sans démarrage automatique.
+// Un fichier déjà extrait n'est jamais réécrit : les sauvegardes d'un jeu (disquette
+// écrite, fichier de scores sur C:) survivent d'une session à l'autre. Faux sans rien
+// d'utilisable ; `note` dit ce qui a été trouvé.
+constexpr std::size_t kArchiveMaxBytes = 64u << 20;
+
+bool readFile(const std::string& path, std::vector<uint8_t>& out) {
+    std::ifstream f(path, std::ios::binary);
+    if (!f) return false;
+    out.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+    return true;
+}
+
+bool writeNew(const fs::path& path, const std::vector<uint8_t>& data) {
+    std::error_code ec;
+    if (fs::exists(path, ec)) return true;          // déjà là : on n'écrase jamais
+    fs::create_directories(path.parent_path(), ec);
+    std::ofstream f(path, std::ios::binary);
+    if (!f) return false;
+    f.write(reinterpret_cast<const char*>(data.data()), std::streamsize(data.size()));
+    return bool(f);
+}
+
+std::string archiveCacheName(const std::string& archive) {
+    std::string n;
+    for (char c : fs::path(archive).stem().string())
+        n += (std::isalnum(static_cast<unsigned char>(c)) || c == ' ' || c == '-' || c == '_' || c == '(' || c == ')'
+              || c == '[' || c == ']' || c == '.') ? c : '_';
+    return n.empty() ? std::string("archive") : n;
+}
+
+std::string unpackArchive(const std::string& archive, std::string& note) {
+    namespace ar = neost::archive;
+    std::vector<uint8_t> raw;
+    if (!readFile(archive, raw)) { notify("Cannot read " + archive, 5000, RETRO_LOG_ERROR); return {}; }
+    std::error_code ec;
+    const fs::path root = (g_saveDir.empty() ? fs::temp_directory_path(ec) / "neost-archives"
+                                             : neostSaveDir() / "archives") / archiveCacheName(archive);
+    std::string err;
+    if (ar::isGzip(raw)) {
+        std::vector<uint8_t> out;
+        std::string name;
+        if (!ar::gunzip(raw, out, &name, &err)) { notify("Cannot unpack: " + err, 5000, RETRO_LOG_ERROR); return {}; }
+        name = ar::safeMemberPath(fs::path(name).filename().string());
+        if (name.empty()) name = fs::path(archive).stem().string();   // « jeu.st.gz » → « jeu.st »
+        const fs::path dst = root / name;
+        if (!writeNew(dst, out)) { notify("Cannot write " + dst.string(), 5000, RETRO_LOG_ERROR); return {}; }
+        return dst.string();
+    }
+    std::vector<ar::ZipMember> members;
+    if (!ar::listZip(raw, members, &err)) { notify("Cannot open the archive: " + err, 5000, RETRO_LOG_ERROR); return {}; }
+    std::vector<std::pair<std::string, const ar::ZipMember*>> disks, lists, progs, all;
+    std::size_t total = 0;
+    for (const auto& m : members) {
+        if (m.directory()) continue;
+        const std::string rel = ar::safeMemberPath(m.name);
+        if (rel.empty() || fs::path(rel).filename().string().rfind("._", 0) == 0 || rel.find("__MACOSX") == 0) continue;
+        const std::string e = extOf(rel);
+        all.push_back({rel, &m});
+        total += m.size;
+        if (isFloppyExt(e)) disks.push_back({rel, &m});
+        else if (e == ".m3u") lists.push_back({rel, &m});
+        else if (isProgramExt(e)) progs.push_back({rel, &m});
+    }
+    auto extract = [&](const std::pair<std::string, const ar::ZipMember*>& it) {
+        const fs::path dst = root / it.first;
+        if (fs::exists(dst, ec)) return true;
+        std::vector<uint8_t> out;
+        std::string e2;
+        if (!ar::extractZip(raw, *it.second, out, &e2) || !writeNew(dst, out)) {
+            logf(RETRO_LOG_WARN, "archive member %s: %s\n", it.first.c_str(), e2.empty() ? "cannot write" : e2.c_str());
+            return false;
+        }
+        return true;
+    };
+    auto byName = [](const auto& a, const auto& b) { return lower(a.first) < lower(b.first); };
+    std::sort(disks.begin(), disks.end(), byName);
+    std::sort(lists.begin(), lists.end(), byName);
+    if (!disks.empty()) {
+        std::size_t ok = 0;
+        for (const auto& d : disks) ok += extract(d);
+        for (const auto& l : lists) extract(l);
+        if (!ok) { notify("No floppy could be unpacked", 5000, RETRO_LOG_ERROR); return {}; }
+        note = std::to_string(disks.size()) + (disks.size() > 1 ? " disks" : " disk") + " in the archive";
+        if (!lists.empty()) return (root / lists.front().first).string();
+        if (disks.size() == 1) return (root / disks.front().first).string();
+        // Plusieurs disquettes sans liste : une liste écrite à côté, dans l'ordre des noms
+        // (« Disk 1 of 3 » d'abord) ; réécrite à chaque fois, elle n'est pas une sauvegarde.
+        const fs::path m3u = root / (archiveCacheName(archive) + ".m3u");
+        std::ofstream f(m3u);
+        for (const auto& d : disks) f << d.first << "\n";
+        return f ? m3u.string() : std::string();
+    }
+    if (progs.empty()) { notify("Nothing NeoST can open in this archive", 6000, RETRO_LOG_ERROR); return {}; }
+    if (total > kArchiveMaxBytes) { notify("Archive too large to unpack", 6000, RETRO_LOG_ERROR); return {}; }
+    for (const auto& a : all) extract(a);
+    // Le programme : le moins profond ; unique à ce niveau, ou celui dont le nom commence
+    // comme l'archive (« CHUCHU_L.ZIP » → CHUCHU.TOS). Sinon le dossier, en C:.
+    auto depth = [](const std::string& r) { return std::count(r.begin(), r.end(), '/'); };
+    std::sort(progs.begin(), progs.end(), [&](const auto& a, const auto& b) {
+        return depth(a.first) != depth(b.first) ? depth(a.first) < depth(b.first) : lower(a.first) < lower(b.first);
+    });
+    std::vector<std::string> top;
+    for (const auto& p : progs)
+        if (depth(p.first) == depth(progs.front().first) && !(lower(fs::path(p.first).filename().string()).rfind("install", 0) == 0))
+            top.push_back(p.first);
+    std::string chosen;
+    if (top.size() == 1) chosen = top.front();
+    else {
+        const std::string stem = lower(fs::path(archive).stem().string());
+        for (const auto& t : top) {
+            const std::string b = lower(fs::path(t).stem().string());
+            if (b.size() >= 3 && stem.compare(0, b.size(), b) == 0) { chosen = t; break; }
+        }
+    }
+    note = std::to_string(all.size()) + " files on C:";
+    if (!chosen.empty()) return (root / chosen).string();
+    return (root / fs::path(progs.front().first).parent_path()).string() + "/";
+}
+
 bool loadContent(const char* path) {
     readRuntimeOptions();
-    const std::string content = path ? path : "";
-    const std::string ext = extOf(content);
+    const std::string original = path ? path : "";
+    std::string content = original;
+    std::string ext = extOf(content);
+    std::string archiveNote;
+    if (ext == ".zip" || ext == ".gz") {
+        content = unpackArchive(original, archiveNote);
+        if (content.empty()) return false;
+        ext = content.back() == '/' ? std::string("/") : extOf(content);
+    }
 
     MachineType machine = MachineType::St;
     std::string tos;
-    if (!chooseTos(content, tos, machine)) return false;
+    // Le nom TOSEC (« (STE) ») est celui de l'archive autant que de son contenu.
+    if (!chooseTos(contentWantsSte(original) ? original : content, tos, machine)) return false;
     machine = Machine::adjustMachineForTos(machine, tos);
 
     // Règle 1 : quartz process-global AVANT la construction, puis horloges de session.
@@ -945,6 +1258,9 @@ bool loadContent(const char* path) {
         g_s.machine.reset();
         return false;
     }
+    // Un état d'un autre joueur (jeu en réseau) nomme SES copies privées : chercher ici
+    // la copie de même nom, sinon la disquette de même nom de la liste (copiée alors).
+    m.fdc.setMediaPathResolver([](const std::string& foreign) { return resolveForeignDisk(foreign); });
     m.mfp.setColorMonitor(optionValue("neost_monitor", "color") != "mono");
     m.armAudioClocks();
     if (optionValue("neost_clock", "host") == "fixed") m.freezeHostClocks();
@@ -966,6 +1282,18 @@ bool loadContent(const char* path) {
             return false;
         }
         what = p.filename().string() + " on C:";
+    } else if (isHardDiskExt(ext)) {
+        // Disque dur ACSI, cible 0 : EmuTOS le monte seul ; un TOS Atari exige un pilote
+        // sur le disque (secteur racine amorçable). Copie privée, comme une disquette :
+        // l'image d'origine n'est jamais écrite.
+        std::string copy = privateCopy(content, "harddisks");
+        if (copy.empty()) copy = content;
+        if (!m.fdc.mountAcsi(copy, 0)) { notify("Cannot mount the hard disk image", 5000, RETRO_LOG_ERROR); return false; }
+        what = "ACSI hard disk " + fs::path(content).filename().string();
+    } else if (ext == "/") {
+        // Un jeu GEMDOS sans programme évident : son dossier en C:, le bureau ouvert.
+        if (!m.gemdos.setDirectory(content)) { notify("Cannot mount the archive as C:", 5000, RETRO_LOG_ERROR); return false; }
+        what = "C: " + fs::path(original).filename().string();
     } else if (ext == ".stc") {
         if (!m.loadCart(content)) { notify("Cannot load the cartridge", 5000, RETRO_LOG_ERROR); return false; }
         what = "cartridge " + fs::path(content).filename().string();
@@ -1012,6 +1340,7 @@ bool loadContent(const char* path) {
     g_s.faultSeenAddr = g_s.faultSeenPc = 0;
     g_s.loaded = true;
 
+    if (!archiveNote.empty()) what += " (" + archiveNote + ")";
     std::string head = std::string(machineLabel(m.machineType())) + " · " + tosLabel(tos) + " · " +
                        std::to_string(m.bus.ram.size() / 1024) + " KB";
     notify(what.empty() ? head : head + " · " + what, 5000);
@@ -1040,19 +1369,28 @@ RETRO_API void retro_set_environment(retro_environment_t cb) {
     const char* dir = nullptr;
     if (cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &dir) && dir) g_systemDir = dir;
     scanTosFiles();
-    buildOptions();
+    buildOptions(0);
+    buildOptions(1);
+    unsigned lang = RETRO_LANGUAGE_ENGLISH;
+    cb(RETRO_ENVIRONMENT_GET_LANGUAGE, &lang);
     unsigned ver = 0;
+    static retro_core_options_v2 us, local;
+    us.categories = g_categories[0];
+    us.definitions = g_defs[0].data();
+    local.categories = g_categories[1];
+    local.definitions = g_defs[1].data();
     if (cb(RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION, &ver) && ver >= 2) {
-        static retro_core_options_v2 opts;
-        opts.categories = g_categories;
-        opts.definitions = g_defs.data();
-        cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2, &opts);
+        static retro_core_options_v2_intl intl;
+        intl.us = &us;
+        intl.local = lang == RETRO_LANGUAGE_FRENCH ? &local : nullptr;
+        if (!cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL, &intl))
+            cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2, &us);
     } else {
         // Frontend ancien : les mêmes options, à plat (RETRO_ENVIRONMENT_SET_VARIABLES).
         static std::vector<std::string> texts;
         static std::vector<retro_variable> vars;
         texts.clear(); vars.clear();
-        for (const auto& d : g_defs) {
+        for (const auto& d : g_defs[0]) {
             if (!d.key) break;
             std::string t = std::string(d.desc) + "; ";
             std::string first = d.default_value ? d.default_value : "";
@@ -1061,15 +1399,21 @@ RETRO_API void retro_set_environment(retro_environment_t cb) {
                 if (first != d.values[i].value) t += std::string("|") + d.values[i].value;
             texts.push_back(t);
         }
-        for (std::size_t i = 0; i < texts.size(); ++i) vars.push_back({g_defs[i].key, texts[i].c_str()});
+        for (std::size_t i = 0; i < texts.size(); ++i) vars.push_back({g_defs[0][i].key, texts[i].c_str()});
         vars.push_back({nullptr, nullptr});
         cb(RETRO_ENVIRONMENT_SET_VARIABLES, vars.data());
     }
     static const retro_controller_description pads[] = {
         {"Atari joystick", RETRO_DEVICE_JOYPAD},
     };
+    static const retro_controller_description keyboards[] = {
+        {"None", RETRO_DEVICE_NONE}, {"Keyboard (for netplay)", RETRO_DEVICE_KEYBOARD},
+    };
+    static const retro_controller_description mice[] = {
+        {"None", RETRO_DEVICE_NONE}, {"Mouse (for netplay)", RETRO_DEVICE_MOUSE},
+    };
     static const retro_controller_info ports[] = {
-        {pads, 1}, {pads, 1}, {nullptr, 0},
+        {pads, 1}, {pads, 1}, {keyboards, 2}, {mice, 2}, {nullptr, 0},
     };
     cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, const_cast<retro_controller_info*>(ports));
 }
@@ -1112,9 +1456,11 @@ RETRO_API void retro_get_system_info(retro_system_info* info) {
     std::memset(info, 0, sizeof *info);
     info->library_name = "NeoST";
     info->library_version = NEOST_VERSION_STR;
-    info->valid_extensions = "st|msa|dim|stx|ipf|m3u|prg|tos|ttp|app|gtp|stc";
+    info->valid_extensions = "st|msa|dim|stx|ipf|m3u|prg|tos|ttp|app|gtp|stc|hd|vhd|zip|gz";
     info->need_fullpath = true;
-    info->block_extract = false;   // RetroArch ouvre les .zip pour nous
+    // Les archives sont à nous (util/Archive) : RetroArch n'en extrairait qu'un fichier,
+    // et les autres disquettes d'un jeu, ou les données d'un programme, seraient perdues.
+    info->block_extract = true;
 }
 
 RETRO_API void retro_get_system_av_info(retro_system_av_info* info) {
@@ -1140,7 +1486,12 @@ RETRO_API void retro_get_system_av_info(retro_system_av_info* info) {
     g_s.av.onFrame(r.w, r.h, g_s.machine->frameCycles());   // amorce : déjà annoncé
 }
 
-RETRO_API void retro_set_controller_port_device(unsigned, unsigned) {}
+RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device) {
+    if (port >= 4 || g_portDevice[port] == device) return;
+    // Le clavier change de main (relu ↔ rappels) : ce que l'autre mode tenait est relâché.
+    if (port == kKeyboardPort) releasePolledKeys();
+    g_portDevice[port] = device;
+}
 
 RETRO_API void retro_reset(void) {
     if (!g_s.machine) return;
@@ -1181,11 +1532,15 @@ RETRO_API void retro_run(void) {
     // Règle 2 : une fois les entrées posées, l'IPL une fois, puis la trame.
     m.cpu.updateIpl();
     m.runFrame();
-    // Lecteur en marche : des trames de plus, son drainé, image de la dernière seule.
-    // Le nombre de trames dépend de l'état émulé (moteur), donc rejouable à l'identique
-    // (anticipation, jeu en réseau).
-    if (g_opt.fastFloppy) {
-        for (int i = 1; i < kFastFloppyFrames && m.fdc.motorOn(); ++i) {
+    // Disquette en cours de lecture : des trames de plus, son drainé, image de la dernière
+    // seule. Le nombre de trames dépend de l'état émulé et des entrées, donc se rejoue à
+    // l'identique (anticipation, jeu en réseau).
+    //  · Une COMMANDE en cours, pas le moteur : lecteur vide, le moteur ne s'arrête
+    //    jamais (pas d'impulsion d'index), et tout tournait huit fois trop vite.
+    //  · Aucune entrée tenue : une touche tenue une trame de l'hôte le serait huit
+    //    trames de l'Atari, et le TOS la répéterait.
+    if (g_opt.fastFloppy && !g_s.inputHeld) {
+        for (int i = 1; i < kFastFloppyFrames && m.fdc.floppyCommandActive(); ++i) {
             drainAudio();
             m.runFrame();
         }

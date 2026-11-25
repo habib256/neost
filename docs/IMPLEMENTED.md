@@ -1181,6 +1181,11 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   fichier hôte est en lecture seule. Un `.dim` à en-tête non standard (extension `.dim`,
   signature `BB`) perd son en-tête et se monte en lecture seule. Une image n'entre que dans
   un lecteur à la fois (`Fdc::loadImage`, `.wd1772` partagé compris).
+- **Archives `.zip` et `.gz`** (2026-11-25, `util/Archive.*`, test `testArchives` de
+  `neost-selftest`) : répertoire central du zip (pas de zip64 ni de multi-volume), membres
+  stockés ou deflate, gzip à un membre (FEXTRA, FNAME, FCOMMENT, FHCRC), CRC-32 et tailles
+  vérifiés, chemins absolus ou à « .. » refusés. Deflate : stb_image compilé en statique.
+  Ouvertes par le cœur libretro ; le GUI ne s'en sert pas encore (TODO § 7).
 - **Catalogue de disquette** (2026-11-25, `io/FloppyCatalog.*`, lecteur
   `Fdc::readLogicalSector`, test `testFloppyCatalog` de `neost-selftest`). Secteur de boot
   exécutable (somme des 256 mots = `$1234`), BPB, racine FAT12 et dossier `\AUTO` (chaîne

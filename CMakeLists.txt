@@ -150,12 +150,15 @@ add_library(neost_core STATIC
     src/core/BitmapView.cpp   # explorateur de bitmaps : RAM en plans ST → ARGB
     src/util/HostPath.cpp
     src/util/Crc32.cpp        # CRC des save-states (matériel ARMv8 ou découpage par 8)
+    src/util/Archive.cpp      # .zip et .gz lus sans bibliothèque (deflate de stb_image)
     src/util/Log.cpp          # puits des journaux du cœur (stderr, ou libretro)
     src/util/ConfigPath.cpp   # A36 : où vit neost.cfg (règle testable)
     src/util/RomProbe.cpp     # TOS ou disquette ? (argument positionnel du GUI, testable)
     src/gui/AppConfig.cpp)
 
 target_include_directories(neost_core PUBLIC "${CMAKE_SOURCE_DIR}/src")
+# stb_image (domaine public) : son décodeur deflate sert util/Archive.cpp.
+target_include_directories(neost_core PRIVATE "${CMAKE_SOURCE_DIR}/extern/stb")
 
 # Coroutine de runFrame (core/EmuFiber) : Android et les builds ASan prennent le
 # dorsal « fil dédié » (pthread). NEOST_EMUFIBER_THREAD le force sur un bureau, pour

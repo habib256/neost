@@ -58,16 +58,39 @@ Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
   sans rien écrire sur la disquette. Bubble Ghost démarre ainsi.
 - **Les disquettes sœurs** (`MediaScan::areSiblingImages`) forment seules la liste : la
   face B de Rainbow Islands est à un R3.
-- **Le chargement accéléré** : jusqu'à huit trames émulées par trame de l'hôte tant que le
-  moteur du lecteur tourne ; le nombre dépend de l'état émulé, donc rejouable. 63 trames
-  de l'hôte au lieu de 370 pour la première lecture de `PDATS295.msa`.
+- **Le chargement accéléré** : jusqu'à huit trames émulées par trame de l'hôte tant
+  qu'une commande du contrôleur est en cours sur une disquette (`Fdc::floppyCommandActive`)
+  et qu'aucune entrée n'est tenue ; le nombre dépend de l'état émulé et des entrées, donc
+  se rejoue. *ChuChu Rocket* (330 Ko) atteint son titre en 1 020 trames de l'hôte au lieu
+  de 2 190. ⚠ La première version (même jour) suivait le **moteur** : lecteur vide, le
+  WD1772 ne voit aucune impulsion d'index et ne coupe jamais le moteur, si bien qu'un
+  programme sur C: tournait huit fois trop vite et que le TOS répétait chaque touche.
+  Gardé par le cas `fast_floppy_idle`.
+- **Les archives** (`util/Archive`, deflate de stb_image) : `.zip` et `.gz` décompressés
+  une fois dans `saves/neost/archives/<nom>/`, jamais réécrits ; la liste `.m3u` de
+  l'archive, sinon ses disquettes en liste, sinon son programme sur C: (jeu GEMDOS zippé),
+  sinon son dossier en C:. `block_extract = true` : RetroArch n'en extrairait qu'un fichier.
+- **Les options en français** (`SET_CORE_OPTIONS_V2_INTL`) quand RetroArch l'est.
+- **Les ports du netplay** : port 3 « Keyboard (for netplay) », clavier relu à chaque trame
+  et rappels ignorés ; port 4 « Mouse (for netplay) ».
+- **Un invité rejoint l'hôte** : un état nomme ses disquettes par leur chemin absolu, celui
+  des copies privées de l'hôte. `Fdc::setMediaPathResolver` laisse le module retrouver la
+  sienne par son nom (copie privée, disquette d'archive, ou disquette de la liste) ; le
+  contenu vient de l'état. `tools/libretro_netplay.py` le prouve en deux processus aux
+  dossiers distincts, ceux de l'hôte effacés avant que l'invité ne le rejoigne à la trame
+  500 : image et RAM identiques pendant 400 trames (CI).
+- **Les disques durs** `.hd`/`.vhd` en ACSI 0 (copie privée) : EmuTOS monte la partition
+  et lance `C:\AUTO`.
+- **Le toucher** : option « Touch moves the GEM pointer » (active sur Android) —
+  `RETRO_DEVICE_POINTER` → `Machine::desktopMouseMove`, actions en file pour qu'un tap plus
+  court que le trajet du curseur garde son clic. Un double tap ouvre le lecteur A.
 - **Un TOS choisi** parmi ceux du dossier système (`TosChoice`), Atari PAL d'abord. Il
   compte : Stunt Car Racer tourne sous TOS 1.02 et 1.04 et retombe au bureau sous
   EmuTOS 192 Ko (vérifié au headless, même résultat).
 
-Restent ouverts au TODO (§ 7, « Cœur libretro ») : la traduction des options, le port
-clavier du netplay, les bruits du lecteur, le MIDI, les écritures STX/IPF dans l'état, le
-banc netplay à deux instances, l'essai des shaders dans un vrai RetroArch.
+Restent ouverts au TODO (§ 7, « Cœur libretro ») : les bruits du lecteur, le MIDI, les
+écritures STX/IPF et ACSI dans l'état, l'essai du module et des shaders dans un vrai
+RetroArch.
 
 ## Positionnement : un cœur ST qui n'est pas Hatari
 
@@ -123,7 +146,7 @@ présente sur ce qu'il fait le jour où il paraît.
 | Contenu | `.st/.msa/.dim/.stx/.ipf` par chemin (`Fdc::loadImage`) ; `.prg` par le GEMDOS et le démarrage automatique (`neost_set_autostart` du web) ; cartouche brute ou `.stc` (`Bus::loadCart`) | **Prêt** avec `need_fullpath = true` |
 | Interface de changement de disque (`.m3u`) | `Fdc::loadImage(path, drive)` et l'éjection | **Fait** : interface étendue, `.m3u` à libellés, disquettes sœurs, R3 |
 | BIOS dans le dossier système | `Machine::switchTos(path, machine demandée)` | **Prêt** (seul EmuTOS peut accompagner le cœur) |
-| Options du cœur | `neost.cfg` analysé par `src/gui/AppConfig.cpp`, déjà dans `neost_core` | **Fait** (options v2 en quatre catégories, en anglais) ; traduction ouverte |
+| Options du cœur | `neost.cfg` analysé par `src/gui/AppConfig.cpp`, déjà dans `neost_core` | **Fait** : options v2 en quatre catégories, anglais et français |
 | Carte mémoire (succès, triches) | `bus.ram` est un `std::vector` **réalloué** par `Machine::reconfigure` | **Fait** pour `retro_get_memory_data` ; le redémarrage sur une autre machine change le pointeur (ouvert) |
 | Bibliothèque partagée | Option `NEOST_PIC` : cœur PIC à visibilité cachée ; `neost-shared-probe` le prouve (CI Linux x86_64, un seul symbole exporté) | **Prêt** (l'adaptateur ajoute un script de version) |
 | Fil unique | `EmuFiber` : ucontext (Linux, macOS), fibres Win32, fil dédié (Android, ASan), JSPI (web) ; libretro-common fournit `libco` | **À adapter** si une plate-forme visée n'a aucun des dorsaux |

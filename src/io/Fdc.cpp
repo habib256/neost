@@ -3705,13 +3705,23 @@ bool Fdc::restoreMedia(int drive, const MediaCopy& copy) {
         return true;
     }
     const bool isStx = dk.imgType == FloppyDisk::IMG_STX;
-    if (!dk.present() || dk.path != copy.path || isStx != copy.stx) {
+    // Chemin de l'état absent d'ici (état d'un autre joueur) : celui que le frontend
+    // garde sous le même nom (setMediaPathResolver).
+    std::string path = copy.path;
+    {
+        std::error_code ec;
+        if (mediaResolver_ && !std::filesystem::exists(path, ec)) {
+            const std::string local = mediaResolver_(path);
+            if (!local.empty()) path = local;
+        }
+    }
+    if (!dk.present() || dk.path != path || isStx != copy.stx) {
         // Disquettes échangées entre A et B depuis la copie : l'image visée est dans
         // l'AUTRE lecteur, et loadImage refuserait de la monter deux fois. On l'en sort ;
         // le retour arrière restaure les deux lecteurs, l'autre récupère donc le sien
         // juste après (sa génération a changé, au plus tard par cette éjection).
-        if (sameHostFile(copy.path, drive_[(drive & 1) ^ 1].path)) eject((drive & 1) ^ 1);
-        if (!loadImage(copy.path, drive)) return false;
+        if (sameHostFile(path, drive_[(drive & 1) ^ 1].path)) eject((drive & 1) ^ 1);
+        if (!loadImage(path, drive)) return false;
     }
     dk.hostWriteBack = copy.hostWriteBack;              // remonté : garde sa protection
     if (!copy.stx) {
