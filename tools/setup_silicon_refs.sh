@@ -148,6 +148,11 @@ doc Atari_Falcon030_DevDoc_1992-10-01.pdf 035d6bac88dd659b73d01e77d2bd539930c719
 # Même documentation, édition du 25 janv. 1993 (120 p.) : pages révisées et outils DSP.
 doc Atari_Falcon030_DevDoc_1993-01-25.pdf abf48cb4ec0010417f9ea9852d341a0c187f54025b969ce3dbef5355dfbaa623 \
     "$ARCH/Atari_Falcon030_Developer_Documentation_Jan_25_1993/Atari_Falcon030_Developer_Documentation_Jan_25_1993.pdf"
+# Atari Corp., « Atari Computer System Interface (ACSI) », notes d'application, 27 sept. 1985
+# (recueil « Atari ST GEM Programming » 1986, bitsavers, p. 943-) : protocole et chronogrammes
+# du bus, dont l'IRQ de la cible relâchée au /CS suivant (p. 4-5 du document).
+doc Atari_ACSI_AppNotes_1985.pdf a027f606fe71b0df5c33f2e86f38f20216a891bb1b4e613bdf3e8bf00e74f9fb \
+    http://www.bitsavers.org/pdf/atari/ST/Atari_ST_GEM_Programming_1986/GEM_0942.pdf
 
 doc ASICs-new.zip 89512ee7d588b60d1ea964e048152a66c04672560c216862ff7e9f797ca06097 \
     https://www.chzsoft.de/asic-web/ASICs-new.zip

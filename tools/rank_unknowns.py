@@ -17,6 +17,12 @@ Usage :
   rank_unknowns.py OUT --preset collection lgd [--jobs N]
   rank_unknowns.py OUT --disks a.st b.msa --machine st --rom roms/tos104uk.img
 Le disque est copié avant chaque run : un titre peut écrire sur sa disquette.
+
+Bruit du boot : le TOS traverse lui-même des chemins [F] (sondage du port cartouche et de la
+RAM, densité HD du TOS 2.06 sur Mega STE…). Pour chaque machine et ROM, un run de base sur la
+disquette neutre disks/diskA.st, avec les mêmes entrées, dit lesquels. Un site ne compte pour un
+titre que s'il manque à cette base ou s'il y passe plus de BOOT_FACTOR fois plus souvent ; les
+sites de la base sont listés à part.
 """
 from __future__ import annotations
 
@@ -36,6 +42,8 @@ HEADLESS = ROOT / "build/neost-headless"
 EXT = {".st", ".msa", ".stx", ".dim"}
 FRAMES = 4000
 SPACE = range(1000, FRAMES, 500)
+BASE_DISK = ROOT / "disks/diskA.st"
+BOOT_FACTOR = 2
 CFG_ALL = (("st", "roms/tos104uk.img"), ("ste", "roms/tos162uk.img"), ("megaste", "roms/tos206uk.img"))
 
 
@@ -101,6 +109,13 @@ def main() -> int:
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
 
+    # Base par machine et ROM : ce que le TOS traverse seul.
+    base = {}
+    for machine, rom in sorted({(m, r) for m, r, _ in jobs}):
+        res = run_one((machine, rom, BASE_DISK), a.frames, out)[3]
+        base[(machine, rom)] = {} if isinstance(res, str) else {x["id"]: x["hits"] for x in res}
+    boot_sites = sorted({k for b in base.values() for k in b})
+
     titles = defaultdict(set)            # id → {disque}
     machines = defaultdict(set)          # id → {machine}
     hits = defaultdict(int)
@@ -110,11 +125,14 @@ def main() -> int:
         futures = [pool.submit(run_one, j, a.frames, out) for j in jobs]
         for i, f in enumerate(futures, 1):
             machine, rom, disk, res = f.result()
+            ref = base.get((machine, rom), {})
             name = disk.relative_to(ROOT).as_posix() if disk.is_relative_to(ROOT) else disk.name
             if isinstance(res, str):
                 errors.append(f"{machine} {name}: {res}")
             else:
                 for s in res:
+                    if s["id"] in ref and s["hits"] <= BOOT_FACTOR * ref[s["id"]]:
+                        continue                      # le boot seul l'explique
                     titles[s["id"]].add(name)
                     machines[s["id"]].add(machine)
                     hits[s["id"]] += s["hits"]
@@ -129,13 +147,19 @@ def main() -> int:
         "runs": len(jobs), "disks": disk_count, "frames": a.frames, "errors": errors,
         "reached": [{"id": k, "site": where[k], "titles": len(titles[k]), "hits": hits[k],
                      "machines": sorted(machines[k]), "examples": sorted(titles[k])[:5]} for k in rows],
-        "never_reached": sorted((k, v) for k, v in declared.items() if k not in titles),
+        "boot": [{"id": k, "base": {f"{m}/{Path(r).name}": b.get(k, 0) for (m, r), b in base.items()}}
+                 for k in boot_sites],
+        "never_reached": sorted((k, v) for k, v in declared.items()
+                                if k not in titles and k not in boot_sites),
     }
     (out / "rank.json").write_text(json.dumps(report, indent=1, ensure_ascii=False))
     lines = [f"{len(jobs)} runs, {disk_count} disques, {a.frames} trames ; {len(errors)} erreurs",
              f"{'titres':>6} {'passages':>12}  id  (site ; machines)"]
     for r in report["reached"]:
         lines.append(f"{r['titles']:>6} {r['hits']:>12}  {r['id']}  ({r['site']} ; {','.join(r['machines'])})")
+    lines.append(f"atteints par le boot seul, comptés pour un titre au-delà de {BOOT_FACTOR}× la base "
+                 f"({len(boot_sites)}) :")
+    lines += [f"       {b['id']}  {b['base']}" for b in report["boot"]]
     lines.append(f"jamais atteints ({len(report['never_reached'])}) :")
     lines += [f"       {k}  ({v})" for k, v in report["never_reached"]]
     (out / "rank.txt").write_text("\n".join(lines) + "\n")

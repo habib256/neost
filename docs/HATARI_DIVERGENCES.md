@@ -895,13 +895,13 @@ incrément et masque de l'adresse DMA ; court-circuit FIFO.
   garde jusqu'au transfert (refus d'un sens contradictoire). NeoST : `Acsi.cpp`.
 - **[B8 (6ᵉ p.)] Octet ACSI sans image** · ouvert · basse — Hatari ignore l'octet
   (`$FF8604` = 0) ; NeoST pose status = 2 (la sonde du TOS est identique).
-- **GPIP5 partagée FDC/ACSI** · ouvert · basse · 2026-11-26 — depuis `b83e3cc7`
-  (`mfp.c` `MFP_Main_Compute_GPIP5_FDC_HDC @ 36a8acf0`), Hatari tient deux lignes séparées
-  et GPIP5 est basse si l'une des deux l'est (sorties câblées ensemble). NeoST garde un seul
-  masque de sources (`Fdc::fdcSetIrq`) : une IRQ ACSI remplace les sources disquette, et une
-  lecture du statut FDC efface aussi la source ACSI. Non porté : dans le modèle d'Hatari, la
-  lecture du statut ACSI ne relâche pas l'IRQ du disque dur, qui tiendrait GPIP5 basse
-  jusqu'à l'octet de commande suivant et masquerait les IRQ disquette. Item du TODO.
+- **GPIP5 partagée FDC/ACSI** · voulu [B] · 2026-11-26 — deux sorties câblées ensemble : la
+  ligne est basse tant que l'INTRQ du WD1772 ou l'IRQ de la cible ACSI l'est (`Fdc::fdcSetIrq`,
+  comme Hatari depuis `b83e3cc7`). Une IRQ ACSI ne remplace plus les sources disquette, la
+  lecture du statut FDC n'efface plus la source ACSI. Écart : la lecture du statut ACSI relâche
+  l'IRQ de la cible, au front de /CS ([B] Atari, notes d'application ACSI, 27 sept. 1985,
+  p. 4-5, phases commande et état) ; Hatari @ 36a8acf0 ne la relâche qu'à l'octet de
+  commande suivant, ce qui laisserait GPIP5 basse après chaque accès disque.
 
 ### Écarts voulus — ne pas réaligner
 

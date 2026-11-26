@@ -1396,22 +1396,31 @@ void Fdc::setIntrqLine(bool on) {
     mfp_.setFdcLine(on);
 }
 
+// GPIP5 porte DEUX sorties câblées ensemble, actives basses : l'INTRQ du WD1772 (inversée) et
+// l'IRQ de la cible ACSI. La ligne est basse tant que l'une des deux l'est. irqSignal_ garde donc
+// la source ACSI (IRQ_HDC) À CÔTÉ des sources disquette : ni l'une n'efface l'autre.
+// [B] Atari, « Atari Computer System Interface (ACSI) », notes d'application, 27 sept. 1985
+//     (Atari_ACSI_AppNotes_1985.pdf, sha256 a027f606), p. 2 : IRQ active basse, rappel de 1 kΩ côté initiateur ; p. 4-5 : la cible relâche IRQ au
+//     front descendant de /CS suivant (octet de commande ou lecture du statut).
+// [D] Hatari mfp.c MFP_Main_Compute_GPIP5_FDC_HDC @ 36a8acf0 (deux lignes, b83e3cc7) ; Hatari ne
+//     relâche pas l'IRQ ACSI à la lecture du statut, NeoST suit la note d'application.
 void Fdc::fdcSetIrq(uint8_t source) {
     const bool was = irqSignal_ != 0;
-    if (source == IRQ_HDC)        irqSignal_ = IRQ_HDC;
-    else if (source == IRQ_OTHER) irqSignal_ = IRQ_OTHER;
-    else { irqSignal_ &= ~(IRQ_HDC | IRQ_OTHER); irqSignal_ |= source; }
+    if (source == IRQ_HDC)        irqSignal_ |= IRQ_HDC;
+    else if (source == IRQ_OTHER) irqSignal_ = uint8_t((irqSignal_ & IRQ_HDC) | IRQ_OTHER);
+    else { irqSignal_ &= ~IRQ_OTHER; irqSignal_ |= source; }
     if (!was) setIntrqLine(true);
 }
 
 // [B] WD177X-00 p. 1-16 : une interruption immédiate ($D8) n'est effacée ni par une lecture d'état,
 // ni par une écriture de commande, tant qu'un $D0 ne l'a pas permis. [D] fdc.c:2276-2299 @ f0736b24.
 void Fdc::fdcClearIrq() {
+    // Efface l'INTRQ du WD1772, pas l'IRQ de la cible ACSI (autre sortie sur GPIP5).
     if (!(irqSignal_ & IRQ_FORCED)) {     // pas d'IRQ forcée → on efface
-        irqSignal_ = 0;
-        setIntrqLine(false);
+        irqSignal_ &= IRQ_HDC;
+        if (irqSignal_ == 0) setIntrqLine(false);
     } else {
-        irqSignal_ &= IRQ_FORCED;         // IRQ forcée : reste haute
+        irqSignal_ &= (IRQ_FORCED | IRQ_HDC);   // IRQ forcée : reste haute
     }
 }
 
@@ -3403,7 +3412,9 @@ uint8_t Fdc::read8(uint32_t addr) {
         case 0x5:                                    // data, octet bas
             if (dmaMode_ & DMA_SCREG) return uint8_t(ff8604recent_);
             registerWait(); // FDC/HDC seulement ; lecture SCREG sans attente
-            if (dmaMode_ & DMA_CSACSI) { const uint8_t v = acsi_.status(); noteFf8604(v); return v; }
+            // Lecture du statut ACSI : /CS de l'initiateur → la cible relâche IRQ ([B] notes ACSI
+            // d'Atari, 27 sept. 1985, p. 5, phase d'état ; cf. fdcSetIrq).
+            if (dmaMode_ & DMA_CSACSI) { const uint8_t v = acsi_.status(); clearHdcIrq(); noteFf8604(v); return v; }
             refreshDriveSide();
             // FDC_UpdateAll précède TOUS les registres WD1772, pas seulement STR.
             // L'horloge live peut franchir un index pendant l'instruction CPU,

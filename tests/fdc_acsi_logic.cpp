@@ -43,7 +43,8 @@ struct Rig {
     }
     void data(uint8_t v) { fdc.write8(0xFF8604, 0); fdc.write8(0xFF8605, v); }
     bool irq() { return !(mfp.read8(0xFFFA01) & 0x20); }
-    void ack() { mode(0x80); (void)fdc.read8(0xFF8605); }
+    // Lecture du statut ACSI (/CS de la cible) : la cible relâche IRQ (notes ACSI d'Atari, p. 5).
+    void ack() { mode(0x88); (void)fdc.read8(0xFF8605); }
     void prepare(uint8_t opcode = 8, bool write = false, bool dmaEnabled = false,
                  uint8_t dmaCount = 1, uint8_t blocks = 1) {
         mode(write ? 0x190 : 0x90); data(dmaCount);
@@ -157,7 +158,17 @@ int testAcsiIrqTiming() {
     r.start(); c.expect("DMA préserve IRQ FDC", r.irq(), true);
     r.advance(1000);
     c.expect("IRQ HDC ne génère pas un second front", r.mfp.read8(0xFFFA0D) & 0x80, 0);
-    r.ack(); c.expect("source HDC remplace FDC comme Hatari", r.irq(), false);
+    // GPIP5 = deux sorties câblées : le statut ACSI relâche la cible, l'IRQ forcée du WD1772
+    // tient la ligne jusqu'à son $D0 (notes ACSI d'Atari 1985 ; WD177X-00 p. 1-16).
+    r.ack(); c.expect("statut ACSI : IRQ disquette forcée garde GPIP5", r.irq(), true);
+    r.mode(0x80); r.data(0xD0); (void)r.fdc.read8(0xFF8605);
+    c.expect("$D0 puis statut FDC : GPIP5 relâchée", r.irq(), false);
+    // Réciproque : une IRQ ACSI pendante survit à la lecture du statut FDC.
+    r.reset(); r.prepare();
+    c.expect("acquittement ACSI pendant", r.irq(), true);
+    r.mode(0x80); (void)r.fdc.read8(0xFF8605);
+    c.expect("statut FDC n'efface pas l'IRQ ACSI", r.irq(), true);
+    r.ack(); c.expect("statut ACSI relâche GPIP5", r.irq(), false);
 
     // Un paquet suivant n'annule pas le timer amont, même si sa cible est vide.
     r.reset(); r.prepare(); r.start(); r.advance(400);
