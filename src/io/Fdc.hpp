@@ -636,6 +636,9 @@ private:
     // ⚠ [B] WD177X-00 p. 1-5 : hors Force Interrupt, aucune commande n'est chargée tant que BUSY
     // est levé. [D] fdc.c:161-168, 4567 @ f0736b24 : remplaçable pendant prepare+spinup. Écart non corrigé, cf. write8.
     bool     replaceCommandPossible_ = false; // remplaçable pendant prepare+spinup
+    // Date du dernier $Dx, pour le seul compteur NEOST_F (fdc.force_int_nullified) : non
+    // sérialisée, sans effet sur l'émulation.
+    int64_t  forceIntClock_ = INT64_MIN;
     int64_t  vblCounter_ = 0;                 // horloge Mediach, sauvegardée
     bool     driveEnabled_[2] = {true, true};   // cf. setDriveEnabled (config, pas d'état)
     bool     fastFloppy_ = false;     // « FDC rapide » (cf. setFastFdc) : délais /N

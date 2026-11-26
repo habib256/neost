@@ -942,13 +942,20 @@ uint16_t Bus::videoRead16At(uint32_t addr, int64_t clock) {
     NEOST_F("bus.video_void_bus_masters");
     if (!videoBusCount) return cpuDb;
     const uint32_t first = (videoBusNext + kVideoBusHistory - videoBusCount) % kVideoBusHistory;
-    uint32_t lo = 0, hi = videoBusCount;
-    while (lo < hi) {
-        const uint32_t mid = lo + (hi - lo) / 2;
-        if (videoBusClock[(first + mid) % kVideoBusHistory] <= clock) lo = mid + 1;
-        else hi = mid;
-    }
-    return lo ? videoBusWord[(first + lo - 1) % kVideoBusHistory] : 0;
+    const auto at = [&](int64_t c) {
+        uint32_t lo = 0, hi = videoBusCount;
+        while (lo < hi) {
+            const uint32_t mid = lo + (hi - lo) / 2;
+            if (videoBusClock[(first + mid) % kVideoBusHistory] <= c) lo = mid + 1;
+            else hi = mid;
+        }
+        return lo ? videoBusWord[(first + lo - 1) % kVideoBusHistory] : uint16_t(0);
+    };
+    const uint16_t w = at(clock);
+    // [F] Phase du LOAD sur silicium ST (VideoCounter.cpp, commitScanline) : elle ne compte que si
+    // une période LOAD plus tôt ou plus tard (±4 cycles) le bus portait un autre mot.
+    if (at(clock - 4) != w || at(clock + 4) != w) NEOST_F("vc.load_phase_st");
+    return w;
 }
 
 uint16_t Bus::ramCycleRead16Slow(uint32_t addr) {
