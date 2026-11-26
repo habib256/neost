@@ -17,6 +17,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/ShifterInternal.hpp"
+#include "util/Unknowns.hpp"   // NEOST_F : passages dans les chemins [F]
 #include "util/Log.hpp"
 #include "core/VideoGlue.hpp"
 #include "core/Shifter.hpp"
@@ -1039,7 +1040,10 @@ void VideoGlue::detectPhaseScroll(int line, int lineCycles, int32_t frameCycle, 
     if (newRes == 1) { medLine = line; medCyc = lineCycles; return; }
     if (newRes != 0 || prevRes != 1 || frame.mode != kLow) return;
     const int d = lineCycles - medCyc;
+    if (medLine == line && !(medCyc == 84 && d >= 8 && d <= 20 && (d & 3) == 0))
+        NEOST_F("glue.phase_scroll_outside_window");
     if (medLine == line && medCyc == 84 && d >= 8 && d <= 20 && (d & 3) == 0) {
+        NEOST_F("glue.phase_scroll_persist");
         const int prev = phaseEvents.empty() ? 0 : phaseEvents.back().phase;
         const int phase = -(((-prev) + d) & 15);           // 0, −4, −8 ou −12
         phaseEvents.push_back({ frameCycle, line, phase });

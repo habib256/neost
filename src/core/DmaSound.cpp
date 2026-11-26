@@ -4,6 +4,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/Pacing.hpp"
+#include "util/Unknowns.hpp"   // NEOST_F : passages dans les chemins [F]
 #include "util/Log.hpp"
 #include "core/DmaSound.hpp"
 #include "core/Bus.hpp"
@@ -128,6 +129,7 @@ void DmaSound::fifoRefill() {
             if (ctrl_ & 0x02) {
                 startNewFrame();                       // repeat : relatch depuis les registres → XSINT HAUT
             } else {
+                NEOST_F("dmasnd.idle_dac_a");
                 ctrl_   &= ~0x01;                      // one-shot : le HW auto-efface PLAY
                 playing_ = false;
                 recordEvent(1);                        // STOP daté, comme l'arrêt CPU — sinon
@@ -246,6 +248,7 @@ void DmaSound::armFrameEnd() {
     if (!sched_ || !fetchWindowFrom) return;
     sched_->cancel(Scheduler::DMASND);
     if (!playing_) return;
+    NEOST_F("dmasnd.fifo_depth_frame_end");
     if ((ctrl_ & 0x02) && frameEndAddr_ == frameStartAddr_) return;   // trame 2^22 octets : pas d'IRQ
     uint32_t remain = (frameEndAddr_ - curAddr_) & 0x3FFFFE;           // octets encore à chercher
     if (remain == 0) remain = 0x400000;                                 // fin < début : tour complet
@@ -326,6 +329,7 @@ void DmaSound::reset(bool cold) {
 // propre. Gardés. Tranché par : le schéma du GST Shifter.
 // STE seulement, comme la relecture de la fin (steNetlist) : le Mega STE garde Hatari.
 void DmaSound::resbReset() {
+    if (fifoNb_ > 0 || playing_) NEOST_F("dmasnd.reset_fifo");
     updateDac();                                       // consommation due datée avant l'impulsion
     startAddr_ = 0;                                    // SFB
     endAddr_   = 0;                                    // premier étage SFT ; frameEndAddr_ (second) gardé
@@ -684,6 +688,7 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
                 startNewFrame();                       // latch + XSINT haut (gère start==end)
                 if (playing_) recordEvent(0);          // PLAY daté (≙ DmaInitSample — pas au relatch repeat)
             } else if (!(ctrl_ & 0x01) && wasPlaying) { // bit play à 0 : arrêt
+                NEOST_F("dmasnd.idle_dac_b");
                 playing_ = false;
                 recordEvent(1);                        // STOP daté (modèle push audio)
                 setXsint(false);                       // arrêt : XSINT → BAS (la FIFO finit de se vider)
@@ -743,6 +748,7 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
         //     n'en fait pas). Tranché par : la musique de la démo enregistrée sur un vrai STE
         //     (aigus relevés de 12 dB ou non), ou la netlist du Shifter STE.
         case 0x22:
+            if (mwSteps_ != 0) NEOST_F("dmasnd.mw_data_during_shift_b");
             if (mwSteps_ == 0) {
                 // L'autre octet vient du registre visible, déjà décalé à zéro
                 // après la commande précédente (Hatari : IoMem_ReadWord).
@@ -764,6 +770,7 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
             // transfert série Microwire (16 décalages de 8 cycles, cf. Hatari
             // DmaSnd_MicrowireData_WriteWord). $FF8922 lira la valeur décalée
             // jusqu'à 0, puis decodeMicrowire(). Sans scheduler → décodage immédiat.
+            if (mwSteps_ != 0) NEOST_F("dmasnd.mw_data_during_shift_b");
             if (mwSteps_ == 0) {
                 // En accès mot, le haut vient d'être posé sans déclenchement.
                 // En accès octet, reprendre le haut visible après les shifts.
@@ -774,8 +781,10 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
                 else        { mwShift_ = 0; decodeMicrowire(); }
             }
             break;
-        case 0x24: if (mwSteps_ == 0) mwMask_ = uint16_t((mwMask_ & 0x00FF) | (v << 8)); break;
-        case 0x25: if (mwSteps_ == 0) mwMask_ = uint16_t((mwMask_ & 0xFF00) | v); break;
+        case 0x24: if (mwSteps_ != 0) NEOST_F("dmasnd.mw_mask_during_shift_a");
+                   if (mwSteps_ == 0) mwMask_ = uint16_t((mwMask_ & 0x00FF) | (v << 8)); break;
+        case 0x25: if (mwSteps_ != 0) NEOST_F("dmasnd.mw_mask_during_shift_a");
+                   if (mwSteps_ == 0) mwMask_ = uint16_t((mwMask_ & 0xFF00) | v); break;
         default: break;                                // compteur courant : lecture seule
     }
 }

@@ -6,6 +6,7 @@
 // =============================================================================
 #include <filesystem>
 #include "io/StxImage.hpp"
+#include "util/Unknowns.hpp"   // NEOST_F : passages dans les chemins [F]
 #include "util/Log.hpp"
 #include "io/WrittenTrack.hpp"
 
@@ -300,6 +301,7 @@ StxImage::Track* StxImage::addTrack(int track, int side) {
     // trackNumber = bits 0-6 piste, bit 7 face : rien d'autre n'est représentable.
     if (track < 0 || track > 0x7f || side < 0 || side > 1) return nullptr;
     if (Track* t = findTrack(track, side)) return t;
+    NEOST_F("stx.new_track_len");
     tracks_.emplace_back();
     Track& t = tracks_.back();
     t.trackNumber = uint8_t(track | (side << 7));

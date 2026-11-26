@@ -5,6 +5,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/Ikbd.hpp"
+#include "util/Unknowns.hpp"   // NEOST_F : passages dans les chemins [F]
 #include "util/Log.hpp"
 #include "io/Mfp.hpp"
 #include "core/Pacing.hpp"   // kCpuHzInt — UNE horloge CPU pour tout l'arbre
@@ -219,6 +220,7 @@ uint8_t Ikbd::read8(uint32_t addr) {
     const uint8_t b = rdr_;          // RDR courant (conservé si relu à vide)
     const bool had = rdrf_;
     rdrf_ = false;
+    if (ovrn_ && !srRead_) NEOST_F("ikbd.ovrn_clear_rdr_only");
     if (srRead_) {                   // séquence SR puis RDR → OVRN acquitté
         srRead_ = false;
         ovrn_ = false;
@@ -307,6 +309,7 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
         if (dividerChanged) {
             // [D] Hatari acia.c:801-804 @ f0736b24 ACIA_Write_CR : seul un changement du diviseur hors
             // master reset initialise Clock_Divider. Le reset le conserve.
+            if (aciaClockInitialized_) NEOST_F("ikbd.tx_phase_reset");
             aciaClockInitialized_ = true;
             txClockPhase_ = sched_ ? sched_->liveNow() % kAciaTxBitCycles : 0;
         }
@@ -341,6 +344,7 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
         // aussitôt. Tranché par : une capture de Tx Data sur un vrai 6850 pendant un caractère.
         // Le niveau bas est vu par le SCI : trame nulle, erreur de trame et gestionnaire
         // ORFE de la ROM ($FF40), puis reset si le BREAK dure (cf. sciWakeCleared).
+        if ((v & 0x60) == 0x60 && !wasBreak && txShifting_) NEOST_F("ikbd.break_mid_char");
         if (sched_) {
             if (!txShifting_ && (wasBreak || dividerChanged))
                 txNextBitCycle_ = nextTxClock(sched_->liveNow());
@@ -692,6 +696,7 @@ void Ikbd::dispatchCommand() {
                 port0Joy_ = true;
                 readJoystickState(j0, j1);
                 port0Joy_ = wasJoy;
+                if (j0 & 0x0F) NEOST_F("ikbd.kjoy_entry_held");
                 kjFireStable_ = kjFireCand_ = (j0 & 0x80) != 0;
                 kjDirStable_ = kjDirCand_ = 0;
                 kjFireSince_ = kjDirSince_ = -1;
@@ -1247,6 +1252,7 @@ void Ikbd::sendKeycodeJoystick(uint8_t joy0) {
     // dizaines de µs, plus 128/215 µs de gestionnaire) non comptée. Tranché par le
     // décompte des cycles de la boucle $F13A -> $F681 -> $F7A6 sur la ROM.
     if (!sched_) return;
+    NEOST_F("ikbd.kjoy_loop_latency");
     const int64_t now = firmwareEventTime();
     const int64_t kNow = ocfIndexAtOrBefore(now);
 
@@ -1564,6 +1570,7 @@ void Ikbd::pushRx(uint8_t b) {
     // [D] Hatari ikbd.c:1027-1032 @ f0736b24 IKBD_Send_Byte_Delay : avant l'initialisation ACIA, jeter les octets
     // firmware, sans les différer jusqu'à une future configuration.
     if (!aciaClockInitialized_) {
+        NEOST_F("ikbd.clock_lock_a");
         trace("firmware-drop data=$%02X reason=clock-uninitialized", b);
         return;
     }
@@ -1586,7 +1593,7 @@ void Ikbd::pushRx(uint8_t b) {
 }
 
 void Ikbd::pushRxDelayed(uint8_t b, int delayCycles) {
-    if (!aciaClockInitialized_) return;
+    if (!aciaClockInitialized_) { NEOST_F("ikbd.clock_lock_b"); return; }
     // Le délai est global, pas associé à l'octet : une nouvelle réponse remplace
     // SCI_TX_Delay, même si une ancienne réponse attend déjà dans la file.
     if (duringResetCriticalTime_) return;
@@ -1682,6 +1689,7 @@ void Ikbd::onRxDeliver() {
         // qu'à la lecture de RDR ([B] MC6850 § Receiver Overrun p. 8-9) ; en
         // attendant la cause d'IRQ RX reste active ([D] Hatari acia.c:721-724 @ f0736b24, RX_Overrun dans
         // ACIA_UpdateIRQ).
+        NEOST_F("ikbd.overrun_date");
         rxOverrun_ = true;
     } else {
         rdr_ = b;
@@ -1723,6 +1731,7 @@ int64_t Ikbd::nextTxClock(int64_t at) const {
     // plus vite que le SCI n'échantillonne (8 × 7812,5 bauds, HD6301 Handbook p. 1247) :
     // repli d'un bit de 1024 cycles, sans forme d'onde. Tranché par l'échantillonnage du
     // SCI sur la ligne réelle, à modéliser.
+    if ((control_ & 0x03) < 2) NEOST_F("ikbd.tx_div16_div1");
     const int64_t phase = (control_ & 0x03) == 0x02 ? txClockPhase_ : 0;
     const int64_t elapsed = (at % kAciaTxBitCycles - phase + kAciaTxBitCycles)
                             % kAciaTxBitCycles;
@@ -1799,6 +1808,7 @@ void Ikbd::sciFramingError() {
     // Pendant l'initialisation (sei $F010 … cli $F139), l'interruption n'est pas servie.
     // [F] ORFE resterait posé jusqu'au cli ; le caractère est simplement perdu ici.
     // Tranché par : une erreur de trame provoquée pendant le reset d'un IKBD.
+    if (duringResetCriticalTime_) NEOST_F("ikbd.orfe_during_reset");
     if (duringResetCriticalTime_ || exeMode_ || memLoadLeft_ > 0) return;
     sciWake_ = true;                       // $FF42 : WU
     sciOnes_ = 0;

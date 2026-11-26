@@ -4,6 +4,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/Mfp.hpp"
+#include "util/Unknowns.hpp"   // NEOST_F : passages dans les chemins [F]
 #include "util/Log.hpp"
 #include "core/Pacing.hpp"   // kCpuHzInt — UNE horloge CPU pour tout l'arbre
 #include <algorithm>
@@ -250,6 +251,7 @@ void Mfp::receiveSerialByte(uint8_t byte, int64_t when) {
 // l'échantillon du bit de stop attendu. Tranché par : SO et IRQ relevés ensemble sur un 68901.
 void Mfp::receiveSerialBreak(int64_t when) {
     if (rxBreakLine_) return;                       // le BREAK continue : un seul mot
+    NEOST_F("mfp.break_detect_date");
     rxBreakLine_ = true;
     rxBreakAcked_ = false;
     if (!(timer_[0x2B] & 1) || !(timer_[0x29] & 0x18)) return;   // RE=0, ou format synchrone
@@ -273,6 +275,7 @@ void Mfp::receiveSerialBreakEnd(int64_t when) {
 // Tranché par : IPRA relu après une fin de BREAK sur un 68901.
 void Mfp::clearSerialBreak(int64_t when) {
     if (!(timer_[0x2B] & 0x08) || !(timer_[0x29] & 0x18)) return;
+    NEOST_F("mfp.end_break_channel");
     timer_[0x2B] &= uint8_t(~0x08);
     rxBreakAcked_ = false;
     raiseAt((iera & 0x08) ? SRC_RXERR : SRC_RXFULL, when);
@@ -541,7 +544,8 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
                      { const int64_t when = sched_ ? sched_->liveNow() : 0;
                        updatePulseGate(0, when); updatePulseGate(1, when); }
                      break; }
-        case 0x05: ddr  = v; break;
+        case 0x05: if (ddr & ~v) NEOST_F("mfp.ddr_out_to_in");
+                   ddr  = v; break;
         // [B] MC68901 § 2.1.4.1 p. 2-3, § 3.3.1 p. 3-3, § 3.3.2 et § 3.3.3 p. 3-5 :
         // Tout changement de IER/IPR/IMR/ISR/VR RÉ-ÉVALUE le signal IRQ (port Hatari :
         // MFP_UpdateIRQ_All après chaque écriture de ces registres) — daté du cycle
@@ -642,6 +646,7 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
                    else {
                        serialTxEnd_ = false;
                        if (sched_ && serialTxKind_ == 1 && !((v & 8) && (timer_[0x29] & 0x18))) {
+                           NEOST_F("mfp.end_of_break_stopbit");
                            sched_->cancel(Scheduler::SERIAL_TX);
                            serialTxBusy_ = false; serialTxKind_ = 2;
                            if (loopback_ || internalSerialLoopback()) receiveSerialBreakEnd(writeEventTime());
@@ -654,6 +659,7 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
                    break;
         case 0x2F:
                    if (sched_) {
+                       if (serialTxFull_) NEOST_F("mfp.udr_overwrite_tdr");
                        serialTxHolding_ = v; serialTxFull_ = true;
                        startSerialTx(false);
                        break;
@@ -774,6 +780,7 @@ bool Mfp::pulseGateActive(int timer) const {
 // [F] Tranché par une IRQ clavier reçue ou non en Timer A event-count sur vrai STE.
 uint8_t Mfp::gpipIrqView(uint8_t gpip) const {
     const int a = timerCtrl(0), b = timerCtrl(1);
+    if (a == 8) NEOST_F("mfp.ta_eventcount_i4_irq");
     if (a > 8) gpip = uint8_t((gpip & ~0x10) | (!tai_ ? 0x10 : 0));
     if (b > 8) gpip = uint8_t((gpip & ~0x08) | (!tbi_ ? 0x08 : 0));
     return gpip;
@@ -867,6 +874,8 @@ void Mfp::writeTimerCtrl(int timer, uint8_t newCtrl) {
     const int old = timerCtrl(timer);
     if (old == newCtrl) return;                       // valeur inchangée → aucun effet
     const int oldDelay = delayCtrl(old);
+    if (oldDelay >= 1 && oldDelay <= 7 && delayCtrl(newCtrl) >= 1 && delayCtrl(newCtrl) <= 7)
+        NEOST_F("mfp.prescaler_change_running");
     // [B] MC68901 § 5.1.2 : entrer dans le mode pulse ou en sortir peut lever une IRQ, parce
     // que l'entrée du canal change de source. Vue relevée AVANT le nouveau contrôle.
     const uint8_t viewBefore = gpipIrqView(gpipInput());

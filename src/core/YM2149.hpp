@@ -29,6 +29,7 @@
 #include <functional>
 #include <vector>
 #include "core/Pacing.hpp"
+#include "util/Unknowns.hpp"   // NEOST_F : passages dans les chemins [F]
 #include "core/StateArchive.hpp"
 
 class YM2149 {
@@ -61,6 +62,7 @@ public:
                 // [F] [B] YM2149 Broches § 6 p. 4 dit seulement que le mode Read sort le contenu du
                 // registre adressé, sans parler des bits « Not used » ni d'un latch. Tranché par : relire
                 // $FF8800 sur un vrai ST après avoir écrit $FF dans R1.
+                if (selected_ < 16 && regReadData_ != regs_[selected_]) NEOST_F("ym.read_latch_unmasked");
                 return (selected_ < 16) ? regReadData_ : uint8_t(0xFF);
             default:       // $FF8802 : relecture du registre (⚠ déviation diagnostic NeoST, cf. en tête de read8)
                 return (selected_ < 16) ? regs_[selected_] : uint8_t(0xFF);
@@ -80,7 +82,7 @@ public:
                 regReadData_ = (selected_ < 16) ? regs_[selected_] : uint8_t(0xFF);
                 break;
             case 2: {                                     // $FF8802 : écriture donnée
-                if (selected_ >= 16) break;               // registre invalide (≥16) → écriture ignorée ([D] psg.c:337-339 @ f0736b24)
+                if (selected_ >= 16) { NEOST_F("ym.write_after_bad_addr"); break; }  // registre invalide (≥16) → écriture ignorée ([D] psg.c:337-339 @ f0736b24)
                 regReadData_ = v;                         // read-latch : valeur NON masquée ([D] psg.c:346 @ f0736b24)
                 // Masque les bits inutilisés À L'ÉCRITURE ([D] psg.c:354-361 @ f0736b24) → la relecture
                 // renvoie la valeur masquée.
