@@ -909,6 +909,17 @@ jobs:
         with:
           distribution: temurin     # JDK COMPLET (jlink inclus), pas un JRE
           java-version: '17'
+          # Cache de ~/.gradle (dépendances Maven et distribution du wrapper), clé sur les
+          # scripts Gradle du paquet. Le 2026-11-26, Maven Central a répondu 429 (Too Many
+          # Requests) à la résolution de error_prone_annotations : le build a échoué sans
+          # que rien n'ait changé chez nous. Une fois le cache peuplé, Gradle ne
+          # redemande plus rien au réseau tant que ces fichiers ne bougent pas.
+          cache: gradle
+          cache-dependency-path: |
+            packaging/android/*.gradle
+            packaging/android/app/*.gradle
+            packaging/android/gradle.properties
+            packaging/android/gradle/wrapper/gradle-wrapper.properties
 
       - name: Installer les composants SDK épinglés (NDK 27, CMake 3.22, API 34)
         run: |
