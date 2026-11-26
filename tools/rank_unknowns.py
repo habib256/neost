@@ -118,6 +118,7 @@ def main() -> int:
 
     titles = defaultdict(set)            # id → {disque}
     machines = defaultdict(set)          # id → {machine}
+    runs = defaultdict(set)              # id → {(machine, rom, disque)} : à rejouer (sensitivity_unknown.py)
     hits = defaultdict(int)
     where = {}
     errors = []
@@ -135,6 +136,7 @@ def main() -> int:
                         continue                      # le boot seul l'explique
                     titles[s["id"]].add(name)
                     machines[s["id"]].add(machine)
+                    runs[s["id"]].add((machine, rom, name))
                     hits[s["id"]] += s["hits"]
                     where[s["id"]] = f'{s["file"]}:{s["line"]}'
             if i % 50 == 0 or i == len(futures):
@@ -146,7 +148,8 @@ def main() -> int:
     report = {
         "runs": len(jobs), "disks": disk_count, "frames": a.frames, "errors": errors,
         "reached": [{"id": k, "site": where[k], "titles": len(titles[k]), "hits": hits[k],
-                     "machines": sorted(machines[k]), "examples": sorted(titles[k])[:5]} for k in rows],
+                     "machines": sorted(machines[k]), "disks": sorted(titles[k]),
+                     "runs": [list(r) for r in sorted(runs[k])]} for k in rows],
         "boot": [{"id": k, "base": {f"{m}/{Path(r).name}": b.get(k, 0) for (m, r), b in base.items()}}
                  for k in boot_sites],
         "never_reached": sorted((k, v) for k, v in declared.items()

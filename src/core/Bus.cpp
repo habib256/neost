@@ -929,6 +929,9 @@ uint8_t Bus::ramSpaceRead8(uint32_t addr) {
     // VoidMem_bget/wget → regs.db). Pour un accès MOT (assemblé ici octet
     // par octet), l'adresse paire porte l'octet fort : le mot relu vaut
     // exactement cpuDb, comme VoidMem_wget. [F] valeur du bus ouvert, cf. read8Slow.
+    // Sensibilité mesurée le 2026-11-27 (tools/sensitivity_unknown.py, 57 runs de la collection
+    // et du CD LGD) : $FF ou $00 à la place ne changent l'image que de The Union Demo (phase de
+    // l'animation d'intro, avec $FF seulement) et d'E605 sur ST (114 pixels).
     NEOST_F("bus.open_bus_void_ram");
     if (ioAccessWidth_ >= 2) return uint8_t((addr & 1) ? cpuDb : cpuDb >> 8);
     return uint8_t(cpuDb);                       // accès octet : VoidMem_bget
