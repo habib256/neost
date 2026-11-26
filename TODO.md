@@ -324,12 +324,23 @@ Récit, traces et recettes de chacun : [`docs/CASE_STUDIES.md`](docs/CASE_STUDIE
   → `docs/CASE_STUDIES.md`, `docs/OPENDST.md`
 - **Campagne de compatibilité sur les CD LGD** · P2 ◐ — `CD [LGDCD]` extrait (2026-11-26) : 881
   disquettes `.ST` (Automation 575, Pompey 131, Medway 117, FoF 58) dans
-  `~/Downloads/atarist-lgd-cd/lgdcd/st/`, hors dépôt ; `A_107` et `FOF_020` ont un CRC zip faux
-  dans l'ISO. **Boot** (ST, TOS 1.04 UK, 1 Mo, trames 1000 et 2500 contre Hatari) : 865 identiques,
-  9 écarts d'animation, 6 disques au PRG tronqué (pile ou face, Hatari pareil) et PP_001V2
-  corrigé (`docs/CASE_STUDIES.md`). **Reste** : lancer les entrées 1 à 5 de chaque menu
-  (touche à la trame 2500, captures 4000 et 6500 ; passe en cours, résultats dans
-  `~/Downloads/atarist-lgd-cd/campaign/menu<k>_<groupe>/`), puis `CD [LGD_CD1][BETA]`.
+  `~/Downloads/atarist-lgd-cd/lgdcd/st/`, hors dépôt. **Boot** (ST, TOS 1.04 UK, 1 Mo, trames
+  1000 et 2500 contre Hatari) : 865 identiques, 9 écarts d'animation, 6 disques au PRG tronqué
+  (pile ou face, Hatari pareil) et PP_001V2 corrigé (`docs/CASE_STUDIES.md`).
+  `A_107` et `FOF_020` : un bit inversé dans chaque zip de l'ISO finale (octet 110 541 `$1D`→`$0D`,
+  octet 221 099 `$2F`→`$AF`), le flux deflate désynchronisé abîme 600 Ko de l'image ; les deux
+  émulateurs tombaient d'accord sur le **bureau GEM**. L'ISO `CD [LGD_CD1][BETA]` (1998) porte les
+  mêmes 881 zips, identiques à l'octet pour 879, et ces deux-là sains : copies dans
+  `lgdcd/st_beta/`, boot et entrées identiques à Hatari (A_107 : menu Automation, touche 1 →
+  jeu Microprose ; FOF_020 : ESPACE puis F1 → Renaissance, F2 → Rings of Medusa). La bêta
+  n'a rien d'autre à tester : elle n'ajoute que Maggie, des musiques et des menus d'accueil.
+  **Reste** : (1) lancer les entrées 1 à 5 des menus Automation, Pompey et Medway (touche à
+  la trame 2500, captures 4000 et 6500 ; passe en cours, résultats dans
+  `~/Downloads/atarist-lgd-cd/campaign/menu<k>_<groupe>/`) ; (2) **relancer les 58 FoF** :
+  leurs menus attendent **ESPACE** (intro) puis **F1…F5**, pas `1`…`5` ; à la touche 1, 56 sur
+  58 restent sur l'intro, et les passes `menu<k>_fof` ne mesurent que l'intro, à jeter.
+  Recette validée sur FOF_020 : `--key 2500:57 --key 3500:<58+k>` (F1 = scancode `$3B`),
+  captures 5000 et 7500, `FOF_020` pris dans `lgdcd/st_beta/`.
 - **Passe de la collection** · P3 ⭘ — 96 images (`cpu_swap_gate.py --suite collection` : ST, STE et Mega STE) ; A/B du 2026-11-10 identique à
   l'octet sur 185 cas sur 188 ; passe d'angle du 2026-11-04 (5 graines), seul Vroom change de
   sort. À refaire après tout changement de timing. Super Off Road attend son disque de données
