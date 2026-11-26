@@ -1051,6 +1051,9 @@ jobs:
         shell: msys2 {0}
     env:
       NEOST_VERSION: ${{ needs.version.outputs.neost_version }}
+      # La console Python de MSYS2 est en cp1252 : un « → » dans un print du banc
+      # (tools/run_libretro.py) lève UnicodeEncodeError. Le mode UTF-8 de Python l'évite.
+      PYTHONUTF8: "1"
     steps:
       - uses: actions/checkout@v5
 
