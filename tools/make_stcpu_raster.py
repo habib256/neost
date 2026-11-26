@@ -31,6 +31,10 @@ LINE = 512
 # forme : (registre, valeur active, valeur de retour, inutilisé).
 KINDS = {"hi": (0xFF8260, 2, 0, 0), "f60": (0xFF820A, 0, 2, 0), "med": (0xFF8260, 1, 0, 0),
          "med2": (0xFF8260, 1, 0, 0),
+         # res3 : résolution 3, où le multiplexeur d'horloge du Shifter ne sort plus rien
+         # (schéma ShifterClockGen d'ijor ; gstshifter.v pclk_en) : le décalage de 4 pixels
+         # de what.if.game (SYNC, 2022).
+         "res3": (0xFF8260, 3, 0, 0),
          "scroll": (0xFF8265, 5, 0, 0), "offset": (0xFF820F, 8, 0, 0)}
 
 

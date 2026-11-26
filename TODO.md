@@ -160,8 +160,23 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 - **Bits 3, 7 et 11 de la palette relue sur ST** · P3 ⏸ matériel · [F] — NeoST les rend à 0. Hatari les tire au hasard (`video.c:5507 @ f0736b24`, « not defined », selon la dernière activité du bus), sauf si le PC est hors RAM. Pirates [cr Delight] relit ainsi sa palette, sans effet à l'image. Tranche : relire ces bits sur le fer, ou modéliser le dernier mot du bus.
 - **Octet `$FF8261` relu** · P3 ⏸ source · [F] — `gstshifter.v:121 @ 4a6db7cc` rend $00 en octet bas ; NeoST garde l'alias de
   `$FF8260`, comme Hatari. Bloc « moyen » : le RTL ne l'emporte pas. Tranche : relevé sur STE.
-- **Shifter arrêté (res 3 / `$FF8261`)** · P3 ⏸ matériel · [F] — porté sans logiciel réel qui
-  l'exerce : noir franc ou couleur 0, comportement sur STE, persistance du décalage.
+- **Shifter arrêté (res 3 / `$FF8261`)** · P3 ⏸ matériel · [F] — exercé depuis le 2026-11-26 par
+  what.if.game (SYNC, 2022, étalon `whatifgame`) : identique à Hatari au pixel, scrolling fluide par pas de
+  4 px. Banc au pixel (`run_stcpu_raster.py --kind res3`) : 15 dates sur 64 identiques avec une impulsion de
+  16 cycles, 5 et 7 avec 8 et 12 cycles. Le modèle garde la phase d'une trame à l'autre et la cumule modulo
+  16 px ; NeoST la remet à 0 à la VBL, comme Hatari (qui note lui-même en TODO, `video.c:1915`, que le STF
+  devrait la garder). what.if.game ne départage pas : elle place des stabilisateurs (haute résolution aux
+  cycles 444-456) avant son arrêt, qui réalignent le Shifter d'après ijor. Restent : noir franc ou
+  couleur 0, comportement sur STE. Le vrai modèle passe par la logique de recharge (item suivant).
+- **Logique de recharge du Shifter ST (relevé d'ijor)** · P2 ⭘ · [D-schéma] — registre des 4 LOAD,
+  compteur de pixels chargé à 4 dans les bordures, recharge quand il déborde, horloge pixel coupée en
+  résolution 3 : schémas d'ijor (atari-forum t=29658, `extern/mistery/doc/ShifterSchemWip.zip`), RTL de
+  slingshot qui les suit (`shifter_video.v @ 4a6db7cc`). C'est lui qui décide quand une phase persiste et
+  quand un stabilisateur la réaligne ; il expliquerait aussi le défaut « un bloc de 16 pixels sur deux »
+  et le hardscroll LO/MED/LO. NeoST rend ligne par ligne comme Hatari : il faudrait suivre ces deux
+  compteurs à chaque LOAD et à chaque bascule de résolution, puis vérifier au banc (`res3`, `med2`) et sur
+  les démos plein écran (étalons `hatari`) sans en déplacer aucune. Notes du forum :
+  `~/Downloads/atarist-silicon/atari_forum_decap_notes.md`.
 - **Décodage Mega STE** · P3 ⏸ schéma · [D] — le STE suit la netlist 4081 ; le Mega STE reste au
   modèle Hatari faute de netlist.
 
@@ -389,7 +404,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 - **shforstv — géométrie matérielle à confirmer** · P2 ⭘ — défilement STF, flash après Espace et désynchronisation STE corrigés (voir CASE_STUDIES). Le retrait gauche STE ratait une écriture après un réveil STOP retardé de 12 cycles par le chemin HBL préarmé. Étalon STE ajouté. Le décalage horizontal statique STF de 4 pixels face à Hatari est résolu le 2026-11-18 : c'était le retrait gauche standard (cf. CASE_STUDIES, « Plein écran : 4 px à gauche »), corrigé par l'algèbre du repère d'A40 et non par alignement, exhibé par Transbeauce 2 et confirmé sur Overscan Demos, Suretrip 49 % et shforstv (0,0 %). Reste [F] : le repère suppose le même retard pipeline après DE sur les lignes normales et left-off ; une capture réelle d'un écran mêlant les deux sous un même motif vertical le trancherait.
 - **Punish Your Machine — ordre des plans après deux Espace** · P2 ⭘ — retour utilisateur le 2026-11-15 : deuxième/troisième écran suspect, ensuite affichage déclaré stable, ordre des plans à vérifier. Recette : TOS 1.04 UK, ST, 2 Mo, PAL, FDC réel, Espace aux trames 4000 puis 7500, capture à 9000. Le résultat 2 Mo est identique à 1 Mo ; à 1 Mo il est identique à Hatari à la même VBL 9000. Ne pas prendre cet accord pour une preuve matérielle. L’utilisateur accepte le diagnostic d’accord avec Hatari ; conserver la réserve matérielle sans inverser arbitrairement les plans.
 - **Démos du 15 novembre : rendu et couverture à compléter** · P2 ⭘ — Ika I Compofylla : busdisplay CPU corrigé, motifs et texte retrouvés ; confirmer la phase absolue des LOAD sur un ST réel et les effets où un autre maître pilote le bus. Overscan Demos et Suretrip 49% : écarts résolus le 2026-11-18 (retrait gauche standard décalé de 4 px), oracles Hatari posés. LoSTE : divergences Hatari non tranchées (Hatari montre un autre contenu), ne pas aligner sans preuve matérielle. Punish Your Machine : atteindre ST Connexion et Best Part Of The Creation ; Overscan : ajouter les écrans Spectrum 512. Les snapshots conservent le comportement observé, pas un verdict de fidélité. → `docs/TEST_SOFTWARE.md`, campagne du 15 novembre.
-- **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **45 étalons pixel sur 67** tournent
+- **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **45 étalons pixel sur 68** tournent
   sans TOS Atari. Les trois `spectrum512_diapo*` restent des SKIP recensés (migration EmuTOS
   réfutée, ne pas retenter) ; leur motif est rendu par `spec512_view`. `union_demo` → ci-dessus.
 - **Écarts MAME [F] à trancher** · P3 ⭘ — MA-1 (remappage RAS/CAS du ST : 4 cas sur 6 diffèrent de MAME, NeoST

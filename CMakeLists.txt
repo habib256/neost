@@ -815,7 +815,8 @@ if(EMSCRIPTEN)
         "Suretrip 49 percent - Checkpoint (ST 1MB).msa|suretrip49.msa"
         "The Overscan Demos - Paulo Simoes (ST 1MB).st|overscan_demos.st"
         "Ika I Compofylla - Newline (ST 1MB).st|ika_compofylla.st"
-        "shforstv - Paulo Simoes (ST 1MB).st|shforstv.st")
+        "shforstv - Paulo Simoes (ST 1MB).st|shforstv.st"
+        "what.if.game - Sync (ST 4MB).st|whatifgame.st")
     foreach(entry IN LISTS NEOST_WEB_CATALOG_DEMOS)
         string(REPLACE "|" ";" pair "${entry}")
         list(GET pair 0 demo_src)

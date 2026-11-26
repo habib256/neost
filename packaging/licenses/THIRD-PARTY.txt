@@ -72,7 +72,7 @@ covered by the GPL — each remains the work and the property of its authors:
 | `nocooper.msa`        | No Cooper           | 1984               | 1989 |
 | `closure.msa`         | Closure             | Sync               |      |
 
-The web page (WebAssembly build) also offers five more, all checked under EmuTOS in the
+The web page (WebAssembly build) also offers six more, all checked under EmuTOS in the
 configuration the page gives them:
 
 | File                  | Production          | Authors            | Year |
@@ -81,8 +81,9 @@ configuration the page gives them:
 | `suretrip49.msa`      | Suretrip 49%        | Checkpoint         |      |
 | `ika_compofylla.st`   | Ika I Compofylla    | Newline            |      |
 | `shforstv.st`         | shforstv            | Paulo Simoes       | 2006 |
+| `whatifgame.st`       | what.if.game (preview) | SYNC (Troed, 7an, Bluestar) | 2022 |
 
-`ika_compofylla.st` and `shforstv.st` are FAT12 containers holding the
+`ika_compofylla.st`, `shforstv.st` and `whatifgame.st` are FAT12 containers holding the
 original program unmodified in `AUTO\` (see `disks/etalons/demos/README.txt`).
 
 They are included as freely-distributed demoscene works — productions released to be

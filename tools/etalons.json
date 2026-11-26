@@ -1,5 +1,5 @@
 {
- "_comment": "Logiciels étalons NeoST — freeware / domaine public uniquement. Voir docs/TEST_SOFTWARE.md. ⚠ COUVERTURE (67 étalons machine, recompté 2026-11-15 — chiffres gardés par tools/check_doc_claims.py) : ste ×34 / st ×31 / megast ×2 ; 512k ×46 / 1m ×15 / 4m ×3 / 2m ×2. ROM : etos256us ×11, tos102uk ×8, tos162us ×1, etos192fr ×20, etos256fr ×14, tos100uk ×1, tos104uk ×4, tos106uk ×1, tos162uk ×4, tos205fr ×1, tos206uk ×1 (les ROM Atari absentes sont sautées et recensées). Les étalons boot_tos* couvrent le démarrage jusqu'au bureau de chaque TOS présent, Mega ST compris, le 2026-11-04 : c'est tout ce qu'ils disent de ces configurations. Le MegaSTE, lui, est gardé DEPUIS le 2026-08-27 par tools/run_megaste_diag.py (suite Q du diagnostic Field Service, palier full), hors de ce manifeste. Les 4 étalons à disque généré (overscan_top, trace_odd, scroll_8264/65) ont été migrés sur EmuTOS le 2026-08-19 : leur secteur de boot est autonome, l'image ne dépend pas du TOS — vérifié à 0 px des deux côtés, oracle Hatari inclus. A10, 2026-08-28 : 3 DÉMOS de plus migrées (cuddly_demos, nocooper, nocooper_greetings) — elles bootent depuis le disque, seule la durée du boot change, et la référence commise est INCHANGÉE (0 px). Les 3 étalons spec512 NE migrent PAS (leur diapo est lancée par un dossier AUTO qu'EmuTOS n'exécute pas jusqu'au bout — réfuté à l'oracle, cf. leur rom_note) : leur couverture est RENDUE par spec512_bands, étalon GÉNÉRÉ (tools/make_spec512_test.py, secteur de boot autonome, 0 px contre l'oracle Hatari). La ROM fixe la fréquence de balayage (suffixe us = 60 Hz, uk/fr/de/es = 50 Hz) et cela CHANGE l'image des démos : les images Spectrum 512 sont calculées pour le 50 Hz et sortent déchirées en NTSC, sur ST comme sur STE, identiquement sous Hatari (fidèle, pas un bug) 2026-08-30 : closure POSÉE (Sync, écran 153 couleurs, ST 1 Mo, etos192fr) — ref_kind SNAPSHOT et non oracle, à dessein : l'oracle Hatari diverge de 64,15 %, mais la cause est GÉOMÉTRIQUE et mesurée (palettes identiques ; un décalage de +4 px ST ramène l'écart à 3,20 %, ±1 px le fait remonter à ~29 %) — c'est la signature d'A40 (glue::LEFT_OFF). Poser l'oracle aurait figé l'écart ; cf. son ref_note. 2026-08-30, A40 SOLDÉ : le décalage de 4 px de closure était le retrait gauche MED (LEFT_OFF_MED) — corrigé, oracle 64,08 % -> 0,02 % (27 px ligne 0, suivi en A41), référence reposée et oracle Hatari commis à côté (tests/reference/closure_oracle.png). Les 144 px d'overscan_top, eux, sont un ARTEFACT DE RECOPIE D'HATARI (masque Glue identique des deux côtés) : cet étalon reste snapshot définitivement, cf. son ref_note. 2026-09-02 : dmasnd_poll POSÉE (STE 1 Mo, etos256us) — poll serré du compteur de trame du son DMA, le seul étalon qui contraigne la QUANTIFICATION HBL du refill FIFO. ref_kind SNAPSHOT et non oracle pour une raison inédite dans ce manifeste : Hatari NE SE REPRODUIT PAS LUI-MÊME dessus (664 à 1432 px entre deux runs identiques selon les options son), sa consommation DAC dépendant d'un accumulateur fractionnaire qui court depuis le démarrage de l'émulateur — donc de la durée de boot, tirée au sort. Le débit MOYEN, lui, est identique des deux côtés (382 octets sur la fenêtre) ; cf. son ref_note.",
+ "_comment": "Logiciels étalons NeoST — freeware / domaine public uniquement. Voir docs/TEST_SOFTWARE.md. ⚠ COUVERTURE (68 étalons machine, recompté 2026-11-15 — chiffres gardés par tools/check_doc_claims.py) : ste ×34 / st ×31 / megast ×2 ; 512k ×46 / 1m ×15 / 4m ×3 / 2m ×2. ROM : etos256us ×11, tos102uk ×8, tos162us ×1, etos192fr ×20, etos256fr ×14, tos100uk ×1, tos104uk ×4, tos106uk ×1, tos162uk ×4, tos205fr ×1, tos206uk ×1 (les ROM Atari absentes sont sautées et recensées). Les étalons boot_tos* couvrent le démarrage jusqu'au bureau de chaque TOS présent, Mega ST compris, le 2026-11-04 : c'est tout ce qu'ils disent de ces configurations. Le MegaSTE, lui, est gardé DEPUIS le 2026-08-27 par tools/run_megaste_diag.py (suite Q du diagnostic Field Service, palier full), hors de ce manifeste. Les 4 étalons à disque généré (overscan_top, trace_odd, scroll_8264/65) ont été migrés sur EmuTOS le 2026-08-19 : leur secteur de boot est autonome, l'image ne dépend pas du TOS — vérifié à 0 px des deux côtés, oracle Hatari inclus. A10, 2026-08-28 : 3 DÉMOS de plus migrées (cuddly_demos, nocooper, nocooper_greetings) — elles bootent depuis le disque, seule la durée du boot change, et la référence commise est INCHANGÉE (0 px). Les 3 étalons spec512 NE migrent PAS (leur diapo est lancée par un dossier AUTO qu'EmuTOS n'exécute pas jusqu'au bout — réfuté à l'oracle, cf. leur rom_note) : leur couverture est RENDUE par spec512_bands, étalon GÉNÉRÉ (tools/make_spec512_test.py, secteur de boot autonome, 0 px contre l'oracle Hatari). La ROM fixe la fréquence de balayage (suffixe us = 60 Hz, uk/fr/de/es = 50 Hz) et cela CHANGE l'image des démos : les images Spectrum 512 sont calculées pour le 50 Hz et sortent déchirées en NTSC, sur ST comme sur STE, identiquement sous Hatari (fidèle, pas un bug) 2026-08-30 : closure POSÉE (Sync, écran 153 couleurs, ST 1 Mo, etos192fr) — ref_kind SNAPSHOT et non oracle, à dessein : l'oracle Hatari diverge de 64,15 %, mais la cause est GÉOMÉTRIQUE et mesurée (palettes identiques ; un décalage de +4 px ST ramène l'écart à 3,20 %, ±1 px le fait remonter à ~29 %) — c'est la signature d'A40 (glue::LEFT_OFF). Poser l'oracle aurait figé l'écart ; cf. son ref_note. 2026-08-30, A40 SOLDÉ : le décalage de 4 px de closure était le retrait gauche MED (LEFT_OFF_MED) — corrigé, oracle 64,08 % -> 0,02 % (27 px ligne 0, suivi en A41), référence reposée et oracle Hatari commis à côté (tests/reference/closure_oracle.png). Les 144 px d'overscan_top, eux, sont un ARTEFACT DE RECOPIE D'HATARI (masque Glue identique des deux côtés) : cet étalon reste snapshot définitivement, cf. son ref_note. 2026-09-02 : dmasnd_poll POSÉE (STE 1 Mo, etos256us) — poll serré du compteur de trame du son DMA, le seul étalon qui contraigne la QUANTIFICATION HBL du refill FIFO. ref_kind SNAPSHOT et non oracle pour une raison inédite dans ce manifeste : Hatari NE SE REPRODUIT PAS LUI-MÊME dessus (664 à 1432 px entre deux runs identiques selon les options son), sa consommation DAC dépendant d'un accumulateur fractionnaire qui court depuis le démarrage de l'émulateur — donc de la durée de boot, tirée au sort. Le débit MOYEN, lui, est identique des deux côtés (382 octets sur la fenêtre) ; cf. son ref_note.",
  "etalons": [
   {
    "id": "glue_selftest",
@@ -1511,6 +1511,39 @@
     [
      2020,
      2028,
+     57
+    ]
+   ]
+  },
+  {
+   "id": "whatifgame",
+   "name": "what.if.game — moteur à défilement de 4 pixels (Shifter en résolution 3)",
+   "subsystem": "integration/demos",
+   "rom": "roms/tos104uk.img",
+   "disk": "disks/etalons/demos/what.if.game - Sync (ST 4MB).st",
+   "machine": "st",
+   "mem": "4m",
+   "cpu": "moira",
+   "frames": 4600,
+   "frame": 4600,
+   "crop": "buffer_noled",
+   "max_diff_px": 0,
+   "ref_kind": "hatari",
+   "ref_note": "Oracle Hatari @ 36a8acf0, posé le 2026-11-26. what.if.game (SYNC, Troed, Silly Venture 2022 SE) décale l'écran par pas de 4 pixels en écrivant la résolution 3 au Shifter, dont le multiplexeur d'horloge ne sort alors plus rien (schéma ShifterClockGen d'ijor, atari-forum t=29658, cité par la démo elle-même). À sa sortie, elle ne tournait dans aucun émulateur ; NeoST et Hatari la rendent identiques au pixel sur 17 points de 2600 à 9000. Grade D : accord avec Hatari, pas de relevé matériel. Espace à 700 passe l'écran de contrôle (Fuji fluide : 4 px par trame) ; capture à 4600 dans le moteur.",
+   "rom_note": "TOS Atari privé fourni par utilisateur, jamais versionné. Tourne aussi sous EmuTOS 192 Ko FR (page web).",
+   "media_sha256": "b5be7baccc220cc2116e1518bce07c141659e93960e46a74a5428cd25255ccb0",
+   "scancodes_at": [
+    [
+     700,
+     "39"
+    ]
+   ],
+   "key_hold": 8,
+   "oracle_scan": 90,
+   "oracle_keys": [
+    [
+     700,
+     708,
      57
     ]
    ]
