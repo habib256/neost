@@ -1192,7 +1192,11 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   `neost-selftest`) : répertoire central du zip (pas de zip64 ni de multi-volume), membres
   stockés ou deflate, gzip à un membre (FEXTRA, FNAME, FCOMMENT, FHCRC), CRC-32 et tailles
   vérifiés, chemins absolus ou à « .. » refusés. Deflate : stb_image compilé en statique.
-  Ouvertes par le cœur libretro ; le GUI ne s'en sert pas encore (TODO § 7).
+  **`.7z`** depuis le 2026-11-26 : décodeur C du SDK LZMA de 7-Zip 24.09 (domaine public,
+  `extern/lzma`, non modifié), LZMA, LZMA2, PPMd et filtres BCJ ; `archive::Reader` présente
+  zip et 7z derrière une interface et garde le dernier bloc solide décodé ; chiffrement
+  refusé, contenu borné à 256 Mo. Ouvertes par le cœur libretro ; le GUI ne s'en sert pas
+  encore (TODO § 7).
 - **Registre absent : la dernière faute retenue par le `Bus`** (2026-11-25) :
   `lastMissingIoFault`, `lastMissingIoPc`, `lastMissingIoVector`, `missingIoFaults`, posés
   par l'étage « carte ioMem » de `busFaultNSlow` (pas la protection superviseur ni une

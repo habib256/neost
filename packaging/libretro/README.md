@@ -4,7 +4,15 @@ NeoST emulates the Atari ST, STE, Mega ST and Mega STE with a cycle-exact 68000
 and chips modelled against the silicon. This core is **experimental**: it is
 built and tested by NeoST's own CI, not yet distributed by libretro.
 
-## Build and install
+## Install
+
+NeoST's CI builds a zip for each host (Linux x86_64 and arm64, macOS universal,
+Windows x86_64). Its folders match RetroArch's (**Settings → Directory**): copy
+`cores/` into **Cores**, `info/` into **Core Info**, `shaders/` into **Video
+Shaders** and `system/neost/` into **System/BIOS**. EmuTOS and the drive sounds
+come with it.
+
+## Build
 
 ```sh
 cmake -B build-libretro -DCMAKE_BUILD_TYPE=Release -DNEOST_PIC=ON -DNEOST_BUILD_LIBRETRO=ON
@@ -45,7 +53,7 @@ empty, and with run-ahead each step is heard once.
 | `.prg`, `.tos`, `.app`, `.gtp`, `.ttp` | Its folder becomes drive C:, and the program starts by itself. |
 | `.hd`, `.vhd` | A hard disk image on ACSI target 0, copied once to `saves/neost/harddisks/`. EmuTOS mounts its partitions by itself; an Atari TOS needs a driver on the disk. |
 | `.stc` | A cartridge. |
-| `.zip`, `.gz` | Unpacked once into `saves/neost/archives/`. Its own `.m3u`, else its floppies as a playlist, else its program (a zipped GEMDOS game) on C:. Files already unpacked are never overwritten, so game saves survive. |
+| `.zip`, `.7z`, `.gz` | Unpacked once into `saves/neost/archives/`. Its own `.m3u`, else its floppies as a playlist, else its program (a zipped GEMDOS game) on C:. Files already unpacked are never overwritten, so game saves survive. |
 
 IPF images need no extra library: NeoST has its own decoder.
 

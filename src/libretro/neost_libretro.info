@@ -1,7 +1,7 @@
 # Software Information
 display_name = "Atari - ST/STE/Mega ST/Mega STE (NeoST)"
 authors = "VERHILLE Arnaud"
-supported_extensions = "st|msa|dim|stx|ipf|m3u|prg|tos|ttp|app|gtp|stc|hd|vhd|zip|gz"
+supported_extensions = "st|msa|dim|stx|ipf|m3u|prg|tos|ttp|app|gtp|stc|hd|vhd|zip|7z|gz"
 corename = "NeoST"
 categories = "Emulator"
 license = "GPLv3"

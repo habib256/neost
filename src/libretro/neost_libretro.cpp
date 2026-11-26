@@ -1191,7 +1191,7 @@ void insertNextDisk() {
 //  Chargement d'un contenu
 // =============================================================================
 // =============================================================================
-//  Archives (.zip, .gz) : décompressées UNE fois dans saves/neost/archives/<nom>/
+//  Archives (.zip, .7z, .gz) : décompressées UNE fois dans saves/neost/archives/<nom>/
 // =============================================================================
 // Ce qu'on charge d'une archive (util/Archive) :
 //  · sa propre liste .m3u ;
@@ -1246,27 +1246,28 @@ std::string unpackArchive(const std::string& archive, std::string& note) {
         if (!writeNew(dst, out)) { notify("Cannot write " + dst.string(), 5000, RETRO_LOG_ERROR); return {}; }
         return dst.string();
     }
-    std::vector<ar::ZipMember> members;
-    if (!ar::listZip(raw, members, &err)) { notify("Cannot open the archive: " + err, 5000, RETRO_LOG_ERROR); return {}; }
-    std::vector<std::pair<std::string, const ar::ZipMember*>> disks, lists, progs, all;
+    ar::Reader reader;
+    if (!reader.open(raw, &err)) { notify("Cannot open the archive: " + err, 5000, RETRO_LOG_ERROR); return {}; }
+    std::vector<std::pair<std::string, std::size_t>> disks, lists, progs, all;
     std::size_t total = 0;
-    for (const auto& m : members) {
-        if (m.directory()) continue;
+    for (std::size_t i = 0; i < reader.members().size(); ++i) {
+        const auto& m = reader.members()[i];
+        if (m.directory) continue;
         const std::string rel = ar::safeMemberPath(m.name);
         if (rel.empty() || fs::path(rel).filename().string().rfind("._", 0) == 0 || rel.find("__MACOSX") == 0) continue;
         const std::string e = extOf(rel);
-        all.push_back({rel, &m});
-        total += m.size;
-        if (isFloppyExt(e)) disks.push_back({rel, &m});
-        else if (e == ".m3u") lists.push_back({rel, &m});
-        else if (isProgramExt(e)) progs.push_back({rel, &m});
+        all.push_back({rel, i});
+        total += std::size_t(m.size);
+        if (isFloppyExt(e)) disks.push_back({rel, i});
+        else if (e == ".m3u") lists.push_back({rel, i});
+        else if (isProgramExt(e)) progs.push_back({rel, i});
     }
-    auto extract = [&](const std::pair<std::string, const ar::ZipMember*>& it) {
+    auto extract = [&](const std::pair<std::string, std::size_t>& it) {
         const fs::path dst = root / it.first;
         if (fs::exists(dst, ec)) return true;
         std::vector<uint8_t> out;
         std::string e2;
-        if (!ar::extractZip(raw, *it.second, out, &e2) || !writeNew(dst, out)) {
+        if (!reader.extract(it.second, out, &e2) || !writeNew(dst, out)) {
             logf(RETRO_LOG_WARN, "archive member %s: %s\n", it.first.c_str(), e2.empty() ? "cannot write" : e2.c_str());
             return false;
         }
@@ -1323,7 +1324,7 @@ bool loadContent(const char* path) {
     std::string content = original;
     std::string ext = extOf(content);
     std::string archiveNote;
-    if (ext == ".zip" || ext == ".gz") {
+    if (ext == ".zip" || ext == ".7z" || ext == ".gz") {
         content = unpackArchive(original, archiveNote);
         if (content.empty()) return false;
         ext = content.back() == '/' ? std::string("/") : extOf(content);
@@ -1626,7 +1627,7 @@ RETRO_API void retro_get_system_info(retro_system_info* info) {
     std::memset(info, 0, sizeof *info);
     info->library_name = "NeoST";
     info->library_version = NEOST_VERSION_STR;
-    info->valid_extensions = "st|msa|dim|stx|ipf|m3u|prg|tos|ttp|app|gtp|stc|hd|vhd|zip|gz";
+    info->valid_extensions = "st|msa|dim|stx|ipf|m3u|prg|tos|ttp|app|gtp|stc|hd|vhd|zip|7z|gz";
     info->need_fullpath = true;
     // Les archives sont à nous (util/Archive) : RetroArch n'en extrairait qu'un fichier,
     // et les autres disquettes d'un jeu, ou les données d'un programme, seraient perdues.

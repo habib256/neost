@@ -32,7 +32,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-EXTS = {".st", ".msa", ".dim", ".stx", ".ipf", ".zip", ".gz"}
+EXTS = {".st", ".msa", ".dim", ".stx", ".ipf", ".zip", ".7z", ".gz"}
 EMUTOS = ["etos192fr.img", "etos256fr.img"]
 ATARI = ["tos104uk.img", "tos162uk.img", "tos206uk.img"]
 # --tos tos102 : le même jeu avec TOS 1.02 à la place de 1.04 pour le ST.

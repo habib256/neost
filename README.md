@@ -320,7 +320,8 @@ Bundled third-party components, with thanks:
 | [miniaudio](https://miniaud.io/) (submodule) | audio output | MIT-0 / public domain |
 | [GLFW](https://www.glfw.org/) 3.x (built in, statically on macOS/Windows) | window, input, GL context | zlib/libpng |
 | [libmt32emu](https://github.com/munt/munt) 2.8.3 (Munt, vendored, **statically linked**) | Roland MT-32 / CM-32L on MIDI OUT | **LGPL 2.1+** — see note below |
-| [stb_image](https://github.com/nothings/stb) v2.30 | decodes the keyboard photo in the GUI | MIT **or** public domain (Unlicense) |
+| [stb_image](https://github.com/nothings/stb) v2.30 | decodes the keyboard photo in the GUI, inflates `.zip`/`.gz` | MIT **or** public domain (Unlicense) |
+| [LZMA SDK](https://www.7-zip.org/sdk.html) 7z decoder, from 7-Zip 24.09 (`extern/lzma`, vendored) | opens `.7z` archives | public domain — Igor Pavlov |
 | [TinySoundFont](https://github.com/schellingb/TinySoundFont) v0.9 (`extern/tsf`, vendored) | built-in General MIDI synth outside macOS | MIT |
 | TimGM6mb (`roms/gm/TimGM6mb.sf2`, by Tim Brechbill) | General MIDI SoundFont for the built-in synth | GPLv2 (data, aggregated) |
 | [SDL2](https://libsdl.org/) 2.30.9 (**Android package only**) | window, GLES, audio, life cycle | zlib |

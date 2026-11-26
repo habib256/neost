@@ -454,7 +454,7 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 
 - **Disquettes `.zip` et `.gz` ouvertes directement (GUI, borne, web)** · P2 ⭘ — monter l'image
   qu'elles contiennent sans décompression manuelle (cas Bruce Lee, 2026-11-13). Le cœur sait les
-  lire (`util/Archive`, 2026-11-25) et le cœur libretro les ouvre déjà (décompressées une fois dans
+  lire (`util/Archive`, 2026-11-25 ; `.7z` le 2026-11-26) et le cœur libretro les ouvre déjà (décompressées une fois dans
   ses sauvegardes) ; reste le GUI : choisir l'image si l'archive en contient plusieurs, réécriture
   dans l'archive ou à côté, à trancher.
 - **Web : le travail des étudiants survit au rechargement** · P2 ⭘ *(proposé)* — C:/D: et
@@ -509,8 +509,9 @@ Le **cinquième frontend** existe depuis le 2026-11-25 : `src/libretro/neost_lib
 (`-DNEOST_PIC=ON -DNEOST_BUILD_LIBRETRO=ON`), zoom adaptatif par la géométrie, options en
 catégories (anglais, français), copies privées des disquettes, archives `.zip`/`.gz`,
 chargement accéléré, machine automatique, autorun des disquettes non amorçables,
-disquettes sœurs, ports clavier et souris du netplay, shaders slang. Jugé par
-`tools/run_libretro.py` et `tools/check_slang.py`, en CI (job « Cœur libretro »). État et
+disquettes sœurs, ports clavier et souris du netplay, shaders slang, archives `.7z`, module
+macOS universel. Jugé par `tools/run_libretro.py` et `tools/check_slang.py`, en CI (job
+« Cœur libretro ») ; un zip par hôte sort de `release.yml` (jobs `libretro*`). État et
 règles → [`docs/LIBRETRO.md`](docs/LIBRETRO.md) ; guide → `packaging/libretro/README.md`.
 Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
 
@@ -524,15 +525,20 @@ Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
   comme Metal) : capturer par F8 en jeu. Le pilote **Metal** de RetroArch (1.22.2, macOS)
   ralentit tout, accélération du chargement coupée comprise, sauf bouton du touchpad tenu
   (Cocoa fait alors tourner sa boucle autrement) ; Vulkan charge seul. Défaut de RetroArch,
-  pas du cœur : la notice conseille Vulkan.
-- **Module macOS universel** · P2 ⭘ *(proposé)* — le cask `retroarch` de Homebrew est
-  x86_64 et OpenGL seul (pilote `gl`, sans slang) ; `retroarch-metal` est universel. Un
-  module arm64 seul ne charge pas dans le premier : bâtir `neost_libretro.dylib` pour
-  `arm64;x86_64` (`CMAKE_OSX_ARCHITECTURES`) dans le paquet.
+  pas du cœur : la notice conseille Vulkan. Depuis le 2026-11-26, chaque run de
+  `release.yml` laisse un zip prêt à copier par hôte (Linux x86_64 et arm64, macOS
+  universel, Windows x86_64), joué par le banc sur son hôte : de quoi faire l'essai.
+- **Publier les paquets libretro** · P2 ⏸ décision — les zips `NeoST-libretro-*` sont des
+  artefacts du run, écartés de `publish` (qui compte 8 paquets). Les attacher à une release,
+  ou attendre l'essai sur les autres hôtes : décision de l'auteur. Rien de public sur le
+  futur cœur 68000 dans leurs notes.
 - **Machine automatique : au-delà du son DMA** · P3 ⭘ — la détection repose sur
   `mmioNeedsBetterMachine` (son DMA, joypads, blitter, SCU, SCC, cache). Un jeu STE qui
   teste le matériel par la valeur lue (sans faute) reste sur ST : « STE » dans le nom (mot
-  isolé ou `(STE)`), ou l'option. Recenser les titres de la collection qui le font.
+  isolé ou `(STE)`), ou l'option. Recenser les titres de la collection qui le font. Cas du
+  2026-11-26 : **Vector Rally** (STE, 2026) sonde le blitter et redémarre en Mega ST, où il
+  tourne avec une palette de 3 bits (238 au lieu de 255) ; son README exige un STE. Faut-il
+  préférer le STE pour une faute du blitter (le Mega ST est le plus rare des deux) ?
 - **Campagne : les titres qui restent** · P2 ⏸ médias — `tools/libretro_corpus.py` (81
   images, 2026-11-25) : 54 écrans de jeu sous TOS Atari, 48 sous EmuTOS. Tranchés : Great
   Giana Sisters (bureau partout, comme Hatari) et Vroom original (repli de TOS). À

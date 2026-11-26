@@ -1,5 +1,29 @@
 # Changelog — NeoST
 
+## 2026-11-26 — Libretro : archives .7z, module macOS universel, paquets par hôte
+
+- **`.7z`** : `util/Archive` lit les archives 7z par le décodeur C du SDK LZMA (7-Zip 24.09,
+  domaine public, vendorisé dans `extern/lzma` sans modification, `NEOST_VENDOR.md`).
+  `archive::Reader` met zip et 7z derrière une même interface ; le cœur libretro ouvre un
+  `.7z` comme un `.zip` (liste, disquettes, programme sur C:). Vector Rally (STE, 2026,
+  livré en `.7z` : `VECRALLY.ST` et `VRALLY.PRG`) démarre de son archive et se joue.
+  Selftest (LZMA2 et PPMd, bloc solide, dossiers, flux abîmé), cas `sevenzip_disk`.
+- **Module macOS universel** (arm64 + x86_64, macOS 11) : il charge aussi dans le cask
+  `retroarch` de Homebrew, x86_64. Banc complet passé sur les deux tranches (x86_64 sous
+  Rosetta). Une liste d'exports (`src/libretro/exports.apple`, pendant de `link.T`) retire
+  les 19 typeinfo de libc++ que la tranche x86_64 exportait en plus des 25 `retro_*`.
+- **Le `.info` porte la version** du build (`display_version`, pris à `NEOST_VERSION_STR`).
+- **Paquets par hôte** : `packaging/libretro/package_libretro.sh` range module, `.info`,
+  shaders, EmuTOS et bruits du lecteur comme les dossiers de RetroArch ; le `.dylib` est
+  re-scellé ad hoc après `strip`. `release.yml` bâtit, vérifie (exports, DLL importées),
+  joue et empaquette Linux x86_64 et arm64 (glibc 2.35), macOS universel et Windows x86_64
+  (MinGW UCRT, runtime statique). Artefacts du run seulement : `publish` les écarte, leur
+  publication attend l'auteur. Le `.dll`, bâti ici en compilation croisée, n'importe que
+  KERNEL32 et l'UCRT ; il n'a pas encore tourné sur Windows.
+- Machine automatique : Vector Rally redémarre en **Mega ST** (sonde du blitter) alors
+  qu'il demande un STE ; il tourne, mais sa palette perd le quatrième bit (238 au lieu de
+  255). Noté au TODO.
+
 ## 2026-11-25 — Libretro : repli de TOS, disquettes sœurs strictes
 
 - **Repli de TOS** : une première disquette qui devait démarrer seule (boot exécutable ou

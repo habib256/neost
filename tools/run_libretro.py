@@ -396,6 +396,31 @@ def case_gzip(module, work):
     return c.messages[0]
 
 
+def case_sevenzip_disk(module, work):
+    """Une disquette dans un .7z (bloc solide avec un README) : décompressée une fois par le
+    SDK LZMA, montée en A:. bsdtar (libarchive) écrit l'archive : `tar` sous macOS et
+    Windows, `libarchive-tools` sous Linux (la CI l'installe)."""
+    import subprocess
+    tool = shutil.which("bsdtar")
+    if not tool and shutil.which("tar"):                   # macOS, Windows 10+ : tar EST bsdtar
+        v = subprocess.run([shutil.which("tar"), "--version"], capture_output=True, text=True).stdout
+        tool = shutil.which("tar") if "bsdtar" in v else None
+    assert tool, "bsdtar not found (libarchive-tools): cannot write the .7z"
+    c, media = core(module, work)
+    pack = media / "pack"
+    (pack / "VECTEST").mkdir(parents=True)
+    shutil.copy(media / "diskA.st", pack / "VECTEST" / "VECTEST.ST")
+    (pack / "VECTEST" / "README.TXT").write_text("free test disk\n")
+    subprocess.run([tool, "--format", "7zip", "--options", "7zip:compression=lzma2", "-cf",
+                    str(media / "Vectest.7z"), "-C", str(pack), "VECTEST"], check=True)
+    assert c.load(media / "Vectest.7z")
+    assert "1 disk in the archive" in c.messages[0], c.messages
+    unpacked = work / "saves" / "neost" / "archives" / "Vectest" / "VECTEST" / "VECTEST.ST"
+    assert unpacked.read_bytes() == (media / "diskA.st").read_bytes()
+    c.run(300)
+    return c.messages[0]
+
+
 def case_options_french(module, work):
     """RetroArch en français : options traduites (SET_CORE_OPTIONS_V2_INTL), anglais sinon."""
     c, _ = core(module, work, language=2)

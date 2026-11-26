@@ -23,7 +23,8 @@ Bundled components
 | miniaudio (in the binary)         | audio output             | MIT-0 / public domain   |
 | GLFW 3.x (in the binary)          | window, input, GL context| zlib/libpng             |
 | libmt32emu 2.8.3 (Munt, in the binary, **static**) | Roland MT-32 / CM-32L on MIDI OUT | **LGPL 2.1 or later** |
-| stb_image v2.30 (in the binary)   | decodes the keyboard photo | MIT **or** public domain (Unlicense) |
+| stb_image v2.30 (in the binary)   | decodes the keyboard photo, inflates .zip/.gz | MIT **or** public domain (Unlicense) |
+| LZMA SDK 24.09 7z decoder (`extern/lzma`, in the binary) | opens .7z archives | public domain — Igor Pavlov |
 | TinySoundFont v0.9 (`extern/tsf`, in the binary) | built-in General MIDI synth outside macOS | MIT |
 | TimGM6mb (`roms/gm/TimGM6mb.sf2`, data file, by Tim Brechbill) | General MIDI SoundFont for the built-in synth | GPLv2 — `GPL-2.0.txt` |
 | SDL2 2.30.9 (`lib/*/libSDL2.so`, **Android package only**) | window, GLES, audio, life cycle | zlib |
@@ -177,4 +178,8 @@ The Roland ROMs are NOT included: the user provides them (`roms/mt32/`).
 
 stb_image (`extern/stb/stb_image.h`) is stb_image v2.30 by Sean Barrett and contributors,
 dual-licensed MIT or public domain (Unlicense): https://github.com/nothings/stb — the GUI
-uses it to decode the keyboard photo.
+uses it to decode the keyboard photo, and the emulator core to inflate .zip and .gz files.
+
+The 7z decoder (`extern/lzma`) is the C decoder of the LZMA SDK as shipped in 7-Zip 24.09
+by Igor Pavlov, placed in the public domain (https://www.7-zip.org/sdk.html); upstream
+code is unmodified, see `extern/lzma/NEOST_VENDOR.md`.

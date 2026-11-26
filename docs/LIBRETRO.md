@@ -90,8 +90,8 @@ Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
   WD1772 ne voit aucune impulsion d'index et ne coupe jamais le moteur, si bien qu'un
   programme sur C: tournait huit fois trop vite et que le TOS répétait chaque touche.
   Gardé par le cas `fast_floppy_idle`.
-- **Les archives** (`util/Archive`, deflate de stb_image) : `.zip` et `.gz` décompressés
-  une fois dans `saves/neost/archives/<nom>/`, jamais réécrits ; la liste `.m3u` de
+- **Les archives** (`util/Archive` : deflate de stb_image, 7z du SDK LZMA) : `.zip`, `.7z`
+  et `.gz` décompressés une fois dans `saves/neost/archives/<nom>/`, jamais réécrits ; la liste `.m3u` de
   l'archive, sinon ses disquettes en liste, sinon son programme sur C: (jeu GEMDOS zippé),
   sinon son dossier en C:. `block_extract = true` : RetroArch n'en extrairait qu'un fichier.
 - **Les options en français** (`SET_CORE_OPTIONS_V2_INTL`) quand RetroArch l'est.
@@ -135,9 +135,18 @@ passe par le repli de TOS. Great Giana Sisters finit au bureau partout, comme ch
 Une passe sous TOS 1.02 (`--tos tos102`) fait pire (43) : le démarrage automatique depuis
 le bureau exige TOS 1.04 ou EmuTOS, chez NeoST comme chez Hatari.
 
+**Les paquets** (2026-11-26) : `packaging/libretro/package_libretro.sh` range le module, son
+`.info` (version du build), les shaders, EmuTOS et les bruits du lecteur comme les dossiers
+de RetroArch (`cores/`, `info/`, `shaders/`, `system/neost/`). `release.yml` en sort un zip
+par hôte à chaque run, après les exports (25 `retro_*`, chaque tranche) et le banc joué sur
+l'hôte : Linux x86_64 et arm64 (glibc 2.35), macOS universel arm64 + x86_64 (le cask
+`retroarch` de Homebrew est x86_64 ; `exports.apple` tient la tranche x86_64 aux seuls
+`retro_*`), Windows x86_64 (MinGW UCRT, runtime lié en statique : la DLL n'importe que
+KERNEL32 et l'UCRT). Ils ne sont pas attachés aux releases.
+
 Restent ouverts au TODO (§ 7, « Cœur libretro ») : le MIDI, le disque dur ACSI dans
-l'état, l'essai sur les autres hôtes (Pi, Android, Windows, Linux), un module macOS
-universel.
+l'état, l'essai sur les autres hôtes (Pi, Android, Windows, Linux), la publication des
+paquets.
 
 ## Positionnement : un cœur ST qui n'est pas Hatari
 
