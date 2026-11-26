@@ -334,8 +334,12 @@ Récit, traces et recettes de chacun : [`docs/CASE_STUDIES.md`](docs/CASE_STUDIE
   `lgdcd/st_beta/`, boot et entrées identiques à Hatari (A_107 : menu Automation, touche 1 →
   jeu Microprose ; FOF_020 : ESPACE puis F1 → Renaissance, F2 → Rings of Medusa). La bêta
   n'a rien d'autre à tester : elle n'ajoute que Maggie, des musiques et des menus d'accueil.
-  **Reste** : (1) lancer les entrées 1 à 5 des menus Automation, Pompey et Medway (touche à
-  la trame 2500, captures 4000 et 6500 ; passe en cours, résultats dans
+  **Menus, touches 1 et 2** (Automation, Pompey, Medway ; touche 3 pour les deux derniers) : aucun défaut propre à NeoST.
+  MED_023 plante aussi sous Hatari ; MED_054 et les bureaux vides ou sans fenêtre (A_093, 113,
+  163, 305, MED_093…) sont une loterie d'interruptions (bureau en superviseur, pile sur les BCB
+  de GEMDOS ; Hatari y tombe aussi, PP_049) ; le reste est de l'animation ou un PRG tronqué.
+  Hatari s'arrête seul sur une dizaine de disques (A_066, 124, 131, 283, 290, 338, 481, MED_017,
+  MED_104…). **Reste** : (1) touche 3 d'Automation, touches 4 et 5 (passe en cours, résultats dans
   `~/Downloads/atarist-lgd-cd/campaign/menu<k>_<groupe>/`) ; (2) **relancer les 58 FoF** :
   leurs menus attendent **ESPACE** (intro) puis **F1…F5**, pas `1`…`5` ; à la touche 1, 56 sur
   58 restent sur l'intro, et les passes `menu<k>_fof` ne mesurent que l'intro, à jeter.
