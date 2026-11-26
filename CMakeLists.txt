@@ -150,7 +150,7 @@ add_library(neost_core STATIC
     src/core/BitmapView.cpp   # explorateur de bitmaps : RAM en plans ST → ARGB
     src/util/HostPath.cpp
     src/util/Crc32.cpp        # CRC des save-states (matériel ARMv8 ou découpage par 8)
-    src/util/Archive.cpp      # .zip et .gz lus sans bibliothèque (deflate de stb_image)
+    src/util/Archive.cpp      # .zip, .7z et .gz lus sans bibliothèque système
     src/audio/DriveSoundMix.cpp  # bruits du lecteur en PCM (frontends à un seul flux)
     src/util/Log.cpp          # puits des journaux du cœur (stderr, ou libretro)
     src/util/ConfigPath.cpp   # A36 : où vit neost.cfg (règle testable)
@@ -160,6 +160,20 @@ add_library(neost_core STATIC
 target_include_directories(neost_core PUBLIC "${CMAKE_SOURCE_DIR}/src")
 # stb_image (domaine public) : son décodeur deflate sert util/Archive.cpp.
 target_include_directories(neost_core PRIVATE "${CMAKE_SOURCE_DIR}/extern/stb")
+# Décodeur 7z du SDK LZMA (extern/lzma, 7-Zip 24.09, domaine public ; cf. son
+# NEOST_VENDOR.md) : sert util/Archive.cpp. Décodage seul, PPMd compris, sans
+# assembleur ni fil. Compilé dans neost_core : il hérite du PIC et de la visibilité
+# cachée du module libretro.
+set(NEOST_LZMA_SOURCES
+    extern/lzma/7zAlloc.c extern/lzma/7zArcIn.c extern/lzma/7zBuf.c extern/lzma/7zCrc.c
+    extern/lzma/7zCrcOpt.c extern/lzma/7zDec.c extern/lzma/7zStream.c extern/lzma/Bcj2.c
+    extern/lzma/Bra.c extern/lzma/Bra86.c extern/lzma/BraIA64.c extern/lzma/CpuArch.c
+    extern/lzma/Delta.c extern/lzma/Lzma2Dec.c extern/lzma/LzmaDec.c extern/lzma/Ppmd7.c
+    extern/lzma/Ppmd7Dec.c)
+target_sources(neost_core PRIVATE ${NEOST_LZMA_SOURCES})
+set_source_files_properties(${NEOST_LZMA_SOURCES} PROPERTIES
+    COMPILE_DEFINITIONS "Z7_PPMD_SUPPORT;Z7_EXTRACT_ONLY")
+target_include_directories(neost_core PRIVATE "${CMAKE_SOURCE_DIR}/extern/lzma")
 
 # Coroutine de runFrame (core/EmuFiber) : Android et les builds ASan prennent le
 # dorsal « fil dédié » (pthread). NEOST_EMUFIBER_THREAD le force sur un bureau, pour
@@ -210,11 +224,30 @@ if(NEOST_BUILD_LIBRETRO)
     target_compile_options(neost_libretro PRIVATE ${NEOST_STRICT_OPTS})
     set_target_properties(neost_libretro PROPERTIES PREFIX "" OUTPUT_NAME neost_libretro
         CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
-    if(NOT APPLE AND NOT WIN32)
+    if(APPLE)
+        # Pendant de link.T pour ld64 : sans lui, la tranche x86_64 d'un module universel
+        # exporte en plus les typeinfo de std::function (libc++), 19 symboles.
+        target_link_options(neost_libretro PRIVATE
+            "-Wl,-exported_symbols_list,${CMAKE_SOURCE_DIR}/src/libretro/exports.apple")
+        set_property(TARGET neost_libretro APPEND PROPERTY LINK_DEPENDS
+            "${CMAKE_SOURCE_DIR}/src/libretro/exports.apple")
+    elseif(WIN32)
+        # Une DLL que RetroArch charge seule : libgcc, libstdc++ et winpthread liés en
+        # statique, comme le paquet Windows (packaging/windows/build_mingw.sh).
+        if(MINGW)
+            target_link_options(neost_libretro PRIVATE -static -static-libgcc -static-libstdc++)
+        endif()
+    else()
         target_link_options(neost_libretro PRIVATE
             "-Wl,--version-script=${CMAKE_SOURCE_DIR}/src/libretro/link.T" "-Wl,--no-undefined")
     endif()
-    configure_file(src/libretro/neost_libretro.info "${CMAKE_BINARY_DIR}/neost_libretro.info" COPYONLY)
+    # Le .info à côté du module, sa version d'affichage prise à NEOST_VERSION_STR (la
+    # source garde « dev » pour tools/retroarch_try.sh).
+    file(READ src/libretro/neost_libretro.info NEOST_LIBRETRO_INFO)
+    string(REPLACE "display_version = \"dev\"" "display_version = \"${NEOST_VERSION_STR}\""
+        NEOST_LIBRETRO_INFO "${NEOST_LIBRETRO_INFO}")
+    file(WRITE "${CMAKE_BINARY_DIR}/neost_libretro.info" "${NEOST_LIBRETRO_INFO}")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS src/libretro/neost_libretro.info)
 endif()
 # (Cpu68k.cpp est traité à part : il inclut l'en-tête tiers Moira.h → C++20 sans
 #  -Wpedantic strict, cf. le bloc Moira plus bas.)

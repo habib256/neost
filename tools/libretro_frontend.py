@@ -21,6 +21,15 @@ INPUT_POLL = C.CFUNCTYPE(None)
 INPUT_STATE = C.CFUNCTYPE(C.c_int16, C.c_uint, C.c_uint, C.c_uint, C.c_uint)
 KEYBOARD = C.CFUNCTYPE(None, C.c_bool, C.c_uint, C.c_uint32, C.c_uint16)
 LED = C.CFUNCTYPE(None, C.c_int, C.c_int)
+MIDI_ENABLED = C.CFUNCTYPE(C.c_bool)
+MIDI_READ = C.CFUNCTYPE(C.c_bool, C.POINTER(C.c_uint8))
+MIDI_WRITE = C.CFUNCTYPE(C.c_bool, C.c_uint8, C.c_uint32)
+MIDI_FLUSH = C.CFUNCTYPE(C.c_bool)
+
+
+class MidiInterface(C.Structure):
+    _fields_ = [("input_enabled", MIDI_ENABLED), ("output_enabled", MIDI_ENABLED),
+                ("read", MIDI_READ), ("write", MIDI_WRITE), ("flush", MIDI_FLUSH)]
 
 EXP = 0x10000
 ENV = {
@@ -33,7 +42,7 @@ ENV = {
     "GET_CORE_OPTIONS_VERSION": 52, "GET_DISK_CONTROL_INTERFACE_VERSION": 57,
     "SET_DISK_CONTROL_EXT_INTERFACE": 58, "GET_MESSAGE_INTERFACE_VERSION": 59,
     "SET_MESSAGE_EXT": 60, "SET_CORE_OPTIONS_V2": 67, "GET_LANGUAGE": 39,
-    "SET_CORE_OPTIONS_V2_INTL": 68, "SET_MEMORY_MAPS": 36 | EXP,
+    "SET_CORE_OPTIONS_V2_INTL": 68, "SET_MEMORY_MAPS": 36 | EXP, "GET_MIDI_INTERFACE": 48 | EXP,
 }
 CMD = {v: k for k, v in ENV.items()}
 
@@ -112,6 +121,26 @@ class Core:
         self._cb = [ENVIRONMENT(self._env), VIDEO(self._video), AUDIO(lambda l, r: None),
                     AUDIO_BATCH(self._audio), INPUT_POLL(lambda: None), INPUT_STATE(self._input)]
         self._led_cb = LED(self._set_led)
+        # MIDI de l'hôte : ce que le cœur écrit (octet, écart en µs), ce qu'on lui fait lire.
+        self.midi_out = []
+        self.midi_in = []
+        self.midi_flushes = 0
+
+        def midi_read(p):
+            if not self.midi_in:
+                return False
+            p[0] = self.midi_in.pop(0)
+            return True
+
+        def midi_write(b, delta):
+            self.midi_out.append((b, delta))
+            return True
+
+        def midi_flush():
+            self.midi_flushes += 1
+            return True
+        self._midi = MidiInterface(MIDI_ENABLED(lambda: True), MIDI_ENABLED(lambda: True),
+                                   MIDI_READ(midi_read), MIDI_WRITE(midi_write), MIDI_FLUSH(midi_flush))
         L = self.lib
         L.retro_set_environment(self._cb[0])
         L.retro_set_video_refresh(self._cb[1])
@@ -199,6 +228,10 @@ class Core:
             return True
         if name == "SET_DISK_CONTROL_EXT_INTERFACE":
             self.disk = C.cast(data, C.POINTER(DiskControlExt))[0]
+            return True
+        if name == "GET_MIDI_INTERFACE":
+            if data:
+                C.memmove(data, C.addressof(self._midi), C.sizeof(MidiInterface))
             return True
         if name == "GET_LED_INTERFACE":
             C.cast(data, C.POINTER(C.c_void_p))[0] = C.cast(self._led_cb, C.c_void_p)

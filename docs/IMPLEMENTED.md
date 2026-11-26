@@ -1192,7 +1192,11 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   `neost-selftest`) : répertoire central du zip (pas de zip64 ni de multi-volume), membres
   stockés ou deflate, gzip à un membre (FEXTRA, FNAME, FCOMMENT, FHCRC), CRC-32 et tailles
   vérifiés, chemins absolus ou à « .. » refusés. Deflate : stb_image compilé en statique.
-  Ouvertes par le cœur libretro ; le GUI ne s'en sert pas encore (TODO § 7).
+  **`.7z`** depuis le 2026-11-26 : décodeur C du SDK LZMA de 7-Zip 24.09 (domaine public,
+  `extern/lzma`, non modifié), LZMA, LZMA2, PPMd et filtres BCJ ; `archive::Reader` présente
+  zip et 7z derrière une interface et garde le dernier bloc solide décodé ; chiffrement
+  refusé, contenu borné à 256 Mo. Ouvertes par le cœur libretro ; le GUI ne s'en sert pas
+  encore (TODO § 7).
 - **Registre absent : la dernière faute retenue par le `Bus`** (2026-11-25) :
   `lastMissingIoFault`, `lastMissingIoPc`, `lastMissingIoVector`, `missingIoFaults`, posés
   par l'étage « carte ioMem » de `busFaultNSlow` (pas la protection superviseur ni une
@@ -1361,6 +1365,16 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   rejeté. Banc POSIX sparse de 1 Tio + 2 Ko, occupation physique de quelques Ko.
   Aucun élargissement des compteurs ou du format d’image ; banc sauté sous
   Windows ou sur un système de fichiers qui matérialise les trous.
+- **Écritures perdues hors de la RAM** (2026-11-26) : `Bus::lastVoidWrite`,
+  `lastVoidWritePc`, `voidWrites` — écriture CPU dans l'espace RAM hors des banques
+  peuplées, par une instruction en RAM (le sondage des banques et les bombes du TOS partent
+  de la ROM). Diagnostic hors état ; sert la mémoire automatique du cœur libretro.
+- **ACSI : calque d'écriture** (2026-11-26, cœur libretro) : `Acsi::setWriteOverlay` garde
+  les secteurs écrits en mémoire par-dessus l'image (lectures fusionnées, dernier secteur
+  partiel complété), rendus au fichier au démontage seulement ; `writeOverlays`/
+  `readOverlays`/`setOverlays` dans l'état autonome v3 (`Machine::saveStateWithMedia`, v1 et
+  v2 relus) ; empreinte d'en-tête au nom du fichier sous calque. Désactivé ailleurs : GUI et
+  headless écrivent droit dans l'image. Cas `hard_disk_state` de `tools/run_libretro.py`.
 - **ACSI WRITE différé** : cible et LBA figés à la commande, même si un nouveau
   paquet sélectionne une autre cible avant ouverture du DMA. Reprise de cette
   phase sauvegardée en v45 ; aucune écriture détournée vers la nouvelle image.

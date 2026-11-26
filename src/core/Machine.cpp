@@ -1628,9 +1628,11 @@ void Machine::freezeHostClocks() {
 // --- États autonomes (cf. Machine.hpp) --------------------------------------------------
 static constexpr uint32_t kMediaStateMagic   = 0x4D54534Eu;   // "NSTM" en petit-boutiste
 // v2 (2026-11-25) : une STX/IPF porte son overlay d'écriture. v1 se relit (overlay inconnu).
-static constexpr uint16_t kMediaStateVersion = 2;
+// v3 (2026-11-26) : les calques d'écriture ACSI suivent les lecteurs (Acsi::writeOverlays,
+// vides hors calque). v1 et v2 se relisent, calques laissés tels quels.
+static constexpr uint16_t kMediaStateVersion = 3;
 // magic(4) version(2) longueur de l'état(4) longueur totale(4) | état | lecteurs A et B |
-// CRC-32 des lecteurs(4). La longueur totale permet un remplissage final, ignoré à la
+// calques ACSI (v3) | CRC-32 des lecteurs et calques(4). La longueur totale permet un remplissage final, ignoré à la
 // reprise : libretro veut une taille d'état FIXE sur la session (retro_serialize_size),
 // alors que l'état GEMDOS grandit au boot (processus, handles) — l'adaptateur annonce
 // une borne et complète par des zéros.
@@ -1651,6 +1653,7 @@ bool Machine::saveStateWithMedia(std::vector<uint8_t>& out) {
     StateArchive ar = StateArchive::saver(out);
     fdc.writeMedia(ar, 0);
     fdc.writeMedia(ar, 1);
+    fdc.acsiWriteOverlays(ar);
     if (!ar.ok()) { out.clear(); return false; }
     const uint32_t crc = stateCrc32(out.data() + mediaAt, out.size() - mediaAt);
     const uint8_t* c = reinterpret_cast<const uint8_t*>(&crc);
@@ -1720,7 +1723,11 @@ bool Machine::loadStateWithMedia(const uint8_t* data, std::size_t n, bool recrea
     StateArchive ar = StateArchive::loader(media, mediaLen);
     const auto a = Fdc::readMediaCopy(ar, version >= 2);
     const auto b = a ? Fdc::readMediaCopy(ar, version >= 2) : nullptr;
-    if (!a || !b || !ar.ok()) { lastStateError_ = "State file is inconsistent"; return false; }
+    std::vector<Acsi::Overlay> overlays;
+    if (!a || !b || !ar.ok() || (version >= 3 && !fdc.acsiReadOverlays(ar, overlays))) {
+        lastStateError_ = "State file is inconsistent";
+        return false;
+    }
     if (recreateMissing && (!Fdc::recreateMediaFile(*a) || !Fdc::recreateMediaFile(*b))) {
         lastStateError_ = "Floppy image is gone and cannot be recreated";
         return false;
@@ -1729,6 +1736,7 @@ bool Machine::loadStateWithMedia(const uint8_t* data, std::size_t n, bool recrea
         lastStateError_ = "Floppy image is gone";
         return false;
     }
+    if (version >= 3) fdc.acsiSetOverlays(std::move(overlays));
     return loadStateBody_(st, len);
 }
 

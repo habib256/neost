@@ -1,5 +1,66 @@
 # Changelog — NeoST
 
+## 2026-11-26 — Libretro : mémoire automatique, MIDI, campagne soldée
+
+- **Mémoire automatique** (option Mémoire, *Automatique* par défaut) : un programme qui
+  écrit au-delà de la RAM depuis la RAM puis plante redémarre une fois avec 2 ou 4 Mo. Le
+  `Bus` retient ces écritures perdues (`voidWrites`, le TOS écarté) ; le plantage se lit dans
+  `proc_lives` (`$380` = `$12345678`, [C] TOS 1.04 et EmuTOS) ou un 68000 arrêté. New
+  Zealand Story (D-Bug) redémarre seul en 4 Mo et va en jeu ; campagne : aucun autre titre
+  touché, **54** écrans de jeu (53). Cas `ram_auto`, `ram_probe_kept`.
+- **MIDI** : le module prend l'interface MIDI de RetroArch. MIDI OUT, octets datés au cycle
+  de l'ACIA (319,6 µs entre deux octets à 31 250 bauds), envoyés pour une trame entendue
+  seulement ; MIDI IN sur option, à la cadence du câble. Le frontend de test gagne
+  l'interface ; cas `midi_out`, `midi_hidden`, `midi_in`.
+- **Epic et Golden Axe** : pas des défauts. Identiques à Hatari (0,0 % de la trame 1000 à
+  4000) ; dans le module, ils demandent le disque 2 (`docs/CASE_STUDIES.md`).
+- Banc : 35 cas.
+
+## 2026-11-26 — Libretro : le disque dur dans l'état
+
+- **Calque d'écriture ACSI** (`Acsi::setWriteOverlay`, activé par le seul cœur libretro) :
+  les secteurs écrits restent en mémoire par-dessus l'image et entrent dans l'état autonome
+  (**v3** ; v1 et v2 se relisent). Un retour arrière ou une trame d'anticipation défait une
+  écriture sur C:, un invité du netplay la reçoit, et la copie privée n'est réécrite qu'à la
+  destruction de la Machine (fin du contenu, redémarrage). Avant, l'image était écrite au
+  fil de l'eau et deux joueurs divergeaient dès qu'un programme écrivait.
+- L'empreinte d'en-tête hache le **nom** de l'image sous calque : un joueur et sa propre
+  copie, dans un autre dossier, n'est plus refusé.
+- `retro_serialize_size` réserve 4 Mo au calque ; avec un disque dur, sauvegarde 0,42 ms et
+  reprise 0,38 ms (0,51 et 0,50 ms avec une disquette).
+- Cas `hard_disk_state` : un programme écrit un secteur par `Rwabs` et le relit ; copie
+  intacte pendant la session, écriture défaite par un état antérieur, portée chez un second
+  joueur et rendue à sa copie à la fermeture. Il échoue sur le module d'avant.
+- Campagne (81 images, TOS Atari) après le passage du blitter au STE : inchangée, sauf
+  systematic_error, même scène saisie pendant un fondu (le programme démarre une trame de
+  redémarrage plus tôt).
+
+## 2026-11-26 — Libretro : archives .7z, module macOS universel, paquets par hôte
+
+- **`.7z`** : `util/Archive` lit les archives 7z par le décodeur C du SDK LZMA (7-Zip 24.09,
+  domaine public, vendorisé dans `extern/lzma` sans modification, `NEOST_VENDOR.md`).
+  `archive::Reader` met zip et 7z derrière une même interface ; le cœur libretro ouvre un
+  `.7z` comme un `.zip` (liste, disquettes, programme sur C:). Vector Rally (STE, 2026,
+  livré en `.7z` : `VECRALLY.ST` et `VRALLY.PRG`) démarre de son archive et se joue.
+  Selftest (LZMA2 et PPMd, bloc solide, dossiers, flux abîmé), cas `sevenzip_disk`.
+- **Module macOS universel** (arm64 + x86_64, macOS 11) : il charge aussi dans le cask
+  `retroarch` de Homebrew, x86_64. Banc complet passé sur les deux tranches (x86_64 sous
+  Rosetta). Une liste d'exports (`src/libretro/exports.apple`, pendant de `link.T`) retire
+  les 19 typeinfo de libc++ que la tranche x86_64 exportait en plus des 25 `retro_*`.
+- **Le `.info` porte la version** du build (`display_version`, pris à `NEOST_VERSION_STR`).
+- **Paquets par hôte** : `packaging/libretro/package_libretro.sh` range module, `.info`,
+  shaders, EmuTOS et bruits du lecteur comme les dossiers de RetroArch ; le `.dylib` est
+  re-scellé ad hoc après `strip`. `release.yml` bâtit, vérifie (exports, DLL importées),
+  joue et empaquette Linux x86_64 et arm64 (glibc 2.35), macOS universel et Windows x86_64
+  (MinGW UCRT, runtime statique). Artefacts du run seulement : `publish` les écarte, leur
+  publication attend l'auteur. Le `.dll`, bâti ici en compilation croisée, n'importe que
+  KERNEL32 et l'UCRT ; il n'a pas encore tourné sur Windows.
+- **Machine automatique : le blitter mène au STE a priori** (décision de l'auteur). Vector
+  Rally redémarrait en Mega ST, où sa palette perdait le quatrième bit (238 au lieu de 255) ;
+  il redémarre en STE. Le Mega ST reste le repli sans TOS pour STE dans le dossier système.
+  Cas `blitter_ste` et `blitter_megast_fallback`.
+- Pas de sortie publique du cœur libretro pour l'instant (décision de l'auteur).
+
 ## 2026-11-25 — Libretro : repli de TOS, disquettes sœurs strictes
 
 - **Repli de TOS** : une première disquette qui devait démarrer seule (boot exécutable ou

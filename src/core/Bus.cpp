@@ -566,7 +566,17 @@ void Bus::write8Slow(uint32_t addr, uint8_t v) {
     // déclarée mais sans puce absorbe l'écriture dans le vide.
     if (addr < 0x400000) {
         const int64_t phys = mmuTranslate(addr);
-        if (phys >= 0) ram[static_cast<std::size_t>(phys)] = v;
+        if (phys >= 0) { ram[static_cast<std::size_t>(phys)] = v; return; }
+        // Écriture perdue hors de la RAM posée, par une instruction en RAM : retenue
+        // pour le frontend (cf. lastVoidWrite). Le TOS (sondage des banques au boot,
+        // bombes dessinées par un pointeur d'écran égaré) écrit depuis la ROM : écarté.
+        // Chemin lent, banques vides seulement.
+        const uint32_t pc = cpu ? (cpu->pc() & stmap::ADDR_MASK) : 0xFFFFFFu;
+        if (pc < 0x400000u) {
+            lastVoidWrite_ = addr;
+            lastVoidWritePc_ = pc;
+            ++voidWriteCount_;
+        }
         return;
     }
     if (addr >= stmap::MMIO_BASE) {

@@ -454,7 +454,7 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 
 - **Disquettes `.zip` et `.gz` ouvertes directement (GUI, borne, web)** · P2 ⭘ — monter l'image
   qu'elles contiennent sans décompression manuelle (cas Bruce Lee, 2026-11-13). Le cœur sait les
-  lire (`util/Archive`, 2026-11-25) et le cœur libretro les ouvre déjà (décompressées une fois dans
+  lire (`util/Archive`, 2026-11-25 ; `.7z` le 2026-11-26) et le cœur libretro les ouvre déjà (décompressées une fois dans
   ses sauvegardes) ; reste le GUI : choisir l'image si l'archive en contient plusieurs, réécriture
   dans l'archive ou à côté, à trancher.
 - **Web : le travail des étudiants survit au rechargement** · P2 ⭘ *(proposé)* — C:/D: et
@@ -509,8 +509,9 @@ Le **cinquième frontend** existe depuis le 2026-11-25 : `src/libretro/neost_lib
 (`-DNEOST_PIC=ON -DNEOST_BUILD_LIBRETRO=ON`), zoom adaptatif par la géométrie, options en
 catégories (anglais, français), copies privées des disquettes, archives `.zip`/`.gz`,
 chargement accéléré, machine automatique, autorun des disquettes non amorçables,
-disquettes sœurs, ports clavier et souris du netplay, shaders slang. Jugé par
-`tools/run_libretro.py` et `tools/check_slang.py`, en CI (job « Cœur libretro »). État et
+disquettes sœurs, ports clavier et souris du netplay, shaders slang, archives `.7z`, module
+macOS universel. Jugé par `tools/run_libretro.py` et `tools/check_slang.py`, en CI (job
+« Cœur libretro ») ; un zip par hôte sort de `release.yml` (jobs `libretro*`). État et
 règles → [`docs/LIBRETRO.md`](docs/LIBRETRO.md) ; guide → `packaging/libretro/README.md`.
 Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
 
@@ -524,26 +525,21 @@ Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
   comme Metal) : capturer par F8 en jeu. Le pilote **Metal** de RetroArch (1.22.2, macOS)
   ralentit tout, accélération du chargement coupée comprise, sauf bouton du touchpad tenu
   (Cocoa fait alors tourner sa boucle autrement) ; Vulkan charge seul. Défaut de RetroArch,
-  pas du cœur : la notice conseille Vulkan.
-- **Module macOS universel** · P2 ⭘ *(proposé)* — le cask `retroarch` de Homebrew est
-  x86_64 et OpenGL seul (pilote `gl`, sans slang) ; `retroarch-metal` est universel. Un
-  module arm64 seul ne charge pas dans le premier : bâtir `neost_libretro.dylib` pour
-  `arm64;x86_64` (`CMAKE_OSX_ARCHITECTURES`) dans le paquet.
+  pas du cœur : la notice conseille Vulkan. Depuis le 2026-11-26, chaque run de
+  `release.yml` laisse un zip prêt à copier par hôte (Linux x86_64 et arm64, macOS
+  universel, Windows x86_64), joué par le banc sur son hôte : de quoi faire l'essai.
+- **Publier les paquets libretro** · P3 ⏸ décision — pas de sortie libretro pour l'instant
+  (auteur, 2026-11-26) : les zips `NeoST-libretro-*` restent des artefacts du run, écartés de
+  `publish` (qui compte 8 paquets). Rien de public sur le futur cœur 68000 dans leurs notes.
 - **Machine automatique : au-delà du son DMA** · P3 ⭘ — la détection repose sur
   `mmioNeedsBetterMachine` (son DMA, joypads, blitter, SCU, SCC, cache). Un jeu STE qui
   teste le matériel par la valeur lue (sans faute) reste sur ST : « STE » dans le nom (mot
   isolé ou `(STE)`), ou l'option. Recenser les titres de la collection qui le font.
-- **Campagne : les titres qui restent** · P2 ⏸ médias — `tools/libretro_corpus.py` (81
-  images, 2026-11-25) : 54 écrans de jeu sous TOS Atari, 48 sous EmuTOS. Tranchés : Great
-  Giana Sisters (bureau partout, comme Hatari) et Vroom original (repli de TOS). À
-  instruire, chacun contre Hatari avant toute conclusion (méthode imposée) : **Epic**
-  (disque 1, noir sous les deux TOS, disquette sans catalogue FAT), **Golden Axe** (D1,
-  noir), **New Zealand Story** (4 Mo exigés, `docs/CASE_STUDIES.md` : une RAM automatique ?).
-  Le classement automatique sous-estime : relire la planche (`--sheet`).
-- **Mémoire automatique ?** · P3 ⭘ *(proposé)* — New Zealand Story (D-Bug) exige 4 Mo, Blood
-  Money 1 Mo. Comme la machine automatique : un programme qui écrit au-delà de la RAM et
-  plante pourrait redémarrer avec plus. Signature à trouver (bus error au-delà de
-  `phystop`, prise sans gestionnaire).
+- **Campagne : un classement qui voit les écrans « insérez le disque B »** · P3 ⭘ *(proposé)* —
+  `tools/libretro_corpus.py` classe « noir » un écran presque noir à texte sombre : Epic et
+  Golden Axe (2026-11-26) y finissent, fidèles, faute de disque 2 (`docs/CASE_STUDIES.md`).
+  Insérer la disquette suivante de la liste (R3) et taper Return quand l'image se fige,
+  ou relire la planche (`--sheet`).
 - **Shaders : le bureau rattrape le module** · P3 ⭘ — `CrtEffectStack` n'a ni la passe de
   câble ni le halo, que le slang a repris de POM2 ; et le choix automatique du moniteur
   (SC1224/SM124 selon la hauteur) n'existe qu'en slang. Une seule source pour les deux.
@@ -563,11 +559,6 @@ Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
   sans bibliothèque) les rend déjà pour le cœur libretro ; l'APK n'a qu'un flux SDL et ne
   les joue pas. Le brancher comme `neost_libretro.cpp` (événements des trames entendues,
   moteur suivi par trame).
-- **Disque dur ACSI dans l'état** · P3 ⭘ *(proposé)* — une image `.hd` montée par le cœur
-  libretro est écrite au fil de l'eau, hors de l'état : un retour arrière ou une trame
-  d'anticipation ne défait pas une écriture, et deux joueurs en réseau divergent dès que le
-  programme écrit sur C:. L'en-tête d'état exige en outre la même image (empreinte ACSI) :
-  vérifier qu'un invité de netplay, avec SA copie, n'est pas refusé.
 - **Retour arrière : franchir les écritures STX** · P3 ⭘ *(proposé)* — depuis le 2026-11-25,
   une copie de média porte l'overlay d'écriture d'une STX/IPF (format `.wd1772`) et
   `restoreMedia` le rejoue : le retour arrière (`core/Rewind.cpp`) pourrait reculer au-delà

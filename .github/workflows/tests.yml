@@ -88,7 +88,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Outils
-        run: sudo apt-get update && sudo apt-get install -y glslang-tools
+        # libarchive-tools : bsdtar écrit le .7z du cas « sevenzip_disk ».
+        run: sudo apt-get update && sudo apt-get install -y glslang-tools libarchive-tools
       - name: Compiler le module
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release -DNEOST_PIC=ON -DNEOST_BUILD_LIBRETRO=ON

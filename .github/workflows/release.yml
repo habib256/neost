@@ -974,6 +974,128 @@ jobs:
           path: dist/*.apk
           if-no-files-found: error
 
+  # ---------------------------------------------------------------- libretro --
+  # Le cœur libretro (docs/LIBRETRO.md) : un zip par hôte, rangé comme les dossiers de
+  # RetroArch (packaging/libretro/package_libretro.sh : module, .info versionné,
+  # shaders, EmuTOS). Bâti, vérifié et JOUÉ (tools/run_libretro.py) à chaque run, pour
+  # qu'on puisse l'essayer dans un vrai RetroArch sur chaque hôte (TODO § 7, « Le module
+  # dans un vrai RetroArch »). PAS attaché aux releases : le module est expérimental et
+  # sa publication est une décision de l'auteur — `publish` l'écarte par son nom.
+  # Planchers : glibc 2.35 (ubuntu-22.04), macOS 11 (arm64 + x86_64, pour le cask
+  # `retroarch` de Homebrew, x86_64 seul), Windows 10 (UCRT, tout statique).
+  libretro:
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-22.04,     platform: linux-x86_64,     module: neost_libretro.so }
+          - { os: ubuntu-22.04-arm, platform: linux-aarch64,    module: neost_libretro.so }
+          - os: macos-15
+            platform: macos-universal2
+            module: neost_libretro.dylib
+            cmake: '"-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    env:
+      NEOST_VERSION: ${{ needs.version.outputs.neost_version }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Outils (bsdtar pour le cas .7z du banc)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libarchive-tools
+
+      - name: Compiler le module
+        run: |
+          cmake -B build-libretro -DCMAKE_BUILD_TYPE=Release -DNEOST_PIC=ON -DNEOST_BUILD_LIBRETRO=ON \
+                -DNEOST_VERSION_STR="$NEOST_VERSION" ${{ matrix.cmake }}
+          cmake --build build-libretro -j4 --target neost_libretro
+
+      - name: Exports — les 25 retro_* seuls (chaque tranche)
+        run: |
+          set -euo pipefail
+          M=build-libretro/${{ matrix.module }}
+          if [ "$RUNNER_OS" = macOS ]; then
+            lipo "$M" -verify_arch arm64 x86_64
+            for a in arm64 x86_64; do
+              nm -gU -arch $a "$M" | awk '{print $3}' | sort -u > exports-$a.txt
+              test "$(grep -vc '^_retro_' exports-$a.txt)" = 0
+              test "$(wc -l < exports-$a.txt | tr -d ' ')" = 25
+            done
+          else
+            nm -D --defined-only "$M" | awk '$2 ~ /[TWVBD]/ {print $3}' \
+              | grep -vE '^_(init|fini)$' | sort -u > exports.txt
+            test "$(grep -vc '^retro_' exports.txt)" = 0
+            test "$(wc -l < exports.txt)" = 25
+          fi
+
+      - name: Banc du module
+        run: python3 tools/run_libretro.py --module build-libretro/${{ matrix.module }}
+
+      - name: Empaqueter
+        run: packaging/libretro/package_libretro.sh build-libretro/${{ matrix.module }} ${{ matrix.platform }}
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: NeoST-libretro-${{ matrix.platform }}
+          path: dist/NeoST-libretro-*.zip
+          if-no-files-found: error
+
+  libretro-windows:
+    needs: version
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: msys2 {0}
+    env:
+      NEOST_VERSION: ${{ needs.version.outputs.neost_version }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: false
+          install: >-
+            zip
+          pacboy: >-
+            toolchain:p
+            cmake:p
+            ninja:p
+            python:p
+            libarchive:p
+
+      - name: Compiler le module
+        run: |
+          cmake -B build-libretro -G Ninja -DCMAKE_BUILD_TYPE=Release -DNEOST_PIC=ON \
+                -DNEOST_BUILD_LIBRETRO=ON -DNEOST_VERSION_STR="$NEOST_VERSION"
+          cmake --build build-libretro -j4 --target neost_libretro
+
+      - name: Exports et DLL importées (statique, aucune DLL de MinGW)
+        run: |
+          set -euo pipefail
+          objdump -p build-libretro/neost_libretro.dll > pe.txt
+          sed -n '/Ordinal\/Name Pointer/,/^$/p' pe.txt | grep -o 'retro_[a-z_]*' | sort -u > exports.txt
+          test "$(wc -l < exports.txt)" = 25
+          grep 'DLL Name' pe.txt
+          if grep -iE 'DLL Name: (libstdc|libgcc|libwinpthread)' pe.txt; then
+            echo "ERREUR : le module dépend d'une DLL de MinGW"; exit 1
+          fi
+
+      - name: Banc du module
+        run: python3 tools/run_libretro.py --module build-libretro/neost_libretro.dll
+
+      - name: Empaqueter
+        run: packaging/libretro/package_libretro.sh build-libretro/neost_libretro.dll windows-x86_64
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: NeoST-libretro-windows-x86_64
+          path: dist/NeoST-libretro-*.zip
+          if-no-files-found: error
+
   # ------------------------------------------------------------------- tests --
   # La suite complète de tests.yml (fast, pixel, RTL, GUI, sanitizers, NAT), rejouée
   # sur le commit du tag : tests.yml ne se déclenche pas sur un tag, et `publish` ne
@@ -1008,8 +1130,10 @@ jobs:
         run: |
           set -eu
           mkdir -p staging
+          # Les zips du cœur libretro (jobs libretro*) restent des artefacts du run :
+          # leur publication attend la décision de l'auteur.
           find artifacts -type f \( -name '*.AppImage' -o -name '*.dmg' -o -name '*.zip' \
-                                     -o -name '*.apk' \) \
+                                     -o -name '*.apk' \) ! -name 'NeoST-libretro-*' \
                -exec cp -v {} staging/ \;
           cd staging
           COUNT=$(ls | wc -l)

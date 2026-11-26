@@ -4,7 +4,15 @@ NeoST emulates the Atari ST, STE, Mega ST and Mega STE with a cycle-exact 68000
 and chips modelled against the silicon. This core is **experimental**: it is
 built and tested by NeoST's own CI, not yet distributed by libretro.
 
-## Build and install
+## Install
+
+NeoST's CI builds a zip for each host (Linux x86_64 and arm64, macOS universal,
+Windows x86_64). Its folders match RetroArch's (**Settings → Directory**): copy
+`cores/` into **Cores**, `info/` into **Core Info**, `shaders/` into **Video
+Shaders** and `system/neost/` into **System/BIOS**. EmuTOS and the drive sounds
+come with it.
+
+## Build
 
 ```sh
 cmake -B build-libretro -DCMAKE_BUILD_TYPE=Release -DNEOST_PIC=ON -DNEOST_BUILD_LIBRETRO=ON
@@ -43,9 +51,9 @@ empty, and with run-ahead each step is heard once.
 | `.st`, `.msa`, `.dim`, `.stx` (Pasti), `.ipf` | Inserted in drive A. Other disks of the same game in the same folder (`Disk 1 of 3`, `_a`/`_b`) join a playlist. |
 | `.m3u` | A playlist, one disk per line; `disk.st|Label` names it. |
 | `.prg`, `.tos`, `.app`, `.gtp`, `.ttp` | Its folder becomes drive C:, and the program starts by itself. |
-| `.hd`, `.vhd` | A hard disk image on ACSI target 0, copied once to `saves/neost/harddisks/`. EmuTOS mounts its partitions by itself; an Atari TOS needs a driver on the disk. |
+| `.hd`, `.vhd` | A hard disk image on ACSI target 0, copied once to `saves/neost/harddisks/`. EmuTOS mounts its partitions by itself; an Atari TOS needs a driver on the disk. What programs write is kept in save states (rewind, run-ahead and netplay undo or share it) and reaches the copy when you close the content. |
 | `.stc` | A cartridge. |
-| `.zip`, `.gz` | Unpacked once into `saves/neost/archives/`. Its own `.m3u`, else its floppies as a playlist, else its program (a zipped GEMDOS game) on C:. Files already unpacked are never overwritten, so game saves survive. |
+| `.zip`, `.7z`, `.gz` | Unpacked once into `saves/neost/archives/`. Its own `.m3u`, else its floppies as a playlist, else its program (a zipped GEMDOS game) on C:. Files already unpacked are never overwritten, so game saves survive. |
 
 IPF images need no extra library: NeoST has its own decoder.
 
@@ -62,7 +70,15 @@ Delete that copy to start afresh.
 - **The right machine.** With **System → Machine** on *Automatic*, content
   whose name says STE (`(STE)`, `_ste_`) starts on an STE. A program that touches STE or Mega STE
   hardware on an ST without expecting it to be missing restarts on the machine
-  it needs, and a notification says so.
+  it needs, and a notification says so. A program that needs the blitter
+  restarts on an STE (a Mega ST if you have no TOS for the STE).
+- **Enough memory.** With **System → Memory** on *Automatic*, the ST has 1 MB,
+  and a program that crashes after writing beyond it restarts with 2 or 4 MB
+  (New Zealand Story needs 4 MB).
+- **MIDI.** Pick a MIDI output in RetroArch (**Settings → Audio → MIDI**) and
+  what the ST plays on its MIDI OUT goes there, each byte at its time. **Media →
+  MIDI IN** also feeds RetroArch's MIDI input to the ST, for live playing: run-ahead,
+  rewind and netplay cannot replay it.
 - **Programs on floppies start by themselves.** Many game disks do not boot a
   game: you double-click it on the desktop, sometimes after a cracker's boot
   screen. When a disk holds a single game program (at its root, or alone in a

@@ -54,8 +54,10 @@ Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
 
 - **La machine automatique.** Un programme qui lit un registre absent du modèle (son DMA
   du STE sur un ST…) sans gestionnaire de bus error à lui redémarre sur la machine qui le
-  porte (`mmioNeedsBetterMachine`, déjà utilisé par le bandeau du GUI), deux fois au plus
-  (Mega ST pour le blitter, puis STE). La faute vient du `Bus` (`lastMissingIoFault`, étage
+  porte (`mmioNeedsBetterMachine`, déjà utilisé par le bandeau du GUI), deux fois au plus.
+  Le blitter mène au **STE a priori** (décision de l'auteur, 2026-11-26 : Vector Rally
+  tournait en Mega ST avec une palette de 3 bits), au Mega ST seulement si aucun TOS du
+  dossier système ne fait tourner un STE (cas `blitter_ste`, `blitter_megast_fallback`). La faute vient du `Bus` (`lastMissingIoFault`, étage
   « registre absent » de `busFaultNSlow`, ni la protection superviseur ni une écriture
   interdite), avec le PC de l'instruction et le vecteur 2 **en vigueur à cet instant**.
   Deux signatures : le 68000 arrêté (TOS Atari ; sa dernière faute est l'erreur d'adresse
@@ -90,8 +92,8 @@ Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
   WD1772 ne voit aucune impulsion d'index et ne coupe jamais le moteur, si bien qu'un
   programme sur C: tournait huit fois trop vite et que le TOS répétait chaque touche.
   Gardé par le cas `fast_floppy_idle`.
-- **Les archives** (`util/Archive`, deflate de stb_image) : `.zip` et `.gz` décompressés
-  une fois dans `saves/neost/archives/<nom>/`, jamais réécrits ; la liste `.m3u` de
+- **Les archives** (`util/Archive` : deflate de stb_image, 7z du SDK LZMA) : `.zip`, `.7z`
+  et `.gz` décompressés une fois dans `saves/neost/archives/<nom>/`, jamais réécrits ; la liste `.m3u` de
   l'archive, sinon ses disquettes en liste, sinon son programme sur C: (jeu GEMDOS zippé),
   sinon son dossier en C:. `block_extract = true` : RetroArch n'en extrairait qu'un fichier.
 - **Les options en français** (`SET_CORE_OPTIONS_V2_INTL`) quand RetroArch l'est.
@@ -117,7 +119,27 @@ Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
   rejoué, fichier compagnon compris. Un état v1 se relit (overlay laissé tel quel). Les
   sauvegardes d'un jeu protégé ne divergent plus entre joueurs ni sous l'anticipation.
 - **Les disques durs** `.hd`/`.vhd` en ACSI 0 (copie privée) : EmuTOS monte la partition
-  et lance `C:\AUTO`.
+  et lance `C:\AUTO`. Depuis le 2026-11-26, leurs écritures vont à un **calque** en mémoire
+  (`Acsi::setWriteOverlay`) que l'état autonome porte (v3) : un retour arrière ou une trame
+  d'anticipation les défait, un invité du netplay les reçoit, et la copie privée ne les
+  reçoit qu'à la destruction de la Machine (fin du contenu, redémarrage sur une autre
+  machine). L'empreinte d'en-tête hache alors le nom de l'image, pas son chemin : chaque
+  joueur monte sa copie. `retro_serialize_size` réserve 4 Mo au calque (au-delà, l'état ne
+  tient plus et le module le dit) ; sauvegarde 0,42 ms et reprise 0,38 ms avec un disque dur.
+  Cas `hard_disk_state` (il échoue sur le module d'avant).
+- **La mémoire automatique** (2026-11-26, option Mémoire sur *Automatique*, défaut) : 1 Mo,
+  et un programme qui écrit au-delà de la RAM depuis une instruction en RAM
+  (`Bus::voidWrites`, écritures du TOS écartées) PUIS plante redémarre une fois avec 2 Mo
+  (écriture sous `$200000`) ou 4 Mo. Le plantage se lit dans la zone de diagnostic du TOS,
+  `proc_lives` (`$380`) = `$12345678` posé par le gestionnaire des bombes ([C] TOS 1.04 et
+  EmuTOS, relevé sur New Zealand Story), ou un 68000 arrêté. Un programme qui sonde et vit
+  avec la réponse ne plante pas et reste tel quel (cas `ram_auto`, `ram_probe_kept`).
+  Campagne : seul New Zealand Story change (redémarré en 4 Mo, en jeu), 54 écrans de jeu.
+- **Le MIDI** (2026-11-26) : MIDI OUT vers l'interface MIDI de RetroArch, chaque octet avec
+  son écart en µs pris au cycle 68000 de l'ACIA, seulement pour une trame entendue (une
+  fois sous anticipation) ; MIDI IN sur option (*MIDI IN*, désactivée), lu à la cadence
+  d'un câble 31 250 bauds. L'entrée ne se rejoue pas : ni anticipation, ni retour arrière,
+  ni netplay avec elle (l'option le dit). Cas `midi_out`, `midi_hidden`, `midi_in`.
 - **Le toucher** : option « Touch moves the GEM pointer » (active sur Android) —
   `RETRO_DEVICE_POINTER` → `Machine::desktopMouseMove`, actions en file pour qu'un tap plus
   court que le trajet du curseur garde son clic. Un double tap ouvre le lecteur A.
@@ -135,9 +157,17 @@ passe par le repli de TOS. Great Giana Sisters finit au bureau partout, comme ch
 Une passe sous TOS 1.02 (`--tos tos102`) fait pire (43) : le démarrage automatique depuis
 le bureau exige TOS 1.04 ou EmuTOS, chez NeoST comme chez Hatari.
 
-Restent ouverts au TODO (§ 7, « Cœur libretro ») : le MIDI, le disque dur ACSI dans
-l'état, l'essai sur les autres hôtes (Pi, Android, Windows, Linux), un module macOS
-universel.
+**Les paquets** (2026-11-26) : `packaging/libretro/package_libretro.sh` range le module, son
+`.info` (version du build), les shaders, EmuTOS et les bruits du lecteur comme les dossiers
+de RetroArch (`cores/`, `info/`, `shaders/`, `system/neost/`). `release.yml` en sort un zip
+par hôte à chaque run, après les exports (25 `retro_*`, chaque tranche) et le banc joué sur
+l'hôte : Linux x86_64 et arm64 (glibc 2.35), macOS universel arm64 + x86_64 (le cask
+`retroarch` de Homebrew est x86_64 ; `exports.apple` tient la tranche x86_64 aux seuls
+`retro_*`), Windows x86_64 (MinGW UCRT, runtime lié en statique : la DLL n'importe que
+KERNEL32 et l'UCRT). Ils ne sont pas attachés aux releases.
+
+Restent ouverts au TODO (§ 7, « Cœur libretro ») : l'essai sur les autres hôtes (Pi, Android, Windows, Linux), la publication des
+paquets.
 
 ## Positionnement : un cœur ST qui n'est pas Hatari
 
@@ -180,7 +210,7 @@ présente sur ce qu'il fait le jour où il paraît.
 | Horodatage des écritures son | `Machine::armAudioClocks()`, contrat de drainage écrit dans `Machine.hpp` | **Prêt** |
 | Bruits du lecteur dans le même flux | `DriveSound` joue par son propre moteur miniaudio ; `audio/DriveSoundMix` rend du PCM | **Fait** pour libretro ; Android ouvert |
 | `retro_serialize` rapide | `saveState` 0,41 ms, `loadState` 0,52 ms ; avec les disquettes 0,66 et 0,76 ms ; une trame ≈ 1 ms (mesures ci-dessous) | **Prêt** |
-| Le blob contient tout ce qui change | `Machine::saveStateWithMedia` / `loadStateWithMedia` : l'état `.state` intact, les deux lecteurs (et l'overlay d'écriture d'une STX/IPF depuis la v2) et un CRC | **Prêt**, sauf un disque dur ACSI — « Disque dur ACSI dans l'état » |
+| Le blob contient tout ce qui change | `Machine::saveStateWithMedia` / `loadStateWithMedia` : l'état `.state` intact, les deux lecteurs (et l'overlay d'écriture d'une STX/IPF depuis la v2, le calque d'écriture ACSI depuis la v3) et un CRC | **Fait** |
 | `retro_serialize_size` fixe | Conteneur à longueur inscrite, remplissage final ignoré ; taille constante tant que les médias ne changent pas, sauf GEMDOS (+322 octets au boot sous EmuTOS) | **Prêt** (borne à poser par l'adaptateur) |
 | État refusé pendant un blit HOG garé | `saveState` rend faux tant qu'une instruction est garée (`Machine::kParkedReason`) | **Fait** : `retro_serialize` rend faux, RetroArch saute la trame |
 | `retro_load_game` / `retro_unload_game` répétés | Machine reconstruite = même état (gardé par `neost-selftest`) ; restent process-globaux le quartz (`setClocks`), le pays clavier (`stkeys`) et `g_cur` du CPU (A33, § 9) | **Prêt** avec les règles ci-dessous |
@@ -189,7 +219,7 @@ présente sur ce qu'il fait le jour où il paraît.
 | Clavier (`retro_keyboard_event`, `RETROK_*`) | `Machine::keyEvent(scancode ST, appui)` ; tables de position GLFW et Android, tables par pays sans GLFW (`src/gui/StKeysSymbolic.cpp`) | **Ouvert** — « Clavier : une table de position neutre » |
 | Manettes (`RETRO_DEVICE_JOYPAD`) | `Machine::setJoysticks(joy0, joy1)` (IKBD + ports manette STE), bits `stjoy::` sans GLFW (`src/io/StJoyBits.hpp`) | **Prêt** |
 | Souris (`RETRO_DEVICE_MOUSE`, relative) | `Machine::mouseEvent(dx, dy, gauche, droit)` | **Prêt** |
-| MIDI (`RETRO_ENVIRONMENT_GET_MIDI_INTERFACE`) | ACIA MIDI et ponts hôtes (`src/audio/MidiInHost.*`, `MidiOutHost.*`) | **À adapter** : un pont de plus à côté de CoreMIDI, ALSA et winmm |
+| MIDI (`RETRO_ENVIRONMENT_GET_MIDI_INTERFACE`) | ACIA MIDI : `setMidiSinkTimed` (octets datés au cycle) et `setRxSource` (cadence d'un câble) | **Fait** (2026-11-26) : sortie par trame entendue, entrée sur option |
 | Contenu | `.st/.msa/.dim/.stx/.ipf` par chemin (`Fdc::loadImage`) ; `.prg` par le GEMDOS et le démarrage automatique (`neost_set_autostart` du web) ; cartouche brute ou `.stc` (`Bus::loadCart`) | **Prêt** avec `need_fullpath = true` |
 | Interface de changement de disque (`.m3u`) | `Fdc::loadImage(path, drive)` et l'éjection | **Fait** : interface étendue, `.m3u` à libellés, disquettes sœurs, R3 |
 | BIOS dans le dossier système | `Machine::switchTos(path, machine demandée)` | **Prêt** (seul EmuTOS peut accompagner le cœur) |

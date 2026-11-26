@@ -311,6 +311,15 @@ public:
     uint32_t lastMissingIoPc() const { return lastMissingIoPc_; }          // instruction fautive
     uint32_t lastMissingIoVector() const { return lastMissingIoVector_; }  // vecteur 2 à cet instant
     uint64_t missingIoFaults() const { return missingIoCount_; }
+    // Dernière écriture du CPU perdue dans l'espace RAM hors des banques peuplées (au-delà
+    // de la RAM de la machine, sous 4 Mo) par une instruction EN RAM, avec l'instruction,
+    // et leur compte. Un programme qui en fait réclame souvent plus de mémoire (New Zealand
+    // Story de D-Bug, docs/CASE_STUDIES.md) ; celles du TOS (sondage des banques au boot,
+    // bombes) partent de la ROM et ne comptent pas. Diagnostic pour la mémoire automatique
+    // du cœur libretro, hors de l'état.
+    uint32_t lastVoidWrite() const { return lastVoidWrite_; }
+    uint32_t lastVoidWritePc() const { return lastVoidWritePc_; }
+    uint64_t voidWrites() const { return voidWriteCount_; }
 
     // Auto-test DÉTERMINISTE du modèle de bus error (whitelist par octet) : vérifie
     // que RAM/ROM/cartouche ne fautent pas, que $FF0000-$FF7FFF et les trous fautent,
@@ -666,6 +675,8 @@ private:
     // depuis les tables Hatari (ioMemTabST/STE) selon `machine`. Cf. buildIoFault.
     mutable uint32_t             lastMissingIo_  = 0;   // cf. lastMissingIoFault
     mutable uint32_t             lastMissingIoPc_ = 0, lastMissingIoVector_ = 0;
+    uint32_t                     lastVoidWrite_ = 0, lastVoidWritePc_ = 0;
+    uint64_t                     voidWriteCount_ = 0;
     mutable uint64_t             missingIoCount_ = 0;
     mutable std::vector<uint8_t> ioFault_;
     mutable MachineType          ioFaultMachine_ = MachineType::St;
