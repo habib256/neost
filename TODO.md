@@ -452,11 +452,10 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 *Après la 0.6.5 : idées relevées le 2026-11-13 dans [BMAtariST v0.1.1](https://github.com/jhonnaker1/bmatarist/releases/tag/v0.1.1)
 (Hatari non modifié, bare metal sur Raspberry Pi avec Circle, GPL-3.0 comme NeoST).*
 
-- **Disquettes `.zip` et `.gz` ouvertes directement (GUI, borne, web)** · P2 ⭘ — monter l'image
-  qu'elles contiennent sans décompression manuelle (cas Bruce Lee, 2026-11-13). Le cœur sait les
-  lire (`util/Archive`, 2026-11-25 ; `.7z` le 2026-11-26) et le cœur libretro les ouvre déjà (décompressées une fois dans
-  ses sauvegardes) ; reste le GUI : choisir l'image si l'archive en contient plusieurs, réécriture
-  dans l'archive ou à côté, à trancher.
+- **Disquettes `.zip`, `.7z` et `.gz` sur le web et Android** · P3 ⭘ — le GUI de bureau et la
+  borne les montent depuis le 2026-11-26 (`util/ArchiveDisks`) ; la page web et l'APK n'en
+  montent pas encore. Le web extrairait dans son FS (ou IDBFS, item suivant) ; Android
+  passerait `archiveCacheRoot` à `scanDiskImages` comme la borne.
 - **Web : le travail des étudiants survit au rechargement** · P2 ⭘ *(proposé)* — C:/D: et
   les disquettes déposées vivent dans le FS de la page ; l'export `.zip` et la garde de
   départ protègent, mais un onglet fermé par erreur perd la séance. Garder `/hd` dans

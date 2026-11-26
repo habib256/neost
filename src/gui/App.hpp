@@ -436,6 +436,14 @@ bool looksLikeTosHeader(const std::string& path, std::uintmax_t& size);
 // Résout un chemin de données indépendamment du répertoire courant : tel quel,
 // puis relatif au répertoire de l'exécutable (utile quand on lance depuis build/).
 std::string resolveData(const std::string& given, const std::string& exeDir);
+// Disquettes d'une archive (.zip, .7z, .gz) : extraites UNE fois sous
+// « <dossier de neost.cfg>/archives/<nom>-<taille>/ », jamais réécrites (le jeu y garde
+// ce qu'il écrit), triées par nom. Vide si rien n'est montable : A.stateMsg dit pourquoi.
+std::string archiveCacheRoot(const std::string& exeDir);
+std::vector<std::string> archiveFloppies(App& A, const std::string& archive);
+// Chemin de montage : une archive est remplacée par sa première disquette ; tout autre
+// chemin est rendu tel quel. Vide si l'archive ne donne rien.
+std::string mountableFloppy(App& A, const std::string& path);
 // ROM par défaut d'un modèle : EmuTOS 256 Ko pour STE/MegaSTE, 192 Ko sinon.
 std::string pickTosForMachine(const std::string& machine, const std::string& current,
                               const std::string& exeDir, const std::string& romsDir);

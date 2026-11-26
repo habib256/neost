@@ -151,6 +151,7 @@ add_library(neost_core STATIC
     src/util/HostPath.cpp
     src/util/Crc32.cpp        # CRC des save-states (matériel ARMv8 ou découpage par 8)
     src/util/Archive.cpp      # .zip, .7z et .gz lus sans bibliothèque système
+    src/util/ArchiveDisks.cpp # leurs disquettes extraites une fois (GUI, borne)
     src/audio/DriveSoundMix.cpp  # bruits du lecteur en PCM (frontends à un seul flux)
     src/util/Log.cpp          # puits des journaux du cœur (stderr, ou libretro)
     src/util/ConfigPath.cpp   # A36 : où vit neost.cfg (règle testable)
@@ -256,7 +257,7 @@ set_source_files_properties(
     src/core/Bus.cpp src/core/Shifter.cpp src/core/VideoGlue.cpp
     src/core/VideoCounter.cpp src/core/YM2149.cpp src/core/DmaSound.cpp
     src/core/Blitter.cpp
-    src/core/Machine.cpp src/core/EmuFiber.cpp src/core/Rewind.cpp src/core/Tracer.cpp src/core/Symbols.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp src/io/StxImage.cpp src/io/WrittenTrack.cpp src/io/IpfImage.cpp src/io/Rtc.cpp src/io/MidiAcia.cpp src/io/Fpu.cpp src/io/GemdosHd.cpp src/io/Acsi.cpp src/io/Scc.cpp src/io/MediaScan.cpp src/io/CompDisks.cpp src/io/FloppyCatalog.cpp src/audio/DriveSoundMix.cpp src/io/Ne2000.cpp src/io/UltraSatan.cpp src/io/Isp1160.cpp src/io/CartridgeKey.cpp src/io/PortDevices.cpp src/io/DongleTable.cpp src/core/Framing.cpp src/core/TosChoice.cpp src/core/BitmapView.cpp src/util/HostPath.cpp src/util/Crc32.cpp src/util/Log.cpp src/util/ConfigPath.cpp src/util/RomProbe.cpp src/gui/AppConfig.cpp
+    src/core/Machine.cpp src/core/EmuFiber.cpp src/core/Rewind.cpp src/core/Tracer.cpp src/core/Symbols.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp src/io/StxImage.cpp src/io/WrittenTrack.cpp src/io/IpfImage.cpp src/io/Rtc.cpp src/io/MidiAcia.cpp src/io/Fpu.cpp src/io/GemdosHd.cpp src/io/Acsi.cpp src/io/Scc.cpp src/io/MediaScan.cpp src/io/CompDisks.cpp src/io/FloppyCatalog.cpp src/audio/DriveSoundMix.cpp src/io/Ne2000.cpp src/io/UltraSatan.cpp src/io/Isp1160.cpp src/io/CartridgeKey.cpp src/io/PortDevices.cpp src/io/DongleTable.cpp src/core/Framing.cpp src/core/TosChoice.cpp src/core/BitmapView.cpp src/util/HostPath.cpp src/util/Crc32.cpp src/util/ArchiveDisks.cpp src/util/Log.cpp src/util/ConfigPath.cpp src/util/RomProbe.cpp src/gui/AppConfig.cpp
     PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
 
 # =============================================================================

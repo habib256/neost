@@ -47,7 +47,8 @@ void drawFloppyWindow(App& A, ConfigUi& ui) {
     }
     drawFloppyPage(ui.disksDir,
                    ui.machine->fdc.mountedPath(0), ui.machine->fdc.mountedPath(1),
-                   ui.reqMountA, ui.reqMountB, ui.reqEjectA, ui.reqEjectB, ui.compDisks);
+                   ui.reqMountA, ui.reqMountB, ui.reqEjectA, ui.reqEjectB, ui.compDisks,
+                   archiveCacheRoot(A.exeDir));
     ImGui::End();
 }
 

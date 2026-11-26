@@ -33,6 +33,7 @@
 #include "net/NetBackend.hpp"
 #include "util/HostPath.hpp"   // chemins hôte : UNE définition d'« absolu »
 #include "util/RomProbe.hpp"   // en-tête TOS (glisser-déposer, argument positionnel)
+#include "util/ArchiveDisks.hpp"   // disquettes d'archive extraites une fois
 #include "net/NatBackend.hpp"
 #include "net/MidiRing.hpp"    // déclarations seules sans NEOST_WITH_NET (unique_ptr complet)
 #ifdef NEOST_WITH_NET
@@ -180,6 +181,40 @@ std::string resolveData(const std::string& given, const std::string& exeDir) {
                                   neost::hostpath::join("..", given) };
     for (const auto& c : cands) if (fileExists(c)) return c;
     return given;
+}
+
+std::string archiveCacheRoot(const std::string& exeDir) {
+    // À côté de neost.cfg (dossier utilisateur), pas sous disks/ : la ludothèque, qui
+    // parcourt disks/, ne doit pas lister deux fois les images d'une archive.
+    return (std::filesystem::path(cfgPath(exeDir)).parent_path() / "archives").string();
+}
+
+std::vector<std::string> archiveFloppies(App& A, const std::string& archive) {
+    namespace ar = neost::archive;
+    const std::string name = std::filesystem::path(archive).filename().string();
+    const std::string dir = ar::unpackDirFor(archive, archiveCacheRoot(A.exeDir));
+    std::vector<std::string> disks;
+    std::string err = "cannot read the archive";
+    if (dir.empty() || !ar::unpackFloppies(archive, dir, disks, &err)) {
+        A.stateMsg = "No floppy from " + name + ": " + err;
+        A.stateMsgFrames = 300;
+        std::fprintf(stderr, "[archive] %s: %s\n", archive.c_str(), err.c_str());
+        return {};
+    }
+    std::fprintf(stderr, "[archive] %s: %zu floppy image(s) in %s\n", archive.c_str(), disks.size(), dir.c_str());
+    return disks;
+}
+
+std::string mountableFloppy(App& A, const std::string& path) {
+    if (!neost::archive::isArchiveName(path)) return path;
+    const std::vector<std::string> disks = archiveFloppies(A, path);
+    if (disks.empty()) return {};
+    if (disks.size() > 1) {
+        A.stateMsg = std::filesystem::path(path).filename().string() + ": disk 1 of "
+                   + std::to_string(disks.size()) + " inserted, the others are in the Disk Library";
+        A.stateMsgFrames = 300;
+    }
+    return disks.front();
 }
 
 // Choisit un TOS compatible avec la MACHINE sélectionnée si le ROM courant ne

@@ -22,7 +22,10 @@ void drawFloppyPage(const std::string& disksDir,
                     const std::string& mountedA, const std::string& mountedB,
                     std::string& reqMountA, std::string& reqMountB,
                     bool& reqEjectA, bool& reqEjectB,
-                    const neost::CompDiskCatalog* catalog = nullptr);
+                    const neost::CompDiskCatalog* catalog = nullptr,
+                    // Dossier où les archives sont extraites (archiveCacheRoot) ; vide :
+                    // les archives ne sont pas listées.
+                    const std::string& archiveCache = std::string());
 
 void drawCartPage(const std::string& cartsDir, const std::string& mounted,
                   std::string& reqMount, bool& reqEject);

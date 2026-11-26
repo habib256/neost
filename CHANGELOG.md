@@ -1,5 +1,26 @@
 # Changelog — NeoST
 
+## 2026-11-26 — GUI et borne : disquettes en archive
+
+- **`.zip`, `.7z` et `.st.gz` montés comme des disquettes** dans le GUI de bureau et la
+  borne : déposés sur la fenêtre (1re image en A, 2e en B, comme deux fichiers), passés en
+  argument (`neost jeu.7z`), laissés par un profil (`disk=`, `diskb=`), choisis dans la
+  ludothèque ou le menu de la borne. Cas d'origine : Bruce Lee zippé (2026-11-13), et
+  `VECRALLY-V.1.7z` posé dans `disks/`.
+- **Extraites une fois, jamais réécrites** (`util/ArchiveDisks`) : les images seules, sous
+  `<dossier de neost.cfg>/archives/<nom>-<taille>/`. Le lecteur réécrit son image quand le ST
+  écrit : monter l'archive elle-même aurait perdu les sauvegardes ou réécrit l'archive. La
+  taille dans le nom sépare deux `Disk1.zip` de deux jeux. Écriture par un `.part` renommé :
+  une extraction coupée ne laisse pas d'image tronquée.
+- **Ludothèque** : une archive pas encore ouverte s'affiche telle quelle ; ensuite, ses
+  disquettes (`Jeu.zip > DISK2.ST`), chacune montable dans A ou B. Rien n'est ouvert pendant
+  le parcours : le dossier se déduit du nom et de la taille. Un `.gz` n'est listé que s'il
+  emballe une image (`.st.gz`), pas un `.tar.gz`.
+- `neost-selftest` : `testArchiveDisks` (tri, sous-dossiers, zip-slip écarté, écriture du
+  jeu gardée à la réouverture, gzip nommé ou non, recensement de la borne) et l'argument
+  positionnel `.ZIP` ; 1060 contrôles. Essai réel : `neost etos192fr.img VECRALLY-V.1.7z`
+  monte l'image, identique octet pour octet à celle que sort `bsdtar`.
+
 ## 2026-11-26 — Libretro : mémoire automatique, MIDI, campagne soldée
 
 - **Mémoire automatique** (option Mémoire, *Automatique* par défaut) : un programme qui

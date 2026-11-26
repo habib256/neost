@@ -5,6 +5,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/MediaScan.hpp"
+#include "util/ArchiveDisks.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -43,10 +44,11 @@ bool areSiblingImages(const std::string& a, const std::string& b) {
 }
 
 std::vector<std::string> scanDiskImages(const std::vector<std::string>& dirs,
-                                        const std::string& mounted) {
+                                        const std::string& mounted,
+                                        const std::string& archiveCache) {
     std::vector<std::string> out;
 
-    auto scanInto = [&out](const std::string& dir) {
+    auto scanInto = [&out, &archiveCache](const std::string& dir) {
         std::error_code e2;
         if (dir.empty() || !fs::is_directory(dir, e2)) return;
         // ⚠ Le range-for incrémente via operator++() qui LANCE filesystem_error sur un
@@ -67,9 +69,18 @@ std::vector<std::string> scanDiskImages(const std::vector<std::string>& dirs,
             std::error_code e3;
             if (e.is_regular_file(e3)) {
                 const std::string ext = lowerOf(e.path().extension().string());
-                if (ext == ".st" || ext == ".msa" || ext == ".dim" || ext == ".stx" || ext == ".ipf") {
-                    const std::string p = e.path().string();
+                auto add = [&](const std::string& p) {
                     if (std::find(out.begin(), out.end(), p) == out.end()) out.push_back(p);
+                };
+                if (ext == ".st" || ext == ".msa" || ext == ".dim" || ext == ".stx" || ext == ".ipf") {
+                    add(e.path().string());
+                } else if (!archiveCache.empty() && archive::isFloppyArchiveName(e.path().string())) {
+                    // Archive : ses disquettes si elles sont déjà extraites, sinon
+                    // l'archive, que le montage extrait (sans l'ouvrir ici).
+                    const auto disks = archive::unpackedFloppies(
+                        archive::unpackDirFor(e.path().string(), archiveCache));
+                    for (const auto& d : disks) add(d);
+                    if (disks.empty()) add(e.path().string());
                 }
             }
             it.increment(e2);

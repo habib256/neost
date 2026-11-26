@@ -382,15 +382,16 @@ int appInit(App& A, int argc, char** argv) {
             case Positional::Invalid:
                 std::fprintf(stderr, "[main] '%s' is neither a TOS ROM image ($601E/$602E "
                                      "header, 192/256/512/1024 KB) nor a floppy image "
-                                     "(.st .msa .dim .stx .ipf): refused\n", pos[0].c_str());
+                                     "(.st .msa .dim .stx .ipf, or .zip .7z .gz): refused\n", pos[0].c_str());
                 return 2;
         }
     }
     const std::string romLogical = !romArg.empty() ? romArg : defRom;
     const std::string tosPath  = resolveData(romLogical, exeDir);
     const std::string defDisk  = cfg.disk.empty() ? std::string("disks/diskA.st") : cfg.disk;
-    const std::string diskPath = resolveData(!floppyArg.empty() ? floppyArg
-                                             : pos.size() > 1 ? pos[1] : defDisk, exeDir);
+    // Une archive (argument, ou disk= laissé par un profil) : sa première disquette.
+    const std::string diskPath = mountableFloppy(A, resolveData(!floppyArg.empty() ? floppyArg
+                                             : pos.size() > 1 ? pos[1] : defDisk, exeDir));
     const std::string cartPath = cfg.cart.empty() ? std::string() : resolveData(cfg.cart, exeDir);
     A.disksDir = resolveData("disks", exeDir);   // dossier pour la Disk Library
     A.compDisks.load(resolveData("data/compdisks/CompDisks.json", exeDir));   // absent : listes nues
@@ -495,7 +496,7 @@ int appInit(App& A, int argc, char** argv) {
     // Lecteur B mémorisé (diskb=) : remonté au démarrage comme le A. Silencieux si
     // l'image a disparu — un second lecteur vide est un état parfaitement normal. Un
     // diskb= identique au disk= est refusé par Fdc::loadImage (une image, un lecteur).
-    if (!cfg.diskb.empty() && !machine.fdc.loadImage(resolveData(cfg.diskb, exeDir), 1)) {
+    if (!cfg.diskb.empty() && !machine.fdc.loadImage(mountableFloppy(A, resolveData(cfg.diskb, exeDir)), 1)) {
         std::fprintf(stderr, "[main] Drive B: not mounted (%s).\n", cfg.diskb.c_str());
         cfg.diskb.clear();
     }
