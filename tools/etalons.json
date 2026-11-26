@@ -1428,7 +1428,7 @@
      2
     ]
    ],
-   "ref_note": "Snapshot NeoST du 2026-11-15, référence de non-régression uniquement. Le fullscreen SOWATT est atteint sous TOS Atari; EmuTOS reste sur LOADING. Hatari diverge et montre un autre contenu; sélection tardive également divergente. Un snapshot protège le comportement actuel, sans verdict matériel.",
+   "ref_note": "Snapshot NeoST du 2026-11-15, référence de non-régression uniquement. Le fullscreen SOWATT est atteint sous TOS Atari; EmuTOS reste sur LOADING. L'ancienne divergence Hatari venait de l'oracle : « keydown 2 » tapait le caractère « 2 » (scancode 3), corrigé le 2026-11-26 ; compare_titles --key 6000:2 donne désormais 0,0 % à la trame 9000. Un snapshot protège le comportement actuel, sans verdict matériel.",
    "rom_note": "TOS Atari privé fourni par utilisateur, jamais versionné. Migration EmuTOS non validée pour cette scène.",
    "media_sha256": "e9d22bc6de3125d96957ac8a87d7a816b26087e76a54c40c016c5869c38c436b"
   },
@@ -1460,7 +1460,7 @@
      3
     ]
    ],
-   "ref_note": "Snapshot NeoST du 2026-11-15, référence de non-régression uniquement. Le fullscreen NEWYEAR2 est atteint sous TOS Atari; EmuTOS reste sur LOADING. La comparaison Hatari reste non concluante, même après sélection tardive. Snapshot sans verdict matériel.",
+   "ref_note": "Snapshot NeoST du 2026-11-15, référence de non-régression uniquement. Le fullscreen NEWYEAR2 est atteint sous TOS Atari; EmuTOS reste sur LOADING. Snapshot refait le 2026-11-26 : la ligne 9 démarrait en 508 cycles (60 Hz) entre deux bascules de la ligne 8, alors que la HBL la trouve en 50 Hz (512) ; la démo lit le compteur et change de texture. La comparaison Hatari reste non concluante : avec la touche corrigée le 2026-11-26 (« keydown 3 » tapait le caractère « 3 »), même écran NEWYEAR2, 52 % d'écart dû à la phase de la texture animée. Snapshot sans verdict matériel.",
    "rom_note": "TOS Atari privé fourni par utilisateur, jamais versionné. Migration EmuTOS non validée pour cette scène.",
    "media_sha256": "e9d22bc6de3125d96957ac8a87d7a816b26087e76a54c40c016c5869c38c436b"
   },

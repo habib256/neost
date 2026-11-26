@@ -322,13 +322,14 @@ Récit, traces et recettes de chacun : [`docs/CASE_STUDIES.md`](docs/CASE_STUDIE
   (N), niveau (F1) et instructions à l'identique, puis diverge, même avec `--hatari-delay`.
   Super Hang-On, Nitro, Dynamite Dux et Cybernoid II : en jeu, parties divergentes.
   → `docs/CASE_STUDIES.md`, `docs/OPENDST.md`
-- **Campagne de compatibilité sur les CD LGD** · P2 ⏸ médias — récupération en cours (2026-11-26) de
-  deux images ISO, `CD [LGDCD]` et `CD [LGD_CD1][BETA]`, dans `~/Downloads/atarist-lgd-cd/` :
-  de quoi lancer des campagnes de compatibilité à grande échelle. Une fois complètes : en
-  extraire les images (ISO 9660, `bsdtar`), les ranger hors dépôt (médias privés, jamais
-  versionnés), puis passer le lot au boot et au classement (`compare_titles.py` contre Hatari,
-  suite `collection` de `cpu_swap_gate.py`) ; chaque plantage propre à NeoST devient une ligne
-  des bugs ouverts ci-dessus.
+- **Campagne de compatibilité sur les CD LGD** · P2 ◐ — `CD [LGDCD]` extrait (2026-11-26) : 881
+  disquettes `.ST` (Automation 575, Pompey 131, Medway 117, FoF 58) dans
+  `~/Downloads/atarist-lgd-cd/lgdcd/st/`, hors dépôt ; `A_107` et `FOF_020` ont un CRC zip faux
+  dans l'ISO. **Boot** (ST, TOS 1.04 UK, 1 Mo, trames 1000 et 2500 contre Hatari) : 865 identiques,
+  9 écarts d'animation, 6 disques au PRG tronqué (pile ou face, Hatari pareil) et PP_001V2
+  corrigé (`docs/CASE_STUDIES.md`). **Reste** : lancer les entrées 1 à 5 de chaque menu
+  (touche à la trame 2500, captures 4000 et 6500 ; passe en cours, résultats dans
+  `~/Downloads/atarist-lgd-cd/campaign/menu<k>_<groupe>/`), puis `CD [LGD_CD1][BETA]`.
 - **Passe de la collection** · P3 ⭘ — 96 images (`cpu_swap_gate.py --suite collection` : ST, STE et Mega STE) ; A/B du 2026-11-10 identique à
   l'octet sur 185 cas sur 188 ; passe d'angle du 2026-11-04 (5 graines), seul Vroom change de
   sort. À refaire après tout changement de timing. Super Off Road attend son disque de données

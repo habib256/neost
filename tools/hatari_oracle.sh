@@ -99,6 +99,9 @@ run_hatari() {
     IFS=: read -r d u sc <<<"$spec"
     [[ "$d" =~ ^[0-9]+$ && "$u" =~ ^[0-9]+$ && "$sc" =~ ^[0-9]+$ && "$u" -gt "$d" ]] \
       || { echo "HATARI_ORACLE_KEYS : entrée invalide « $spec » (attendu down:up:scancode)" >&2; return 1; }
+    # Scancode en hexadécimal : Hatari lit une clé d'UN seul caractère comme un caractère à
+    # simuler (control.c, Control_InsertKey), « keydown 2 » tapait « 2 » = scancode 3.
+    printf -v sc '0x%02x' "$sc"
     EV+=("$d keydown $sc" "$u keyup $sc")
     printf 'b VBL = %d :once\nb VBL = %d :once\n' "$d" "$u" >>"$PARSE"
   done

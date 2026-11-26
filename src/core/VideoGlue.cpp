@@ -128,6 +128,7 @@ void VideoGlue::liveGlueCatchUp(int targetLine) {
             }
             if (wl > maxLine) { wl = maxLine; if (!lineLen) lc = static_cast<int>(w.frameCycle % cpl); }
             if (wl <= liveLine) {
+                const int startedRes = liveRes, startedFreq50 = liveFreq50;   // diag [GLUR]
                 if (w.isRes) liveRes    = w.val & 0x03;
                 else         liveFreq50 = (w.val & 0x02) ? 1 : 0;
                 // La GLUE ne décode que le bit 1 de $FF8260 : res 3 = haute
@@ -138,16 +139,37 @@ void VideoGlue::liveGlueCatchUp(int targetLine) {
                 // sa datation ligne/cycle et le masque résultant — à diff'er contre
                 // Hatari `video_border_h` (les « detect ... » de Video_Update_Glue_State).
                 static const bool glueDiag = std::getenv("NEOST_GLUE_DIAG") != nullptr;
+                // Une requête Timer B peut avoir préparé N+1 (startHBL) AVANT les
+                // dernières écritures de N. [D] Hatari video.c:3541-3600 @ f0736b24 :
+                // Video_StartHBL ne s'exécute qu'à la vraie HBL, donc APRÈS elles, avec
+                // la res/freq qu'elles laissent. Écriture tardive de N = liveLine − 1 :
+                // rendre à N+1 son état d'avant l'initialisation prématurée, appliquer
+                // l'écriture (elle peut pré-positionner N+1 : retrait gauche, ligne
+                // blanche), puis refaire l'initialisation dans l'ordre d'Hatari.
+                // Cas : menu Pompey Pirates n° 1 v2 (LGD CD, PP_001V2) — retrait bas
+                // en 60 Hz à 262/492, haute résolution à 262/508 : N+1 démarré en
+                // « 60 Hz basse » gardait left+2 sous le retrait gauche → 232 octets,
+                // tout le bas de l'écran décalé d'un mot (plans permutés).
+                const bool restart = wl == liveLine - 1 && preStartLine == liveLine;
+                if (restart) lines[liveLine] = preStart;
                 updateGlueState(wl, lc, w.isRes, freqHz);
-                // Une requête Timer B peut avoir préparé N+1 avant les dernières
-                // écritures de N. Une annulation de retrait gauche remet alors
-                // son départ à -1 : réappliquer l'initialisation avant de consommer
-                // les écritures de N+1, comme dans le rejeu chronologique.
-                // Régression : shforstv, ligne BLANK + RIGHT_OFF comptée 160 au
-                // lieu de 204 octets ; tous les plans suivants étaient décalés.
-                if (wl < liveLine && lines[wl + 1].displayStartCycle < 0)
+                if (restart) {
+                    if (glueDiag)
+                        neost::log::err("[GLUR] line=%d restart after late write line=%d cyc=%d %s"
+                                        " (startHBL was res=%d freq50=%d)\n", liveLine, wl, lc,
+                                        w.isRes ? "res" : "sync", startedRes, startedFreq50);
+                    preStart = lines[liveLine];
+                    // Décode de Video_StartHBL, comme à l'avance ci-dessous.
+                    const int hzStart = ((liveRes & 0x03) == 0x02) ? 71 : (liveFreq50 ? 50 : 60);
+                    startHBL(liveLine, liveRes, hzStart);
+                    if (lineLen) liveLen = glueLineLenFor(hzStart);   // nCyclesPerLine de la HBL
+                } else if (wl < liveLine && lines[wl + 1].displayStartCycle < 0) {
+                    // Plusieurs lignes d'avance : seul le départ annulé se répare.
+                    // Régression : shforstv, ligne BLANK + RIGHT_OFF comptée 160 au
+                    // lieu de 204 octets ; tous les plans suivants étaient décalés.
                     startHBL(wl + 1, liveRes,
                              liveRes == 2 ? 71 : (liveFreq50 ? 50 : 60));
+                }
                 // Canal HBL_Pos/nCyclesPerLine → Machine (reprogramme l'IRQ HBL de la
                 // ligne et cumule le raccourcissement) — gated NEOST_LINELEN côté Machine.
                 if (hblPos > 0 && lineGeom) lineGeom(wl, hblPos, cyclesLine);
@@ -185,6 +207,10 @@ void VideoGlue::liveGlueCatchUp(int targetLine) {
         // (res & 2, utilisé par updateGlueState) enverrait une ligne res 3 d'un
         // écran 50 Hz dans la branche 60 Hz (DE 52-372 + left+2/right-2).
         const int freqHz = ((liveRes & 0x03) == 0x02) ? 71 : (liveFreq50 ? 50 : 60);
+        if (static_cast<std::size_t>(liveLine) < lines.size()) {
+            preStart = lines[liveLine];
+            preStartLine = liveLine;
+        }
         startHBL(liveLine, liveRes, freqHz);
     }
 }
