@@ -1195,8 +1195,12 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   **`.7z`** depuis le 2026-11-26 : décodeur C du SDK LZMA de 7-Zip 24.09 (domaine public,
   `extern/lzma`, non modifié), LZMA, LZMA2, PPMd et filtres BCJ ; `archive::Reader` présente
   zip et 7z derrière une interface et garde le dernier bloc solide décodé ; chiffrement
-  refusé, contenu borné à 256 Mo. Ouvertes par le cœur libretro ; le GUI ne s'en sert pas
-  encore (TODO § 7).
+  refusé, contenu borné à 256 Mo. Ouvertes par le cœur libretro, et depuis le 2026-11-26
+  par le GUI de bureau et la borne (`util/ArchiveDisks.*`, test `testArchiveDisks`) : les
+  images disquette seules, extraites une fois sous `<dossier de neost.cfg>/archives/<nom>-<taille>/`
+  et jamais réécrites (les écritures du jeu y restent, l'archive n'est pas touchée) ;
+  dépôt (1re en A, 2e en B), argument positionnel, `disk=`/`diskb=`, ludothèque et menu
+  de la borne (l'archive, puis ses disquettes une fois extraites). Web et Android : TODO § 7.
 - **Registre absent : la dernière faute retenue par le `Bus`** (2026-11-25) :
   `lastMissingIoFault`, `lastMissingIoPc`, `lastMissingIoVector`, `missingIoFaults`, posés
   par l'étage « carte ioMem » de `busFaultNSlow` (pas la protection superviseur ni une

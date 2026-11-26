@@ -16,6 +16,7 @@
 
 #include "gui/UiCommon.hpp"
 #include "io/MediaScan.hpp"
+#include "util/ArchiveDisks.hpp"
 
 namespace fs = std::filesystem;
 
@@ -29,7 +30,8 @@ void drawFloppyPage(const std::string& disksDir,
                     const std::string& mountedA, const std::string& mountedB,
                     std::string& reqMountA, std::string& reqMountB,
                     bool& reqEjectA, bool& reqEjectB,
-                    const neost::CompDiskCatalog* catalog) {
+                    const neost::CompDiskCatalog* catalog,
+                    const std::string& archiveCache) {
     auto driveRow = [](const char* letter, const std::string& mounted, bool& reqEject) {
         if (!mounted.empty()) {
             ImGui::PushID(letter);
@@ -85,13 +87,27 @@ void drawFloppyPage(const std::string& disksDir,
             if (e.is_regular_file(ec2)) {
                 std::string ext = e.path().extension().string();
                 for (auto& ch : ext) ch = (char)std::tolower((unsigned char)ch);
-                if (ext == ".st" || ext == ".msa" || ext == ".dim" || ext == ".stx" || ext == ".ipf") {
+                auto add = [&](const std::string& path, std::string rel) {
                     Entry en;
-                    en.path = e.path().string();
-                    en.rel  = e.path().lexically_relative(base).generic_string();
+                    en.path = path;
+                    en.rel  = std::move(rel);
                     en.key  = en.rel;
                     for (auto& ch : en.key) ch = (char)std::tolower((unsigned char)ch);
                     cache.push_back(std::move(en));
+                };
+                const std::string rel = e.path().lexically_relative(base).generic_string();
+                if (ext == ".st" || ext == ".msa" || ext == ".dim" || ext == ".stx" || ext == ".ipf") {
+                    add(e.path().string(), rel);
+                } else if (!archiveCache.empty() && neost::archive::isFloppyArchiveName(e.path().string())) {
+                    // Archive : ses disquettes une fois extraites (« Jeu.zip > DISK2.ST »,
+                    // chacune montable dans l'un ou l'autre lecteur), sinon l'archive
+                    // elle-même, que le montage extrait. Aucune n'est ouverte ici : le
+                    // dossier d'extraction se déduit du nom et de la taille.
+                    const std::string dir = neost::archive::unpackDirFor(e.path().string(), archiveCache);
+                    const std::vector<std::string> disks = neost::archive::unpackedFloppies(dir);
+                    for (const std::string& d : disks)
+                        add(d, rel + " > " + fs::path(d).lexically_relative(dir).generic_string());
+                    if (disks.empty()) add(e.path().string(), rel);
                 }
             }
             dit.increment(ec);

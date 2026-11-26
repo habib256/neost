@@ -56,6 +56,7 @@
 #include "audio/DriveSound.hpp"
 #include "io/JoystickInput.hpp"
 #include "io/MediaScan.hpp"
+#include "util/ArchiveDisks.hpp"     // archives déposées : leurs disquettes
 #include "io/DongleTable.hpp"
 #include "core/Framing.hpp"
 #include "gui/App.hpp"      // état du frontend (ex-globaux g_*)
@@ -2252,20 +2253,27 @@ static void handleDrops(App& A, Frame& F) {
         // la dernière était montée, sans un mot sur les autres.
         int floppies = 0;
         std::vector<std::string> ignored;
+        auto addFloppy = [&](const std::string& d) {
+            if (floppies == 0) {
+                reqMount = d;
+            } else if (floppies == 1 && !sameHostFile(d, reqMount)) {
+                reqMountB = d;
+            } else {
+                ignored.push_back(fs::path(d).filename().string());
+            }
+            ++floppies;
+        };
         if (!A.kiosk) for (const std::string& d : A.dropped) {
             std::error_code ec;
             if (fs::is_directory(d, ec)) { reqMountGemdos = d; continue; }
             std::string ext = fs::path(d).extension().string();
             for (auto& ch : ext) ch = (char)std::tolower((unsigned char)ch);
             if (ext == ".st" || ext == ".msa" || ext == ".dim" || ext == ".stx" || ext == ".ipf") {
-                if (floppies == 0) {
-                    reqMount = d;
-                } else if (floppies == 1 && !sameHostFile(d, reqMount)) {
-                    reqMountB = d;
-                } else {
-                    ignored.push_back(fs::path(d).filename().string());
-                }
-                ++floppies;
+                addFloppy(d);
+            } else if (neost::archive::isArchiveName(d)) {
+                // Archive : ses disquettes, extraites une fois, comme si on les avait
+                // déposées une à une — la 1re en A, la 2e en B (jeu à deux disques).
+                for (const std::string& f : archiveFloppies(A, d)) addFloppy(f);
             } else if (ext == ".hd" || ext == ".acsi" || ext == ".vhd" || ext == ".raw") {
                 reqMountAcsi = d;
             } else if (ext == ".stc") {
@@ -2337,6 +2345,10 @@ static void consumeMediaRequests(App& A, Frame& F) {
     std::string& reqMountAcsi = F.reqMountAcsi;
     bool& reqEjectGemdos = F.reqEjectGemdos;
     bool& reqEjectAcsi = F.reqEjectAcsi;
+    // Une archive (ludothèque, borne, profil) se monte par sa première disquette,
+    // extraite une fois : c'est ce chemin qui entre dans le lecteur et dans `cfg`.
+    if (!reqMount.empty())  reqMount  = mountableFloppy(A, reqMount);
+    if (!reqMountB.empty()) reqMountB = mountableFloppy(A, reqMountB);
     // UNE image, UN lecteur : Fdc::loadImage le refuse lui-même ([D] Hatari
     // floppy.c:403-408 @ f0736b24) ; la GUI le teste AVANT pour afficher pourquoi.
     // Les deux lecteurs changent dans la même trame (profil, dépôt de deux images) :

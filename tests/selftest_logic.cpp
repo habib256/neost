@@ -56,6 +56,8 @@
 #include "core/TosChoice.hpp"
 #include "io/FloppyCatalog.hpp"
 #include "util/Archive.hpp"
+#include "util/ArchiveDisks.hpp"
+#include "io/MediaScan.hpp"
 #include "core/Machine.hpp"
 #include "android/AndroidRoms.hpp"
 #include <filesystem>
@@ -834,6 +836,91 @@ static void testArchives() {
     checkBool("lecteur commun : membre deflate", rz.extract(1, out) && out.size() == 1000, true);
     ar::Reader rn;
     checkBool("ni zip ni 7z refusé", rn.open(gz), false);
+}
+
+// Disquettes d'archive extraites une fois (util/ArchiveDisks, GUI et borne) : seules les
+// images, triées, jamais réécrites — ce que le jeu y a écrit survit à la réouverture.
+static void testArchiveDisks() {
+    std::printf("Disquettes d'archive extraites (util/ArchiveDisks)\n");
+    namespace ar = neost::archive;
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    const fs::path base = fs::temp_directory_path() / "neost-selftest-archdisks";
+    fs::remove_all(base, ec);
+    fs::create_directories(base / "src", ec);
+    auto put = [&](const char* name, const uint8_t* p, std::size_t n) {
+        const fs::path f = base / "src" / name;
+        std::ofstream(f, std::ios::binary).write(reinterpret_cast<const char*>(p), std::streamsize(n));
+        return f.string();
+    };
+    auto slurp = [](const std::string& f) {
+        std::ifstream i(f, std::ios::binary);
+        return std::string(std::istreambuf_iterator<char>(i), std::istreambuf_iterator<char>());
+    };
+    const std::string cache = (base / "cache").string();
+
+    checkBool("nom : .zip", ar::isFloppyArchiveName("Games/Xenon (1988).ZIP"), true);
+    checkBool("nom : .7z", ar::isFloppyArchiveName("x.7z"), true);
+    checkBool("nom : .st.gz", ar::isFloppyArchiveName("demo.st.gz"), true);
+    checkBool("nom : .tar.gz écarté de la ludothèque", ar::isFloppyArchiveName("src.tar.gz"), false);
+    checkBool("archive : .tar.gz quand même ouvrable", ar::isArchiveName("src.tar.gz"), true);
+    checkBool("archive : .st n'en est pas une", ar::isArchiveName("x.st"), false);
+
+    // 7z : la seule image, sous son sous-dossier ; le README n'est pas extrait.
+    const std::string z7 = put("Game.7z", kTest7zLzma2, sizeof kTest7zLzma2);
+    const std::string dir7 = ar::unpackDirFor(z7, cache);
+    checkStr("dossier : nom et taille", fs::path(dir7).filename().string(),
+             "Game-" + std::to_string(sizeof kTest7zLzma2));
+    std::vector<std::string> disks;
+    std::string err;
+    checkBool("7z : disquette extraite", ar::unpackFloppies(z7, dir7, disks, &err) && disks.size() == 1, true);
+    if (disks.size() == 1) {
+        checkStr("7z : chemin gardé", fs::path(disks[0]).lexically_relative(dir7).generic_string(), "GAME/GAME.ST");
+        checkBool("7z : contenu", slurp(disks[0]).size() == 1000, true);
+        checkBool("7z : README laissé dans l'archive", fs::exists(fs::path(dir7) / "GAME/README.TXT"), false);
+        std::ofstream(disks[0], std::ios::binary) << "SAVED";       // le jeu a écrit sa disquette
+        std::vector<std::string> again;
+        ar::unpackFloppies(z7, dir7, again);
+        checkStr("7z : écriture du jeu gardée à la réouverture", slurp(disks[0]), "SAVED");
+        checkBool("déjà extraites : relues sans l'archive", ar::unpackedFloppies(dir7) == disks, true);
+    }
+    // zip : le zip-slip « ../evil.st » est écarté, rien n'est écrit hors du dossier.
+    const std::string zip = put("Disk.zip", kTestZip, sizeof kTestZip);
+    const std::string dirz = ar::unpackDirFor(zip, cache);
+    checkBool("zip : une disquette (zip-slip écarté)", ar::unpackFloppies(zip, dirz, disks) && disks.size() == 1
+              && fs::path(disks[0]).filename() == "DISK.ST", true);
+    checkBool("zip : rien hors du dossier", fs::exists(fs::path(cache) / "evil.st"), false);
+    // gzip : nom d'origine (FNAME), sinon le nom de l'archive moins « .gz ».
+    const std::string gzn = put("whatever.gz", kTestGzNamed, sizeof kTestGzNamed);
+    checkBool("gzip à nom : game.st", ar::unpackFloppies(gzn, ar::unpackDirFor(gzn, cache), disks)
+              && disks.size() == 1 && fs::path(disks[0]).filename() == "game.st", true);
+    const std::string gz = put("demo.st.gz", kTestGz, sizeof kTestGz);
+    checkBool("gzip sans nom : demo.st", ar::unpackFloppies(gz, ar::unpackDirFor(gz, cache), disks)
+              && disks.size() == 1 && fs::path(disks[0]).filename() == "demo.st", true);
+    const std::string notFloppy = put("notes.txt.gz", kTestGz, sizeof kTestGz);
+    checkBool("gzip d'autre chose : refusé", ar::unpackFloppies(notFloppy, ar::unpackDirFor(notFloppy, cache),
+              disks, &err), false);
+    const std::string junk = put("junk.st.zip", kTestGz, sizeof kTestGz);   // un gzip nommé .zip
+    checkBool("contenu reconnu à la signature, pas à l'extension",
+              ar::unpackFloppies(junk, ar::unpackDirFor(junk, cache), disks), true);
+    checkStr("archive absente : pas de dossier", ar::unpackDirFor((base / "nope.zip").string(), cache), "");
+    // Ludothèque de la borne (io/MediaScan) : l'archive, puis ses disquettes extraites.
+    {
+        const fs::path lib = base / "lib";
+        fs::create_directories(lib, ec);
+        std::ofstream(lib / "Two.7z", std::ios::binary)
+            .write(reinterpret_cast<const char*>(kTest7zLzma2), std::streamsize(sizeof kTest7zLzma2));
+        const std::string arch = (lib / "Two.7z").string();
+        const std::string cache2 = (base / "cache2").string();
+        checkBool("borne : sans cache, archive ignorée (Android)",
+                  neost::scanDiskImages({lib.string()}, "").empty(), true);
+        std::vector<std::string> seen = neost::scanDiskImages({lib.string()}, "", cache2);
+        checkBool("borne : archive listée avant extraction", seen.size() == 1 && seen[0] == arch, true);
+        ar::unpackFloppies(arch, ar::unpackDirFor(arch, cache2), disks);
+        seen = neost::scanDiskImages({lib.string()}, "", cache2);
+        checkBool("borne : puis sa disquette extraite", seen.size() == 1 && disks.size() == 1 && seen[0] == disks[0], true);
+    }
+    fs::remove_all(base, ec);
 }
 
 static void testFloppyCatalog() {
@@ -3712,6 +3799,7 @@ static void testRomProbe() {
     const std::string st     = make("game.st", {0x60, 0x38, 0x01, 0x00}, 720 * 1024);
     const std::string msa    = make("GAME.MSA", {0x0E, 0x0F, 0x00, 0x09}, 4096);
     const std::string junk   = make("notes.txt", {'h', 'e', 'l', 'l'}, 300);
+    const std::string zip    = make("Game (1990).ZIP", {'P', 'K', 0x03, 0x04}, 300);
     const std::string tosNamedSt = make("tos.st", {0x60, 0x2E, 0x01, 0x62}, 256 * 1024);
 
     checkBool("TOS 1.00 ($601E, 192 Ko) → ROM", classifyPositional(tos100) == Positional::Rom, true);
@@ -3721,6 +3809,7 @@ static void testRomProbe() {
     checkBool("disquette .st (720 Ko) → disquette", classifyPositional(st) == Positional::Floppy, true);
     checkBool("disquette .MSA (casse) → disquette", classifyPositional(msa) == Positional::Floppy, true);
     checkBool("fichier quelconque → refus",      classifyPositional(junk) == Positional::Invalid, true);
+    checkBool("archive .ZIP → disquette (sa 1re image)", classifyPositional(zip) == Positional::Floppy, true);
     checkBool("chemin absent → refus",
               classifyPositional((base / "absent.st").string()) == Positional::Invalid, true);
     checkBool("l'en-tête prime : TOS nommé .st → ROM",
@@ -4579,6 +4668,7 @@ int main() {
     testTosChoice();
     testFloppyCatalog();
     testArchives();
+    testArchiveDisks();
     testAudioRefill();
     testConfigParser();
     testStKeysCountries();

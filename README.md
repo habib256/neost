@@ -202,6 +202,9 @@ you are actually running.
 last two for copy-protected games — onto the window, or mount it from the Configuration
 window. Writes are persisted back to the image (to a `.wd1772` side file for `.stx` and
 `.ipf`, which are never modified). IPF support uses NeoST's own decoder, no libcapsimage.
+A `.zip`, `.7z` or `.st.gz` works too: its floppy images are unpacked once next to
+`neost.cfg` (in `archives/`) and mounted from there — the first in drive A, a second
+one in B — so the game's saves survive and the archive itself is never modified.
 
 **Hard disks** — two ways. Drop a *folder* on the window and it becomes drive **C:** via
 GEMDOS redirection (Hatari's trick: no controller emulation, your real files). Or mount a

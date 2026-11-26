@@ -3,6 +3,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "util/RomProbe.hpp"
+#include "util/ArchiveDisks.hpp"
 
 #include <cctype>
 #include <filesystem>
@@ -57,7 +58,10 @@ bool isFloppyImageName(const std::string& path) {
 Positional classifyPositional(const std::string& p) {
     if (looksLikeTosRom(p)) return Positional::Rom;
     std::error_code ec;
-    if (isFloppyImageName(p) && fs::is_regular_file(p, ec) && !ec) return Positional::Floppy;
+    // Une archive (.zip, .7z, .gz) passe pour une disquette : le GUI y prend sa
+    // première image (util/ArchiveDisks) et dit pourquoi si elle n'en a aucune.
+    if ((isFloppyImageName(p) || archive::isArchiveName(p)) && fs::is_regular_file(p, ec) && !ec)
+        return Positional::Floppy;
     return Positional::Invalid;
 }
 

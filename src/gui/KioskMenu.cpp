@@ -35,7 +35,7 @@ namespace fs = std::filesystem;
 void kioskScanDisks(App& A, const std::string& disksDir, const std::string& mounted) {
     std::vector<std::string> dirs{ disksDir };
     for (const auto& d : A.kioskRomDirs) dirs.push_back(d);
-    A.kioskDisks = neost::scanDiskImages(dirs, mounted);
+    A.kioskDisks = neost::scanDiskImages(dirs, mounted, archiveCacheRoot(A.exeDir));
 }
 
 // Recense les SOUS-DOSSIERS immédiats de `dir` (triés, insensible à la casse) →

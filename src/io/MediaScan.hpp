@@ -33,7 +33,11 @@ bool areSiblingImages(const std::string& a, const std::string& b);
 
 // Images montables (.st/.msa/.dim/.stx/.ipf) trouvées récursivement dans `dirs`
 // (dédupliquées), triées par proximité au chemin `mounted` (vide = alphabétique).
+// `archiveCache` non vide : les archives (.zip, .7z, .st.gz) sont listées aussi, par
+// leurs disquettes déjà extraites sous ce dossier (util/ArchiveDisks), sinon par
+// elles-mêmes — au frontend de les extraire au montage.
 std::vector<std::string> scanDiskImages(const std::vector<std::string>& dirs,
-                                        const std::string& mounted);
+                                        const std::string& mounted,
+                                        const std::string& archiveCache = std::string());
 
 }  // namespace neost
