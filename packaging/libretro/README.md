@@ -72,6 +72,13 @@ Delete that copy to start afresh.
   hardware on an ST without expecting it to be missing restarts on the machine
   it needs, and a notification says so. A program that needs the blitter
   restarts on an STE (a Mega ST if you have no TOS for the STE).
+- **Enough memory.** With **System → Memory** on *Automatic*, the ST has 1 MB,
+  and a program that crashes after writing beyond it restarts with 2 or 4 MB
+  (New Zealand Story needs 4 MB).
+- **MIDI.** Pick a MIDI output in RetroArch (**Settings → Audio → MIDI**) and
+  what the ST plays on its MIDI OUT goes there, each byte at its time. **Media →
+  MIDI IN** also feeds RetroArch's MIDI input to the ST, for live playing: run-ahead,
+  rewind and netplay cannot replay it.
 - **Programs on floppies start by themselves.** Many game disks do not boot a
   game: you double-click it on the desktop, sometimes after a cracker's boot
   screen. When a disk holds a single game program (at its root, or alone in a

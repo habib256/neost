@@ -1365,6 +1365,10 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   rejeté. Banc POSIX sparse de 1 Tio + 2 Ko, occupation physique de quelques Ko.
   Aucun élargissement des compteurs ou du format d’image ; banc sauté sous
   Windows ou sur un système de fichiers qui matérialise les trous.
+- **Écritures perdues hors de la RAM** (2026-11-26) : `Bus::lastVoidWrite`,
+  `lastVoidWritePc`, `voidWrites` — écriture CPU dans l'espace RAM hors des banques
+  peuplées, par une instruction en RAM (le sondage des banques et les bombes du TOS partent
+  de la ROM). Diagnostic hors état ; sert la mémoire automatique du cœur libretro.
 - **ACSI : calque d'écriture** (2026-11-26, cœur libretro) : `Acsi::setWriteOverlay` garde
   les secteurs écrits en mémoire par-dessus l'image (lectures fusionnées, dernier secteur
   partiel complété), rendus au fichier au démontage seulement ; `writeOverlays`/

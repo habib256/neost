@@ -535,17 +535,11 @@ Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
   `mmioNeedsBetterMachine` (son DMA, joypads, blitter, SCU, SCC, cache). Un jeu STE qui
   teste le matériel par la valeur lue (sans faute) reste sur ST : « STE » dans le nom (mot
   isolé ou `(STE)`), ou l'option. Recenser les titres de la collection qui le font.
-- **Campagne : les titres qui restent** · P2 ⏸ médias — `tools/libretro_corpus.py` (81
-  images, 2026-11-25) : 54 écrans de jeu sous TOS Atari, 48 sous EmuTOS. Tranchés : Great
-  Giana Sisters (bureau partout, comme Hatari) et Vroom original (repli de TOS). À
-  instruire, chacun contre Hatari avant toute conclusion (méthode imposée) : **Epic**
-  (disque 1, noir sous les deux TOS, disquette sans catalogue FAT), **Golden Axe** (D1,
-  noir), **New Zealand Story** (4 Mo exigés, `docs/CASE_STUDIES.md` : une RAM automatique ?).
-  Le classement automatique sous-estime : relire la planche (`--sheet`).
-- **Mémoire automatique ?** · P3 ⭘ *(proposé)* — New Zealand Story (D-Bug) exige 4 Mo, Blood
-  Money 1 Mo. Comme la machine automatique : un programme qui écrit au-delà de la RAM et
-  plante pourrait redémarrer avec plus. Signature à trouver (bus error au-delà de
-  `phystop`, prise sans gestionnaire).
+- **Campagne : un classement qui voit les écrans « insérez le disque B »** · P3 ⭘ *(proposé)* —
+  `tools/libretro_corpus.py` classe « noir » un écran presque noir à texte sombre : Epic et
+  Golden Axe (2026-11-26) y finissent, fidèles, faute de disque 2 (`docs/CASE_STUDIES.md`).
+  Insérer la disquette suivante de la liste (R3) et taper Return quand l'image se fige,
+  ou relire la planche (`--sheet`).
 - **Shaders : le bureau rattrape le module** · P3 ⭘ — `CrtEffectStack` n'a ni la passe de
   câble ni le halo, que le slang a repris de POM2 ; et le choix automatique du moniteur
   (SC1224/SM124 selon la hauteur) n'existe qu'en slang. Une seule source pour les deux.

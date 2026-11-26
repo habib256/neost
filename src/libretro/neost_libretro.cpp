@@ -67,6 +67,9 @@ retro_input_poll_t         g_inputPoll = nullptr;
 retro_input_state_t        g_inputState = nullptr;
 retro_log_printf_t         g_log = nullptr;
 retro_set_led_state_t      g_led = nullptr;
+// Interface MIDI de RetroArch (Paramètres → Audio → MIDI) : nulle si absente.
+retro_midi_interface       g_midi{};
+bool                       g_haveMidi = false;
 bool                       g_canDupe = false;
 
 constexpr uint32_t kSampleRate = 48000;
@@ -217,9 +220,10 @@ void buildOptions(int lang) {
         defs.push_back(d);
     }
     defs.push_back(def("neost_ram", T("Memory (restart)", "Mémoire (redémarrage)"),
-        T("ST-RAM size. Some games need 1 MB, a few 4 MB.", "Taille de la ST-RAM. Certains jeux veulent 1 Mo, quelques-uns 4 Mo."),
-        "system", {{"512k", T("512 KB", "512 Ko")}, {"1m", T("1 MB", "1 Mo")}, {"2m", T("2 MB", "2 Mo")},
-                   {"4m", T("4 MB", "4 Mo")}}, "1m"));
+        T("ST-RAM size. Automatic: 1 MB, and a program that crashes after writing beyond it restarts with more.",
+          "Taille de la ST-RAM. Automatique : 1 Mo, et un programme qui plante après avoir écrit au-delà redémarre avec plus."),
+        "system", {{"auto", T("Automatic", "Automatique")}, {"512k", T("512 KB", "512 Ko")}, {"1m", T("1 MB", "1 Mo")},
+                   {"2m", T("2 MB", "2 Mo")}, {"4m", T("4 MB", "4 Mo")}}, "auto"));
     defs.push_back(def("neost_monitor", T("Monitor (restart)", "Moniteur (redémarrage)"),
         T("Colour (SC1224) for games, monochrome (SM124) for high-resolution software.",
           "Couleur (SC1224) pour les jeux, monochrome (SM124) pour les logiciels en haute résolution."),
@@ -271,6 +275,12 @@ void buildOptions(int lang) {
           "Une disquette qui ne démarre pas seule mais porte un seul programme de jeu : le lancer depuis le "
           "bureau, comme un double-clic."),
         "media", {{"enabled", on}, {"disabled", off}}, "enabled"));
+    defs.push_back(def("neost_midi_in", T("MIDI IN (restart)", "MIDI IN (redémarrage)"),
+        T("Feed the ST's MIDI IN from RetroArch's MIDI input (Settings > Audio > MIDI). Live playing only: "
+          "run-ahead, rewind and netplay cannot replay what came in.",
+          "Le MIDI IN du ST reçoit l'entrée MIDI de RetroArch (Réglages > Audio > MIDI). Pour jouer en direct "
+          "seulement : l'anticipation, le retour arrière et le netplay ne rejouent pas ce qui est entré."),
+        "media", {{"disabled", off}, {"enabled", on}}, "disabled"));
     defs.push_back(def("neost_fast_floppy", T("Fast floppy loading", "Chargement accéléré"),
         T("While the drive motor turns, run up to 8 Atari frames per host frame. The emulation stays exact: "
           "only the waiting is shorter.",
@@ -298,6 +308,7 @@ struct RuntimeOptions {
 #endif
     int mouseSpeed = 100;
     bool fastFloppy = true;
+    bool midiIn = false;
     bool driveSound = true;
     float driveVolume = 0.75f;
 } g_opt;
@@ -319,6 +330,7 @@ void readRuntimeOptions() {
 #endif
     g_opt.mouseSpeed = std::max(25, std::min(400, std::atoi(optionValue("neost_mouse_speed", "100").c_str())));
     g_opt.fastFloppy = optionValue("neost_fast_floppy", "enabled") != "disabled";
+    g_opt.midiIn = optionValue("neost_midi_in", "disabled") == "enabled";
     g_opt.driveSound = optionValue("neost_drive_sound", "enabled") != "disabled";
     g_opt.driveVolume = float(std::atoi(optionValue("neost_drive_volume", "75").c_str())) / 100.0f;
 }
@@ -383,6 +395,10 @@ struct Session {
     int restarts = 0;                              // redémarrages sur une autre machine
     bool machineForced = false;
     MachineType forcedMachine = MachineType::St;
+    std::size_t ramForced = 0;                     // mémoire automatique : RAM imposée, 0 sinon
+    std::vector<std::pair<uint8_t, int64_t>> midiOut;   // octets MIDI OUT de la trame, datés
+    int64_t midiLastCycle = -1;                    // cycle du dernier octet envoyé
+    std::vector<uint8_t> crashRecord;              // $380-$3CF à la 1re écriture perdue
 } g_s;
 constexpr int kTimingGraceFrames = 120;
 
@@ -580,6 +596,7 @@ bool contentWantsSte(const std::string& path) {
 }
 
 std::size_t parseRam(const std::string& v) {
+    if (v == "auto" && g_s.ramForced) return g_s.ramForced;     // mémoire automatique
     if (v == "512k") return 512u * 1024u;
     if (v == "2m") return 2u * 1024u * 1024u;
     if (v == "4m") return 4u * 1024u * 1024u;
@@ -962,6 +979,25 @@ bool applyPointer(Machine& m) {
 bool loadContent(const char* path);
 void publishMemoryMap();
 
+// MIDI OUT : les octets de la trame, envoyés seulement pour une trame entendue (une fois
+// sous anticipation, comme les bruits du lecteur), chacun avec son écart au précédent en
+// microsecondes, pris au cycle 68000 où l'ACIA l'a émis. Un écart négatif (état repris)
+// ou énorme (pause) vaut 0.
+void presentMidi(bool heard) {
+    if (heard && g_haveMidi && !g_s.midiOut.empty() && g_midi.output_enabled()) {
+        const double usPerCycle = 1e6 / double(neost::pacing::cpuHzInt());
+        for (const auto& [b, cyc] : g_s.midiOut) {
+            int64_t us = g_s.midiLastCycle < 0 ? 0 : int64_t(double(cyc - g_s.midiLastCycle) * usPerCycle);
+            if (us < 0 || us > 1000000) us = 0;
+            g_midi.write(b, uint32_t(us));
+            g_s.midiLastCycle = cyc;
+        }
+        g_midi.flush();
+    }
+    g_s.midiOut.clear();
+}
+
+
 // Machine automatique : un programme qui lit un périphérique absent du profil (son DMA
 // du STE sur un ST…) prend une bus error, que le TOS 1.x double en arrêt du 68000 —
 // fidèle, mais un écran noir (cas Stardust, docs/CASE_STUDIES.md). La faute dit ce qui
@@ -1023,6 +1059,37 @@ bool checkMissingHardware() {
     const std::string content = g_s.content;
     if (!loadContent(content.empty() ? nullptr : content.c_str())) { g_s.machine.reset(); return false; }
     notify(std::string("This program needs the ") + miss.chip + ": restarted as " + machineLabel(want), 6000);
+    publishMemoryMap();
+    return true;
+}
+
+// Mémoire automatique : un programme qui écrit au-delà de la RAM (écriture perdue, depuis
+// une instruction en RAM : Bus::voidWrites) puis PLANTE réclamait plus de mémoire. Cas New
+// Zealand Story de D-Bug (docs/CASE_STUDIES.md) : son dépaqueteur écrit vers $3FFFE9, puis
+// le TOS bombe. Le plantage se lit dans la zone de diagnostic du TOS :
+// [C] TOS 1.04 et EmuTOS — le gestionnaire des bombes pose proc_lives ($380) = $12345678,
+// puis proc_dregs/aregs ($384-$3C3), proc_enum ($3C4, numéro d'exception), proc_usp et la
+// pile ($3C8-$3CF) ; relevé le 2026-11-26 sur New Zealand Story sous les deux (exception 3
+// sous TOS 1.04, $10 sous EmuTOS). Un 68000 arrêté (double faute) compte aussi. Un
+// programme qui sonde la mémoire et vit avec la réponse ne plante pas : il reste tel quel.
+// Un seul redémarrage, à 2 Mo si l'écriture tombait sous $200000, sinon à 4 Mo.
+bool checkMissingMemory() {
+    Machine& m = *g_s.machine;
+    if (g_s.ramForced || optionValue("neost_ram", "auto") != "auto") return false;
+    if (m.bus.voidWrites() == 0 || m.bus.ram.size() >= (4u << 20) || m.bus.ram.size() < 0x3D0) return false;
+    const auto record = [&] { return std::vector<uint8_t>(m.bus.ram.begin() + 0x380, m.bus.ram.begin() + 0x3D0); };
+    if (g_s.crashRecord.empty()) { g_s.crashRecord = record(); return false; }   // avant le plantage
+    const std::vector<uint8_t> now = record();
+    const bool lives = now[0] == 0x12 && now[1] == 0x34 && now[2] == 0x56 && now[3] == 0x78;
+    if (!m.cpu.halted() && !(lives && now != g_s.crashRecord)) return false;
+    const uint32_t addr = m.bus.lastVoidWrite();
+    g_s.ramForced = addr < 0x200000u ? (2u << 20) : (4u << 20);
+    logf(RETRO_LOG_INFO, "crash after a write beyond RAM at $%06X (PC=$%06X): restarting with %zu MB\n",
+         unsigned(addr), unsigned(m.bus.lastVoidWritePc()), g_s.ramForced >> 20);
+    g_s.crashRecord.clear();
+    const std::string content = g_s.content;
+    if (!loadContent(content.empty() ? nullptr : content.c_str())) { g_s.machine.reset(); return false; }
+    notify("This program needs more memory: restarted with " + std::to_string(g_s.ramForced >> 20) + " MB", 6000);
     publishMemoryMap();
     return true;
 }
@@ -1355,8 +1422,9 @@ bool loadContent(const char* path) {
     neost::pacing::Quartz quartz = neost::pacing::Quartz::Pal;
     if (!Machine::resolveQuartz("auto", machine, tos, quartz)) quartz = neost::pacing::Quartz::Pal;
     neost::pacing::setQuartzGlobal(quartz);
-    g_s.machine = std::make_unique<Machine>(parseRam(optionValue("neost_ram", "1m")), CpuCore::Moira, machine);
+    g_s.machine = std::make_unique<Machine>(parseRam(optionValue("neost_ram", "auto")), CpuCore::Moira, machine);
     Machine& m = *g_s.machine;
+    g_s.crashRecord.clear();                       // mémoire automatique : relevé de CETTE Machine
     m.setClocks(quartz, 0);
     if (!m.switchTos(tos, machine)) {
         notify("Cannot load TOS " + fs::path(tos).filename().string(), 6000, RETRO_LOG_ERROR);
@@ -1370,6 +1438,18 @@ bool loadContent(const char* path) {
     // netplay), rendues à la copie privée quand la Machine est détruite (fin du contenu,
     // redémarrage sur une autre machine). Cf. Acsi::setWriteOverlay.
     m.fdc.setAcsiWriteOverlay(true);
+    // MIDI : la sortie, toujours branchée quand RetroArch a l'interface (sans périphérique
+    // choisi, les octets se perdent, comme une prise MIDI OUT libre) ; l'entrée, sur option,
+    // à la cadence d'un câble 31 250 bauds (MidiAcia::setRxSource).
+    g_s.midiOut.clear();
+    g_s.midiLastCycle = -1;
+    if (g_haveMidi) {
+        m.midi.setMidiSinkTimed([](uint8_t b, int64_t cyc) {
+            if (g_s.midiOut.size() < 4096) g_s.midiOut.push_back({b, cyc});
+        });
+        if (g_opt.midiIn)
+            m.midi.setRxSource([](uint8_t& b) { return g_midi.input_enabled() && g_midi.read(&b); });
+    }
     m.fdc.setSoundSink([](FdcSound e) { if (g_s.fdcEvents.size() < 256) g_s.fdcEvents.push_back(e); });
     g_s.fdcEvents.clear();
     g_s.drive.reset();
@@ -1626,6 +1706,9 @@ RETRO_API void retro_init(void) {
     }
     retro_led_interface led{};
     if (g_env && g_env(RETRO_ENVIRONMENT_GET_LED_INTERFACE, &led)) g_led = led.set_led_state;
+    g_midi = retro_midi_interface{};
+    g_haveMidi = g_env && g_env(RETRO_ENVIRONMENT_GET_MIDI_INTERFACE, &g_midi) && g_midi.write && g_midi.read
+                 && g_midi.output_enabled && g_midi.input_enabled;
     g_canDupe = false;
     if (g_env) g_env(RETRO_ENVIRONMENT_GET_CAN_DUPE, &g_canDupe);
     if (g_env) {
@@ -1640,6 +1723,7 @@ RETRO_API void retro_deinit(void) {
     neost::log::setSink(nullptr, nullptr);
     g_log = nullptr;
     g_led = nullptr;
+    g_haveMidi = false;
 }
 
 RETRO_API void retro_get_system_info(retro_system_info* info) {
@@ -1705,6 +1789,8 @@ RETRO_API bool retro_load_game_special(unsigned, const retro_game_info*, size_t)
 RETRO_API void retro_unload_game(void) {
     g_s.machine.reset();
     g_s.machineForced = false;
+    g_s.ramForced = 0;
+    g_s.crashRecord.clear();
     g_s.restarts = 0;
     g_s.playlist.clear();
     g_s.loaded = false;
@@ -1738,7 +1824,7 @@ RETRO_API void retro_run(void) {
     }
     // Redémarrée sur une autre machine : une trame de la nouvelle avant de montrer quoi
     // que ce soit (son tampon d'image n'existe qu'après sa première trame).
-    if (checkMissingHardware() || (g_s.machine && checkBootFailed())) {
+    if (checkMissingHardware() || (g_s.machine && checkMissingMemory()) || (g_s.machine && checkBootFailed())) {
         g_s.machine->cpu.updateIpl();
         g_s.machine->runFrame();
     }
@@ -1756,6 +1842,7 @@ RETRO_API void retro_run(void) {
         g_s.drive.setMotor(mm.fdc.motorOn() && (mm.fdc.inserted(0) || mm.fdc.inserted(1)));
     }
     g_s.fdcEvents.clear();
+    presentMidi(heard);
     presentVideo(shown);
     presentAudio(heard);
     const bool led = g_s.machine->fdc.motorOn();

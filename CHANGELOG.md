@@ -1,5 +1,21 @@
 # Changelog — NeoST
 
+## 2026-11-26 — Libretro : mémoire automatique, MIDI, campagne soldée
+
+- **Mémoire automatique** (option Mémoire, *Automatique* par défaut) : un programme qui
+  écrit au-delà de la RAM depuis la RAM puis plante redémarre une fois avec 2 ou 4 Mo. Le
+  `Bus` retient ces écritures perdues (`voidWrites`, le TOS écarté) ; le plantage se lit dans
+  `proc_lives` (`$380` = `$12345678`, [C] TOS 1.04 et EmuTOS) ou un 68000 arrêté. New
+  Zealand Story (D-Bug) redémarre seul en 4 Mo et va en jeu ; campagne : aucun autre titre
+  touché, **54** écrans de jeu (53). Cas `ram_auto`, `ram_probe_kept`.
+- **MIDI** : le module prend l'interface MIDI de RetroArch. MIDI OUT, octets datés au cycle
+  de l'ACIA (319,6 µs entre deux octets à 31 250 bauds), envoyés pour une trame entendue
+  seulement ; MIDI IN sur option, à la cadence du câble. Le frontend de test gagne
+  l'interface ; cas `midi_out`, `midi_hidden`, `midi_in`.
+- **Epic et Golden Axe** : pas des défauts. Identiques à Hatari (0,0 % de la trame 1000 à
+  4000) ; dans le module, ils demandent le disque 2 (`docs/CASE_STUDIES.md`).
+- Banc : 35 cas.
+
 ## 2026-11-26 — Libretro : le disque dur dans l'état
 
 - **Calque d'écriture ACSI** (`Acsi::setWriteOverlay`, activé par le seul cœur libretro) :

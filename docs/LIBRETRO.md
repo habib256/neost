@@ -127,6 +127,19 @@ Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
   joueur monte sa copie. `retro_serialize_size` réserve 4 Mo au calque (au-delà, l'état ne
   tient plus et le module le dit) ; sauvegarde 0,42 ms et reprise 0,38 ms avec un disque dur.
   Cas `hard_disk_state` (il échoue sur le module d'avant).
+- **La mémoire automatique** (2026-11-26, option Mémoire sur *Automatique*, défaut) : 1 Mo,
+  et un programme qui écrit au-delà de la RAM depuis une instruction en RAM
+  (`Bus::voidWrites`, écritures du TOS écartées) PUIS plante redémarre une fois avec 2 Mo
+  (écriture sous `$200000`) ou 4 Mo. Le plantage se lit dans la zone de diagnostic du TOS,
+  `proc_lives` (`$380`) = `$12345678` posé par le gestionnaire des bombes ([C] TOS 1.04 et
+  EmuTOS, relevé sur New Zealand Story), ou un 68000 arrêté. Un programme qui sonde et vit
+  avec la réponse ne plante pas et reste tel quel (cas `ram_auto`, `ram_probe_kept`).
+  Campagne : seul New Zealand Story change (redémarré en 4 Mo, en jeu), 54 écrans de jeu.
+- **Le MIDI** (2026-11-26) : MIDI OUT vers l'interface MIDI de RetroArch, chaque octet avec
+  son écart en µs pris au cycle 68000 de l'ACIA, seulement pour une trame entendue (une
+  fois sous anticipation) ; MIDI IN sur option (*MIDI IN*, désactivée), lu à la cadence
+  d'un câble 31 250 bauds. L'entrée ne se rejoue pas : ni anticipation, ni retour arrière,
+  ni netplay avec elle (l'option le dit). Cas `midi_out`, `midi_hidden`, `midi_in`.
 - **Le toucher** : option « Touch moves the GEM pointer » (active sur Android) —
   `RETRO_DEVICE_POINTER` → `Machine::desktopMouseMove`, actions en file pour qu'un tap plus
   court que le trajet du curseur garde son clic. Un double tap ouvre le lecteur A.
@@ -153,7 +166,7 @@ l'hôte : Linux x86_64 et arm64 (glibc 2.35), macOS universel arm64 + x86_64 (le
 `retro_*`), Windows x86_64 (MinGW UCRT, runtime lié en statique : la DLL n'importe que
 KERNEL32 et l'UCRT). Ils ne sont pas attachés aux releases.
 
-Restent ouverts au TODO (§ 7, « Cœur libretro ») : le MIDI, l'essai sur les autres hôtes (Pi, Android, Windows, Linux), la publication des
+Restent ouverts au TODO (§ 7, « Cœur libretro ») : l'essai sur les autres hôtes (Pi, Android, Windows, Linux), la publication des
 paquets.
 
 ## Positionnement : un cœur ST qui n'est pas Hatari
@@ -206,7 +219,7 @@ présente sur ce qu'il fait le jour où il paraît.
 | Clavier (`retro_keyboard_event`, `RETROK_*`) | `Machine::keyEvent(scancode ST, appui)` ; tables de position GLFW et Android, tables par pays sans GLFW (`src/gui/StKeysSymbolic.cpp`) | **Ouvert** — « Clavier : une table de position neutre » |
 | Manettes (`RETRO_DEVICE_JOYPAD`) | `Machine::setJoysticks(joy0, joy1)` (IKBD + ports manette STE), bits `stjoy::` sans GLFW (`src/io/StJoyBits.hpp`) | **Prêt** |
 | Souris (`RETRO_DEVICE_MOUSE`, relative) | `Machine::mouseEvent(dx, dy, gauche, droit)` | **Prêt** |
-| MIDI (`RETRO_ENVIRONMENT_GET_MIDI_INTERFACE`) | ACIA MIDI et ponts hôtes (`src/audio/MidiInHost.*`, `MidiOutHost.*`) | **À adapter** : un pont de plus à côté de CoreMIDI, ALSA et winmm |
+| MIDI (`RETRO_ENVIRONMENT_GET_MIDI_INTERFACE`) | ACIA MIDI : `setMidiSinkTimed` (octets datés au cycle) et `setRxSource` (cadence d'un câble) | **Fait** (2026-11-26) : sortie par trame entendue, entrée sur option |
 | Contenu | `.st/.msa/.dim/.stx/.ipf` par chemin (`Fdc::loadImage`) ; `.prg` par le GEMDOS et le démarrage automatique (`neost_set_autostart` du web) ; cartouche brute ou `.stc` (`Bus::loadCart`) | **Prêt** avec `need_fullpath = true` |
 | Interface de changement de disque (`.m3u`) | `Fdc::loadImage(path, drive)` et l'éjection | **Fait** : interface étendue, `.m3u` à libellés, disquettes sœurs, R3 |
 | BIOS dans le dossier système | `Machine::switchTos(path, machine demandée)` | **Prêt** (seul EmuTOS peut accompagner le cœur) |

@@ -350,6 +350,79 @@ def case_blitter_megast_fallback(module, work):
     return c.messages[-1]
 
 
+def case_ram_auto(module, work):
+    """Mémoire automatique : un programme écrit au-delà de 1 Mo ($180000, perdu) puis
+    plante (instruction illégale, bombes du TOS) → redémarrage avec 2 Mo, une fois."""
+    c, media = core(module, work)
+    # move.l #$4E4F5354,$180000 ; illegal
+    write_prg(media / "BIGMEM.PRG", [0x23FC, 0x4E4F, 0x5354, 0x0018, 0x0000, 0x4AFC] + LOOP)
+    assert c.load(media / "BIGMEM.PRG")
+    c.run(1500)
+    assert any("restarted with 2 MB" in m for m in c.messages), c.messages
+    assert c.lib.retro_get_memory_size(2) == 2 << 20, c.lib.retro_get_memory_size(2)
+    assert sum("more memory" in m for m in c.messages) == 1, c.messages
+    return c.messages[-1]
+
+
+def case_ram_probe_kept(module, work):
+    """Un programme qui écrit au-delà de la RAM sans planter (il sonde, et vit avec la
+    réponse) reste sur 1 Mo."""
+    c, media = core(module, work)
+    write_prg(media / "PROBE.PRG", [0x23FC, 0x4E4F, 0x5354, 0x0018, 0x0000] + LOOP)
+    assert c.load(media / "PROBE.PRG")
+    c.run(1500)
+    assert not any("more memory" in m for m in c.messages), c.messages
+    assert c.lib.retro_get_memory_size(2) == 1 << 20
+    return "write beyond RAM without a crash: still 1 MB"
+
+
+def bconout_midi(b):
+    """Bconout(3, b) : un octet sur le port MIDI par le BIOS."""
+    return [0x3F3C, b, 0x3F3C, 0x0003, 0x3F3C, 0x0003, 0x4E4D, 0x5C8F]
+
+
+def case_midi_out(module, work):
+    """MIDI OUT vers l'interface MIDI de RetroArch : note on envoyée par Bconout(3),
+    reçue par le frontend avec des écarts en µs plausibles (31 250 bauds : 320 µs par
+    octet au plus serré, 319,6 à 8,0106 MHz), une seule fois."""
+    c, media = core(module, work)
+    write_prg(media / "NOTE.PRG", bconout_midi(0x90) + bconout_midi(0x3C) + bconout_midi(0x64) + LOOP)
+    assert c.load(media / "NOTE.PRG")
+    c.run(900)
+    assert [b for b, _ in c.midi_out] == [0x90, 0x3C, 0x64], c.midi_out
+    assert all(300 <= d < 100000 for _, d in c.midi_out[1:]), c.midi_out
+    assert c.midi_flushes >= 1
+    return f"note on received, deltas {[d for _, d in c.midi_out]} us"
+
+
+def case_midi_hidden(module, work):
+    """Trames cachées de l'anticipation (son coupé) : rien ne part vers le MIDI."""
+    c, media = core(module, work, av_enable=1)
+    write_prg(media / "NOTE.PRG", bconout_midi(0x90) + bconout_midi(0x3C) + bconout_midi(0x64) + LOOP)
+    assert c.load(media / "NOTE.PRG")
+    c.run(900)
+    assert c.midi_out == [], c.midi_out
+    return "unheard frames send no MIDI"
+
+
+def case_midi_in(module, work):
+    """Option MIDI IN : un octet de l'entrée MIDI de RetroArch arrive au ST par Bconin(3),
+    qui le pose dans la couleur 0 ($041 : vert)."""
+    c, media = core(module, work, options={"neost_midi_in": "enabled"})
+    # Bconin(3) ; move.w d0,$FFFF8240.w
+    write_prg(media / "MIDIIN.PRG", SUPER + [0x3F3C, 0x0003, 0x3F3C, 0x0002, 0x4E4D, 0x588F,
+                                             0x31C0, 0x8240] + LOOP)
+    assert c.load(media / "MIDIIN.PRG")
+    c.run(900)
+    c.midi_in.append(0x41)
+    c.run(100)
+    w, h, raw = c.frame
+    i = (h // 2 * w + w // 2) * 4
+    r, g, b = raw[i + 2], raw[i + 1], raw[i]
+    assert c.midi_in == [] and r < 40 and g > 100 and g > b, (c.midi_in, (r, g, b))
+    return f"byte $41 read by Bconin(3): background ({r}, {g}, {b})"
+
+
 def case_probe_kept(module, work):
     """Un programme qui pose son gestionnaire de bus error et sonde le STE reste sur ST."""
     c, media = core(module, work)
