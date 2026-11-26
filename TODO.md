@@ -322,29 +322,6 @@ Récit, traces et recettes de chacun : [`docs/CASE_STUDIES.md`](docs/CASE_STUDIE
   (N), niveau (F1) et instructions à l'identique, puis diverge, même avec `--hatari-delay`.
   Super Hang-On, Nitro, Dynamite Dux et Cybernoid II : en jeu, parties divergentes.
   → `docs/CASE_STUDIES.md`, `docs/OPENDST.md`
-- **Campagne de compatibilité sur les CD LGD** · P2 ◐ — `CD [LGDCD]` extrait (2026-11-26) : 881
-  disquettes `.ST` (Automation 575, Pompey 131, Medway 117, FoF 58) dans
-  `~/Downloads/atarist-lgd-cd/lgdcd/st/`, hors dépôt. **Boot** (ST, TOS 1.04 UK, 1 Mo, trames
-  1000 et 2500 contre Hatari) : 865 identiques, 9 écarts d'animation, 6 disques au PRG tronqué
-  (pile ou face, Hatari pareil) et PP_001V2 corrigé (`docs/CASE_STUDIES.md`).
-  `A_107` et `FOF_020` : un bit inversé dans chaque zip de l'ISO finale (octet 110 541 `$1D`→`$0D`,
-  octet 221 099 `$2F`→`$AF`), le flux deflate désynchronisé abîme 600 Ko de l'image ; les deux
-  émulateurs tombaient d'accord sur le **bureau GEM**. L'ISO `CD [LGD_CD1][BETA]` (1998) porte les
-  mêmes 881 zips, identiques à l'octet pour 879, et ces deux-là sains : copies dans
-  `lgdcd/st_beta/`, boot et entrées identiques à Hatari (A_107 : menu Automation, touche 1 →
-  jeu Microprose ; FOF_020 : ESPACE puis F1 → Renaissance, F2 → Rings of Medusa). La bêta
-  n'a rien d'autre à tester : elle n'ajoute que Maggie, des musiques et des menus d'accueil.
-  **Menus, touches 1 et 2** (Automation, Pompey, Medway ; touche 3 pour les deux derniers) : aucun défaut propre à NeoST.
-  MED_023 plante aussi sous Hatari ; MED_054 et les bureaux vides ou sans fenêtre (A_093, 113,
-  163, 305, MED_093…) sont une loterie d'interruptions (bureau en superviseur, pile sur les BCB
-  de GEMDOS ; Hatari y tombe aussi, PP_049) ; le reste est de l'animation ou un PRG tronqué.
-  Hatari s'arrête seul sur une dizaine de disques (A_066, 124, 131, 283, 290, 338, 481, MED_017,
-  MED_104…). **Reste** : (1) touche 3 d'Automation, touches 4 et 5 (passe en cours, résultats dans
-  `~/Downloads/atarist-lgd-cd/campaign/menu<k>_<groupe>/`) ; (2) **relancer les 58 FoF** :
-  leurs menus attendent **ESPACE** (intro) puis **F1…F5**, pas `1`…`5` ; à la touche 1, 56 sur
-  58 restent sur l'intro, et les passes `menu<k>_fof` ne mesurent que l'intro, à jeter.
-  Recette validée sur FOF_020 : `--key 2500:57 --key 3500:<58+k>` (F1 = scancode `$3B`),
-  captures 5000 et 7500, `FOF_020` pris dans `lgdcd/st_beta/`.
 - **Passe de la collection** · P3 ⭘ — 96 images (`cpu_swap_gate.py --suite collection` : ST, STE et Mega STE) ; A/B du 2026-11-10 identique à
   l'octet sur 185 cas sur 188 ; passe d'angle du 2026-11-04 (5 graines), seul Vroom change de
   sort. À refaire après tout changement de timing. Super Off Road attend son disque de données
@@ -374,6 +351,16 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   protocole.
 - **Documents primaires manquants** · P2 ⏸ source — HD6301 rapatrié le 2026-11-10 (Hitachi, *HD6301/HD6303 Series Handbook*, 1989) ; restent les schémas GLUE/MMU ST et Mega STE,
   schéma du Shifter ST. chzsoft.de consulté le 2026-11-10 : seul le GSTMCU du STE y est.
+- **Pièces jointes des fils decap d'atari-forum** · P2 ⏸ utilisateur — l'auteur doit **s'inscrire
+  sur atari-forum.com** : les pièces jointes n'y sont visibles qu'une fois connecté, et le site
+  refuse les accès automatiques (Cloudflare). Le texte des deux fils est lu (2026-11-26), notes
+  dans `~/Downloads/atarist-silicon/atari_forum_decap_notes.md` (hors dépôt). À rapatrier :
+  t=29658 (ijor, *ST Chipset decap*) `ShifterReloadControl`, `ShifterClockGen`,
+  `ShiftArrayLogic`/`ShiftArrayDetail`, `ReloadCtrl-Low-Start/End`, `ReStabilize`, chronogrammes
+  `Low/Mono/Med-ok/bug` (`ShifterSchemWip.zip` est déjà dans `extern/mistery/doc/`) ;
+  t=30241 (*MMU schematics WIP*) `C025912-Top`, `MmuClock-075`, `Mmu-Cmpcs`, `Clock-Skew-*`,
+  `Shifter-Cs-Delay`, `Ricoh-5GH-Datasheet.pdf`. Ces fils ne traitent ni du bus ouvert ni du
+  retard d'IRQ du MFP ; ijor y promet un fil à part sur la gigue du Timer B, à chercher.
 - **A43 — dette de preuve** · P2 ⏸ — tout commentaire cite ses références (règle : `CLAUDE.md`) ;
   les 312 citations d'Hatari portent grade et révision. MFP, YM2149, WD1772, ACIA et SCC sont
   confrontés à leurs fiches : ce qu'elles tranchaient seules est corrigé (2026-11-10), les `⚠ [B]`

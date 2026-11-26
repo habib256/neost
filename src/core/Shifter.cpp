@@ -4,6 +4,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/ShifterInternal.hpp"
+#include "util/Unknowns.hpp"   // NEOST_F : passages dans les chemins [F]
 #include "util/Log.hpp"
 #include "core/VideoGlue.hpp"
 #include "core/Shifter.hpp"
@@ -316,6 +317,7 @@ void Shifter::resetGlue(bool mono) {
     // est la même côté Shifter, sans toucher au filtre Res_Shifter.
     shifterRes_ = static_cast<uint8_t>(mode);
     if (!machineIsSte(bus_.machine)) return;
+    if (hwScrollCount != 0) NEOST_F("shifter.ste_reset_finescroll");
     lineWidth = 0; newLineWidth_ = -1;
     videoBase = 0;
     noscroll_ = true;
@@ -355,8 +357,10 @@ void Shifter::beginFrame() {
     // [F] Le pronostic se fait sur la trame PRÉCÉDENTE (le mode se verrouille avant que la
     // trame ne coure) : la 1ʳᵉ trame qui ouvre ses bordures en moyenne les perd encore.
     // Tranché par : un buffer qui changerait de géométrie en fin de trame.
-    if (frameMode_ == Mode::Medium && (glue_.bordersTrick || glue_.vOverscan != 0))
+    if (frameMode_ == Mode::Medium && (glue_.bordersTrick || glue_.vOverscan != 0)) {
+        NEOST_F("shifter.med_border_prev_frame");
         frameMode_ = Mode::Low;
+    }
     frameSync_ = sync;
     syncGlueFrame();                  // A32 : mode et fréquence de la trame enfin verrouillés
     resizeFor(frameMode_);
@@ -654,8 +658,10 @@ void Shifter::finishFrame() {
         // ≠ Hatari (grade D) : il rend ces lignes en BASSE résolution avec la palette, un
         // repli qu'il commente lui-même comme incertain (video.c:3734 @ f0736b24) ; sur
         // Transbeauce 2 cela donne une image presque noire.
-        if (bus_.mfp && bus_.mfp->colorMonitor())
+        if (bus_.mfp && bus_.mfp->colorMonitor()) {
+            NEOST_F("shifter.mono_on_colour");
             std::fill(frame_.begin(), frame_.end(), 0xFF000000u);
+        }
         return;
     }
 
@@ -1042,6 +1048,7 @@ void Shifter::renderGlueFrame() {
         //     schéma du Shifter ST n'étant disponible.
         const bool vblank = glue_.vblankAtLine(sl);
         const bool lineBlank = vblank || (lineHasDE && (bm & glue::BLANK) != 0);
+        if (lineHasDE && (bm & glue::BLANK) != 0) NEOST_F("shifter.blank_colour");
         // Shifter arrêté (res 3) sur toute la fenêtre DE de CETTE ligne (bit 7 posé
         // au commit par lineStoppedOver) : aire active noire (cf. renderLine). La lecture RAM/compteur n'est pas affectée (le MMU continue).
         const bool lineStopped = scrollSnapped && (lineScrollSnap_[sl] & 0x80) != 0;
@@ -1209,6 +1216,7 @@ void Shifter::renderGlueFrame() {
                 // retard pipeline après DE) ; tranché par : une capture réelle d'un écran mêlant
                 // lignes normales et plein écran sous un même motif vertical.
                 case -4: if (bm & glue::LEFT_OFF) {
+                             NEOST_F("shifter.leftoff_beam_ref");
                              shEff = 0;
                              blankTailFrom = W - 4;       // |scrollFinal| = 4
                          }
@@ -1612,9 +1620,10 @@ uint8_t Shifter::read8(uint32_t addr) {
     // [D] ioMemTabST.c:72 @ f0736b24). $FF8264 : Hatari n'intercepte PAS la lecture ([D] video.c:5846 @ f0736b24,
     // Video_HorScroll_Read_8264 = wait state seul) → on renvoie la dernière valeur
     // BRUTE écrite, comme IoMem. $FF8265 : valeur de scroll courante.
-    if (addr == 0xFF8264 && machineIsSte(bus_.machine)) { syncCpuBus(); return hwScrollReg8264_; }
+    if (addr == 0xFF8264 && machineIsSte(bus_.machine)) { NEOST_F("shifter.scroll_read_lds_b"); syncCpuBus(); return hwScrollReg8264_; }
     if (addr == 0xFF8265) {
-        if (!machineIsSte(bus_.machine)) return 0xFF;
+        if (!machineIsSte(bus_.machine)) { NEOST_F("shifter.st_8264_void_b"); return 0xFF; }
+        NEOST_F("shifter.scroll_read_lds_a");
         syncCpuBus();
         return hwScrollCount;
     }
@@ -1742,6 +1751,7 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
         // ST : pas de registre ; zone void sans wait state, en écriture comme en lecture
         // ([D] ioMemTabST.c:72 @ f0736b24, IoMem_VoidWrite). [F] ST sans netlist de la GLUE.
         case 0xFF8264: case 0xFF8265:
+            if (!ste) NEOST_F("shifter.st_8264_void_a");
             if (ste) {
                 syncCpuBus();
                 const uint8_t sc  = v & 0x0F;
@@ -1763,6 +1773,7 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
                     hwScrollCount = sc; hwScrollPrefetch = prefetch; newHwScrollCount_ = -1;
                     steBorderFlag_ = add16;
                 } else {
+                    NEOST_F("shifter.scroll_write_mid_de");
                     newHwScrollCount_ = sc; newHwScrollPrefetch_ = prefetch;
                     newSteBorderFlag_ = add16;
                     // Le décalage, lui, change aussitôt dans le Shifter : [D] gstshifter.v:160 @ 4a6db7cc

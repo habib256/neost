@@ -27,6 +27,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/Fdc.hpp"
+#include "util/Unknowns.hpp"   // NEOST_F : passages dans les chemins [F]
 #include "util/Log.hpp"
 #include "io/WrittenTrack.hpp"
 #include "io/IpfImage.hpp"
@@ -997,6 +998,7 @@ void Fdc::reset(bool cold) {
         // TOS le réécrit avant tout accès disquette ([C] TOS 2.06 floppy.S flopini,
         // EmuTOS floppy.c set_density). À chaud : gardée. Tranché par : un dump JEDEC de
         // U407, ou une lecture du FDC sans TOS après le bouton.
+        if (densityMode_ != 0) NEOST_F("fdc.density_cold_reset");
         densityMode_ = 0;
     }
     stepDir_ = 1;
@@ -1451,7 +1453,7 @@ void Fdc::fifoPush(uint8_t b) {
 //     C025913 ; le manuel matériel du TT n'en donne que la carte des registres. Gardé. Tranché par $FF8606 bit 1 et le compteur relus pendant un Write Sector de deux
 //     secteurs sur un vrai ST, ou par la documentation Atari de la puce DMA.
 uint8_t Fdc::fifoPull() {
-    if (dmaSectorCount_ == 0) { dmaError_ = true; return 0; }  // DMA off → '0'
+    if (dmaSectorCount_ == 0) { NEOST_F("fdc.ws_dma_zero"); dmaError_ = true; return 0; }  // DMA off → '0'
     dmaError_ = false;
     uint8_t b;
     if (fifoSize_ > 0) {
@@ -1466,7 +1468,7 @@ uint8_t Fdc::fifoPull() {
         billDmaCycles(kDmaFlushCycles);   // D3
         ff8604recent_ = uint16_t((fifo_[14] << 8) | fifo_[15]);
         dmaBytesInSector_ -= 16;
-        if (dmaBytesInSector_ < 0) { dmaSectorCount_--; dmaBytesInSector_ = 512; }
+        if (dmaBytesInSector_ < 0) { NEOST_F("fdc.dma_write_sector_count"); dmaSectorCount_--; dmaBytesInSector_ = 512; }
         b = fifo_[0];
     }
     ff8604recent_ = uint16_t((ff8604recent_ & 0xff00) | b);
@@ -1539,6 +1541,7 @@ uint8_t Fdc::readSectorST(uint8_t track, uint8_t sector, uint8_t side, int* pSiz
     // Le lecteur/SR peut changer entre l'identification et le transfert : un
     // secteur absent ne doit pas devenir un offset dans la face/piste suivante
     // (Hatari Floppy_ReadSectors, garde Sector).
+    if (side >= dk.sides) NEOST_F("fdc.st_absent_side_a");
     if (side >= dk.sides || sector == 0 || sector > dk.spt) return STR_RNF;
     const uint64_t off = lsnOffset(track, side, sector, dk.spt, dk.sides);
     if (off + 512u <= dk.image.size()) {
@@ -1583,6 +1586,7 @@ uint8_t Fdc::writeSectorST(uint8_t track, uint8_t sector, uint8_t side, int size
     // Face au-delà de l'image → RNF (même garde que readSectorST, Floppy_WriteSectors).
     // Même validation CHS que Floppy_WriteSectors, même si l'offset linéaire
     // calculé resterait dans l'image après un changement de lecteur en DMA.
+    if (side >= dk.sides) NEOST_F("fdc.st_absent_side_b");
     if (side >= dk.sides || sector == 0 || sector > dk.spt) return STR_RNF;
     const uint64_t off = lsnOffset(track, side, sector, dk.spt, dk.sides);
     // Le transfert peut avoir engagé un ID STX de 1024 octets avant une
@@ -2512,6 +2516,7 @@ int Fdc::updateRestore() {
         [[fallthrough]];
      case RUN_RE_VERIFY_NEXT:
         if (indexCounter_ >= IP_ADDRESS_ID) {                 // pas de bon champ ID après 5 tours ([B] WD177X-00 p. 1-7 ; cf. IP_ADDRESS_ID)
+            NEOST_F("fdc.rnf_revs_a");
             updateStr(0, STR_RNF);
             commandState_ = RUN_RE_COMPLETE;
             fdcCycles = CMD_COMPLETE;
@@ -2582,6 +2587,7 @@ int Fdc::updateSeek() {
         [[fallthrough]];
      case RUN_SE_VERIFY_NEXT:
         if (indexCounter_ >= IP_ADDRESS_ID) {
+            NEOST_F("fdc.rnf_revs_b");
             updateStr(0, STR_RNF);
             commandState_ = RUN_SE_COMPLETE;
             fdcCycles = CMD_COMPLETE;
@@ -2647,6 +2653,7 @@ int Fdc::updateStep() {
         [[fallthrough]];
      case RUN_ST_VERIFY_NEXT:
         if (indexCounter_ >= IP_ADDRESS_ID) {
+            NEOST_F("fdc.rnf_revs_c");
             updateStr(0, STR_RNF);
             commandState_ = RUN_ST_COMPLETE;
             fdcCycles = CMD_COMPLETE;
@@ -2699,7 +2706,7 @@ int Fdc::updateReadSectors() {
      // [B] WD177X-00 p. 1-10 : RNF après 5 impulsions d'index ; cf. IP_ADDRESS_ID.
      // [B] p. 1-8, 1-10 et [D] fdc.c:156-159 @ f0736b24 : sans index, pas de RNF, attente sans fin.
      case RUN_RS_NEXT:
-        if (indexCounter_ >= IP_ADDRESS_ID) { commandState_ = RUN_RS_RNF; fdcCycles = CMD_IMMEDIATE; break; }
+        if (indexCounter_ >= IP_ADDRESS_ID) { NEOST_F("fdc.rnf_revs_d"); commandState_ = RUN_RS_RNF; fdcCycles = CMD_IMMEDIATE; break; }
         {
             int c = 0;
             const int res = (driveSel_ < 0) ? RET_NO_DRIVE : nextSectorID(&c);
@@ -2746,7 +2753,7 @@ int Fdc::updateReadSectors() {
                 // (toujours 0 pour .ST, possiblement posé pour STX).
                 // [B] WD177X-00 p. 1-11 : posé à la marque, avant le 1er octet, comme ici ; la p. 1-9
                 // écrit « at the end of the Read operation ». Cf. en-tête.
-                if (statusTemp_ & STR_RECTYPE) updateStr(0, STR_RECTYPE);
+                if (statusTemp_ & STR_RECTYPE) { NEOST_F("fdc.rectype_date"); updateStr(0, STR_RECTYPE); }
                 else                            updateStr(STR_RECTYPE, 0);
                 commandState_ = RUN_RS_TRANSFER_LOOP;
                 fdcCycles = int(bufferReadTiming());          // délai du 1er octet (timing STX variable)
@@ -2825,7 +2832,7 @@ int Fdc::updateWriteSectors() {
         fdcCycles = CMD_IMMEDIATE;
         break;
      case RUN_WS_NEXT:
-        if (indexCounter_ >= IP_ADDRESS_ID) { commandState_ = RUN_WS_RNF; fdcCycles = CMD_IMMEDIATE; break; }
+        if (indexCounter_ >= IP_ADDRESS_ID) { NEOST_F("fdc.rnf_revs_e"); commandState_ = RUN_WS_RNF; fdcCycles = CMD_IMMEDIATE; break; }
         {
             int c = 0;
             const int res = (driveSel_ < 0) ? RET_NO_DRIVE : nextSectorID(&c);
@@ -2919,7 +2926,7 @@ int Fdc::updateReadAddress() {
         fdcCycles = CMD_IMMEDIATE;
         break;
      case RUN_RA_NEXT:
-        if (indexCounter_ >= IP_ADDRESS_ID) { commandState_ = RUN_RA_RNF; fdcCycles = CMD_IMMEDIATE; break; }
+        if (indexCounter_ >= IP_ADDRESS_ID) { NEOST_F("fdc.rnf_revs_f"); commandState_ = RUN_RA_RNF; fdcCycles = CMD_IMMEDIATE; break; }
         {
             int c = 0;
             const int res = (driveSel_ < 0) ? RET_NO_DRIVE : nextSectorID(&c);
@@ -3010,6 +3017,7 @@ int Fdc::updateReadTrack() {
         else { commandState_ = RUN_RT_COMPLETE; fdcCycles = CMD_COMPLETE; }
         break;
      case RUN_RT_COMPLETE:
+        NEOST_F("fdc.readtrack_lostdata");
         fdcCycles = cmdComplete(true); break;
     }
     return fdcCycles;
@@ -3173,6 +3181,7 @@ void Fdc::executeCommand(uint8_t cmd) {
      // chargeurs enchaînant $D0 et commande en quelques instructions.
      default: {                                               // FORCE INTERRUPT (type IV)
         commandType_ = 4;
+        NEOST_F("fdc.force_int_prepare");
         // [B] WD177X-00 p. 1-16 : au repos, l'état reflète un type I. Moteur ON et spin-up à 0 : fiche
         // muette (p. 1-7 exclut seulement Force Interrupt du flag h) ; [D] fdc.c:4381-4382 @ f0736b24,
         // « verified on STF », relevé d'un tiers.
@@ -3365,7 +3374,7 @@ uint8_t Fdc::read8(uint32_t addr) {
                             // Créneau de transition média (éjection) → force WPRT, ce que TOS
                             // lit après un Restore pour détecter le changement de disquette
                             // ([D] fdc.c:217-225 @ f0736b24, d'après un TOS 1.02 non relu ici).
-                            if (transitionForceWprt(driveSel_)) updateStr(0, STR_WPRT);
+                            if (transitionForceWprt(driveSel_)) { NEOST_F("fdc.media_change_vbl"); updateStr(0, STR_WPRT); }
                         }
                     }
                     // La lecture du statut efface l'IRQ (sauf « force interrupt immediate »).
@@ -3402,6 +3411,7 @@ uint8_t Fdc::read8(uint32_t addr) {
         case 0xE:
             // Hatari accepte aussi les octets sur la densité (Mega STE câblé
             // par le Bus). Un mot ne facture qu'à son dernier octet $860F.
+            NEOST_F("fdc.density_read");
             if (bus_.ioAccessWidth() == 1) registerWait();
             return 0xFF;
         case 0xF: registerWait(); return 0xFF;

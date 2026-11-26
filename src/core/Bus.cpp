@@ -4,6 +4,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/Bus.hpp"
+#include "util/Unknowns.hpp"   // NEOST_F : passages dans les chemins [F]
 #include "util/Log.hpp"
 #include "core/Scheduler.hpp"
 #include "core/StateArchive.hpp"
@@ -487,8 +488,10 @@ uint8_t Bus::read8Slow(uint32_t addr) {
     //     ce391499d37d (`unmap_value_high`) rend $FF partout. Tranché par : lecture
     //     sur un vrai STE de $E40000 (/ROM1 sans puce), d'une banque MMU vide et du
     //     port cartouche nu.
-    if (addr >= romBase && addr < romBase + romWindowSize())
+    if (addr >= romBase && addr < romBase + romWindowSize()) {
+        if (addr >= romBase + rom.size()) NEOST_F("bus.open_bus_rom_a");
         return addr < romBase + rom.size() ? rom[addr - romBase] : 0x00;
+    }
 
     // Carte réseau NE2000 sur le port cartouche (EtherNEC — extension NeoST) :
     // les lectures $FA0000-$FBFFFF encodent les accès registre (cf. Ne2000.hpp).
@@ -550,12 +553,14 @@ uint8_t Bus::read8Slow(uint32_t addr) {
     // STE /ROM5, /ROM6 et /ROMP : sélection décodée, DTACK, mais aucune puce ne pilote
     // le bus de données → bus ouvert, comme une banque RAM vide ci-dessus.
     if (steRomSelectVoid(addr)) {
+        NEOST_F("bus.open_bus_ste_rom56_d");
         if (ioAccessWidth_ >= 2) return uint8_t((addr & 1) ? cpuDb : cpuDb >> 8);
         return uint8_t(cpuDb);
     }
 
     // Trou au-dessus de $400000 (sous la ROM/cartouche) → bus error sur vrai ST ;
     // ici on renvoie $FF.
+    if (addr >= stmap::CART_BASE && addr < stmap::CART_END) NEOST_F("bus.open_bus_cart_b");
     return 0xFF;
 }
 
@@ -924,6 +929,7 @@ uint8_t Bus::ramSpaceRead8(uint32_t addr) {
     // VoidMem_bget/wget → regs.db). Pour un accès MOT (assemblé ici octet
     // par octet), l'adresse paire porte l'octet fort : le mot relu vaut
     // exactement cpuDb, comme VoidMem_wget. [F] valeur du bus ouvert, cf. read8Slow.
+    NEOST_F("bus.open_bus_void_ram");
     if (ioAccessWidth_ >= 2) return uint8_t((addr & 1) ? cpuDb : cpuDb >> 8);
     return uint8_t(cpuDb);                       // accès octet : VoidMem_bget
 }
@@ -933,6 +939,7 @@ uint8_t Bus::ramSpaceRead8(uint32_t addr) {
 uint16_t Bus::videoRead16At(uint32_t addr, int64_t clock) {
     addr &= 0x3FFFFFu;
     if (addr + 1 < mmuFastLimit() || mmuTranslate(addr) >= 0) return ramCycleRead16(addr);
+    NEOST_F("bus.video_void_bus_masters");
     if (!videoBusCount) return cpuDb;
     const uint32_t first = (videoBusNext + kVideoBusHistory - videoBusCount) % kVideoBusHistory;
     uint32_t lo = 0, hi = videoBusCount;
@@ -1122,6 +1129,7 @@ uint8_t Bus::rdMfp(uint32_t a) {
     // chez Hatari l'octet pair passe alors par IoMem_BusErrorEvenReadAccess → 0xFF,
     // jamais par la puce. Sans ce filtre, les default du MFP en faisaient des
     // cellules RAM fantômes.
+    if (!(a & 1)) NEOST_F("bus.open_bus_mfp_even_c");
     if (!(a & 1) || (a & 0x3F) >= 0x31) return 0xFF;
     // Wait state MFP (4 cyc) facturé UNE fois par accès : seul l'octet IMPAIR porte
     // un registre câblé (Hatari : M68000_WaitState(4) dans le handler du registre ;
@@ -1130,6 +1138,7 @@ uint8_t Bus::rdMfp(uint32_t a) {
     // CPU, le blitter compte ses propres 4 cycles par accès.
     // [F] Inconnu : l'attente du DTACK du 68901 allonge-t-elle le cycle du blitter ?
     //     Tranché par : une mesure d'un blit vers $FFFA01 sur un vrai STE.
+    if (blitterMasterAccess) NEOST_F("bus.blitter_mfp_dtack_a");
     if (cpu && !blitterMasterAccess) cpu->addMfpWaitCycles();
     const uint8_t v = mfp->read8(a);
     if (cpu) cpu->updateIpl();            // l'état d'IRQ a pu changer
@@ -1140,6 +1149,7 @@ void Bus::wrMfp(uint32_t a, uint8_t v) {
     // l'ancien chemin en faisait 8 octets de RAM relisible cachés dans le MFP.
     // Octets PAIRS : non décodés, écriture jetée (IoMem_BusErrorEvenWriteAccess).
     if (!(a & 1) || (a & 0x3F) >= 0x31) return;
+    if (blitterMasterAccess) NEOST_F("bus.blitter_mfp_dtack_b");
     if (cpu && !blitterMasterAccess) cpu->addMfpWaitCycles();   // cf. rdMfp
     mfp->write8(a, v);
     if (cpu) cpu->updateIpl();            // (dé)masquage, fin d'interruption...
@@ -1170,7 +1180,8 @@ bool Bus::aciaOddByteIsChipCycle(uint32_t a) const {
 }
 uint8_t Bus::rdIkbd(uint32_t a) {
     if (a & 1) {
-        if (!aciaOddByteIsChipCycle(a)) return 0xFF;   // void (ST, Mega STE, octet bas d'un mot)
+        if (!aciaOddByteIsChipCycle(a)) { NEOST_F("bus.st_acia_odd_a"); return 0xFF; }   // void (ST, Mega STE, octet bas d'un mot)
+        NEOST_F("bus.ste_acia_odd_a");
         if (cpu) cpu->addAciaWaitCycles();
         (void)ikbd->read8(a & ~1u);                     // la puce répond sur D8-D15
         if (cpu) cpu->updateIpl();
@@ -1182,7 +1193,7 @@ uint8_t Bus::rdIkbd(uint32_t a) {
     return v;
 }
 void Bus::wrIkbd(uint32_t a, uint8_t v) {
-    if ((a & 1) && !aciaOddByteIsChipCycle(a)) return;   // void — écriture absorbée
+    if ((a & 1) && !aciaOddByteIsChipCycle(a)) { NEOST_F("bus.st_acia_odd_b"); return; }   // void — écriture absorbée
     if (cpu) cpu->addAciaWaitCycles();
     ikbd->write8(a & ~1u, v);             // octet recopié sur D8-D15 (cf. en-tête)
     if (cpu) cpu->updateIpl();
@@ -1190,7 +1201,8 @@ void Bus::wrIkbd(uint32_t a, uint8_t v) {
 
 uint8_t Bus::rdMidi(uint32_t a) {
     if (a & 1) {                          // cf. rdIkbd
-        if (!aciaOddByteIsChipCycle(a)) return 0xFF;
+        if (!aciaOddByteIsChipCycle(a)) { NEOST_F("bus.st_acia_odd_c"); return 0xFF; }
+        NEOST_F("bus.ste_acia_odd_b");
         if (cpu) cpu->addAciaWaitCycles();
         (void)midi->read8(a & ~1u);
         if (cpu) cpu->updateIpl();
@@ -1202,7 +1214,7 @@ uint8_t Bus::rdMidi(uint32_t a) {
     return v;
 }
 void Bus::wrMidi(uint32_t a, uint8_t v) {
-    if ((a & 1) && !aciaOddByteIsChipCycle(a)) return;   // void — écriture absorbée
+    if ((a & 1) && !aciaOddByteIsChipCycle(a)) { NEOST_F("bus.st_acia_odd_d"); return; }   // void — écriture absorbée
     if (cpu) cpu->addAciaWaitCycles();
     midi->write8(a & ~1u, v);
     if (cpu) cpu->updateIpl();            // un octet bouclé peut lever l'IRQ ACIA

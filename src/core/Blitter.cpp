@@ -4,6 +4,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/Blitter.hpp"
+#include "util/Unknowns.hpp"   // NEOST_F : passages dans les chemins [F]
 #include "util/Log.hpp"
 #include <algorithm>
 #include "core/Bus.hpp"
@@ -438,6 +439,7 @@ void Blitter::clearPreStartWindow() {
 }
 
 void Blitter::notePreStartCpuAccess() {
+    NEOST_F("blitter.resume_window");
     busCountError_ = true;                 // port Blitter_HOG_CPU_BusCountError = 1
 }
 

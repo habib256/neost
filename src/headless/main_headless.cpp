@@ -65,6 +65,7 @@
 #include "core/Symbols.hpp"
 #include "core/AudioMix.hpp"   // chaîne de mixage partagée (--sound-dump)
 #include "util/JoyScript.hpp"  // grammaire des scripts joystick (logique pure)
+#include "util/Unknowns.hpp"   // --unknowns : passages dans les chemins [F]
 #include "headless/Observe.hpp" // sondes, hachages de cellule, capture PPM
 #include "headless/Server.hpp"  // --server : boucle de commandes stdin/stdout
 
@@ -278,6 +279,7 @@ void usage() {
         "                    slots, for an external driver (see docs/OPENDST.md)\n"
         "  --server-slots N  number of in-memory state slots (default 64, max 4096)\n"
         "  --screenshot PPM  dump the final framebuffer in PPM format\n"
+        "  --unknowns JSON   write the [F] unknown sites reached (NEOST_F) and their hit counts\n"
         "  --shot-every N P  dump a PPM every N frames, named P<frame>.ppm (P00060.ppm,\n"
         "                    P00120.ppm... for N=60); P<F>.ppm shows the screen after F\n"
         "                    frames, i.e. exactly what --frames F --screenshot shows\n"
@@ -1544,6 +1546,7 @@ int main(int argc, char** argv) {
                                       // (fenêtrer un diff oracle sur une scène tardive — menu
                                       // de démo — sans traîner des Go de boot)
     std::string shotPath;
+    std::string unknownsPath;       // --unknowns : rapport des sites NEOST_F atteints
     // Sans --disk, « disks/diskA.st » est montée d'office (décision d'auteur, rétablie
     // le 2026-11-12 après un jour de lecteur vide) : lecteur vide, EmuTOS attend le
     // délai de la disquette absente et n'atteint le bureau que vers la trame ~900 au
@@ -1758,6 +1761,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--regs"))       regs      = true;
         else if (!std::strcmp(a, "--irq"))        irq       = true;
         else if (!std::strcmp(a, "--screenshot")) shotPath  = next(a);
+        else if (!std::strcmp(a, "--unknowns"))   unknownsPath = next(a);
         else if (!std::strcmp(a, "--disk"))       { diskPath  = next(a); diskRequested = true; }
         else if (!std::strcmp(a, "--no-disk"))    { diskPath.clear(); diskRequested = false; }
         else if (!std::strcmp(a, "--diskb"))      diskBPath = next(a);
@@ -3495,6 +3499,13 @@ int main(int argc, char** argv) {
     // timeslice CPU (cf. Scheduler). Retard faible = quantum « sous la ligne ».
     std::fprintf(stderr, "[headless] timer IRQ max lateness = %lld cyc | preemptions = %ld\n",
                  (long long)machine.sched.timerMaxLate, machine.sched.preemptions);
+    if (!unknownsPath.empty()) {
+        if (neost::unknowns::writeReport(unknownsPath.c_str()))
+            std::fprintf(stderr, "[headless] unknowns: %zu [F] site(s) reached → %s\n",
+                         neost::unknowns::registry().size(), unknownsPath.c_str());
+        else
+            std::fprintf(stderr, "[headless] unknowns: cannot write %s\n", unknownsPath.c_str());
+    }
     std::fprintf(stderr, "[headless] video: %dx%d @ %d Hz\n",
                  machine.shifter.width(), machine.shifter.height(), machine.shifter.refreshHz());
 

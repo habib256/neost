@@ -13,6 +13,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/ShifterInternal.hpp"
+#include "util/Unknowns.hpp"   // NEOST_F : passages dans les chemins [F]
 #include "util/Log.hpp"
 #include "core/VideoGlue.hpp"
 #include "core/Shifter.hpp"
@@ -87,6 +88,7 @@ void Shifter::endVideoLine() {
     static const bool noSnap = envFlag("NEOST_NO_SNAP", false);
     if (!noSnap && (!glue_.syncWrites.empty() || spec512Active_ || shifterStopLine_ >= 0 || !scrollWrites_.empty()) && bpl > 0 &&
         sl >= 0 && sl < static_cast<int>(lineSnapLen_.size())) {
+        NEOST_F("vc.load_phase_st");
         int n = bpl + scrollCounterAdvance(sl) + 8;
         if (n > kLineSnapBytes - kSnapLead) n = kLineSnapBytes - kSnapLead;
         uint8_t* snap = lineSnap_.data() + static_cast<std::size_t>(sl) * kLineSnapBytes;

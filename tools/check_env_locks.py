@@ -37,6 +37,9 @@ MANIFEST = Path(__file__).resolve().parent / "env_locks.json"
 SCANNED = ["src/core", "src/io"]
 
 VAR = re.compile(r"NEOST_[A-Z0-9_]+")
+# Noms NEOST_* du cœur qui ne sont pas des variables d'environnement : NEOST_F est la
+# macro des compteurs d'inconnues [F] (src/util/Unknowns.hpp), aucun getenv ne la lit.
+NOT_ENV = {"NEOST_F"}
 
 
 def scan() -> set[str]:
@@ -45,7 +48,7 @@ def scan() -> set[str]:
         for f in sorted((ROOT / rel).rglob("*")):
             if f.suffix in (".cpp", ".hpp"):
                 found |= set(VAR.findall(f.read_text(errors="replace")))
-    return found
+    return found - NOT_ENV
 
 
 def main() -> int:

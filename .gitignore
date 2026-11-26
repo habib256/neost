@@ -109,6 +109,8 @@ wasm/
 /roms/TOS*
 /disks/st/
 /disks/stx/
+# Disquettes des CD LGD (Automation, Pompey Pirates, Medway Boys, FoF) : médias privés.
+/disks/LGD/
 /carts/
 /disks/midi/CUBLITE/
 # Notator / Creator (C-Lab) : copie locale du disque dur, commerciale, clé

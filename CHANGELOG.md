@@ -1,5 +1,30 @@
 # Changelog — NeoST
 
+## 2026-11-26 — Campagne CD LGD : entrées des menus, aucun défaut propre à NeoST
+
+- **Entrées 1 à 5 des menus** (Automation, Pompey Pirates, Medway Boys : touche à la trame
+  2500, captures 4000 et 6500 contre Hatari, ST, TOS 1.04 UK, 1 Mo) : 4 115 lancements, dont
+  3 926 sans écart (moins de 5 % de pixels aux deux captures). Tous les écarts persistants
+  tombent dans des classes tranchées
+  (`docs/CASE_STUDIES.md`) : animations et scrollers décalés, PRG `AUTO` tronqués, bureaux
+  gelés ou vides (menu quitté en superviseur, pile sur les tampons de GEMDOS : loterie
+  d'interruptions, Hatari y tombe aussi), MED_023 qui plante chez les deux, et A_195, une
+  interruption parasite du MFP que NeoST prend selon la fiche MC68901 (course d'un cycle,
+  aucune des 8 autres graines ne la reproduit). Quatorze disques arrêtent le CPU sous Hatari
+  (double faute) : NeoST s'arrête aussi sur douze ; les deux autres (A_412, A_481) sont une
+  loterie d'interruptions où Hatari passe aussi avec une autre graine.
+- **FoF (58 disques)** : leurs menus attendent ESPACE puis F1 à F5 (`--key 2500:57 --key
+  3500:<58+k>`, captures 5000 et 7500) : 58 sur 58 identiques pour chaque touche, 42 menus
+  réagissent. Les 16 plus anciens (001 à 012, 018B, 028, 036B) se pilotent à la souris :
+  ESPACE, puis le pointeur depuis le coin haut gauche, 7 pas de 6 px à droite, 4 + 3(k−1) vers
+  le bas, clic. 12 réagissent, identiques à Hatari ; FOF_009A, 009B, 011 et 036B ne réagissent
+  à rien. Un écart sur FOF_003 venait d'un clic au bord du bouton (pointeur décalé d'un pixel
+  entre les émulateurs) : 0,0 % en visant le centre.
+- **A_107 et FOF_020**, abîmés d'un bit dans les zips de l'ISO finale, sont pris dans l'ISO
+  bêta de 1998 (`CD [LGD_CD1][BETA]`), saine pour ces deux-là : boot et entrées identiques à
+  Hatari. La campagne est close ; disques et résultats restent hors dépôt
+  (`~/Downloads/atarist-lgd-cd/`).
+
 ## 2026-11-26 — Campagne CD LGD : boot des 881 disquettes, deux corrections
 
 - **Boot de `CD [LGDCD]`** (Automation, Pompey Pirates, Medway Boys, FoF ; ST, TOS 1.04 UK,
