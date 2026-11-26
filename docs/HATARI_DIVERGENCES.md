@@ -815,6 +815,12 @@ Hatari (2 cycles bus), sans mesure physique.
   (`.ST` et `.DIM` in situ, en-tête 32 o préservé ≙ `dim.c:134-149` ; `.MSA` ré-encodé en entier
   et atomiquement, tmp + rename, `encodeMsa` ≙ `MSA_WriteDisk`/`MSA_FindRunOfBytes`
   `msa.c:275-420`) ; Hatari n'écrit qu'à l'éjection (une coupure y perd la sauvegarde).
+- **`.DIM` « secteurs utilisés » de FastCopy** · porté · 2026-11-26 — reconstruit d'après la
+  seconde FAT comme `dim.c:262-306 @ 36a8acf0` (`decodeDimUsed`, `Fdc.cpp`), avec deux écarts :
+  la taille du fichier doit tomber juste sur le dernier cluster utilisé (détection par contenu,
+  cf. `decodeDim`), et l'image est montée en lecture seule, ses secteurs n'ayant pas d'offset
+  fixe. Hatari teste en `dim.c:234 @ 36a8acf0` la signature `$42 $43` au lieu de `$42 $42`
+  (commit `42f3b642`, 2026-11-12) et refuse ainsi toute `.dim` : régression amont, non suivie.
 
 ### Refermés
 
@@ -889,6 +895,13 @@ incrément et masque de l'adresse DMA ; court-circuit FIFO.
   garde jusqu'au transfert (refus d'un sens contradictoire). NeoST : `Acsi.cpp`.
 - **[B8 (6ᵉ p.)] Octet ACSI sans image** · ouvert · basse — Hatari ignore l'octet
   (`$FF8604` = 0) ; NeoST pose status = 2 (la sonde du TOS est identique).
+- **GPIP5 partagée FDC/ACSI** · ouvert · basse · 2026-11-26 — depuis `b83e3cc7`
+  (`mfp.c` `MFP_Main_Compute_GPIP5_FDC_HDC @ 36a8acf0`), Hatari tient deux lignes séparées
+  et GPIP5 est basse si l'une des deux l'est (sorties câblées ensemble). NeoST garde un seul
+  masque de sources (`Fdc::fdcSetIrq`) : une IRQ ACSI remplace les sources disquette, et une
+  lecture du statut FDC efface aussi la source ACSI. Non porté : dans le modèle d'Hatari, la
+  lecture du statut ACSI ne relâche pas l'IRQ du disque dur, qui tiendrait GPIP5 basse
+  jusqu'à l'octet de commande suivant et masquerait les IRQ disquette. Item du TODO.
 
 ### Écarts voulus — ne pas réaligner
 

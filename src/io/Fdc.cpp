@@ -395,6 +395,56 @@ static bool decodeDim(const std::vector<uint8_t>& raw, std::vector<uint8_t>& out
     return true;
 }
 
+// .DIM « secteurs utilisés seulement » (FastCopy, réglage « Get Sectors Used » : octets
+// $02 et $03 à 1). Le secteur de boot, les deux FAT et la racine (secteurs 0 à datrec−1)
+// sont stockés en entier, puis seulement les clusters que la SECONDE FAT (fatrec, celle
+// du TOS) marque utilisés, dans l'ordre, clsiz secteurs chacun ; libre ($000), réservé
+// ($001) et défectueux ($FF0-$FF7) ne le sont pas, le reste du disque repart à zéro.
+// [D] Hatari floppies/dim.c:262-306 @ 36a8acf0 (Darren Birks, d'après le désassemblage de
+// FastCopy), en-tête documenté dim.c:36-90. Hatari ne compare pas la taille du fichier
+// au compte des secteurs stockés ; NeoST l'exige, parce qu'il détecte par CONTENU (cf.
+// decodeDim) : un fichier qui ne finit pas sur le dernier cluster utilisé n'est pas pris.
+// Écart voulu : la ligne dim.c:234 @ 36a8acf0 teste la signature $42 $43 au lieu de
+// $42 $42 (commit 42f3b642, 2026-11-12) et refuse ainsi toute image .dim ; non suivi.
+// Monté en LECTURE SEULE : les secteurs n'ont pas d'offset fixe dans le fichier,
+// writeBack ne saurait pas où écrire.
+static bool decodeDimUsed(const std::vector<uint8_t>& raw, std::vector<uint8_t>& out) {
+    if (raw.size() < 32 + 512) return false;
+    if (raw[0x00] != 0x42 || raw[0x01] != 0x42) return false;       // ID 'BB'
+    if (raw[0x02] == 0 || raw[0x03] == 0 || raw[0x0A] != 0) return false;
+    const int sides = raw[0x06] + 1, spt = raw[0x08], endTrack = raw[0x0C];
+    if (sides > 2 || spt < 1 || spt > 48 || endTrack > 85) return false;
+    auto be16 = [&](std::size_t o) { return unsigned(raw[o]) << 8 | raw[o + 1]; };
+    const unsigned recsiz = be16(0x0E), clsiz = be16(0x10), fsiz = be16(0x16),
+                   fatrec = be16(0x18), datrec = be16(0x1A), numcl = be16(0x1C),
+                   bflags = be16(0x1E);
+    const unsigned total = unsigned(endTrack + 1) * unsigned(spt) * unsigned(sides);
+    const unsigned fatEntries = fsiz * 512u * 2u / 3u;            // FAT12 : 2 entrées / 3 octets
+    if (recsiz != 512 || clsiz == 0 || (bflags & 1) || fatrec == 0 || fsiz == 0
+        || fatrec + fsiz > datrec || datrec + numcl * clsiz > total
+        || 2u + numcl > fatEntries)
+        return false;
+    std::size_t src = 32u + std::size_t(datrec) * 512u;
+    if (raw.size() < src) return false;
+    out.assign(std::size_t(total) * 512u, 0);
+    std::copy(raw.begin() + 32, raw.begin() + static_cast<std::ptrdiff_t>(src), out.begin());
+    const uint8_t* fat = out.data() + std::size_t(fatrec) * 512u;
+    auto entry = [&](unsigned c) -> unsigned {
+        const uint8_t* e = fat + c * 3u / 2u;
+        return (c & 1) ? unsigned(e[0] >> 4 | e[1] << 4) : unsigned((e[0] | e[1] << 8) & 0xFFF);
+    };
+    for (unsigned sec = datrec; sec < total; ++sec) {
+        const unsigned c = 2u + (sec - datrec) / clsiz;
+        if (c >= fatEntries) continue;
+        const unsigned e = entry(c);
+        if (e == 0x000 || e == 0x001 || (e >= 0xFF0 && e <= 0xFF7)) continue;
+        if (src + 512u > raw.size()) return false;
+        std::copy_n(raw.begin() + static_cast<std::ptrdiff_t>(src), 512, out.begin() + std::ptrdiff_t(sec) * 512);
+        src += 512u;
+    }
+    return src == raw.size();
+}
+
 // Droit d'écriture du PROPRIÉTAIRE sur le fichier image (Hatari Floppy_IsWriteProtected,
 // mode automatique). Via std::filesystem : <sys/stat.h> manque hors POSIX, et sous
 // Windows l'implémentation reflète l'attribut « lecture seule » dans owner_write.
@@ -474,7 +524,8 @@ bool decodeContainer(const std::vector<uint8_t>& raw, std::vector<uint8_t>& out)
     // des octets derrière lui. Constaté en écrivant le harnais : avec un clear(),
     // la mutation « plafond RLE retiré » passait inaperçue.
     if (decodeMsa(raw, out)) return true;
-    return decodeDim(raw, out);
+    if (decodeDim(raw, out)) return true;
+    return decodeDimUsed(raw, out);
 }
 }  // namespace diskimg
 
@@ -865,6 +916,12 @@ bool Fdc::loadImage(const std::string& path, int drive) {
         dk.image = std::move(conv);
         dk.imgFormat = FloppyDisk::FMT_DIM;
         neost::log::err("[FDC] .dim image (32 B header stripped): %s\n", path.c_str());
+    } else if (decodeDimUsed(raw, conv)) {
+        dk.image = std::move(conv);
+        dk.imgFormat = FloppyDisk::FMT_DIM;
+        dk.raw = false;                          // pas d'offset fixe : writeBack neutralisé, WPRT
+        neost::log::err("[FDC] .dim image with used sectors only (FastCopy), rebuilt from "
+                        "its FAT, mounted READ-ONLY: %s\n", path.c_str());
     } else if (decodeDimLax(path, raw, conv)) {
         // En-tête lâche : contenu au bon offset, mais LECTURE SEULE (dk.raw = false
         // neutralise writeBack et force WPRT plus bas). Un en-tête qui ne rend pas
@@ -892,7 +949,11 @@ bool Fdc::loadImage(const std::string& path, int drive) {
         // est aussi l'encodage de « clr.w d2 », début plausible d'un secteur de boot —
         // sniffer 2 octets mettait des .ST parfaitement valides en LECTURE SEULE, et les
         // sauvegardes en jeu cessaient de persister sans le moindre message.
-        const bool dimLike = dimSignature(raw);
+        // Idem pour un .dim « secteurs utilisés » (octets $02 et $03 à 1) que decodeDimUsed
+        // refuse : monté brut et inscriptible, writeBack l'écraserait.
+        const bool dimLike = dimSignature(raw)
+            || (raw.size() >= 32u + 512u && raw[0] == 0x42 && raw[1] == 0x42
+                && raw[0x02] == 1 && raw[0x03] == 1 && raw[0x0A] == 0);
         dk.image = std::move(raw);               // .st brut
         dk.raw   = !msaLike && !dimLike;
         if (msaLike)

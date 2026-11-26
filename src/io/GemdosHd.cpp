@@ -1559,7 +1559,12 @@ bool GemdosHd::gemSetDrv(uint32_t p) {
     // Le mot vient du programme émulé : hors de A..Z, GEMDOS le refuse et le lecteur
     // courant ne change pas. Le retenir tel quel donnait un save-state que son propre
     // contrôle « drive < 26 » refusait ensuite au chargement.
-    const uint16_t drv = readWord(p);
+    // Seul l'octet BAS compte : TOS 1 à 3 recopient l'argument dans une variable de 8 bits
+    // (TOS 4.04, lui, refuse au-delà de Q:). Sans ce masque, un programme qui empile un
+    // mot à octet haut non nul (Riemann II) voyait TOS changer de lecteur et NeoST garder
+    // l'ancien. [D] Hatari gemdos.c:1646-1649 @ 36a8acf0 (relevé TOS de Christian Zietz,
+    // message du commit 36a8acf0) ; [C] à confirmer sur la ROM TOS 1.04 (Dsetdrv).
+    const uint16_t drv = uint16_t(readWord(p) & 0xFF);
     if (drv < 26) currentDrive_ = drv;
     return false;   // redirige aussi vers TOS
 }

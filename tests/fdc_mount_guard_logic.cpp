@@ -1,4 +1,6 @@
 // Gardes de montage disquette et ACSI (lot « disquette et ACSI », 2026-11-12).
+//  · .dim « secteurs utilisés » (FastCopy) : reconstruit d'après la seconde FAT, lecture
+//    seule ([D] Hatari floppies/dim.c:262-306 @ 36a8acf0) ; mal formé : brut, lecture seule ;
 //  · .dim à en-tête lâche : en-tête retiré, lecture seule ([D] Hatari floppies/dim.c:75-90
 //    @ f0736b24 ne teste que la signature) ;
 //  · une image, un lecteur : refus dans Fdc::loadImage ([D] Hatari floppy.c:403-408 @ f0736b24) ;
@@ -12,6 +14,7 @@
 #include "core/Scheduler.hpp"
 #include "core/YM2149.hpp"
 #include "io/Fdc.hpp"
+#include "io/DiskImageCodec.hpp"
 #include "io/Mfp.hpp"
 #include "core/StateArchive.hpp"
 #include <algorithm>
@@ -168,6 +171,68 @@ void dimCases(Checks& c, const fs::path& dir) {
         r.reg(4, 1); r.dma(false, 1);
         r.cmd(false, 0x88);
         c.equal("faux dim .st : en-tête non retiré", r.bus.ram[0x20000], 0x42);
+    }
+}
+
+// .dim « Get Sectors Used » de FastCopy : 720 Ko (BPB 2 secteurs/cluster, FAT de 5
+// secteurs, racine de 7), seconde FAT en 6, données en 18. Clusters 2→3 et 5 utilisés,
+// 7 défectueux ($FF7), le reste libre : le fichier ne garde que 0-17, puis 2, 3 et 5.
+void dimUsedCases(Checks& c, const fs::path& dir) {
+    std::vector<uint8_t> disk = stImage();
+    const unsigned datrec = 18, fatrec = 6, clsiz = 2;
+    auto setFat = [&](unsigned cl, unsigned v) {
+        uint8_t* e = disk.data() + fatrec * 512 + cl * 3 / 2;
+        if (cl & 1) { e[0] = uint8_t((e[0] & 0x0F) | (v << 4)); e[1] = uint8_t(v >> 4); }
+        else        { e[0] = uint8_t(v); e[1] = uint8_t((e[1] & 0xF0) | ((v >> 8) & 0x0F)); }
+    };
+    std::fill(disk.begin() + fatrec * 512, disk.begin() + (fatrec + 5) * 512, 0);
+    setFat(0, 0xFF9); setFat(1, 0xFFF);                  // entrées réservées du média
+    setFat(2, 3); setFat(3, 0xFFF); setFat(5, 0xFFF); setFat(7, 0xFF7);
+    std::vector<uint8_t> hdr(32, 0);
+    hdr[0] = hdr[1] = 0x42; hdr[2] = 1; hdr[3] = 1;      // géométrie du BPB, secteurs utilisés
+    hdr[0x06] = 1; hdr[0x08] = 9; hdr[0x0C] = 79;         // 2 faces, 9 spt, pistes 0-79
+    auto be16 = [&](std::size_t o, unsigned v) { hdr[o] = uint8_t(v >> 8); hdr[o + 1] = uint8_t(v); };
+    be16(0x0E, 512); be16(0x10, clsiz); be16(0x12, 1024); be16(0x14, 7); be16(0x16, 5);
+    be16(0x18, fatrec); be16(0x1A, datrec); be16(0x1C, 711); be16(0x1E, 0);
+    std::vector<uint8_t> dim = hdr;
+    dim.insert(dim.end(), disk.begin(), disk.begin() + datrec * 512);
+    std::vector<uint8_t> expect(disk.size(), 0);
+    std::copy(disk.begin(), disk.begin() + datrec * 512, expect.begin());
+    for (unsigned cl : {2u, 3u, 5u}) {
+        const std::size_t off = (datrec + (cl - 2) * clsiz) * 512u;
+        dim.insert(dim.end(), disk.begin() + std::ptrdiff_t(off), disk.begin() + std::ptrdiff_t(off + clsiz * 512));
+        std::copy_n(disk.begin() + std::ptrdiff_t(off), clsiz * 512, expect.begin() + std::ptrdiff_t(off));
+    }
+    std::vector<uint8_t> out;
+    c.equal("dim utilisés : décodé", diskimg::decodeContainer(dim, out), true);
+    c.equal("dim utilisés : disque reconstruit", out == expect, true);
+    std::vector<uint8_t> extra = dim;                    // un secteur de trop : refusé
+    extra.insert(extra.end(), 512, 0);
+    out.clear();
+    c.equal("dim utilisés : secteur en trop refusé", diskimg::decodeContainer(extra, out), false);
+    const fs::path used = dir / "used.dim";
+    writeFile(used, dim);
+    {
+        Rig r;
+        c.equal("dim utilisés : montage", r.fdc.loadImage(used.string()), true);
+        r.select(5);
+        r.reg(4, 2); r.dma(false, 1);
+        c.equal("dim utilisés : lecture T0S2 sans erreur", r.cmd(false, 0x88) & 0x1C, 0);
+        c.equal("dim utilisés : secteur 1 lu", r.bus.ram[0x20000], 1);
+        r.reg(0, 0xD0);
+        c.equal("dim utilisés : lecture seule (WPRT)", (r.reg(0) >> 6) & 1, 1);
+    }
+    // Tronquée d'un secteur : refusée par le décodeur, montée brute et protégée (sinon
+    // writeBack écraserait le fichier source avec des secteurs décalés).
+    std::vector<uint8_t> cut(dim.begin(), dim.end() - 512);
+    const fs::path bad = dir / "used_cut.dim";
+    writeFile(bad, cut);
+    {
+        Rig r;
+        c.equal("dim utilisés tronquée : montage", r.fdc.loadImage(bad.string()), true);
+        r.select(5);
+        r.reg(0, 0xD0);
+        c.equal("dim utilisés tronquée : lecture seule (WPRT)", (r.reg(0) >> 6) & 1, 1);
     }
 }
 
@@ -356,6 +421,7 @@ int testFdcMountGuards() {
     TempDir dir;
     if (dir.path.empty()) { std::fprintf(stderr, "[fdc-mount-guard] FAIL temp dir\n"); return 1; }
     dimCases(c, dir.path);
+    dimUsedCases(c, dir.path);
     sameFileCases(c, dir.path);
     noDiskCases(c);
     stxReadOnlyCase(c, dir.path);
