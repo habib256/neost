@@ -490,6 +490,19 @@ int testGemdosProcess() {
         }
     }
 
+    // Dsetdrv : seul l'octet bas compte (TOS 1-3, [D] Hatari gemdos.c:1646-1649 @ 36a8acf0).
+    // Sans basepage lisible (act_pd nul, comme au boot), currentDrive() retombe sur le dernier
+    // Dsetdrv : $0100 doit y donner A:, pas laisser C: en place.
+    {
+        rig.run(0);
+        // Dgetpath(0) suit le lecteur courant : servi par NeoST sur C:, rendu au TOS sur A:.
+        rig.bus.write16(0x1008,2); rig.trap(0x0E);
+        equal("Dsetdrv 2 → C: servi par NeoST",rig.dgetpath()!="<tos>",true);
+        rig.bus.write16(0x1008,0x0100); rig.trap(0x0E);
+        equal("Dsetdrv $0100 → A: (octet bas), rendu au TOS",rig.dgetpath()=="<tos>",true);
+        rig.run(PARENT);
+    }
+
     std::fprintf(stderr,"[gemdos-process] %d checks, %d FAIL\n",checks,failures);
     return failures;
 }

@@ -1,5 +1,17 @@
 # Changelog — NeoST
 
+## 2026-11-26 — Portages des derniers commits d'Hatari
+
+- **`.DIM` « secteurs utilisés seulement » de FastCopy** : reconstruit d'après la seconde FAT
+  (secteurs système, puis seuls les clusters utilisés), monté en lecture seule. Ces images
+  ne se montaient pas. Une telle image mal formée n'est plus montée brute et inscriptible.
+  Hatari `36a8acf0` refuse au passage toute `.dim` (signature `$42 $43` au lieu de `$42 $42`,
+  commit `42f3b642`) : non suivi.
+- **`Dsetdrv` : octet bas seulement**, comme TOS 1 à 3 (Riemann II, d'après Hatari). Le
+  repli sur le dernier `Dsetdrv`, au boot, ne restait plus sur l'ancien lecteur.
+- Vérifiés sans changement : MFP (DDR à 0 au reset), blitter sur GPIP3, horloge IKBD à l'arrêt
+  quand le mois vaut 0 et blocs IPF « raw » : NeoST les traitait déjà. Non porté : GPIP5
+  partagée FDC/ACSI (TODO), et `_bootdev` forcé au disque hôte (NeoST garde celui du TOS).
 ## 2026-11-26 — Oracle Hatari épinglé sur `36a8acf0`
 
 - **Épingle déplacée de `f0736b24` (2026-08-18) à `36a8acf0` (2026-11-24, v2.6.1-devel,
