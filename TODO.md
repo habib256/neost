@@ -351,6 +351,16 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   protocole.
 - **Documents primaires manquants** · P2 ⏸ source — HD6301 rapatrié le 2026-11-10 (Hitachi, *HD6301/HD6303 Series Handbook*, 1989) ; restent les schémas GLUE/MMU ST et Mega STE,
   schéma du Shifter ST. chzsoft.de consulté le 2026-11-10 : seul le GSTMCU du STE y est.
+- **Pièces jointes des fils decap d'atari-forum** · P2 ⏸ utilisateur — l'auteur doit **s'inscrire
+  sur atari-forum.com** : les pièces jointes n'y sont visibles qu'une fois connecté, et le site
+  refuse les accès automatiques (Cloudflare). Le texte des deux fils est lu (2026-11-26), notes
+  dans `~/Downloads/atarist-silicon/atari_forum_decap_notes.md` (hors dépôt). À rapatrier :
+  t=29658 (ijor, *ST Chipset decap*) `ShifterReloadControl`, `ShifterClockGen`,
+  `ShiftArrayLogic`/`ShiftArrayDetail`, `ReloadCtrl-Low-Start/End`, `ReStabilize`, chronogrammes
+  `Low/Mono/Med-ok/bug` (`ShifterSchemWip.zip` est déjà dans `extern/mistery/doc/`) ;
+  t=30241 (*MMU schematics WIP*) `C025912-Top`, `MmuClock-075`, `Mmu-Cmpcs`, `Clock-Skew-*`,
+  `Shifter-Cs-Delay`, `Ricoh-5GH-Datasheet.pdf`. Ces fils ne traitent ni du bus ouvert ni du
+  retard d'IRQ du MFP ; ijor y promet un fil à part sur la gigue du Timer B, à chercher.
 - **A43 — dette de preuve** · P2 ⏸ — tout commentaire cite ses références (règle : `CLAUDE.md`) ;
   les 312 citations d'Hatari portent grade et révision. MFP, YM2149, WD1772, ACIA et SCC sont
   confrontés à leurs fiches : ce qu'elles tranchaient seules est corrigé (2026-11-10), les `⚠ [B]`
