@@ -405,6 +405,7 @@ Ika et shforstv démarrent sans disque dur virtuel; exécutables inchangés.
 | Ika I Compofylla | `ika_compofylla` | Motifs busdisplay et scroll après correction de l’historique CPU ; snapshot, phase matérielle à confirmer |
 | shforstv | `shforstv` | Forêt en mouvement depuis disquette AUTO, identique à Hatari (oracle depuis le 2026-11-18, grade D) ; Espace à 2020, capture à 2400 |
 | Punish Your Machine | `punish_your_machine` | Crédits du menu seulement ; parties techniques non couvertes |
+| what.if.game (SYNC, 2022) | `whatifgame` | Moteur à défilement de 4 pixels par la résolution 3 du Shifter (horloge arrêtée), identique à Hatari @ 36a8acf0 sur 17 points de 2600 à 9000, grade D ; ST 4 Mo, Espace à 700, capture à 4600 ; tourne aussi sous EmuTOS 192 Ko (page web) |
 
 Un snapshot vert signifie uniquement « comportement inchangé », même lorsque le
 comportement est incorrect. Les améliorations à faire vivent au TODO, item

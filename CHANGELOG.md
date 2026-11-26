@@ -1,5 +1,19 @@
 # Changelog — NeoST
 
+## 2026-11-26 — what.if.game (SYNC, 2022) : étalon et démo de la page web
+
+- **what.if.game**, préversion de SYNC (code Troed) à la Silly Venture 2022 SE : un moteur de jeu à
+  défilement horizontal par pas de 4 pixels, obtenu en écrivant la résolution 3 au Shifter, dont le
+  multiplexeur d'horloge ne sort alors plus rien (relevé d'ijor, que la démo cite). À sa sortie, elle
+  ne tournait dans aucun émulateur. NeoST la joue de bout en bout, identique à Hatari au pixel de la
+  trame 2600 à 9000 (17 points), et aussi sous EmuTOS. Nouvel étalon `whatifgame` (ST 4 Mo, TOS 1.04,
+  oracle Hatari), et nouvelle démo de la page web (EmuTOS 192 Ko FR, ST 4 Mo).
+- **Banc au pixel, forme `res3`** (`run_stcpu_raster.py --kind res3`) : contre le RTL dérivé des
+  schémas d'ijor, 15 dates sur 64 identiques avec un arrêt de 16 cycles, 5 et 7 avec 8 et 12. Le
+  modèle garde la phase d'arrêt d'une trame à l'autre, NeoST la remet à 0 comme Hatari. what.if.game
+  stabilise avant chaque arrêt et ne départage pas. Le vrai modèle passe par la logique de recharge
+  du Shifter (TODO).
+
 ## 2026-11-26 — Portages des derniers commits d'Hatari
 
 - **`.DIM` « secteurs utilisés seulement » de FastCopy** : reconstruit d'après la seconde FAT

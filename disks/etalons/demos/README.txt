@@ -20,6 +20,12 @@ LOSTE.ZIP 0cd434410b980f93ed604583649a15c6caa6ea651e90b934932c3a464541f930
 overscan.zip c32ff517ff340dc07f43120a60e84ccb10af18203ac60cef6e9da83e9e62d881
 ikaifillparty.zip b1324a63b55c53777993ce2302919d749cafc038836c6c7dbe47468cabbf59ad
 SHFORSTV.ZIP f1e0f005d7ec08e3f5b0164b53d62fb0d734db9c24b7eead550b4d94d5bf838b
+what_if_game.zip 7966526c2d3555eb9d1dcd2f57be7aa0e6b6e663819aec9e63ea8ee26bdba445
+
+what.if.game (SYNC, Silly Venture 2022 SE, ajoutée le 2026-11-26) : scene.org,
+parties/2022/sillyventure22/st_ste_demo/what_if_game.zip. ST 4 Mo, TOS 1.04 UK ou
+EmuTOS 192 Ko. Conteneur FAT12 : GAME.PRG dans AUTO\, WHAT.IF et WIG_PRE.NFO à la
+racine, octets inchangés. Espace quand le Fuji de l'écran de contrôle rebondit sans à-coups.
 
 La référence de non-régression ne valide pas le rendu matériel.
 Ika présente actuellement des rayures à la place du busdisplay attendu.
