@@ -19,7 +19,7 @@ fi
 # que rien ne le signale, alors que TOUTE la méthode du projet repose sur lui.
 # On ne bloque pas (un oracle plus récent reste utilisable) : on AVERTIT, pour
 # qu'une référence régénérée contre un autre oracle soit visible dans le journal.
-HATARI_PIN=f0736b24b32b0439300b52107ba6ab434469ec3c   # v2.6.1-devel, 2026-08-18
+HATARI_PIN=36a8acf02bb3f08749d1a4db165f85328e60793b   # v2.6.1-devel, 2026-11-24
 if [[ -d "$ROOT/extern/hatari/.git" ]]; then
   HAVE=$(git -C "$ROOT/extern/hatari" rev-parse HEAD 2>/dev/null || echo inconnu)
   if [[ "$HAVE" != "$HATARI_PIN" ]]; then

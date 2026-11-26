@@ -27,7 +27,7 @@ DIR="$ROOT/extern/hatari"
 # ⚠ Doit rester IDENTIQUE au HATARI_PIN de tools/hatari_oracle.sh, qui avertit
 # quand l'arbre présent ne correspond pas. Les références `ref_kind: hatari` du
 # dépôt ont été posées avec CETTE version.
-PIN=f0736b24b32b0439300b52107ba6ab434469ec3c        # v2.6.1-devel, 2026-08-18
+PIN=36a8acf02bb3f08749d1a4db165f85328e60793b        # v2.6.1-devel, 2026-11-24
 URL=https://framagit.org/hatari/hatari.git
 
 if [[ "${1:-}" == "--update-pin" ]]; then

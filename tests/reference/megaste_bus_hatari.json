@@ -5,17 +5,17 @@
   "samples": 64,
   "hatari_cpu_cycles_per_bus": 2,
   "oracle": {
-    "commit": "f0736b24b32b0439300b52107ba6ab434469ec3c",
+    "commit": "36a8acf02bb3f08749d1a4db165f85328e60793b",
     "sources_sha256": {
-      "src/mfp.c": "2d42fc323fe5ed348381eca83bcb0e476a95c5a8fa33f6e9626aa8757e9539c1",
-      "src/dmaSnd.c": "a300736fb67f4f7dbb65b4dce58b9a3ff37b2e0bbec2a342aa53ee82ec0ba4a4",
-      "src/cycInt.c": "cb5994307f029f3471e887cd32320b32b3d73d130dead7aebecc793918f70685",
-      "src/video.c": "66461eba3447e4a6f0ef86f35f0af0181d3f0874b002c2710b92c69f44004aeb",
-      "src/cpu/newcpu.c": "a2048f53299470244bc776368b19e19adee1b98ca51ca802198fb8914e291dfb",
+      "src/mfp.c": "415e7d8bb951e13e930286eb6fbc06c9e4f0fa86b3c89b04c879ea1b637f7baa",
+      "src/dmaSnd.c": "927495ea0dff0ec44cc1d8eb660c02c246546e2471cb5036e04a486287f79aff",
+      "src/cycInt.c": "b0e62e1413fa359200deb9e6df473ac8cdc89f67f40b4b1a400e70b1ec2087f3",
+      "src/video.c": "1219befc12b841fcf4c5f76272d3de161d8a824c7f29a39784b35d66a9e14e09",
+      "src/cpu/newcpu.c": "2a280ae2854de04e073cf8b3df8f3ecb2297d2fe5ceb0b557e4ce005191256b0",
       "src/m68000.c": "45f576ce687fffa9ca4246a6f42f7b880804bf9721050a03b1412544312497c7",
-      "src/fdc.c": "ecfce86410ed5ff6e89f95b999d56bfd93f9b51028f07e75654f952ddfcc56d2",
-      "src/floppies/stx.c": "15d6a1c5a46c8ab1ce06d02d0bdd2f9d79f684f874e107b58d05e983b97e93d6",
-      "src/blitter.c": "f5b7354b4a10c48b66c8f26a81241067191d8ebab0e720427aeb2fc16d779117"
+      "src/fdc.c": "5ba6d5d2bd832d0d8ec490944a4eb1e76d730b9ff2b65e5617a1cdd049d2021c",
+      "src/floppies/stx.c": "c2da1f104c8bb41dbc3d2c668d39bdaf463b4ca5bde21026bc812264b988dae8",
+      "src/blitter.c": "93478ba6495f0c33ca1dd34b8cccae6136f22976975597f00c7893e80ac77eae"
     }
   },
   "rom_sha256": "8a4c114ec850821260ac10d36fa9f62c7937053f8ebad84bc605cde229f3c3f5",

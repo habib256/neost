@@ -1,5 +1,18 @@
 # Changelog — NeoST
 
+## 2026-11-26 — Oracle Hatari épinglé sur `36a8acf0`
+
+- **Épingle déplacée de `f0736b24` (2026-08-18) à `36a8acf0` (2026-11-24, v2.6.1-devel,
+  194 commits amont)** : `tools/setup_hatari.sh`, `tools/hatari_oracle.sh` et les oracles
+  FPU. Rien n'a bougé côté mesures : les 45 étalons `hatari` sont reproduits à l'identique
+  par l'oracle régénéré (`run_etalons.py --oracle-check`). Les traces de timing et du bus
+  Mega STE sont identiques ; leurs références n'ont changé que par l'empreinte des sources.
+  Le décimal FPU (161 348 cas) et FMOVECR (2 048) ne montrent aucun écart.
+- **Patch oracle** régénéré sur la nouvelle épingle : les événements souris de la fifo
+  (`leftdown`, `mousemove`…) sont désormais dans l'amont, leurs hunks sortent du patch.
+  Hatari se construit maintenant avec SDL3.
+- Les citations `@ f0736b24` du code restent vraies à leur révision et ne sont pas réécrites.
+
 ## 2026-11-26 — Campagne CD LGD : entrées des menus, aucun défaut propre à NeoST
 
 - **Entrées 1 à 5 des menus** (Automation, Pompey Pirates, Medway Boys : touche à la trame
