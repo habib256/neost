@@ -18,7 +18,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-PIN = 'f0736b24b32b0439300b52107ba6ab434469ec3c'
+PIN = '36a8acf02bb3f08749d1a4db165f85328e60793b'
 ROOT = Path(__file__).resolve().parent.parent
 ap = argparse.ArgumentParser(description=__doc__)
 ap.add_argument('--fpu-source', type=Path, default=ROOT/'src/io/Fpu.cpp')

@@ -10,8 +10,9 @@
 #  conditionnés par une variable d'environnement, les événements souris et le
 #  script joystick ne font qu'ouvrir une voie d'injection d'entrée.
 #
-#    src/control.c    events fifo « leftdown/leftup/rightdown/rightup/mousemove »
-#                     (oracle des menus SOURIS)
+#    (src/control.c : les événements souris de la fifo « leftdown/leftup/
+#                     rightdown/rightup/mousemove », ajoutés ici jusqu'au 2026-11-26,
+#                     sont dans l'amont depuis ; hunks retirés au passage à 36a8acf0)
 #    src/joy.c        NEOST_JOY_SCRIPT / NEOST_JOY_START : état joystick 1 posé
 #                     par VBL depuis un fichier — l'oracle DIFFÉRENTIEL rejoue
 #                     ainsi le script d'entrées de NeoST à la trame près
@@ -35,44 +36,15 @@
 #      cmake --build extern/hatari/build -j
 #  Recettes et pièges : docs/HATARI_AUTOMATION.md.
 #
-#  Base : l'ÉPINGLE du projet, hatari f0736b24 (« Fix value for MINGW_PREFIX for
-#  the mingw win32 build », v2.6.1-devel, 2026-08-18) — celle de tools/setup_hatari.sh
-#  et tools/hatari_oracle.sh. Hunks régénérés SUR l'épingle le 2026-09-05 (git diff dans
-#  extern/hatari placé sur f0736b24), vérifiés « git apply --check » = 0 sur un arbre propre.
+#  Base : l'ÉPINGLE du projet, hatari 36a8acf0 (« Ignore upper byte in GEMDOS Dsetdrv
+#  argument », v2.6.1-devel, 2026-11-24) — celle de tools/setup_hatari.sh et
+#  tools/hatari_oracle.sh. Hunks régénérés SUR l'épingle le 2026-11-26 (git diff dans
+#  extern/hatari placé sur 36a8acf0), vérifiés « git apply --check » = 0 sur un arbre propre.
 #  tools/setup_hatari.sh l'applique automatiquement ; un déplacement d'épingle doit
 #  re-vérifier l'application AVANT d'être commis.
 # =============================================================================
-diff --git a/src/control.c b/src/control.c
-index 0eb5e800..661b7d5c 100644
---- a/src/control.c
-+++ b/src/control.c
-@@ -155,6 +155,24 @@ static bool Control_InsertEvent(const char *event)
- 		Keyboard.LButtonDblClk = 1;
- 		return true;
- 	}
-+	/* NeoST: injection bouton GAUCHE pour l'oracle headless (menus souris) */
-+	if (strcmp(event, "leftdown") == 0) {
-+		Keyboard.bLButtonDown |= BUTTON_MOUSE;
-+		return true;
-+	}
-+	if (strcmp(event, "leftup") == 0) {
-+		Keyboard.bLButtonDown &= ~BUTTON_MOUSE;
-+		return true;
-+	}
-+	/* NeoST: même accumulation relative que GuiEvent_HandleMouseMotion (sans accélération hôte). */
-+	int dx, dy;
-+	char extra;
-+	if (sscanf(event, "mousemove %d %d %c", &dx, &dy, &extra) == 2
-+	    && dx >= -127 && dx <= 127 && dy >= -127 && dy <= 127) {
-+		KeyboardProcessor.Mouse.dx += dx;
-+		KeyboardProcessor.Mouse.dy += dy;
-+		return true;
-+	}
- 	if (strcmp(event, "rightdown") == 0) {
- 		Keyboard.bRButtonDown |= BUTTON_MOUSE;
- 		return true;
 diff --git a/src/cpu/newcpu.c b/src/cpu/newcpu.c
-index 19120057..c97465b0 100644
+index 2dd82dc6..4502b617 100644
 --- a/src/cpu/newcpu.c
 +++ b/src/cpu/newcpu.c
 @@ -113,6 +113,7 @@ int m68k_pc_indirect;
@@ -83,7 +55,7 @@ index 19120057..c97465b0 100644
  static bool m68k_reset_delay;
  static bool ismoves_nommu;
  static bool need_opcode_swap;
-@@ -3040,6 +3041,16 @@ static void Exception_ce000 (int nr)
+@@ -3042,6 +3043,16 @@ static void Exception_ce000 (int nr)
  //fprintf ( stderr , "ex in %d %ld %ld\n" , nr , currcycle , CyclesGlobalClockCounter );
  	start = 6;
  	interrupt = nr >= 24 && nr < 24 + 8;
@@ -100,7 +72,7 @@ index 19120057..c97465b0 100644
  	if (!interrupt) {
  		start = 4;
  		if (nr == 7) { // TRAPV
-@@ -5013,6 +5024,11 @@ void ipl_fetch_next(void)
+@@ -5020,6 +5031,11 @@ void ipl_fetch_next(void)
  	} else {
  		regs.ipl[1] = regs.ipl_pin;
  	}
@@ -112,7 +84,7 @@ index 19120057..c97465b0 100644
  }
  
  void intlev_load(void)
-@@ -5026,6 +5042,10 @@ void intlev_load(void)
+@@ -5033,6 +5049,10 @@ void intlev_load(void)
  static void update_ipl(int ipl)
  {
  	evt_t c = get_cycles();
@@ -215,10 +187,10 @@ index 6a97a80d..0bab0931 100644
  	/* Are we emulating the joystick via the keyboard? */
  	if (ConfigureParams.Joysticks.Joy[nStJoyId].nJoystickMode == JOYSTICK_KEYBOARD)
 diff --git a/src/sdl/main_sdl.c b/src/sdl/main_sdl.c
-index 22c73bed..bdb7e023 100644
+index 85f568fe..b841f1de 100644
 --- a/src/sdl/main_sdl.c
 +++ b/src/sdl/main_sdl.c
-@@ -116,8 +116,19 @@ void Main_ErrorExit(const char *msg1, const char *msg2, int errval)
+@@ -122,8 +122,19 @@ void Main_ApplyStartupOptions(void)
   */
  int main(int argc, char *argv[])
  {
@@ -241,7 +213,7 @@ index 22c73bed..bdb7e023 100644
  	Main_Init(argc, argv);
  
 diff --git a/src/utils.c b/src/utils.c
-index 2674cbff..82a9e538 100644
+index 4391b851..990a0747 100644
 --- a/src/utils.c
 +++ b/src/utils.c
 @@ -108,15 +108,33 @@ void	crc16_add_byte ( uint16_t *crc , uint8_t c )
@@ -281,10 +253,10 @@ index 2674cbff..82a9e538 100644
  
  
 diff --git a/src/video.c b/src/video.c
-index 7e87713f..886fecfe 100644
+index c9af819a..75171939 100644
 --- a/src/video.c
 +++ b/src/video.c
-@@ -3907,6 +3907,13 @@ static void Video_CopyScreenLineColor(void)
+@@ -3910,6 +3910,13 @@ static void Video_CopyScreenLineColor(void)
  	int i;
  	uint32_t VideoMask;
  

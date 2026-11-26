@@ -51,6 +51,12 @@ git -C extern/hatari apply ../../tools/hatari_neost_oracle.patch
 cmake --build extern/hatari/build -j
 ```
 
+**Passage à `36a8acf0` (2026-11-26, 194 commits amont)** : les références de timing
+(`timing_hatari.json`) et du bus Mega STE n'ont bougé que par les empreintes des sources ;
+traces identiques. Oracles FPU : 0 écart (décimal, FMOVECR). Les événements souris de la
+fifo sont désormais dans l'amont : leurs hunks ont quitté le patch. Résultat des étalons
+`--oracle-check` : `CHANGELOG.md`.
+
 **L'épingle est la référence, le patch la suit.** Tranché le 2026-09-05 : l'épingle
 `f0736b24` (2026-08-18) protège les 11 références `ref_kind: hatari` du dépôt ; le clone local
 était sur `981f291` (2026-07-01), un **ancêtre** en retard de 26 commits dont `fdc.c` (+176),
@@ -161,7 +167,9 @@ comme « bâti dans le dépôt ». Le récupérer et le bâtir :
 tools/setup_hatari.sh        # clone À LA VERSION ÉPINGLÉE + build (options macOS incluses)
 ```
 
-⚠ **La version est ÉPINGLÉE depuis le 2026-08-26 (chantier A5)** : `f0736b2`, v2.6.1-devel.
+⚠ **La version est ÉPINGLÉE depuis le 2026-08-26 (chantier A5)** : `36a8acf0` (2026-11-24),
+v2.6.1-devel, depuis le 2026-11-26 ; `f0736b24` (2026-08-18) avant. Les citations
+`@ f0736b24` du code restent vraies à leur révision.
 La recette précédente faisait un `git clone --depth 1`, c'est-à-dire « le HEAD du jour » —
 deux oracles bâtis à deux semaines d'écart pouvaient donc produire des références **pixel**
 différentes sans qu'aucune ligne du dépôt n'ait bougé, alors que toutes les entrées
