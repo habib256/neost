@@ -54,8 +54,10 @@ Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
 
 - **La machine automatique.** Un programme qui lit un registre absent du modèle (son DMA
   du STE sur un ST…) sans gestionnaire de bus error à lui redémarre sur la machine qui le
-  porte (`mmioNeedsBetterMachine`, déjà utilisé par le bandeau du GUI), deux fois au plus
-  (Mega ST pour le blitter, puis STE). La faute vient du `Bus` (`lastMissingIoFault`, étage
+  porte (`mmioNeedsBetterMachine`, déjà utilisé par le bandeau du GUI), deux fois au plus.
+  Le blitter mène au **STE a priori** (décision de l'auteur, 2026-11-26 : Vector Rally
+  tournait en Mega ST avec une palette de 3 bits), au Mega ST seulement si aucun TOS du
+  dossier système ne fait tourner un STE (cas `blitter_ste`, `blitter_megast_fallback`). La faute vient du `Bus` (`lastMissingIoFault`, étage
   « registre absent » de `busFaultNSlow`, ni la protection superviseur ni une écriture
   interdite), avec le PC de l'instruction et le vecteur 2 **en vigueur à cet instant**.
   Deux signatures : le 68000 arrêté (TOS Atari ; sa dernière faute est l'erreur d'adresse
@@ -117,7 +119,14 @@ Ce qu'il ajoute aux règles plus bas, et que les cœurs Hatari n'ont pas :
   rejoué, fichier compagnon compris. Un état v1 se relit (overlay laissé tel quel). Les
   sauvegardes d'un jeu protégé ne divergent plus entre joueurs ni sous l'anticipation.
 - **Les disques durs** `.hd`/`.vhd` en ACSI 0 (copie privée) : EmuTOS monte la partition
-  et lance `C:\AUTO`.
+  et lance `C:\AUTO`. Depuis le 2026-11-26, leurs écritures vont à un **calque** en mémoire
+  (`Acsi::setWriteOverlay`) que l'état autonome porte (v3) : un retour arrière ou une trame
+  d'anticipation les défait, un invité du netplay les reçoit, et la copie privée ne les
+  reçoit qu'à la destruction de la Machine (fin du contenu, redémarrage sur une autre
+  machine). L'empreinte d'en-tête hache alors le nom de l'image, pas son chemin : chaque
+  joueur monte sa copie. `retro_serialize_size` réserve 4 Mo au calque (au-delà, l'état ne
+  tient plus et le module le dit) ; sauvegarde 0,42 ms et reprise 0,38 ms avec un disque dur.
+  Cas `hard_disk_state` (il échoue sur le module d'avant).
 - **Le toucher** : option « Touch moves the GEM pointer » (active sur Android) —
   `RETRO_DEVICE_POINTER` → `Machine::desktopMouseMove`, actions en file pour qu'un tap plus
   court que le trajet du curseur garde son clic. Un double tap ouvre le lecteur A.
@@ -144,8 +153,7 @@ l'hôte : Linux x86_64 et arm64 (glibc 2.35), macOS universel arm64 + x86_64 (le
 `retro_*`), Windows x86_64 (MinGW UCRT, runtime lié en statique : la DLL n'importe que
 KERNEL32 et l'UCRT). Ils ne sont pas attachés aux releases.
 
-Restent ouverts au TODO (§ 7, « Cœur libretro ») : le MIDI, le disque dur ACSI dans
-l'état, l'essai sur les autres hôtes (Pi, Android, Windows, Linux), la publication des
+Restent ouverts au TODO (§ 7, « Cœur libretro ») : le MIDI, l'essai sur les autres hôtes (Pi, Android, Windows, Linux), la publication des
 paquets.
 
 ## Positionnement : un cœur ST qui n'est pas Hatari
@@ -189,7 +197,7 @@ présente sur ce qu'il fait le jour où il paraît.
 | Horodatage des écritures son | `Machine::armAudioClocks()`, contrat de drainage écrit dans `Machine.hpp` | **Prêt** |
 | Bruits du lecteur dans le même flux | `DriveSound` joue par son propre moteur miniaudio ; `audio/DriveSoundMix` rend du PCM | **Fait** pour libretro ; Android ouvert |
 | `retro_serialize` rapide | `saveState` 0,41 ms, `loadState` 0,52 ms ; avec les disquettes 0,66 et 0,76 ms ; une trame ≈ 1 ms (mesures ci-dessous) | **Prêt** |
-| Le blob contient tout ce qui change | `Machine::saveStateWithMedia` / `loadStateWithMedia` : l'état `.state` intact, les deux lecteurs (et l'overlay d'écriture d'une STX/IPF depuis la v2) et un CRC | **Prêt**, sauf un disque dur ACSI — « Disque dur ACSI dans l'état » |
+| Le blob contient tout ce qui change | `Machine::saveStateWithMedia` / `loadStateWithMedia` : l'état `.state` intact, les deux lecteurs (et l'overlay d'écriture d'une STX/IPF depuis la v2, le calque d'écriture ACSI depuis la v3) et un CRC | **Fait** |
 | `retro_serialize_size` fixe | Conteneur à longueur inscrite, remplissage final ignoré ; taille constante tant que les médias ne changent pas, sauf GEMDOS (+322 octets au boot sous EmuTOS) | **Prêt** (borne à poser par l'adaptateur) |
 | État refusé pendant un blit HOG garé | `saveState` rend faux tant qu'une instruction est garée (`Machine::kParkedReason`) | **Fait** : `retro_serialize` rend faux, RetroArch saute la trame |
 | `retro_load_game` / `retro_unload_game` répétés | Machine reconstruite = même état (gardé par `neost-selftest`) ; restent process-globaux le quartz (`setClocks`), le pays clavier (`stkeys`) et `g_cur` du CPU (A33, § 9) | **Prêt** avec les règles ci-dessous |

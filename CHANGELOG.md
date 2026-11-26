@@ -1,5 +1,24 @@
 # Changelog — NeoST
 
+## 2026-11-26 — Libretro : le disque dur dans l'état
+
+- **Calque d'écriture ACSI** (`Acsi::setWriteOverlay`, activé par le seul cœur libretro) :
+  les secteurs écrits restent en mémoire par-dessus l'image et entrent dans l'état autonome
+  (**v3** ; v1 et v2 se relisent). Un retour arrière ou une trame d'anticipation défait une
+  écriture sur C:, un invité du netplay la reçoit, et la copie privée n'est réécrite qu'à la
+  destruction de la Machine (fin du contenu, redémarrage). Avant, l'image était écrite au
+  fil de l'eau et deux joueurs divergeaient dès qu'un programme écrivait.
+- L'empreinte d'en-tête hache le **nom** de l'image sous calque : un joueur et sa propre
+  copie, dans un autre dossier, n'est plus refusé.
+- `retro_serialize_size` réserve 4 Mo au calque ; avec un disque dur, sauvegarde 0,42 ms et
+  reprise 0,38 ms (0,51 et 0,50 ms avec une disquette).
+- Cas `hard_disk_state` : un programme écrit un secteur par `Rwabs` et le relit ; copie
+  intacte pendant la session, écriture défaite par un état antérieur, portée chez un second
+  joueur et rendue à sa copie à la fermeture. Il échoue sur le module d'avant.
+- Campagne (81 images, TOS Atari) après le passage du blitter au STE : inchangée, sauf
+  systematic_error, même scène saisie pendant un fondu (le programme démarre une trame de
+  redémarrage plus tôt).
+
 ## 2026-11-26 — Libretro : archives .7z, module macOS universel, paquets par hôte
 
 - **`.7z`** : `util/Archive` lit les archives 7z par le décodeur C du SDK LZMA (7-Zip 24.09,
@@ -20,9 +39,11 @@
   (MinGW UCRT, runtime statique). Artefacts du run seulement : `publish` les écarte, leur
   publication attend l'auteur. Le `.dll`, bâti ici en compilation croisée, n'importe que
   KERNEL32 et l'UCRT ; il n'a pas encore tourné sur Windows.
-- Machine automatique : Vector Rally redémarre en **Mega ST** (sonde du blitter) alors
-  qu'il demande un STE ; il tourne, mais sa palette perd le quatrième bit (238 au lieu de
-  255). Noté au TODO.
+- **Machine automatique : le blitter mène au STE a priori** (décision de l'auteur). Vector
+  Rally redémarrait en Mega ST, où sa palette perdait le quatrième bit (238 au lieu de 255) ;
+  il redémarre en STE. Le Mega ST reste le repli sans TOS pour STE dans le dossier système.
+  Cas `blitter_ste` et `blitter_megast_fallback`.
+- Pas de sortie publique du cœur libretro pour l'instant (décision de l'auteur).
 
 ## 2026-11-25 — Libretro : repli de TOS, disquettes sœurs strictes
 

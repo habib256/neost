@@ -140,6 +140,12 @@ public:
     // Empreinte de l'image montée sur `target` (chemin + taille), 0 si aucune — portée
     // par l'en-tête des save-states (Machine::stateHeaderOk), cf. Acsi::imageFingerprint.
     uint32_t acsiImageFingerprint(int target) const { return acsi_.imageFingerprint(target); }
+    // Calque d'écriture ACSI (cf. Acsi::setWriteOverlay) : état autonome, cœur libretro.
+    void setAcsiWriteOverlay(bool on) { acsi_.setWriteOverlay(on); }
+    std::size_t acsiOverlayBytes() const { return acsi_.overlayBytes(); }
+    void acsiWriteOverlays(StateArchive& ar) const { acsi_.writeOverlays(ar); }
+    bool acsiReadOverlays(StateArchive& ar, std::vector<Acsi::Overlay>& out) const { return acsi_.readOverlays(ar, out); }
+    void acsiSetOverlays(std::vector<Acsi::Overlay>&& in) { acsi_.setOverlays(std::move(in)); }
     bool acsiAnyImage() const { return acsi_.anyImage(); }
     const std::string& acsiMountedPath(int target = 0) const { return acsi_.mountedPath(target); }
     int  acsiPartitionCount() const { return acsi_.partitionCount(); }

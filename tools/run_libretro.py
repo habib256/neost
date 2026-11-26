@@ -149,6 +149,7 @@ def write_hard_disk(path, files):
 
 SUPER = [0x42A7, 0x3F3C, 0x0020, 0x4E41, 0x5C8F]          # Super(0) : mode superviseur
 READ_DMA_SOUND = [0x3038, 0x8900]                          # move.w $FFFF8900.w,d0
+READ_BLITTER = [0x3038, 0x8A3C]                            # move.w $FFFF8A3C.w,d0
 LOOP = [0x60FE]                                            # bra.s *
 
 
@@ -325,6 +326,30 @@ def case_needs_ste(module, work):
     return c.messages[-1]
 
 
+def case_blitter_ste(module, work):
+    """Machine automatique : un programme qui touche au blitter sans gestionnaire redémarre
+    en STE a priori (le plus répandu des ST à blitter, et sa palette de 4 bits)."""
+    c, media = core(module, work)
+    write_prg(media / "BLIT.PRG", SUPER + READ_BLITTER + LOOP)
+    assert c.load(media / "BLIT.PRG")
+    c.run(1500)
+    assert any("Blitter: restarted as Atari STE" in m for m in c.messages), c.messages
+    return c.messages[-1]
+
+
+def case_blitter_megast_fallback(module, work):
+    """Sans TOS pour STE dans le dossier système (EmuTOS 192 Ko seul), une faute du
+    blitter redémarre en Mega ST, qui le porte aussi, au lieu d'échouer."""
+    c, media = core(module, work)
+    for t in ("etos256us.img", "etos256fr.img"):
+        (work / "system" / "neost" / t).unlink()
+    write_prg(media / "BLIT.PRG", SUPER + READ_BLITTER + LOOP)
+    assert c.load(media / "BLIT.PRG")
+    c.run(1500)
+    assert any("Blitter: restarted as Mega ST" in m for m in c.messages), c.messages
+    return c.messages[-1]
+
+
 def case_probe_kept(module, work):
     """Un programme qui pose son gestionnaire de bus error et sonde le STE reste sur ST."""
     c, media = core(module, work)
@@ -460,6 +485,63 @@ def case_hard_disk(module, work):
     assert red > w * h * 0.3, f"{red} red pixels of {w * h}: C:\\AUTO not run"
     assert (work / "saves" / "neost" / "harddisks" / "Games.hd").exists(), "no private copy"
     return c.messages[0]
+
+
+def hd_writer_prg(pattern):
+    """C:\\AUTO : Rwabs écrit le secteur logique 1000 de C: (libre), fond vert, puis relit
+    ce secteur en boucle dans un tampon en RAM (ce que le programme voit du disque)."""
+    rw = lambda flag, disp: [0x3F3C, 0x0002, 0x3F3C, 1000, 0x3F3C, 0x0001, 0x487A, disp,
+                             0x3F3C, flag, 0x3F3C, 0x0004, 0x4E4D, 0x4FEF, 0x000E]
+    data_w, rbuf_w = 39, 39 + 256                       # indices de mots dans le texte
+    words = (SUPER + rw(1, 2 * data_w - 24) + [0x31FC, 0x0070, 0x8240]
+             + rw(0, 2 * rbuf_w - 60) + [0x60E0])          # bra.s vers la relecture (mot 23)
+    assert len(words) == data_w
+    words += [int.from_bytes(pattern[i:i + 2], "big") for i in range(0, 512, 2)] + [0] * 256
+    return words
+
+
+def case_hard_disk_state(module, work):
+    """Disque dur dans l'état : les écritures vont au calque (la copie privée n'est pas
+    écrite pendant la session), un état antérieur les défait, un état postérieur les porte
+    chez un autre joueur (autre dossier : empreinte au nom), et la copie les reçoit à la
+    fermeture du contenu."""
+    import struct
+    pattern = (b"NEOST-ACSI-OVERLAY" * 29)[:512]
+    sector = (2 + 1000) * 512                             # secteur racine + réservé + logique 1000
+
+    def disk_copy(w):
+        return (w / "saves" / "neost" / "harddisks" / "Games.hd").read_bytes()[sector:sector + 512]
+
+    c, media = core(module, work)
+    prg = media / "HDW.PRG"
+    write_prg(prg, hd_writer_prg(pattern))
+    write_hard_disk(media / "Games.hd", {"AUTO/HDW.PRG": prg.read_bytes()})
+    assert c.load(media / "Games.hd")
+    c.run(100)
+    before = c.save_state()
+    c.run(1400)
+    w, h, raw = c.frame
+    green = sum(1 for i in range(0, len(raw), 4) if raw[i + 1] > 150 and raw[i + 2] < 60)
+    assert green > w * h * 0.3, "C:\\AUTO\\HDW.PRG did not run"
+    assert pattern in c.ram(), "the program did not read its sector back"
+    assert disk_copy(work) == bytes(512), "the private copy was written during the session"
+    after = c.save_state()
+    assert c.load_state(before)
+    c.close()
+    assert disk_copy(work) == bytes(512), "a state taken before the write did not undo it"
+
+    other = work / "player2"
+    other.mkdir()
+    c2, media2 = core(module, other)
+    shutil.copy(media / "Games.hd", media2 / "Games.hd")
+    assert c2.load(media2 / "Games.hd")
+    c2.run(50)
+    assert c2.load_state(after), "a player with its own copy refused the state"
+    c2.run(30)
+    assert pattern in c2.ram()
+    c2.close()
+    assert disk_copy(other) == pattern, "the writes did not reach the copy when the content closed"
+    return f"state {len(after)} bytes; write undone by an earlier state, carried to another player"
 
 
 def case_touch_pointer(module, work):

@@ -59,6 +59,7 @@ Acsi::~Acsi() { unmountAll(); }
 bool Acsi::mount(int target, const std::string& path) {
     if (target < 0 || target >= MAX_DEVS) return false;
     Dev& d = devs_[target];
+    flushOverlay(d);
     if (d.fp) { fclose(d.fp); d.fp = nullptr; }
     d.enabled = false;
 
@@ -101,9 +102,77 @@ bool Acsi::mount(int target, const std::string& path) {
     return true;
 }
 
+// Le calque rejoint le fichier hôte : seulement au démontage (cf. Acsi.hpp).
+void Acsi::flushOverlay(Dev& d) {
+    if (!d.fp || d.overlay.empty()) { d.overlay.clear(); return; }
+    std::size_t failed = 0;
+    for (const auto& [lba, data] : d.overlay) {
+        if (d.readOnly || fseeko(d.fp, (off_t)lba * d.blockSize, SEEK_SET) != 0
+            || fwrite(data.data(), 1, data.size(), d.fp) != data.size())
+            ++failed;
+    }
+    fflush(d.fp);
+    if (failed)
+        neost::log::err("[acsi] %zu written sector(s) could not reach %s\n", failed, d.path.c_str());
+    d.overlay.clear();
+}
+
+std::size_t Acsi::overlayBytes() const {
+    std::size_t n = 0;
+    for (const Dev& d : devs_) n += d.overlay.size() * (4 + d.blockSize);
+    return n;
+}
+
+void Acsi::writeOverlays(StateArchive& ar) const {
+    for (const Dev& d : devs_) {
+        uint32_t count = uint32_t(d.overlay.size());
+        ar(count);
+        for (const auto& [lba, data] : d.overlay) {
+            uint32_t l = lba;
+            std::vector<uint8_t> v = data;
+            ar(l);
+            ar.vec(v);
+        }
+    }
+}
+
+bool Acsi::readOverlays(StateArchive& ar, std::vector<Overlay>& got) const {
+    got.assign(MAX_DEVS, Overlay{});
+    for (int t = 0; t < MAX_DEVS; ++t) {
+        uint32_t count = 0;
+        ar(count);
+        const Dev& d = devs_[t];
+        if (!ar.ok() || (count && (!d.fp || count > d.hdSize))) return false;
+        for (uint32_t i = 0; i < count; ++i) {
+            uint32_t lba = 0;
+            std::vector<uint8_t> v;
+            ar(lba);
+            ar.vec(v);
+            if (!ar.ok() || lba >= d.hdSize || v.size() != d.blockSize) return false;
+            got[std::size_t(t)][lba] = std::move(v);
+        }
+    }
+    return true;
+}
+
+void Acsi::setOverlays(std::vector<Overlay>&& in) {
+    for (int t = 0; t < MAX_DEVS && std::size_t(t) < in.size(); ++t)
+        devs_[t].overlay = std::move(in[std::size_t(t)]);
+}
+
+// Secteurs [lba, lba+count) : le fichier, puis le calque par-dessus.
+void Acsi::readBlocks(Dev& d, uint32_t lba, int count, uint8_t* out, bool& ok) {
+    ok = fseeko(d.fp, (off_t)lba * d.blockSize, SEEK_SET) == 0
+         && int(fread(out, d.blockSize, std::size_t(count), d.fp)) == count;
+    if (!ok) return;
+    for (auto it = d.overlay.lower_bound(lba); it != d.overlay.end() && it->first < lba + uint32_t(count); ++it)
+        std::memcpy(out + std::size_t(it->first - lba) * d.blockSize, it->second.data(), d.blockSize);
+}
+
 void Acsi::unmountAll() {
     for (int i = 0; i < MAX_DEVS; ++i) {
         Dev& d = devs_[i];
+        flushOverlay(d);
         if (d.fp) fclose(d.fp);
         d.fp = nullptr;
         // Le CHEMIN part avec le descripteur. Il survivait, et comme `mountedPath()`
@@ -199,7 +268,9 @@ uint32_t Acsi::imageFingerprint(int target) const {
     if (!d.enabled || !d.fp) return 0;
     uint32_t h = 2166136261u;                                   // FNV-1a 32 bits
     auto mix = [&h](uint8_t b) { h ^= b; h *= 16777619u; };
-    for (char c : d.path) mix(uint8_t(c));
+    // Calque : le nom seul (chaque joueur du netplay monte sa copie, ailleurs).
+    const std::string key = overlayMode_ ? std::filesystem::path(d.path).filename().string() : d.path;
+    for (char c : key) mix(uint8_t(c));
     const uint64_t bytes = uint64_t(d.hdSize) * d.blockSize;
     for (int i = 0; i < 8; ++i) mix(uint8_t(bytes >> (8 * i)));
     return h ? h : 1u;                                          // 0 = « pas d'image »
@@ -397,8 +468,9 @@ void Acsi::cmdReadSector() {
     } else {
         int c = count();
         uint8_t* buf = prepRespBuf(dev.blockSize * c);
-        int n = (int)fread(buf, dev.blockSize, c, dev.fp);
-        if (n == c) { status_ = HD_STATUS_OK; dev.lastError = HD_REQSENS_OK; }
+        bool ok = false;
+        readBlocks(dev, dev.lastBlockAddr, c, buf, ok);
+        if (ok) { status_ = HD_STATUS_OK; dev.lastError = HD_REQSENS_OK; }
         else { status_ = HD_STATUS_ERROR; dev.lastError = HD_REQSENS_NOSECTOR; }
     }
     dev.setLastBlockAddr = true;
@@ -451,6 +523,23 @@ void Acsi::writeToDisk(const uint8_t* src, int len) {
     const uint64_t blocks = (uint64_t(len > 0 ? len : 0) + bs - 1) / bs;
     if (len < 0 || uint64_t(dmaBlockAddr_) + blocks > dev.hdSize) {
         status_ = HD_STATUS_ERROR; dev.lastError = HD_REQSENS_WRITEERR; return;
+    }
+    if (overlayMode_) {
+        // Calque : secteur par secteur ; un dernier secteur partiel garde la fin de
+        // l'ancien contenu, comme l'écriture courte dans le fichier.
+        for (uint64_t i = 0; i < blocks; ++i) {
+            const uint32_t lba = dmaBlockAddr_ + uint32_t(i);
+            const std::size_t at = std::size_t(i * bs), n = std::min<std::size_t>(bs, std::size_t(len) - at);
+            std::vector<uint8_t> sector(bs);
+            if (n < bs) {
+                bool ok = false;
+                readBlocks(dev, lba, 1, sector.data(), ok);
+                if (!ok) { status_ = HD_STATUS_ERROR; dev.lastError = HD_REQSENS_WRITEERR; return; }
+            }
+            std::memcpy(sector.data(), src + at, n);
+            dev.overlay[lba] = std::move(sector);
+        }
+        return;
     }
     if (fseeko(dev.fp, (off_t)dmaBlockAddr_ * dev.blockSize, SEEK_SET) != 0) {
         status_ = HD_STATUS_ERROR; dev.lastError = HD_REQSENS_WRITEERR;

@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -36,6 +37,32 @@ public:
     // si possible, sinon lecture seule. Taille = multiple de 512. Renvoie true si OK.
     bool mount(int target, const std::string& path);
     void unmountAll();
+
+    // --- Calque d'écriture (frontends à états fréquents : cœur libretro) ----------
+    // Sans lui, un WRITE va droit au fichier hôte : un état repris ensuite (retour
+    // arrière, trame d'anticipation, invité du netplay) ne défait pas l'écriture, et deux
+    // joueurs divergent dès qu'un programme écrit sur C:. Avec lui, les secteurs écrits
+    // restent en mémoire, par-dessus l'image : les lectures les voient, l'état autonome
+    // les porte (writeOverlays/readOverlays, Machine::saveStateWithMedia v3), et le
+    // fichier n'est réécrit qu'au DÉMONTAGE (unmountAll, destruction de la Machine),
+    // quand plus aucun état ne peut le contredire. Le fichier reste donc l'image du
+    // début de la session : c'est la base commune de deux joueurs.
+    // L'empreinte d'en-tête (imageFingerprint) hache alors le NOM du fichier et non son
+    // chemin : chaque joueur monte SA copie privée, sous un dossier qui lui est propre.
+    // À poser avant le premier montage ; désactivé par défaut (GUI, headless : écriture
+    // directe, empreinte au chemin, états inchangés).
+    void setWriteOverlay(bool on) { overlayMode_ = on; }
+    bool writeOverlay() const { return overlayMode_; }
+    // Octets de secteurs dans les calques (borne de retro_serialize_size).
+    std::size_t overlayBytes() const;
+    // Calques des MAX_DEVS cibles dans un flux d'état : par cible, nombre de secteurs,
+    // puis (LBA, contenu) croissants. `readOverlays` les lit SANS rien changer (refus d'un
+    // secteur hors image ou d'une autre taille que celle de la cible) ; `setOverlays` les
+    // pose ensuite, une fois l'état entier validé.
+    using Overlay = std::map<uint32_t, std::vector<uint8_t>>;
+    void writeOverlays(StateArchive& ar) const;
+    bool readOverlays(StateArchive& ar, std::vector<Overlay>& out) const;
+    void setOverlays(std::vector<Overlay>&& in);
 
     // --- UltraSatan (extension NeoST, cf. io/UltraSatan.hpp) -----------------
     // Attache l'interface SD UltraSatan : ses DEUX slots occupent les cibles
@@ -159,6 +186,7 @@ public:
 private:
     struct Dev {
         FILE*    fp = nullptr;
+        std::map<uint32_t, std::vector<uint8_t>> overlay;   // LBA → secteur (calque)
         bool     enabled = false;
         bool     readOnly = false;
         uint32_t hdSize = 0;            // taille en secteurs
@@ -170,6 +198,10 @@ private:
         std::string path;
     };
     Dev devs_[MAX_DEVS];
+
+    bool overlayMode_ = false;
+    void flushOverlay(Dev& d);
+    void readBlocks(Dev& d, uint32_t lba, int count, uint8_t* out, bool& ok);
 
     // État du contrôleur (≈ SCSI_CTRLR).
     int      target_   = 0;

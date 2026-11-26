@@ -528,17 +528,13 @@ Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
   pas du cœur : la notice conseille Vulkan. Depuis le 2026-11-26, chaque run de
   `release.yml` laisse un zip prêt à copier par hôte (Linux x86_64 et arm64, macOS
   universel, Windows x86_64), joué par le banc sur son hôte : de quoi faire l'essai.
-- **Publier les paquets libretro** · P2 ⏸ décision — les zips `NeoST-libretro-*` sont des
-  artefacts du run, écartés de `publish` (qui compte 8 paquets). Les attacher à une release,
-  ou attendre l'essai sur les autres hôtes : décision de l'auteur. Rien de public sur le
-  futur cœur 68000 dans leurs notes.
+- **Publier les paquets libretro** · P3 ⏸ décision — pas de sortie libretro pour l'instant
+  (auteur, 2026-11-26) : les zips `NeoST-libretro-*` restent des artefacts du run, écartés de
+  `publish` (qui compte 8 paquets). Rien de public sur le futur cœur 68000 dans leurs notes.
 - **Machine automatique : au-delà du son DMA** · P3 ⭘ — la détection repose sur
   `mmioNeedsBetterMachine` (son DMA, joypads, blitter, SCU, SCC, cache). Un jeu STE qui
   teste le matériel par la valeur lue (sans faute) reste sur ST : « STE » dans le nom (mot
-  isolé ou `(STE)`), ou l'option. Recenser les titres de la collection qui le font. Cas du
-  2026-11-26 : **Vector Rally** (STE, 2026) sonde le blitter et redémarre en Mega ST, où il
-  tourne avec une palette de 3 bits (238 au lieu de 255) ; son README exige un STE. Faut-il
-  préférer le STE pour une faute du blitter (le Mega ST est le plus rare des deux) ?
+  isolé ou `(STE)`), ou l'option. Recenser les titres de la collection qui le font.
 - **Campagne : les titres qui restent** · P2 ⏸ médias — `tools/libretro_corpus.py` (81
   images, 2026-11-25) : 54 écrans de jeu sous TOS Atari, 48 sous EmuTOS. Tranchés : Great
   Giana Sisters (bureau partout, comme Hatari) et Vroom original (repli de TOS). À
@@ -569,11 +565,6 @@ Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
   sans bibliothèque) les rend déjà pour le cœur libretro ; l'APK n'a qu'un flux SDL et ne
   les joue pas. Le brancher comme `neost_libretro.cpp` (événements des trames entendues,
   moteur suivi par trame).
-- **Disque dur ACSI dans l'état** · P3 ⭘ *(proposé)* — une image `.hd` montée par le cœur
-  libretro est écrite au fil de l'eau, hors de l'état : un retour arrière ou une trame
-  d'anticipation ne défait pas une écriture, et deux joueurs en réseau divergent dès que le
-  programme écrit sur C:. L'en-tête d'état exige en outre la même image (empreinte ACSI) :
-  vérifier qu'un invité de netplay, avec SA copie, n'est pas refusé.
 - **Retour arrière : franchir les écritures STX** · P3 ⭘ *(proposé)* — depuis le 2026-11-25,
   une copie de média porte l'overlay d'écriture d'une STX/IPF (format `.wd1772`) et
   `restoreMedia` le rejoue : le retour arrière (`core/Rewind.cpp`) pourrait reculer au-delà

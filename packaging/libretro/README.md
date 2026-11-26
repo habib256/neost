@@ -51,7 +51,7 @@ empty, and with run-ahead each step is heard once.
 | `.st`, `.msa`, `.dim`, `.stx` (Pasti), `.ipf` | Inserted in drive A. Other disks of the same game in the same folder (`Disk 1 of 3`, `_a`/`_b`) join a playlist. |
 | `.m3u` | A playlist, one disk per line; `disk.st|Label` names it. |
 | `.prg`, `.tos`, `.app`, `.gtp`, `.ttp` | Its folder becomes drive C:, and the program starts by itself. |
-| `.hd`, `.vhd` | A hard disk image on ACSI target 0, copied once to `saves/neost/harddisks/`. EmuTOS mounts its partitions by itself; an Atari TOS needs a driver on the disk. |
+| `.hd`, `.vhd` | A hard disk image on ACSI target 0, copied once to `saves/neost/harddisks/`. EmuTOS mounts its partitions by itself; an Atari TOS needs a driver on the disk. What programs write is kept in save states (rewind, run-ahead and netplay undo or share it) and reaches the copy when you close the content. |
 | `.stc` | A cartridge. |
 | `.zip`, `.7z`, `.gz` | Unpacked once into `saves/neost/archives/`. Its own `.m3u`, else its floppies as a playlist, else its program (a zipped GEMDOS game) on C:. Files already unpacked are never overwritten, so game saves survive. |
 
@@ -70,7 +70,8 @@ Delete that copy to start afresh.
 - **The right machine.** With **System → Machine** on *Automatic*, content
   whose name says STE (`(STE)`, `_ste_`) starts on an STE. A program that touches STE or Mega STE
   hardware on an ST without expecting it to be missing restarts on the machine
-  it needs, and a notification says so.
+  it needs, and a notification says so. A program that needs the blitter
+  restarts on an STE (a Mega ST if you have no TOS for the STE).
 - **Programs on floppies start by themselves.** Many game disks do not boot a
   game: you double-click it on the desktop, sometimes after a cracker's boot
   screen. When a disk holds a single game program (at its root, or alone in a

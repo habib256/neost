@@ -1365,6 +1365,12 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   rejeté. Banc POSIX sparse de 1 Tio + 2 Ko, occupation physique de quelques Ko.
   Aucun élargissement des compteurs ou du format d’image ; banc sauté sous
   Windows ou sur un système de fichiers qui matérialise les trous.
+- **ACSI : calque d'écriture** (2026-11-26, cœur libretro) : `Acsi::setWriteOverlay` garde
+  les secteurs écrits en mémoire par-dessus l'image (lectures fusionnées, dernier secteur
+  partiel complété), rendus au fichier au démontage seulement ; `writeOverlays`/
+  `readOverlays`/`setOverlays` dans l'état autonome v3 (`Machine::saveStateWithMedia`, v1 et
+  v2 relus) ; empreinte d'en-tête au nom du fichier sous calque. Désactivé ailleurs : GUI et
+  headless écrivent droit dans l'image. Cas `hard_disk_state` de `tools/run_libretro.py`.
 - **ACSI WRITE différé** : cible et LBA figés à la commande, même si un nouveau
   paquet sélectionne une autre cible avant ouverture du DMA. Reprise de cette
   phase sauvegardée en v45 ; aucune écriture détournée vers la nouvelle image.

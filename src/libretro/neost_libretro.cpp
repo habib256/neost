@@ -343,6 +343,7 @@ struct Session {
     std::string tosPath;
     std::vector<uint8_t> state;            // tampon de sérialisation réutilisé
     std::size_t stateBound = 0;            // taille annoncée par retro_serialize_size
+    bool overlayFullSaid = false;          // calque ACSI trop gros pour l'état : dit une fois
     uint32_t padPrev[2] = {0, 0};          // boutons de la trame précédente (fronts)
     bool mouseL = false, mouseR = false;
     double mouseFracX = 0, mouseFracY = 0;
@@ -586,6 +587,16 @@ std::size_t parseRam(const std::string& v) {
 }
 
 // TOS et machine de la session. Faux (avec un message) si aucun TOS n'est utilisable.
+// Un TOS du dossier système fait-il tourner la machine `m` ?
+bool tosAvailableFor(MachineType m) {
+    std::vector<neost::TosInfo> infos;
+    for (const auto& f : g_tosFiles) {
+        neost::TosInfo t;
+        if (neost::readTosInfo((fs::path(systemNeostDir()) / f).string(), t)) infos.push_back(t);
+    }
+    return neost::pickTosForMachine(m, nullptr, infos) >= 0;
+}
+
 bool chooseTos(const std::string& contentPath, std::string& tosPath, MachineType& machine) {
     const std::string dir = systemNeostDir();
     std::vector<std::string> files;
@@ -987,9 +998,13 @@ bool checkMissingHardware() {
     const std::string needs = miss.needs;
     if (needs == "ste") want = MachineType::Ste;
     else if (needs == "megaste") want = MachineType::MegaSte;
-    // Blitter : le Mega ST d'abord (même famille de TOS que le ST) ; si le programme
-    // touche ensuite au STE, le second redémarrage le fera passer en STE.
-    else if (needs == "megast or ste") want = MachineType::MegaSt;
+    // Blitter : le STE a priori (décision de l'auteur, 2026-11-26). Un programme qui
+    // l'exige date presque toujours de l'ère du STE, bien plus répandu que le Mega ST, et
+    // vise souvent sa palette : Vector Rally tourne en Mega ST mais y perd le quatrième
+    // bit de chaque composante (238 au lieu de 255). Le Mega ST reste le repli quand le
+    // dossier système n'a aucun TOS pour STE (TOS 1.04 seul, sans EmuTOS 256 Ko).
+    else if (needs == "megast or ste")
+        want = tosAvailableFor(MachineType::Ste) ? MachineType::Ste : MachineType::MegaSt;
     else return false;                                               // FPU absent : rien à choisir
     char where[96];
     std::snprintf(where, sizeof where, "%s at $%06X", miss.chip, unsigned(addr));
@@ -1351,6 +1366,10 @@ bool loadContent(const char* path) {
     // Un état d'un autre joueur (jeu en réseau) nomme SES copies privées : chercher ici
     // la copie de même nom, sinon la disquette de même nom de la liste (copiée alors).
     m.fdc.setMediaPathResolver([](const std::string& foreign) { return resolveForeignDisk(foreign); });
+    // Disque dur : écritures dans un calque porté par l'état (retour arrière, anticipation,
+    // netplay), rendues à la copie privée quand la Machine est détruite (fin du contenu,
+    // redémarrage sur une autre machine). Cf. Acsi::setWriteOverlay.
+    m.fdc.setAcsiWriteOverlay(true);
     m.fdc.setSoundSink([](FdcSound e) { if (g_s.fdcEvents.size() < 256) g_s.fdcEvents.push_back(e); });
     g_s.fdcEvents.clear();
     g_s.drive.reset();
@@ -1744,12 +1763,17 @@ RETRO_API void retro_run(void) {
 }
 
 // --- États (règle 3) -----------------------------------------------------------------
+constexpr std::size_t kAcsiOverlayReserve = 4u << 20;
+
 RETRO_API size_t retro_serialize_size(void) {
     if (!g_s.machine) return 0;
     if (g_s.machine->saveStateWithMedia(g_s.state)) {
         // Borne fixe pour la session : la taille d'un état plus une marge (GEMDOS grandit
         // au boot, une disquette plus grande peut être insérée). Ne fait que croître.
-        const std::size_t want = g_s.state.size() + 1024u * 1024u;
+        // Avec un disque dur, la place du calque d'écriture : 4 Mo de secteurs écrits,
+        // large pour des sauvegardes de jeu ; au-delà, l'état ne tient plus (dit une fois).
+        const std::size_t want = g_s.state.size() + 1024u * 1024u
+                                 + (g_s.machine->fdc.acsiAnyImage() ? kAcsiOverlayReserve : 0);
         if (want > g_s.stateBound) g_s.stateBound = want;
     }
     return g_s.stateBound;
@@ -1759,6 +1783,11 @@ RETRO_API bool retro_serialize(void* data, size_t size) {
     if (!g_s.machine || !g_s.machine->saveStateWithMedia(g_s.state)) return false;   // blit HOG garé : trame sautée
     if (g_s.state.size() > size) {
         logf(RETRO_LOG_WARN, "state of %zu bytes does not fit in %zu\n", g_s.state.size(), size);
+        if (g_s.machine->fdc.acsiOverlayBytes() > kAcsiOverlayReserve && !g_s.overlayFullSaid) {
+            g_s.overlayFullSaid = true;
+            notify("Too much written to the hard disk for save states; close the content to keep the writes",
+                   8000, RETRO_LOG_WARN);
+        }
         return false;
     }
     std::memcpy(data, g_s.state.data(), g_s.state.size());
