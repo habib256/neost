@@ -1,5 +1,27 @@
 # Changelog — NeoST
 
+## 2026-11-26 — Campagne CD LGD : boot des 881 disquettes, deux corrections
+
+- **Boot de `CD [LGDCD]`** (Automation, Pompey Pirates, Medway Boys, FoF ; ST, TOS 1.04 UK,
+  1 Mo, `compare_titles.py` aux trames 1000 et 2500) : 865 disquettes identiques à Hatari,
+  9 écarts d'animation (scrollers, barres du dépacker). Six menus Automation montrent 11 bombes
+  puis le bureau : leur programme `AUTO` est tronqué d'un octet dans la table de relocation, et
+  le boot dépend de la date des interruptions pendant Pexec (4 sur 8 dans les deux émulateurs).
+  Disques défectueux, pas NeoST. Récit : `docs/CASE_STUDIES.md`.
+- **Plein écran : ligne démarrée avant la dernière écriture de la précédente.** Le rattrapage
+  live de la Glue initialisait la ligne N+1 (`startHBL`) sur une requête Timer B, avant le passage
+  en haute résolution en fin de ligne N ; « gauche +2 » restait sous le retrait gauche et le
+  compteur vidéo avançait de 232 octets. Il refait désormais l'initialisation après l'écriture
+  tardive, comme `Video_StartHBL` d'Hatari à la vraie HBL. Menu Pompey Pirates n° 1 v2 :
+  12,7 % → 0,0 %. Seul étalon touché : le snapshot `loste_newyear_ste`, refait. Sa ligne 9
+  démarrait en 508 cycles entre deux bascules de la ligne 8 au lieu des 512 qu'y trouve la HBL ;
+  la démo lit le compteur vidéo et prend une autre texture. Hatari diffère des deux images.
+  Diagnostic : `NEOST_GLUE_DIAG` imprime `[GLUR]` à chaque réinitialisation.
+- **Oracle Hatari : touches 1 à 8 et Échap.** `hatari-event keydown 2` tape le CARACTÈRE « 2 »
+  (scancode 3) : Hatari ne lit un scancode que sur deux caractères ou plus. `compare_titles.py`
+  et `hatari_oracle.sh` l'envoient en hexadécimal (`0x02`). La divergence notée sur l'étalon
+  `loste_sowatt_st` en venait : 0,0 % avec la bonne touche.
+
 ## 2026-11-26 — GUI et borne : disquettes en archive
 
 - **`.zip`, `.7z` et `.st.gz` montés comme des disquettes** dans le GUI de bureau et la

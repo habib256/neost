@@ -222,6 +222,7 @@ void Shifter::reset() {
     glue_.cyclesLine = -1;
     glue_.screenRefreshRate = (sync & 0x02) ? 50 : 60;
     glue_.liveLine   = -1;
+    glue_.preStartLine = -1;
     glue_.liveWi     = 0;
     glue_.liveRes    = 0;
     glue_.liveFreq50 = (sync & 0x02) ? 1 : 0;
@@ -438,6 +439,7 @@ void Shifter::beginFrame() {
         glue_.screenRefreshRate = (frameSync_ & 0x02) ? 50 : 60;
     }
     glue_.liveLine   = -1;
+    glue_.preStartLine = -1;
     glue_.liveWi     = 0;
     glue_.liveRes    = frameStartRes_ == 3 ? 0 : frameStartRes_;
     glue_.liveFreq50 = (frameSync_ & 0x02) ? 1 : 0;

@@ -61,9 +61,12 @@ from title_cmd import (KEY_HOLD, MEM_KB, build_parser, hatari_memsize, finish_ar
 
 def run_hatari_keys(cmd: list[str], keys, work: Path, env: dict, key_hold: int = KEY_HOLD, mouse=(), mouse_step=8) -> None:
     """Hatari avec des touches datées : un arrêt du débogueur par événement, puis l'événement dans la
-    fifo et « c » sur stdin. Mesuré sur le build épinglé, cf. le bandeau de tools/hatari_oracle.sh."""
-    events = sorted([(at, f"keydown {code}") for at, code in keys]
-                    + [(at + key_hold, f"keyup {code}") for at, code in keys]
+    fifo et « c » sur stdin. Mesuré sur le build épinglé, cf. le bandeau de tools/hatari_oracle.sh.
+    Le scancode part en hexadécimal : Hatari (control.c, Control_InsertKey) lit une clé d'UN seul
+    caractère comme un CARACTÈRE à simuler, pas comme un scancode — « keydown 2 » tapait « 2 »
+    (scancode 3) au lieu de « 1 » (scancode 2). « 0x02 » passe par strtol(…, 0)."""
+    events = sorted([(at, f"keydown 0x{code:02x}") for at, code in keys]
+                    + [(at + key_hold, f"keyup 0x{code:02x}") for at, code in keys]
                     + mouse_events(mouse, mouse_step), key=lambda event: event[0])
     parse = work / "start.ini"
     with parse.open("a") as f:

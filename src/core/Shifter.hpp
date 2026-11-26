@@ -116,6 +116,13 @@ public:
     std::size_t liveWi     = 0;    // prochaine écriture syncWrites à consommer
     int         liveRes    = 0;    // res courante du curseur live (0/1/2)
     int         liveFreq50 = 1;    // freq courante du curseur live (bit1 $FF820A)
+    // Ligne liveLine telle qu'elle était JUSTE AVANT son startHBL live (cf.
+    // liveGlueCatchUp) : une écriture tardive de la ligne précédente la restaure puis
+    // refait startHBL avec l'état à jour. Valide si preStartLine == liveLine. Transitoire,
+    // NON SÉRIALISÉ : il ne vit qu'entre deux avances d'une même trame, et les états se
+    // prennent entre deux trames (beginFrame remet liveLine et preStartLine à −1).
+    GlueLine    preStart{ -1, 0, 0, 0 };
+    int         preStartLine = -1;
     // --- Ce que la Glue sait de la trame et de la machine (A32, 2026-11-11) : posé par le Shifter
     // à chaque verrou de trame (Shifter::syncGlueFrame), jamais lu ailleurs que dans ses méthodes.
     enum : int { kLow = 0, kMedium = 1, kHigh = 2 };
@@ -988,6 +995,7 @@ public:
         ar(glue_.liveWi);            // std::size_t
         ar(glue_.liveRes);
         ar(glue_.liveFreq50);
+        glue_.preStartLine = -1;     // cliché transitoire, jamais sérialisé (cf. sa déclaration)
 
         // --- Spec512 : palette intra-ligne ---
         ar.objVec(colorWrites_, 11, [](StateArchive& a, ColorWrite& c) {
