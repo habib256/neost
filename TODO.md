@@ -366,11 +366,6 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   protocole.
 - **Documents primaires manquants** · P2 ⏸ source — HD6301 rapatrié le 2026-11-10 (Hitachi, *HD6301/HD6303 Series Handbook*, 1989) ; restent les schémas GLUE/MMU ST et Mega STE,
   schéma du Shifter ST. chzsoft.de consulté le 2026-11-10 : seul le GSTMCU du STE y est.
-- **GPIP5 partagée FDC/ACSI : deux lignes câblées ensemble** · P3 ⏸ source — Hatari les sépare
-  depuis `b83e3cc7` (`docs/HATARI_DIVERGENCES.md` § 4). Pour porter sans masquer les IRQ
-  disquette, il faut savoir quand une cible ACSI relâche sa ligne IRQ : à la lecture du
-  statut (acquittement du bus) ou à l'octet de commande suivant. Tranché par : l'*ACSI/DMA
-  Integration Guide* d'Atari, ou une trace de `/IRQ` sur un vrai disque ACSI.
 - **Pièces jointes des fils decap d'atari-forum** · P2 ⏸ utilisateur — l'auteur doit **s'inscrire
   sur atari-forum.com** : les pièces jointes n'y sont visibles qu'une fois connecté, et le site
   refuse les accès automatiques (Cloudflare). Le texte des deux fils est lu (2026-11-26), notes

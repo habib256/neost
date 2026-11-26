@@ -1,5 +1,18 @@
 # Changelog — NeoST
 
+## 2026-11-26 — GPIP5 : disquette et disque dur ACSI câblés ensemble
+
+- **Source primaire retrouvée** : Atari, « Atari Computer System Interface (ACSI) », notes
+  d'application du 27 septembre 1985 (bitsavers, ajoutées à `setup_silicon_refs.sh`). Leurs
+  chronogrammes montrent la cible ACSI qui relâche IRQ au front de /CS suivant : octet de
+  commande ou lecture du statut.
+- **GPIP5 porte deux sorties câblées**, l'INTRQ du WD1772 et l'IRQ de la cible ACSI : une IRQ
+  ACSI ne remplace plus les sources disquette, la lecture du statut FDC n'efface plus l'IRQ
+  ACSI, et la lecture du statut ACSI la relâche. Hatari sépare les deux lignes depuis
+  `b83e3cc7` mais ne relâche l'IRQ ACSI qu'à la commande suivante : NeoST suit la note.
+  Tests `fdc_acsi_logic` (une IRQ disquette forcée tient la ligne après le statut ACSI, une
+  IRQ ACSI survit au statut FDC) ; UltraSatan et NetUSBee bootent comme avant.
+
 ## 2026-11-26 — what.if.game (SYNC, 2022) : étalon et démo de la page web
 
 - **what.if.game**, préversion de SYNC (code Troed) à la Silly Venture 2022 SE : un moteur de jeu à
