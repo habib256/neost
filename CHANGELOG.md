@@ -1,5 +1,22 @@
 # Changelog — NeoST
 
+## 2026-11-27 — Restes de la chasse : TAI au RESET, états forgés, web, fuzz des archives
+
+- **TAI du MFP gardée par le /RESET** (`Mfp::resetChip`) : c'est une broche ([B] MC68901 § 5.1.3),
+  sur STE la ligne XSINT du son DMA, qui joue à travers RESB. La remettre à 0 perdait le front
+  suivant d'un Timer A en comptage (IPRA `$20` sans RESET, `$00` avec). Hatari l'efface : écart voulu.
+- **États forgés** : une échéance négative autre que −1 n'est plus admise par le `Scheduler`
+  (`scanNextDue` la lisait « rien d'armé » : assert en debug, dates fausses en release) ; le
+  contrôle de géométrie du `Shifter` somme en 64 bits (débordement signé sous UBSan).
+- **Web : résolveur des disquettes d'un état**, borné à `/disks` et `/uploads`. Un état forgé ne
+  fait plus réécrire une ROM de `/userroms` ni un fichier du disque GEMDOS (`/hd`).
+- `parseChannelMask` borne ses nombres (une ligne `1-2147483647` bouclait jusqu'à `INT_MAX`),
+  `Blitter::reset(cold)` remet la recharge du X count, `presentAudio` (libretro) ne boucle plus si le
+  frontend n'accepte rien.
+- **`neost-fuzz-disk` fuzze aussi les archives** : zip (stocké et deflate), gzip et un 7z LZMA2
+  embarqué, mutés ; contrats : rien au-delà de 256 Mo, un « oui » rend la taille annoncée, un nom
+  passé par `safeMemberPath` ne remonte jamais. 5 000 archives par passe, 0 violation.
+
 ## 2026-11-27 — Trois passes adversariales de chasse aux défauts : cinq corrigés
 
 Trois relectures indépendantes (entrées non fiables ; logique des puces ; frontends, états

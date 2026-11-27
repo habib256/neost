@@ -115,6 +115,11 @@ vecteur parasite `$60` qu'Hatari laisse en TODO.
 
 ### Écarts voulus — ne pas réaligner
 
+- **TAI gardée par le /RESET** · voulu [B] · basse · 2026-11-27 — Hatari remet `TAI = 0` dans
+  `MFP_Reset` (`mfp.c:565 @ 36a8acf0`). TAI est une broche ([B] MC68901 § 5.1.3 p. 5-4) : sur STE, la
+  ligne XSINT du son DMA, qui joue à travers le /RESET. NeoST la garde (`Mfp::resetChip`) et ne la
+  remet à 0 qu'à la mise sous tension ; sinon un Timer A en comptage perd le front suivant.
+
 - **BREAK reçu par l'USART** · voulu [B] · basse · 2026-11-12 — Hatari ne reçoit pas de BREAK ; NeoST
   pose B et l'IRQ de fin de BREAK en bouclage ([B] MC68901 fig. 6-3, § 6.2.3, `Mfp::receiveSerialBreak`).
 

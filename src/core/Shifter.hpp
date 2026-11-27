@@ -1045,8 +1045,10 @@ public:
                      "Shifter geometry does not match the locked resolution");
         }
         ar.check(frame_.size() == static_cast<std::size_t>(curW_) * static_cast<std::size_t>(curH_));
+        // En 64 bits : ar.check évalue tout, même après un refus plus haut, et des valeurs
+        // forgées feraient déborder la somme en int (comportement indéfini, UBSan).
         ar.check(curAH_ >= 0 && activeX_ >= 0 && activeY_ >= 0 &&
-                 activeY_ + curAH_ <= curH_ && activeX_ + activeWidth() <= curW_);
+                 int64_t(activeY_) + curAH_ <= curH_ && int64_t(activeX_) + activeWidth() <= curW_);
         ar.check(!bordered() || !(steBorderFlag_ || newSteBorderFlag_) || activeX_ >= 16,
                  "Shifter::bordure gauche trop courte pour 336 px");
         // vc_.lineY est le curseur de ligne active, rattrapé par des boucles

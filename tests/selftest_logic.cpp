@@ -3680,6 +3680,11 @@ static void testChannelMask() {
     checkBool("aller-retour 1,3,10-12",
               parseChannelMask("1,3,10-12") == parseChannelMask(formatChannelMask(parseChannelMask("1,3,10-12"))),
               true);
+    // Nombres démesurés (ligne éditée à la main, chasse du 2026-11-27) : plus de
+    // débordement de l'int ni de boucle jusqu'à INT_MAX, la plage est bornée à 1-16.
+    checkBool("plage démesurée = 15-16", parseChannelMask("15-99999999999") == 0xC000, true);
+    checkBool("borne haute INT_MAX = 1-16", parseChannelMask("1-2147483647") == 0xFFFF, true);
+    checkBool("plage à rebours = rien (tous)", parseChannelMask("9-3") == 0xFFFF, true);
 }
 
 static void testFixBools() {

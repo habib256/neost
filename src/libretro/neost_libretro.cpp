@@ -823,8 +823,13 @@ void presentAudio(bool heard) {
         const float v = std::max(-1.0f, std::min(1.0f, st[i]));
         g_s.pcm[i] = int16_t(std::lrint(v * 32767.0f));
     }
-    for (std::size_t done = 0; done < std::size_t(n);)
-        done += g_audioBatch(g_s.pcm.data() + done * 2, std::size_t(n) - done);
+    // Un frontend qui n'accepte rien (0 trame rendue) bouclerait ici sans fin : le reste
+    // de la trame est alors jeté (RetroArch rend toujours le compte).
+    for (std::size_t done = 0; done < std::size_t(n);) {
+        const std::size_t took = g_audioBatch(g_s.pcm.data() + done * 2, std::size_t(n) - done);
+        if (took == 0) break;
+        done += took;
+    }
 }
 
 // =============================================================================

@@ -106,7 +106,12 @@ void Mfp::resetChip() {
     // priment. Le reset MACHINE (mise sous tension) les remet à zéro, cf. reset().
     tbcr_ = 0;
     for (int64_t& t : timerDueSub_) t = 0;
-    tai_ = tbi_ = tbiTracked_ = false;    // TAI/TBI = 0 (entrées event-count et pulse)
+    // TAI est une BROCHE d'entrée ([B] MC68901 § 5.1.3 p. 5-4), pas un registre : sur STE, la
+    // ligne XSINT du son DMA, qui traverse le /RESET (Bus::peripheralReset, DmaSound joue
+    // encore). La remettre à 0 ici perdait le front suivant d'un Timer A en comptage,
+    // XSINT restant HAUT. Gardée comme xsint_ ; remise à 0 à la mise sous tension (reset()).
+    // [D] Hatari MFP_Reset l'efface (mfp.c:565 @ 36a8acf0) : la fiche prime.
+    tbi_ = tbiTracked_ = false;           // TBI = 0 (entrée pulse)
     timer_[0x19] = timer_[0x1B] = timer_[0x1D] = 0;                 // TACR / TBCR / TCDCR
     // [B] MC68901 § 2.2.3 p. 2-8, MC68HC901 § 3.3 p. 3-3 : SCR, UCR, RSR effacés, récepteur et émetteur arrêtés.
     // UDR et TSR restent, sauf TE (Fig. 6-4 p. 6-7). [D] Hatari MFP_Reset ne touche pas à l'USART.
@@ -133,6 +138,7 @@ void Mfp::reset() {
     for (uint8_t& b : timer_) b = 0;      // + données des timers, UDR et TSR à la mise sous tension
     tbReload_ = tbCounter_ = taReload_ = taCounter_ = tcCounter_ = tdCounter_ = 0;
     xsint_ = false;                       // ligne XSINT son DMA (re-synchronisée ensuite par DmaSound::reset)
+    tai_ = false;                         // TAI (= XSINT sur STE), gardée par resetChip
     // CTS/DCD REVIENNENT à leur valeur de repos ACTIVE : ce sont des entrées, pas de
     // l'état machine. Chez Hatari elles sont recalculées à CHAQUE lecture GPIP
     // (RS232_Get_DCD_CTS, [D] mfp.c:1968 @ f0736b24) et ne peuvent donc pas rester coincées ; ici, sans cette

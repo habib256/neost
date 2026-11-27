@@ -489,9 +489,14 @@ public:
         // fenêtre, sinon un now_ forgé déjà rejeté fait déborder `now_ ± 2³²` (UBSan,
         // fuzz du 2026-11-16).
         const int64_t now = now_ < 0 ? 0 : (now_ > (1LL << 62) ? (1LL << 62) : now_);
+        // Et jamais négative hors kInactive : scanNextDue (comme runTo) lit tout négatif
+        // comme « rien d'armé » ; −2 passait la fenêtre dans les 2³² premiers cycles et
+        // désynchronisait nextDue_ (assert en debug, dates fausses en release ; fuzz
+        // des états du 2026-11-27).
         for (int64_t d : due_)
-            ar.check(d == kInactive || (d >= now - (1LL << 32) && d <= now + (1LL << 40)));
-        ar.check(nextDue_   == kInactive || (nextDue_   >= now - (1LL << 32) && nextDue_   <= now + (1LL << 40)));
+            ar.check(d == kInactive || (d >= 0 && d >= now - (1LL << 32) && d <= now + (1LL << 40)));
+        ar.check(nextDue_   == kInactive || (nextDue_ >= 0 && nextDue_ >= now - (1LL << 32)
+                                             && nextDue_ <= now + (1LL << 40)));
         ar.check(runTarget_ == kInactive || (runTarget_ >= now - (1LL << 32) && runTarget_ <= now + (1LL << 40)));
     }
 
