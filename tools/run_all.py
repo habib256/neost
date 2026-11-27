@@ -68,6 +68,11 @@ FAST = [
     # et le job `sanitizers` de la CI rend le harnais MORDANT (ASan/UBSan).
     ("Fuzzing des parseurs d'images disquette (.msa / .dim / .stx / .ipf, .wd1772, FDC)",
      [str(ROOT / "build" / ("neost-fuzz-disk" + _EXE))]),
+    # A44 : fuzzing du chargement des états (état nu ST/STE/Mega STE, état avec média
+    # borné par un résolveur : aucun fichier hors du dossier des disquettes n'est touché).
+    # ROM factice, aucune dépendance ; 150 itérations par étage (~2 s).
+    ("Fuzzing du chargement des états (état nu, état avec média, fichiers hors dossier)",
+     [str(ROOT / "build" / ("neost-fuzz-state" + _EXE)), "--iters", "150"]),
     # A20 : WRITE TRACK STX (reinterpretSaveTrack + round-trip .wd1772) sur une image
     # FORGÉE en mémoire — le seul test du parseur Pasti, resté EXCLUDE_FROM_ALL et
     # jamais lancé jusqu'à l'audit du 2026-08-27.

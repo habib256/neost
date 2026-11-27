@@ -609,9 +609,6 @@ Ce qui touche `src/core/Cpu68k.cpp` attend l'échange → § 9.
   couche par couche depuis le 2026-11-12 (`--gemdos-selftest`, 30 cas : normalisation, parseur, garde
   terminale, liens pendants et intérieurs). Reste à désigner le prochain module jamais audité.
 
-- **A44 — fuzz des états autonomes** · P3 ⭘ *(proposé)* — `neost-fuzz-disk` couvre disquettes et
-  archives, pas le chargement d'un état (`Machine::loadStateWithMedia`, chemins de média compris) : il
-  faut une machine et une ROM libre. Le fuzz jetable de la chasse du 2026-11-27 y a trouvé deux défauts.
 
 ### Garde-fous (à NE PAS faire)
 - **Croire que la liste se vide** : auditer coûte une journée, réparer des semaines. Arbitrer

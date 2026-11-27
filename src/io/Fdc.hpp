@@ -71,6 +71,11 @@ public:
     // est entière). Appelé pour TOUT chemin d'un état autonome, et pour une copie de la
     // session dont le fichier a disparu. Sans résolveur, le chemin de l'état seul.
     void setMediaPathResolver(std::function<std::string(const std::string&)> fn) { mediaResolver_ = std::move(fn); }
+    // Où un état autonome peut RECRÉER une disquette disparue (recreateMediaFile, cas du
+    // web) : sans filtre, partout où recreateMediaFile l'admet (absolu, sans « .. ») ; un
+    // état forgé y créait un fichier n'importe où dans le FS. Le frontend le borne à ses
+    // propres dossiers de disquettes.
+    void setMediaRecreateFilter(std::function<bool(const std::string&)> fn) { recreateFilter_ = std::move(fn); }
 
     // « FDC rapide » (équivalent de `hatari --fastfdc`) : divise les délais de
     // COMMANDE et de TRANSFERT par un facteur fixe pour accélérer les accès disque
@@ -210,6 +215,9 @@ public:
     // donc d'un fichier que l'utilisateur a pu recevoir) et une copie STX (rien à
     // écrire). Vrai si le fichier existe en sortie.
     static bool recreateMediaFile(const MediaCopy& copy);
+    // recreateMediaFile là où le filtre l'admet (setMediaRecreateFilter) ; ailleurs, rien
+    // n'est créé et la réponse est vraie : au résolveur de restoreMedia de trancher.
+    bool recreateMediaIfAllowed(const MediaCopy& copy) const;
     // Une commande est en cours sur un STX : ses dates suivent la piste réelle, on n'y
     // prend pas d'instantané. Sur un .ST le save-state porte la commande entière : l'exclure
     // aussi priverait de retour arrière les chargeurs qui lisent sans relâche.
@@ -593,6 +601,7 @@ private:
 
     std::function<void(FdcSound)> soundSink_;    // bruits mécaniques (cosmétique)
     std::function<std::string(const std::string&)> mediaResolver_;   // cf. setMediaPathResolver
+    std::function<bool(const std::string&)> recreateFilter_;        // cf. setMediaRecreateFilter
 
     Bus&     bus_;
     YM2149&  psg_;
