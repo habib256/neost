@@ -210,15 +210,17 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 
 ### 3.4 Son — YM2149, DMA STE, Microwire
 
+- **Filtre de sortie du son DMA** · P3 ⏸ voulu · [B] — l'addendum STE d'Atari (25 mai 1989,
+  § « Overview » du son DMA) décrit un passe-bas à quatre pôles, à capacités commutées, coupant à
+  40 % de la fréquence d'échantillonnage, puis un deux-pôles fixe à 16 kHz, avant le LMC1992 ; le
+  schéma STE C300780-001 f. 5 porte le MF4 (cf. `DmaSound.hpp`). NeoST, comme Hatari, n'a que le FIR
+  (1,2,1)/4 d'anti-repliement : à 6 258 Hz, le vrai STE coupe vers 2,5 kHz. Changement audible de
+  tout son DMA. Gardé comme possibilité, sans intérêt pour l'instant : décision de l'auteur
+  (2026-11-27), le filtre dégrade la qualité du son. Si on y revient, le type de filtre se tranche
+  par la fiche du MF4 (National).
 - **YM du STE sur SCLK ?** · P3 ⏸ source · [D] — Hatari `clocks_timings.c:222-223,243 @ f0736b24` tire CLK2
   du YM de l'oscillateur U303 (8 010 613 Hz) sur STE/Mega STE : 250 331 pas/s contre 250 663 chez NeoST,
   −2,3 cents. Tranché par : le schéma STE C300780 (feuille de l'U303) ou une fréquence de sortie mesurée.
-- **Microwire : écriture pendant un décalage** · P3 ⏸ source · [F] — la démo Systematic Error
-  (validée sur le fer) écrit le masque en plein décalage et exclut seulement le masque pris sans
-  arrêt ni relance (`docs/CASE_STUDIES.md`). Ignorer (Hatari, NeoST) et arrêter (MiSTery) restent
-  possibles : ils ne diffèrent que par les aigus +12 dB de la commande interrompue. L'écriture de
-  la donnée en cours de décalage n'est exercée par aucun logiciel connu. Tranche : la musique de
-  la démo enregistrée sur un vrai STE, ou la netlist du Shifter STE.
 
 - **Bits 2-3 de `$FF8921` et relecture de `$FF8920` sur STE** · P3 ⏸ matériel · [B] — `$FF8920`
   relu 0 : [B] STE Developer Information Addendum (25 mai 1989), « FF8920 0000 0000 m000 00rr »,

@@ -1,5 +1,18 @@
 # Changelog — NeoST
 
+## 2026-11-27 — MICROWIRE : écriture pendant l'envoi ignorée, tranché par Atari
+
+- **Écrire la donnée ou le masque pendant un envoi MICROWIRE est ignoré** : « Subsequent writes
+  to the data and mask registers are blocked until sending is complete » (STE Developer Information
+  Addendum, Atari, 1989). NeoST le faisait déjà, comme Hatari ; MiSTery arrête l'envoi. L'item du
+  TODO et le cas Systematic Error (`docs/CASE_STUDIES.md`) sont clos : la commande `$048C` y
+  passe, aigus à +12 dB.
+- **Donnée relue pendant l'envoi : vers 0, pas en rotation.** La note dit que les registres
+  « (or either one) return to their original state » ; une rotation de la donnée, essayée,
+  bloque l'init LMC des TOS 1.62 et 2.06 et d'EmuTOS, qui attendent que `$FF8922` relise 0
+  (TOS 1.62 `$E002FC-$E00306`). Le TOS tourne sur le fer : seul le masque revient, la donnée
+  sort vers 0, comme chez Hatari et MiSTery. Commentaire [B]+[C] dans `DmaSound.cpp`.
+
 ## 2026-11-27 — Mixage du LMC1992 selon Atari ; écarts de son du blitter : un décalage
 
 - **Commande « Set Mix » du LMC1992** d'après le STE Developer Information Addendum (Atari, 1989,
