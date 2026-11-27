@@ -3972,6 +3972,11 @@ std::shared_ptr<const Fdc::MediaCopy> Fdc::readMediaCopy(StateArchive& ar, bool 
     return copy;
 }
 
+bool Fdc::recreateMediaIfAllowed(const MediaCopy& copy) const {
+    if (recreateFilter_ && !copy.path.empty() && !recreateFilter_(copy.path)) return true;
+    return recreateMediaFile(copy);
+}
+
 bool Fdc::recreateMediaFile(const MediaCopy& copy) {
     namespace fs = std::filesystem;
     if (copy.path.empty()) return true;                 // lecteur vide : rien à recréer

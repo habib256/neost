@@ -44,7 +44,7 @@ jobs:
       - name: Configurer
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DNEOST_WITH_NET=ON
       - name: Compiler (headless et tests NAT inclus)
-        run: cmake --build build -j"$(nproc)" --target neost-headless neost-selftest neost-stx-test neost-fuzz-disk
+        run: cmake --build build -j"$(nproc)" --target neost-headless neost-selftest neost-stx-test neost-fuzz-disk neost-fuzz-state
       - name: Palier fast (protocoles NAT, sockets locales et NE2000)
         run: python3 tools/run_all.py --tier fast
 
@@ -132,7 +132,7 @@ jobs:
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Compiler
-        run: cmake --build build -j"$(nproc)" --target neost-headless neost-selftest neost-stx-test neost-fuzz-disk
+        run: cmake --build build -j"$(nproc)" --target neost-headless neost-selftest neost-stx-test neost-fuzz-disk neost-fuzz-state
 
       # LA raison d'être de ce job (chantier A1, cf. TODO.md § Dette d'architecture).
       # `--tier fast` ne compare AUCUN pixel : il valide des parseurs et des verdicts.
@@ -328,7 +328,7 @@ jobs:
                 -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
 
       - name: Compiler
-        run: cmake --build build -j"$(nproc)" --target neost-headless neost-selftest neost-stx-test neost-fuzz-disk
+        run: cmake --build build -j"$(nproc)" --target neost-headless neost-selftest neost-stx-test neost-fuzz-disk neost-fuzz-state
 
       # Le palier fast n'exécute quasiment PAS de code invité réel : il valide des
       # parseurs et des verdicts. Une démo de 300 trames, elle, martèle Shifter,

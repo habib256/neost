@@ -1,5 +1,21 @@
 # Changelog — NeoST
 
+## 2026-11-27 — Fuzz du chargement des états (A44) ; le web ne recrée plus hors de ses dossiers
+
+- **`neost-fuzz-state`**, au palier `fast` (150 itérations par étage, ~2 s) et dans les builds de
+  la CI. ROM factice, sans dépendance. État nu sur ST, STE et Mega STE, octets mutés hors RAM et
+  CRC recalculé : un état accepté doit tourner puis rendre un état que la machine relit, la
+  référence doit toujours se relire. État avec média sous un résolveur et un filtre bornés à un
+  dossier `disks/` : chemin du lecteur remplacé (victime hors du dossier, `..`, nom nu, fichier
+  absent) ou bloc des lecteurs muté ; contrat : aucun fichier hors de `disks/` modifié ni créé.
+  Témoin : sans résolveur, le même état forgé réécrit bien la victime. 0 violation à 400
+  itérations. Inscrit à `tools/fast_guards.json` (son prototype a trouvé les deux défauts d'états
+  forgés de la chasse).
+- **Web : un état ne recrée plus une disquette hors de `/disks` et `/uploads`**
+  (`Fdc::setMediaRecreateFilter`, `recreateMediaIfAllowed`). Avant, un état forgé pouvait créer un
+  fichier n'importe où dans le FS virtuel (sans en écraser) ; hors des dossiers, c'est désormais le
+  résolveur qui cherche la disquette du même nom, ou refuse.
+
 ## 2026-11-27 — Restes de la chasse : TAI au RESET, états forgés, web, fuzz des archives
 
 - **TAI du MFP gardée par le /RESET** (`Mfp::resetChip`) : c'est une broche ([B] MC68901 § 5.1.3),

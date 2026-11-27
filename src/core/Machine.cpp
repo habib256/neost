@@ -1728,7 +1728,9 @@ bool Machine::loadStateWithMedia(const uint8_t* data, std::size_t n, bool recrea
         lastStateError_ = "State file is inconsistent";
         return false;
     }
-    if (recreateMissing && (!Fdc::recreateMediaFile(*a) || !Fdc::recreateMediaFile(*b))) {
+    // Hors des dossiers que le frontend admet (setMediaRecreateFilter), rien n'est recréé :
+    // le résolveur de restoreMedia cherche alors la disquette du même nom, ou refuse.
+    if (recreateMissing && (!fdc.recreateMediaIfAllowed(*a) || !fdc.recreateMediaIfAllowed(*b))) {
         lastStateError_ = "Floppy image is gone and cannot be recreated";
         return false;
     }

@@ -105,8 +105,9 @@ src/
   web/main_web.cpp          Frontend WebAssembly (Emscripten + WebGL).
   android/                  Frontend Android (SDL2 + GLES2) + menu tactile (AndroidMenu).
 tests/                      selftest_logic.cpp + *_logic.cpp (cible neost-selftest),
-                            fuzz_diskimage.cpp (neost-fuzz-disk), stx_writetrack_test.cpp
-                            (neost-stx-test) — tous bâtis par défaut, palier fast.
+                            fuzz_diskimage.cpp (neost-fuzz-disk), fuzz_state.cpp
+                            (neost-fuzz-state), stx_writetrack_test.cpp (neost-stx-test)
+                            — tous bâtis par défaut, palier fast.
 extern/  imgui/ miniaudio/ (sous-modules) · moira/ (VENDORISÉ, cf. NEOST_VENDOR.md) · hatari/ (clone gitignoré)
 extern/hatari/src           SOURCE DE VÉRITÉ matérielle (lue, pas compilée)
 ```
@@ -332,10 +333,17 @@ s'arrête au 32ᵉ mot au lieu du 33ᵉ ». Chaque table a été **vérifiée pa
 polarité des entrées du WD1772 — les trois font rougir la ligne exacte.
 
 À côté, `./build/neost-fuzz-disk` (A30, 2026-08-28) martèle les **parseurs d'images
-disquette** — `decodeMsa`, `decodeDim`, `StxImage::parse`, `ipf::decode`/`ipf::toStx`, les seules fonctions du projet
-qui digèrent un fichier venu de l'extérieur. Driver **déterministe** (PRNG xorshift semé),
+disquette** — `decodeMsa`, `decodeDim`, `StxImage::parse`, `ipf::decode`/`ipf::toStx` — et,
+depuis le 2026-11-27, les **archives** (`listZip`/`extractZip`, `gunzip`, `archive::Reader` sur
+un 7z embarqué). Driver **déterministe** (PRNG xorshift semé),
 pas libFuzzer : le clang d'Apple ne livre pas `libclang_rt.fuzzer`, `-fsanitize=fuzzer` ne
 lie pas sur macOS. `--iters N` / `--seed N` ; un cas trouvé se rejoue à l'identique.
+
+`./build/neost-fuzz-state` (A44, 2026-11-27) fait de même pour le **chargement des états** —
+autre fichier venu de l'extérieur (état partagé, netplay, page web), dont le CRC ne protège de
+rien. ROM factice, sans dépendance. État nu sur ST, STE et Mega STE (un état accepté doit
+rendre un état relisible) ; état avec média sous un résolveur borné à un dossier (aucun
+fichier hors du dossier n'est modifié ni créé, témoin sans résolveur à l'appui).
 
 ⚠ **Le palier `fast` n'est qu'un test de fumée pour ce harnais.** Mesuré en retirant deux
 bornes de `decodeMsa` : en build normal, 20 000 itérations n'ont RIEN vu. C'est sous

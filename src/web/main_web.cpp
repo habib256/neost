@@ -1316,12 +1316,19 @@ int main(int argc, char** argv) {
     // des disquettes de la page, /disks (embarquées) et /uploads (déposées). Un état
     // forgé ne fait plus réécrire une ROM de /userroms ni un fichier du disque GEMDOS
     // (/hd) par l'image qu'il porte. Ailleurs : la disquette du même nom, sinon refus.
+    // Recréation d'une disquette disparue (rechargement de la page) : mêmes dossiers.
+    static const auto pageDisk = [](const std::string& p) {
+        const std::string n = std::filesystem::path(p).lexically_normal().string();
+        for (const char* dir : {"/disks/", "/uploads/"})
+            if (n.size() > std::strlen(dir) && n.compare(0, std::strlen(dir), dir) == 0) return true;
+        return false;
+    };
+    machine.fdc.setMediaRecreateFilter([](const std::string& p) { return pageDisk(p); });
     machine.fdc.setMediaPathResolver([](const std::string& p) -> std::string {
         namespace fs = std::filesystem;
         std::error_code ec;
         const std::string n = fs::path(p).lexically_normal().string();
-        for (const char* dir : {"/disks/", "/uploads/"})
-            if (n.compare(0, std::strlen(dir), dir) == 0 && fs::is_regular_file(n, ec)) return n;
+        if (pageDisk(n) && fs::is_regular_file(n, ec)) return n;
         const std::string name = fs::path(p).filename().string();
         if (name.empty() || name == "." || name == "..") return {};
         for (const char* dir : {"/uploads/", "/disks/"})

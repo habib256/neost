@@ -160,7 +160,7 @@ jobs:
           # neost-selftest AUSSI : le palier « fast » l'exécute (logique pure —
           # chemins hôte, neost.cfg). Ne bâtir que le headless faisait échouer
           # la suite sur un binaire absent.
-          cmake --build build -j"$(nproc)" --target neost-headless neost-selftest neost-stx-test neost-fuzz-disk
+          cmake --build build -j"$(nproc)" --target neost-headless neost-selftest neost-stx-test neost-fuzz-disk neost-fuzz-state
           python3 tools/run_all.py --tier full
 
       - name: Vérifier l'AppImage (ET_EXEC, magic, glibc <= 2.27, GLFW, contenu libre)

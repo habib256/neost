@@ -571,6 +571,14 @@ target_include_directories(neost-fuzz-disk PRIVATE "${CMAKE_SOURCE_DIR}/src")
 set_source_files_properties(tests/fuzz_diskimage.cpp
     PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
 
+# neost-fuzz-state — FUZZING du chargement des états (A44) : état nu sur trois machines,
+# état avec média borné par un résolveur. ROM factice, aucune dépendance. Palier `fast`.
+add_executable(neost-fuzz-state tests/fuzz_state.cpp)
+target_link_libraries(neost-fuzz-state PRIVATE neost_core)
+target_include_directories(neost-fuzz-state PRIVATE "${CMAKE_SOURCE_DIR}/src")
+set_source_files_properties(tests/fuzz_state.cpp
+    PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
+
 # =============================================================================
 #  neost-stx-test — test autonome de la ré-interprétation WRITE TRACK (StxImage).
 #  Ne dépend QUE de StxImage (aucun GUI, aucun Moira). Lancer :

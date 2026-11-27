@@ -95,7 +95,7 @@ clos et ne fait plus foi va dans `docs/archive/` (hors contrôle d'ancres).
 ```sh
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j        # cibles : neost (GUI), neost-headless, neost-selftest,
-                              #          neost-fuzz-disk, neost-stx-test,
+                              #          neost-fuzz-disk, neost-fuzz-state, neost-stx-test,
                               #          neost_core / neost_net (libs)
 ./build/neost                 # auto : dernier ROM (neost.cfg) ou EmuTOS US
 ./build/neost <rom> <disk.st>
