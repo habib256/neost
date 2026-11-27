@@ -225,9 +225,6 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
   sans légende (« 0 » = relu 0 ou écrire 0 ?). Masque de `$FF8921` : 0x83 (addendum, MAME,
   MiSTery) contre 0x8F (Hatari, FAQ STE de Paranoid, sans mesure décrite). Tranche : une lecture
   sur un STE.
-- **Profondeur réelle de la FIFO du son DMA** · P3 ⏸ source · [F] — 8 octets (Hatari) contre 7 mots (modèle
-  `gstshifter.v:414-419`) ; elle fixe la date du fetch du dernier mot, donc de XSINT et du Timer A (datés au
-  fetch hors DE depuis le 2026-11-12). Tranche : netlist du GST Shifter ou relevé sur STE.
 - **Tenue du dernier échantillon DMA** · P3 ⏸ décision · [B]/[F] — schéma STE C300780-001 f. 5 : registre
   74F374 chargé par XLD avant le DAC0802, donc le DAC tient son octet ; inconnu : XLD cesse-t-il FIFO vide
   (Shifter sans netlist). Hatari et MiSTery tiennent. Proposition : tenir sur STE ; mute du YM au repos

@@ -975,8 +975,8 @@ resets, `Mfp::reset`) a été supprimé : tout y était implémenté.
   Hatari (customreset) ne touche pas au son DMA.
 - **Fin de trame du son DMA sur STE** · voulu [B] · basse · 2026-11-12 — NeoST date XSINT et le
   Timer A au fetch du dernier mot, hors DE ([B] ST-4081 f. 20, `DmaSound::armFrameEnd`) ;
-  Hatari au HBL (`dmaSnd.c:727-741 @ f0736b24`), jusqu'à 136 cycles plus tard. Profondeur de FIFO
-  [F] (TODO). Mega STE au HBL des deux côtés.
+  Hatari au HBL (`dmaSnd.c:727-741 @ f0736b24`), jusqu'à 136 cycles plus tard. FIFO de quatre mots
+  des deux côtés ([B] STE Developer Information Addendum, 25 mai 1989). Mega STE au HBL des deux côtés.
 
 - **`$FF8921` relu sous le masque `0x83`** · voulu [B] · basse · 2026-11-11 — Hatari garde
   `0x8F` ; le manuel matériel du TT (Atari, « 8920 RW 0000 0000 a000 00bb ») et la

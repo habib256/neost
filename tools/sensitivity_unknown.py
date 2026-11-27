@@ -10,7 +10,9 @@ candidat. On compare :
   - le hachage d'état de la machine (--arch-hash-every), indépendant du cœur : première
     trame où il diverge, c'est-à-dire où le choix a laissé une trace quelque part ;
   - les captures toutes les SHOT trames : nombre de captures différentes, et pixels
-    différents sur la pire, c'est-à-dire ce qui se voit.
+    différents sur la pire, c'est-à-dire ce qui se voit ;
+  - le son (--sound-dump) : échantillons différents, c'est-à-dire ce qui s'entend (son DMA,
+    YM : une inconnue de date peut ne rien montrer et tout faire entendre).
 
 Usage :
   sensitivity_unknown.py OUT RANK.json ID --alt FF=chemin/neost-headless [--alt 00=…]
@@ -43,14 +45,22 @@ def run(binary: Path, machine: str, rom: str, disk: Path, frames: int, tmp: Path
     shots.mkdir()
     cmd = [str(binary), str(ROOT / rom), "--machine", machine, "--mem", "1m", "--disk", str(copy),
            "--frames", str(frames), "--arch-hash-every", str(HASH_EVERY),
-           "--shot-every", str(SHOT), str(shots / "f")]
+           "--shot-every", str(SHOT), str(shots / "f"), "--sound-dump", str(tmp / "s.wav")]
     for at in ru.SPACE:
         if at < frames:
             cmd += ["--scancode-at", str(at), "39"]
     out = subprocess.run(cmd, capture_output=True, text=True).stdout
     hashes = re.findall(r"^arch-hash frame=(\d+) machine=(\S+)", out, re.M)
     pics = {p.name: p.read_bytes() for p in sorted(shots.glob("*.ppm"))}
-    return hashes, pics
+    wav = (tmp / "s.wav").read_bytes() if (tmp / "s.wav").exists() else b""
+    return hashes, pics, wav
+
+
+def sample_diff(a: bytes, b: bytes) -> int:
+    """Trames stéréo s16 différentes (en-tête WAV de 44 octets sauté) ; écart de longueur compté."""
+    a, b = a[44:], b[44:]
+    n = min(len(a), len(b)) // 4 * 4
+    return sum(1 for i in range(0, n, 4) if a[i:i + 4] != b[i:i + 4]) + abs(len(a) - len(b)) // 4
 
 
 def pixel_diff(a: bytes, b: bytes) -> int:
@@ -68,17 +78,18 @@ def one(job, alts, frames, work):
     disk = ROOT / name if not Path(name).is_absolute() else Path(name)
     res = {"machine": machine, "rom": rom, "disk": name}
     with tempfile.TemporaryDirectory(dir=work) as t0:
-        base_h, base_p = run(ru.HEADLESS, machine, rom, disk, frames, Path(t0))
+        base_h, base_p, base_w = run(ru.HEADLESS, machine, rom, disk, frames, Path(t0))
     if not base_h:
         res["error"] = "pas de hachage (option --arch-hash-every ?)"
         return res
     for label, binary in alts:
         with tempfile.TemporaryDirectory(dir=work) as t1:
-            h, p = run(binary, machine, rom, disk, frames, Path(t1))
+            h, p, w = run(binary, machine, rom, disk, frames, Path(t1))
         first = next((int(a[0]) for a, b in zip(base_h, h) if a != b), None)
         diffs = {k: pixel_diff(base_p[k], p[k]) for k in base_p if k in p and base_p[k] != p[k]}
         res[label] = {"first_hash_frame": first, "shots_diff": len(diffs),
-                      "shots": len(base_p), "worst_px": max(diffs.values(), default=0)}
+                      "shots": len(base_p), "worst_px": max(diffs.values(), default=0),
+                      "audio_diff": sample_diff(base_w, w) if base_w != w else 0}
     return res
 
 
@@ -107,11 +118,13 @@ def main() -> int:
     for label, _ in alts:
         touched = [r for r in rows if r.get(label, {}).get("first_hash_frame") is not None]
         seen = [r for r in rows if r.get(label, {}).get("shots_diff")]
-        lines.append(f"[{label}] état modifié : {len(touched)}/{len(rows)} ; image modifiée : {len(seen)}")
+        heard = [r for r in rows if r.get(label, {}).get("audio_diff")]
+        lines.append(f"[{label}] état modifié : {len(touched)}/{len(rows)} ; image modifiée : {len(seen)} ; "
+                     f"son modifié : {len(heard)}")
     for r in sorted(rows, key=lambda r: r["disk"]):
         cells = [f"{lab}: " + ("erreur" if "error" in r else
                  f"h@{r[lab]['first_hash_frame']} img {r[lab]['shots_diff']}/{r[lab]['shots']} "
-                 f"max {r[lab]['worst_px']} px") for lab, _ in alts]
+                 f"max {r[lab]['worst_px']} px son {r[lab]['audio_diff']}") for lab, _ in alts]
         lines.append(f"  {r['machine']:7} {r['disk']}  |  " + "  |  ".join(cells))
     (out / "sensitivity.json").write_text(json.dumps(rows, indent=1, ensure_ascii=False))
     (out / "sensitivity.txt").write_text("\n".join(lines) + "\n")

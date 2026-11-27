@@ -242,13 +242,18 @@ void DmaSound::onHbl() {
 //     tard. Non retenu sur STE ; le Mega STE (sans netlist) garde ce modèle.
 // Le fetch est glouton : le dernier mot entre dès que la FIFO a, en cumul, la place de tous les
 // octets restants. On date donc l'instant où le DAC en aura assez consommé (même arithmétique
-// que updateDac), puis on le repousse à la sortie de DE. Profondeur de FIFO : 8 octets d'Hatari,
-// le modèle a 7 mots (gstshifter.v:414-419, choix d'auteur) — [F] la date dépend de ce choix.
+// que updateDac), puis on le repousse à la sortie de DE. Profondeur de FIFO : 8 octets, comme Hatari.
+// [B] Atari, STE Developer Information Addendum, 25 mai 1989, son DMA, § « Additional Considerations »
+// (extern/datasheets/STE_Developer_Addendum_1989.pdf, sha256 e7797ba8…) : « There is a four-word FIFO
+// in the chip », soit 8 octets, d'où huit périodes d'échantillon (quatre en stéréo) entre le fetch du
+// dernier échantillon et la fin du son.
+// [D] MiSTery gstshifter.v:414-419 @ a00deb5 en tient 7 mots, choix d'auteur : non suivi. Avec 7 mots,
+// le son de Lethal Xcess, DHS Just Musix 2 et faster_atari_ste se décale (Lethal Xcess : ~1 ms,
+// corrélation 0,99 ; tools/sensitivity_unknown.py, 2026-11-27).
 void DmaSound::armFrameEnd() {
     if (!sched_ || !fetchWindowFrom) return;
     sched_->cancel(Scheduler::DMASND);
     if (!playing_) return;
-    NEOST_F("dmasnd.fifo_depth_frame_end");
     if ((ctrl_ & 0x02) && frameEndAddr_ == frameStartAddr_) return;   // trame 2^22 octets : pas d'IRQ
     uint32_t remain = (frameEndAddr_ - curAddr_) & 0x3FFFFE;           // octets encore à chercher
     if (remain == 0) remain = 0x400000;                                 // fin < début : tour complet
@@ -602,7 +607,7 @@ uint32_t DmaSound::liveCounter() {
     // créneaux que le CPU n'a pas. [D] mcucontrol.v et sndcnt.v @ 4a6db7cc : tools/make_stcpu_snd.py, marches
     // de $FF890D dès le cycle 380, plus aucune entre DE-start et DE-end.
     // [D] Hatari DmaSnd_GetFrameCount @ f0736b24 ne refait le plein qu'au HBL : non retenu sur STE.
-    // Profondeur de la FIFO non tranchée : le modèle a 7 mots par choix d'auteur (gstshifter.v:414-419).
+    // Profondeur de la FIFO : 4 mots, cf. armFrameEnd ([B] STE Developer Information Addendum 1989).
     if (playing_ && sched_) {
         updateDac();
         if (fetchWindowOpen && fetchWindowOpen()) fifoRefill();
