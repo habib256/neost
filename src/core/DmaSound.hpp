@@ -69,9 +69,9 @@ public:
     // Version STÉRÉO (chemin natif GUI) : écrit `st` ENTRELACÉ L/R (2×frames floats)
     // à partir de la voie YM mono `ym` (frames échantillons). Le DMA STE porte une
     // vraie image L/R (octets pairs/impairs en stéréo) → la séparation est PRÉSERVÉE
-    // jusqu'à la sortie au lieu d'être moyennée. Applique le routage de mixage LMC1992
-    // (mixing==1 → YM+DMA ; sinon DMA seul écrase YM) comme `mix`. DMA à l'arrêt → YM
-    // recopié sur les deux canaux (choix NeoST : pas de mute du YM hors lecture DMA).
+    // jusqu'à la sortie au lieu d'être moyennée. Applique le mixage LMC1992 comme `mix`
+    // (part du YM : lmcYmFactor, DMA en cours ou non). DMA à l'arrêt → YM recopié sur les
+    // deux canaux, à travers ce mixage.
     // Ce que disent les sources sur l'état au repos (item TODO « Tenue du dernier échantillon DMA ») :
     // [B] Schéma STE C300780-001 rév. A (3 oct. 1989, feuille 5, sha256 408a1394) : chaque voie
     //     passe par un registre 74F374 (U500/U501) chargé par XLD, venu du Shifter, puis un
@@ -84,10 +84,10 @@ public:
     //     tombé, ou charge-t-il une valeur neutre ? Sa netlist manque.
     // [D] Hatari dmaSnd.c:547-574 @ f0736b24 et MiSTery gstshifter.v:436-455 @ 4a6db7cc tiennent
     //     tous deux le dernier échantillon. Hatari applique aussi le routage LMC au repos (YM
-    //     coupé si mixing ≠ 1), ce que le câblage analogique rend plausible, mais la table de
-    //     vérité du sélecteur d'entrées du LMC1992 n'est pas dans le dépôt.
-    // NeoST garde le zéro au repos et le YM intact, en attente d'arbitrage (TODO.md, « Tenue du
-    // dernier échantillon DMA »).
+    //     coupé si mixing ≠ 1), ce que confirme [B] l'addendum STE d'Atari de 1989 (« Set Mix »,
+    //     cf. DmaSound::lmcYmFactor) : NeoST l'applique depuis le 2026-11-27.
+    // NeoST garde le zéro au repos, en attente d'arbitrage (TODO.md, « Tenue du dernier
+    // échantillon DMA »).
     //
     // Modèle « push » horodaté (comme le YM2149) : si une horloge frame-relative est
     // câblée (setCycleClock), les transitions PLAY/STOP de la trame sont rejouées à leur
@@ -303,7 +303,9 @@ private:
     int      mwRight_  = 20;
     int      mwBass_   = 6;          // stockés ; filtrage tonalité = TODO
     int      mwTreble_ = 6;
-    int      mwMixing_ = 0;
+    int      mwMixing_ = 1;              // cf. reset (défaut audible) et lmcYmFactor
+    // Part du YM2149 dans la sortie du LMC1992 selon la commande de mixage (cf. lmcYmFactor).
+    float   lmcYmFactor() const;
 
     // État de lecture (thread audio).
     bool     playing_ = false;

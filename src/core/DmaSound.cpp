@@ -305,7 +305,9 @@ void DmaSound::reset(bool cold) {
     // vrai HW/Hatari) pour rester audible si l'OS ne programme pas le LMC.
     if (cold) {
         mwMaster_ = 40; mwLeft_ = 20; mwRight_ = 20;   // LMC1992 à 0 dB
-        mwBass_ = 6; mwTreble_ = 6; mwMixing_ = 0;
+        // Mixage 1 (YM mixé) : ce que les TOS 1.62/2.06 et EmuTOS programment au boot
+        // (00 = −12 dB rendrait le YM plus faible jusque-là, cf. lmcYmFactor).
+        mwBass_ = 6; mwTreble_ = 6; mwMixing_ = 1;
     }
 }
 
@@ -381,6 +383,20 @@ void DmaSound::decodeMicrowire() {
         case 4: mwRight_  = cmd & 0x1F; break;   // 0..20 → -40..0 dB
         case 5: mwLeft_   = cmd & 0x1F; break;
         default: break;
+    }
+}
+
+// [B] Atari, STE Developer Information Addendum, 25 mai 1989, § « Volume and Tone Control »
+// (extern/datasheets/STE_Developer_Addendum_1989.pdf, sha256 e7797ba8…) : commande « Set Mix »,
+// « 00 -12 dB / 01 Mix GI sound chip output / 10 Do not mix GI sound chip output / 11 reserved ».
+// Le LMC1992 est en aval du DAC : la commande vaut que le DMA joue ou non, comme chez [D] Hatari
+// dmaSnd.c:557-577 @ 36a8acf0, qui coupe aussi le YM au repos. Hatari rend 00 en « DMA seul » : la
+// note d'Atari dit −12 dB, elle prime. [F] 11 « reserved » : traité comme 10 (Hatari idem).
+float DmaSound::lmcYmFactor() const {
+    switch (mwMixing_ & 3) {
+        case 0:  return 0.25118864f;             // −12 dB = 10^(−12/20)
+        case 1:  return 1.0f;
+        default: return 0.0f;
     }
 }
 
@@ -809,16 +825,16 @@ float DmaSound::lowPassPull(float in, bool enabled) {
 }
 
 void DmaSound::mix(float* out, uint32_t frames, uint32_t sampleRate) {
-    if ((!playing_ && capAvail() == 0) || sampleRate == 0) return;
+    const float ymK = lmcYmFactor();
+    if ((!playing_ && capAvail() == 0) || sampleRate == 0) {     // DMA au repos : YM seul, via le LMC
+        if (ymK != 1.0f) for (uint32_t i = 0; i < frames; ++i) out[i] *= ymK;
+        return;
+    }
     const double inc    = kRate[mode_ & 0x03] / sampleRate;   // pas de rééchantillonnage
     const bool   stereo = !(mode_ & 0x80);                    // bit7=0 → stéréo entrelacé
     const bool lowPass  = kRate[mode_ & 0x03] > double(sampleRate);   // anti-repliement
 
-    // Registre de mixage du LMC1992 (commande 0) : seul mixing==1 mélange YM2149 + DMA ;
-    // 0/2/3 routent le DMA SEUL → il écrase le YM (cf. Hatari DmaSnd_GenerateSamples,
-    // [D] dmaSnd.c:538 @ f0736b24). N'a d'effet qu'ici, trame en cours : DMA à l'arrêt → `mix` sort
-    // plus haut et le YM passe intact (pas de mute du YM hors lecture DMA).
-    const bool addYm = (mwMixing_ == 1);
+    // Registre de mixage du LMC1992 (commande 0) : part du YM selon lmcYmFactor, DMA ou non.
     for (uint32_t i = 0; i < frames; ++i) {
         if (!haveCur_) {                                      // 1er échantillon de la trame
             int l, r;
@@ -830,13 +846,15 @@ void DmaSound::mix(float* out, uint32_t frames, uint32_t sampleRate) {
             }
         }
         const float dma = (dmaCur_ / 4.0f / 128.0f) * kDmaGain;   // /4 = gain du FIR
-        if (addYm) out[i] += dma;                             // YM2149 + DMA
-        else       out[i]  = dma;                             // DMA seul (écrase le YM)
+        out[i] = out[i] * ymK + dma;                          // YM2149 (via le LMC) + DMA
         phase_ += inc;
         while (phase_ >= 1.0) {                                // avance dans le flux capturé
             int l, r;
             if (!capPullLR(stereo, l, r)) {
-                if (!playing_) return;                         // flux drainé, DMA arrêté → reste = YM
+                if (!playing_) {                               // flux drainé, DMA arrêté → reste = YM
+                    for (uint32_t j = i + 1; j < frames; ++j) out[j] *= ymK;
+                    return;
+                }
                 // Sous-alimenté transitoire : tient l'échantillon. La dette est
                 // PLAFONNÉE à 1 octet — sinon le rattrapage SAUTERAIT des octets
                 // en rafale au retour du flux (rendu déformé : octets « mangés »).
@@ -859,14 +877,14 @@ void DmaSound::mixSegment(float* st, const float* ym, uint32_t count, uint32_t s
     // DMA inactif ET plus rien à drainer AVANT le prochain événement → YM seul (L=R).
     // C'est capRenderAvail (borné) et non capAvail : avant un PLAY de milieu de trame,
     // l'anneau contient déjà les octets que le DAC tirera APRÈS l'écriture PLAY.
+    const float ymK = lmcYmFactor();                          // part du YM (LMC1992), DMA ou non
     if ((!aPlaying_ && capRenderAvail() == 0) || sampleRate == 0) {
-        for (uint32_t i = 0; i < count; ++i) { st[2 * i] = ym[i]; st[2 * i + 1] = ym[i]; }
+        for (uint32_t i = 0; i < count; ++i) { st[2 * i] = ym[i] * ymK; st[2 * i + 1] = ym[i] * ymK; }
         return;
     }
     const double inc    = kRate[aMode_ & 0x03] / sampleRate;
     const bool   stereo = !(aMode_ & 0x80);
     const bool lowPass  = kRate[aMode_ & 0x03] > double(sampleRate);
-    const bool addYm    = (mwMixing_ == 1);                   // 1 = YM+DMA, sinon DMA écrase YM (live)
 
     for (uint32_t i = 0; i < count; ++i) {
         if (!aHaveCur_) {                                     // 1er octet du flux (≙ DmaInitSample)
@@ -879,15 +897,14 @@ void DmaSound::mixSegment(float* st, const float* ym, uint32_t count, uint32_t s
         }
         const float dl = (dmaCurL_ / 4.0f / 128.0f) * kDmaGain * dmaGain;
         const float dr = (dmaCurR_ / 4.0f / 128.0f) * kDmaGain * dmaGain;
-        if (addYm) { st[2 * i] = ym[i] + dl; st[2 * i + 1] = ym[i] + dr; }
-        else       { st[2 * i] = dl;         st[2 * i + 1] = dr; }
+        st[2 * i] = ym[i] * ymK + dl; st[2 * i + 1] = ym[i] * ymK + dr;
         aPhase_ += inc;
         while (aPhase_ >= 1.0) {
             int l, r;
             if (!capPullLR(stereo, l, r)) {
                 if (!aPlaying_) {                              // flux drainé, DMA arrêté → YM sur le reste
                     aHaveCur_ = false;
-                    for (uint32_t j = i + 1; j < count; ++j) { st[2 * j] = ym[j]; st[2 * j + 1] = ym[j]; }
+                    for (uint32_t j = i + 1; j < count; ++j) { st[2 * j] = ym[j] * ymK; st[2 * j + 1] = ym[j] * ymK; }
                     return;
                 }
                 // Sous-alimenté transitoire : tient l'échantillon. Dette PLAFONNÉE

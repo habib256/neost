@@ -227,8 +227,8 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
   sur un STE.
 - **Tenue du dernier échantillon DMA** · P3 ⏸ décision · [B]/[F] — schéma STE C300780-001 f. 5 : registre
   74F374 chargé par XLD avant le DAC0802, donc le DAC tient son octet ; inconnu : XLD cesse-t-il FIFO vide
-  (Shifter sans netlist). Hatari et MiSTery tiennent. Proposition : tenir sur STE ; mute du YM au repos
-  (mixing ≠ 1) en attente de la fiche LMC1992 ou de l'addendum STE (code 0 = −12 dB ?). Sources dans
+  (Shifter sans netlist). Hatari et MiSTery tiennent. Proposition : tenir sur STE. Le mixage du YM au
+  repos est tranché ([B] addendum STE 1989, `DmaSound::lmcYmFactor`). Sources dans
   `src/core/DmaSound.hpp`. À trancher avant toute comparaison de WAV bit à bit.
 - **Préchargement DMA en écriture** · P3 ⏸ source · [F] — `dma.v:277 @ a00deb5b`, modèle comportemental :
   simple témoin. ST-4081 n'a que le compteur d'adresse (f. 16) ; la FIFO est dans la puce DMA, absente de
