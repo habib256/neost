@@ -80,13 +80,35 @@ int testDmaSoundMono() {
                 check(same(a, st), "stopped mono drains same residual data as stereo");
                 check(std::any_of(a.begin(), a.end(), [](float x) { return x != 0.125f; }),
                       "PLAY off still renders residual samples");
-                check(a.back() == 0.125f, "drained stopped output returns to YM");
+                // [B] STE Developer Information Addendum 1989, « Set Mix » : 00 = −12 dB, 01 = YM mixé ;
+                // le LMC1992 suit le DAC, la commande vaut DMA à l'arrêt aussi.
+                const float k = addYm ? 1.0f : 0.25118864f;
+                check(a.back() == 0.125f * k, "drained stopped output returns to YM through the LMC mix");
                 const auto state = mono.save();
                 float quiet[] = {0.25f, -0.5f};
                 mono.snd.mix(quiet, 2, rate);
-                check(quiet[0] == 0.25f && quiet[1] == -0.5f, "quiescent mono leaves YM unchanged");
+                check(quiet[0] == 0.25f * k && quiet[1] == -0.5f * k, "quiescent mono passes YM through the LMC mix");
                 check(mono.save() == state, "quiescent mono does not advance state");
             }
+        }
+    }
+    {
+        // [B] Addendum STE 1989, « Set Mix » : YM à −12 dB (00), mixé (01), coupé (10), DMA au repos.
+        for (unsigned code : {0u, 1u, 2u}) {
+            Bus bus; Scheduler sched; DmaSound snd{bus};
+            bus.machine = MachineType::Ste; bus.dmasnd = &snd;
+            snd.setScheduler(&sched);
+            sched.setCallback(Scheduler::MICROWIRE, [&snd] { snd.onMicrowireShift(); });
+            bus.write16(0xFF8924, 0x07FF);
+            bus.write16(0xFF8922, 0x0400 | code);
+            sched.runTo(128);
+            const float want = code == 0 ? 0.25118864f : code == 1 ? 1.0f : 0.0f;
+            float m[2] = {0.5f, -0.5f};
+            snd.mix(m, 2, 48000);
+            std::vector<float> ym(3, 0.5f), st(6, 9.0f);
+            snd.mixStereo(st.data(), ym.data(), 3, 48000, 1);
+            check(m[0] == 0.5f * want && m[1] == -0.5f * want, "idle DMA: LMC mix code scales YM (mono)");
+            check(st[0] == 0.5f * want && st[5] == 0.5f * want, "idle DMA: LMC mix code scales YM (stereo)");
         }
     }
     {

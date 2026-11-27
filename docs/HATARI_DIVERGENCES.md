@@ -963,10 +963,13 @@ resets, `Mfp::reset`) a été supprimé : tout y était implémenté.
   `DmaSound.cpp:531`, case `0x22`).
 - **Passe-bas du STF sans la garde `nAudioFrequency ≥ 40000`** · ouvert · basse — sans effet
   à 48 kHz.
-- **DMA à l'arrêt hors mixage 1** · assumé · basse — `mixing ≠ 1` et DMA arrêté ne coupent
-  pas le YM ; le dernier échantillon DMA n'est pas tenu en continu (Hatari, `dmaSnd.c:547-574,
-  150-151`, tient l'offset et coupe le YM après une trame one-shot). Choix documenté à
-  `DmaSound::mix` (`DmaSound.hpp:62-63`). À trancher avant tout diff WAV au bit près.
+- **Mixage LMC1992 `00`** · voulu [B] · basse · 2026-11-27 — Atari (STE Developer Information
+  Addendum, 1989, « Set Mix ») : `00` = YM à −12 dB, `01` = YM mixé, `10` = YM coupé, DMA en
+  cours ou non. NeoST suit la note (`DmaSound::lmcYmFactor`) ; Hatari (`dmaSnd.c:557-577
+  @ 36a8acf0`) rend `00` en « DMA seul ». Au repos, `10` coupe le YM des deux côtés.
+- **Dernier échantillon DMA au repos** · assumé · basse — non tenu en continu (Hatari,
+  `dmaSnd.c:557-577 @ 36a8acf0`, ajoute l'offset `FrameLeft/Right` tenu). Item du TODO « Tenue du
+  dernier échantillon DMA ». À trancher avant tout diff WAV au bit près.
 
 ### Écarts voulus — ne pas réaligner
 

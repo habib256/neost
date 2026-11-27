@@ -1,5 +1,18 @@
 # Changelog — NeoST
 
+## 2026-11-27 — Mixage du LMC1992 selon Atari ; écarts de son du blitter : un décalage
+
+- **Commande « Set Mix » du LMC1992** d'après le STE Developer Information Addendum (Atari, 1989,
+  § « Volume and Tone Control ») : `00` = YM à −12 dB, `01` = YM mixé, `10` = YM coupé, `11` réservé.
+  Le LMC suit le DAC : la commande vaut aussi DMA à l'arrêt. NeoST rendait `00`, `10` et `11` en
+  « DMA seul » pendant une trame et laissait le YM intact au repos. Hatari (`36a8acf0`) coupe bien
+  le YM au repos, mais rend `00` en « DMA seul » ; la note prime. TOS 1.62, 2.06 et EmuTOS programment
+  `01` au boot (vérifié) : rien ne change pour un programme qui ne touche pas au mixage. Défaut à froid
+  `01` pour la même raison. Table de vérité `dmasound-mono` étendue aux trois codes, DMA au repos.
+- **Écarts de son de la fenêtre de reprise du blitter** : Arkanoid II, le plus gros, est le même son
+  décalé de 1,2 ms (corrélation 0,987). Les trois inconnues sonores examinées décalent le son de
+  1 à 8 ms sans le changer.
+
 ## 2026-11-27 — Sensibilité des inconnues suivantes ; FIFO du son DMA tranchée par Atari
 
 - **FIFO du son DMA du STE : quatre mots**, d'après le STE Developer Information Addendum d'Atari

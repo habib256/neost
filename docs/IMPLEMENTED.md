@@ -1651,10 +1651,10 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   128 cycles ; écritures occupées rejetées et mot haut/bas préservés. Décodage
   unique après les seize pas, comme le modèle Hatari ; aucun dispatch global.
 
-  **Registre de mixage (reg 0) désormais appliqué** dans `mix()` : mixing==1 → YM2149+DMA,
-  0/2/3 → DMA SEUL qui écrase le YM (réf. `dmaSnd.c:555-568`), uniquement pendant une trame DMA
-  (DMA à l'arrêt → le YM passe intact). EmuTOS STE programme mixing=1 au boot (vérifié) → YM
-  audible par défaut, la correction ne mute le YM que si un programme route explicitement DMA-seul.
+  **Registre de mixage (reg 0)** (`DmaSound::lmcYmFactor`, 2026-11-27, [B] STE Developer Information
+  Addendum 1989) : `00` → YM à −12 dB, `01` → YM + DMA, `10`/`11` → DMA seul, que le DMA joue ou
+  non (le LMC1992 suit le DAC). TOS 1.62, 2.06 et EmuTOS programment `01` au boot (vérifié) ; le
+  défaut à froid est `01` pour la même raison.
 - **Bruits mécaniques du lecteur** (immersion, pas du matériel — repris de STeem SSE) :
   le cœur émet des événements `FdcSound` (moteur/pas/seek/index) via un sink ; frontends
   GUI (`DriveSound`, miniaudio) et WASM (Web Audio). WAV embarqués dans `roms/drivesound/`.
