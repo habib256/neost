@@ -125,18 +125,22 @@ uint16_t parseChannelMask(const std::string& s) {
     if (s == "none") return 0;
     uint16_t m = 0;
     std::size_t i = 0;
+    // Nombre saturé à 999 : une ligne éditée à la main (« 1-99999999999 ») débordait l'int
+    // (comportement indéfini), et la boucle des canaux tournait jusqu'à INT_MAX.
+    auto number = [&](int& v) {
+        bool got = false;
+        for (v = 0; i < s.size() && s[i] >= '0' && s[i] <= '9'; ++i, got = true)
+            v = std::min(999, v * 10 + (s[i] - '0'));
+        return got;
+    };
     while (i < s.size()) {
         while (i < s.size() && (s[i] == ',' || s[i] == ' ')) ++i;
-        int a = 0; bool got = false;
-        while (i < s.size() && s[i] >= '0' && s[i] <= '9') { a = a * 10 + (s[i++] - '0'); got = true; }
-        if (!got) break;
+        int a = 0;
+        if (!number(a)) break;
         int b = a;
-        if (i < s.size() && s[i] == '-') {
-            ++i; b = 0;
-            while (i < s.size() && s[i] >= '0' && s[i] <= '9') b = b * 10 + (s[i++] - '0');
-        }
-        for (int c = a; c <= b; ++c)
-            if (c >= 1 && c <= 16) m = uint16_t(m | (1u << (c - 1)));
+        if (i < s.size() && s[i] == '-') { ++i; number(b); }
+        for (int c = std::max(a, 1); c <= std::min(b, 16); ++c)
+            m = uint16_t(m | (1u << (c - 1)));
     }
     // Une ligne ILLISIBLE vaut « tous les canaux » plutôt qu'un appareil sourd dont
     // l'utilisateur chercherait la panne. Le masque vide VOULU, lui, s'écrit « none »

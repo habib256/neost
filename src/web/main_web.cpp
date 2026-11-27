@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <filesystem>
 #include <functional>
 #include <string>
@@ -1309,6 +1310,23 @@ int main(int argc, char** argv) {
     // 1 = pas (clic), 2 = seek — dans l'ordre de l'énum FdcSound.
     machine.fdc.setSoundSink([](FdcSound e) {
         EM_ASM({ if (window.neostDriveSound) window.neostDriveSound($0); }, static_cast<int>(e));
+    });
+
+    // Disquette nommée par un état chargé (Fdc::restoreMedia) : seulement les dossiers
+    // des disquettes de la page, /disks (embarquées) et /uploads (déposées). Un état
+    // forgé ne fait plus réécrire une ROM de /userroms ni un fichier du disque GEMDOS
+    // (/hd) par l'image qu'il porte. Ailleurs : la disquette du même nom, sinon refus.
+    machine.fdc.setMediaPathResolver([](const std::string& p) -> std::string {
+        namespace fs = std::filesystem;
+        std::error_code ec;
+        const std::string n = fs::path(p).lexically_normal().string();
+        for (const char* dir : {"/disks/", "/uploads/"})
+            if (n.compare(0, std::strlen(dir), dir) == 0 && fs::is_regular_file(n, ec)) return n;
+        const std::string name = fs::path(p).filename().string();
+        if (name.empty() || name == "." || name == "..") return {};
+        for (const char* dir : {"/uploads/", "/disks/"})
+            if (fs::is_regular_file(std::string(dir) + name, ec)) return std::string(dir) + name;
+        return {};
     });
 
     machine.reset();

@@ -192,9 +192,6 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
   dizaines de ppm (HWTST : STE PAL 8 020 7xx-8 021 2xx Hz), soit ~50 cycles par ppm sur ce trajet. À poser :
   une graine de tolérance du quartz MFP (±ppm), en option (`docs/CASE_STUDIES.md`). Tranché par : la
   dispersion des quartz MFP relevée sur plusieurs machines.
-- **TAI effacé par RESET quand le son DMA continue** · P3 ⭘ *(proposé)* — `Mfp::resetChip` pose
-  `tai_ = false` alors que le son DMA traverse RESB et garde XSINT haut : le Timer A en comptage perd
-  un front. TAI est une broche, pas un registre (en-tête de la fonction). Chasse du 2026-11-27.
 - **USART** · P3 ⭘ — modèle synchrone (SCR, M, F/S), réacquisition et CIP au milieu d'un caractère (récepteur
   bit à bit, § 6.1.1), phase du premier front TC. BREAK reçu en bouclage fait le 2026-11-12 ; [F] sa date de
   détection et le canal de l'IRQ de fin de BREAK : tranché par SO et IPRA relevés sur un 68901.
@@ -612,11 +609,9 @@ Ce qui touche `src/core/Cpu68k.cpp` attend l'échange → § 9.
   couche par couche depuis le 2026-11-12 (`--gemdos-selftest`, 30 cas : normalisation, parseur, garde
   terminale, liens pendants et intérieurs). Reste à désigner le prochain module jamais audité.
 
-- **A44 — restes de la chasse du 2026-11-27** · P3 ⭘ *(proposé)* — états forgés : échéance
-  négative ≠ −1 admise par `Scheduler` (dans les 2³² premiers cycles ; `scanNextDue` la prend pour
-  « aucune »), débordement signé dans le contrôle de `Shifter.hpp:1049` ; `parseChannelMask` sans
-  borne (`AppConfig.cpp`) ; `Blitter::reset(cold)` garde `xReset_` ; `presentAudio` boucle si le
-  frontend rend 0. `neost-fuzz-disk` ne couvre que les disquettes : ni archives, ni états, ni chemins.
+- **A44 — fuzz des états autonomes** · P3 ⭘ *(proposé)* — `neost-fuzz-disk` couvre disquettes et
+  archives, pas le chargement d'un état (`Machine::loadStateWithMedia`, chemins de média compris) : il
+  faut une machine et une ROM libre. Le fuzz jetable de la chasse du 2026-11-27 y a trouvé deux défauts.
 
 ### Garde-fous (à NE PAS faire)
 - **Croire que la liste se vide** : auditer coûte une journée, réparer des semaines. Arbitrer

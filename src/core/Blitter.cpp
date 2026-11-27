@@ -87,6 +87,7 @@ void Blitter::reset(bool cold) {
         std::fill(std::begin(reg_), std::end(reg_), 0);
         buffer_ = 0;
         yLatch_ = 0;
+        xReset_ = 0;          // la recharge du X count suit le registre remis à zéro
     } else {
         reg_[0x3C] &= uint8_t(~0xC0);
     }
