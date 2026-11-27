@@ -64,10 +64,12 @@ public:
     // Branche le « puits » de sons mécaniques (cf. FdcSound). Optionnel : sans
     // sink, le FDC reste silencieux. Posé par le frontend (thread émulation).
     void setSoundSink(std::function<void(FdcSound)> fn) { soundSink_ = std::move(fn); }
-    // Où trouver, CHEZ CE FRONTEND, une disquette qu'un état autonome nomme par un chemin
-    // absent d'ici (restoreMedia) : l'état d'un autre joueur en réseau désigne SES
-    // fichiers. Le résolveur rend un chemin local (vide : rien) ; le contenu, lui, vient
-    // de l'état (une .st y est entière). Sans résolveur, le chemin de l'état seul.
+    // Où trouver, CHEZ CE FRONTEND, la disquette qu'un état autonome nomme (restoreMedia) :
+    // l'état d'un autre joueur en réseau désigne SES fichiers, et un état forgé pourrait
+    // nommer n'importe quel fichier de l'hôte. Le résolveur rend un chemin local À LUI
+    // (vide : rien, et l'état est refusé) ; le contenu, lui, vient de l'état (une .st y
+    // est entière). Appelé pour TOUT chemin d'un état autonome, et pour une copie de la
+    // session dont le fichier a disparu. Sans résolveur, le chemin de l'état seul.
     void setMediaPathResolver(std::function<std::string(const std::string&)> fn) { mediaResolver_ = std::move(fn); }
 
     // « FDC rapide » (équivalent de `hatari --fastfdc`) : divise les délais de

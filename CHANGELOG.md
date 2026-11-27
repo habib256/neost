@@ -1,5 +1,36 @@
 # Changelog — NeoST
 
+## 2026-11-27 — Trois passes adversariales de chasse aux défauts : cinq corrigés
+
+Trois relectures indépendantes (entrées non fiables ; logique des puces ; frontends, états
+et réseau), chaque candidat réfuté avant d'être retenu, puis revérifié dans le code.
+- **Un état autonome forgé réécrivait un fichier quelconque de l'hôte** (`Fdc::restoreMedia`).
+  Son chemin de disquette n'était confié au résolveur du frontend que s'il n'existait pas ;
+  existant, le fichier se montait en `.st` brute et recevait l'image de l'état, avec le
+  drapeau de recopie lu dans l'état lui-même. Reproduit par `retro_unserialize` (netplay,
+  état partagé) : 22 octets d'un fichier témoin devenus 737 280. Désormais tout chemin d'un
+  état étranger passe par le résolveur (refus s'il ne rend rien) ; celui du cœur libretro ne
+  reprend tel quel qu'un chemin de `saves/neost`. Un état étranger ne peut plus lever la
+  protection en écriture d'une disquette déjà montée. Le web n'a pas de résolveur : son FS
+  virtuel borne le risque.
+- **libretro : la taille d'un état grandissait sans le dire.** `loadContent` remettait la borne
+  de `retro_serialize_size` à zéro à chaque redémarrage automatique (mémoire, machine, TOS) :
+  2 921 897 → 3 985 098 octets après un passage à 2 Mo, et le tampon déjà alloué par le
+  frontend (anticipation, retour arrière, netplay) refusé ensuite. La borne ne se remet plus
+  à zéro qu'au chargement d'un contenu, et le cœur déclare
+  `RETRO_SERIALIZATION_QUIRK_CORE_VARIABLE_SIZE`.
+- **IKBD, souris relative avec Y inversé (`$0F`) : signe faux à la saturation.** Δy était borné
+  à −128 puis multiplié par −1 : +128, réécrit `$80`. Un mouvement rapide de −200 sortait
+  `$80 $48` (−56) au lieu de `$7F $49` (+200). La ROM 6301 applique le sens au décodage, avant
+  la saturation ([C] `$F41F-$F42D`, `$F4C4-$F4FE`) ; Hatari (`36a8acf0`) a le défaut.
+- **Zip et gzip décompressés sans plafond** (`Archive.cpp`) : 611 Ko donnaient 600 Mo en mémoire
+  puis dans le cache. Décompression dans un tampon de la taille annoncée, plafonnée comme le 7z
+  (256 Mo).
+- **Lecture hors de l'image ROM** (`GemdosHd::romGemdosClock`) : la boucle s'arrêtait à `i+1 < n`
+  et lisait `rom[i+5]` (ASan, ROM terminée par `30 39`).
+- Restés ouverts, au TODO : TAI du MFP au RESET (§ 3.2), et les défauts mineurs de la
+  « Chasse du 2026-11-27 » (§ 8).
+
 ## 2026-11-27 — MICROWIRE : écriture pendant l'envoi ignorée, tranché par Atari
 
 - **Écrire la donnée ou le masque pendant un envoi MICROWIRE est ignoré** : « Subsequent writes

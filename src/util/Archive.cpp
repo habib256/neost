@@ -65,15 +65,19 @@ bool is7z(const std::vector<uint8_t>& d) {
     return d.size() >= 32 && std::memcmp(d.data(), sig, 6) == 0;
 }
 
+// Décompresse dans un tampon de la taille ANNONCÉE (en-tête zip, ISIZE du gzip), plafonnée
+// comme un 7z (Reader::kMaxUnpacked) : un flux qui en produirait davantage échoue au lieu
+// de grossir sans borne — 611 Ko de zip donnaient 600 Mo en mémoire, puis dans le cache.
+// Un octet de plus que l'annonce : un flux trop long se voit, il ne s'arrête pas pile.
 bool inflateRaw(const uint8_t* src, std::size_t n, std::vector<uint8_t>& out, std::size_t expected) {
     out.clear();
-    if (n > 0x7FFFFFFFu) return false;
-    int len = 0;
-    char* p = stbi_zlib_decode_noheader_malloc(reinterpret_cast<const char*>(src), int(n), &len);
-    if (!p) return false;
-    out.assign(reinterpret_cast<uint8_t*>(p), reinterpret_cast<uint8_t*>(p) + len);
-    std::free(p);
-    return expected == 0 || out.size() == expected;
+    if (n > 0x7FFFFFFFu || expected > Reader::kMaxUnpacked) return false;
+    out.resize(expected + 1);
+    const int len = stbi_zlib_decode_noheader_buffer(reinterpret_cast<char*>(out.data()), int(out.size()),
+                                                     reinterpret_cast<const char*>(src), int(n));
+    if (len < 0 || std::size_t(len) != expected) { out.clear(); return false; }
+    out.resize(expected);
+    return true;
 }
 
 bool listZip(const std::vector<uint8_t>& d, std::vector<ZipMember>& out, std::string* err) {
@@ -124,6 +128,7 @@ bool extractZip(const std::vector<uint8_t>& d, const ZipMember& m, std::vector<u
         if (m.compressedSize != m.size) return fail(err, "corrupt stored zip member");
         out.assign(d.begin() + std::ptrdiff_t(data), d.begin() + std::ptrdiff_t(data + m.size));
     } else if (m.method == 8) {
+        if (m.size > Reader::kMaxUnpacked) return fail(err, "zip member too large");
         if (!inflateRaw(d.data() + data, m.compressedSize, out, m.size)) return fail(err, "bad deflate data");
     } else {
         return fail(err, "unsupported zip compression method");
@@ -151,8 +156,8 @@ bool gunzip(const std::vector<uint8_t>& d, std::vector<uint8_t>& out, std::strin
     if (flags & 2) p += 2;
     if (p + 8 > d.size()) return fail(err, "truncated gzip");
     const uint32_t crc = le32(d.data() + d.size() - 8), isize = le32(d.data() + d.size() - 4);
-    if (!inflateRaw(d.data() + p, d.size() - 8 - p, out, 0)) return fail(err, "bad deflate data");
-    if (uint32_t(out.size()) != isize) return fail(err, "gzip size mismatch");
+    if (isize > Reader::kMaxUnpacked) return fail(err, "gzip file too large");
+    if (!inflateRaw(d.data() + p, d.size() - 8 - p, out, isize)) return fail(err, "bad deflate data or gzip size mismatch");
     if (neost::crc32(out.data(), out.size()) != crc) return fail(err, "gzip CRC mismatch");
     return true;
 }

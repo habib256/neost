@@ -444,12 +444,18 @@ bool mountDisk(int drive, const std::string& original) {
     return true;
 }
 
-// cf. setMediaPathResolver (loadContent). Par nom de fichier : la copie privée de ce
-// joueur, une disquette extraite d'archive, ou une disquette de la liste.
+// cf. setMediaPathResolver (loadContent), appelé pour TOUT chemin d'un état : le chemin
+// lu dans l'état n'est repris tel quel que s'il est dans saves/neost (copie privée,
+// disquette d'archive). Sinon, par nom de fichier : la copie privée de ce joueur, une
+// disquette extraite d'archive, ou une disquette de la liste (l'original, recopie
+// coupée, faute de copie). Jamais un autre fichier de l'hôte : un état forgé (netplay,
+// état partagé) l'aurait fait réécrire par l'image qu'il porte.
 std::string resolveForeignDisk(const std::string& foreign) {
     const std::string name = fs::path(foreign).filename().string();
     if (name.empty()) return {};
     std::error_code ec;
+    if (insideSaveDir(foreign) && fs::is_regular_file(foreign, ec))
+        return fs::path(foreign).lexically_normal().string();
     if (!g_saveDir.empty()) {
         const fs::path own = neostSaveDir() / "disks" / name;
         if (fs::exists(own, ec)) return own.string();
@@ -1541,7 +1547,6 @@ bool loadContent(const char* path) {
     g_s.rw = 0;
     g_s.padPrev[0] = g_s.padPrev[1] = 0;
     g_s.mouseL = g_s.mouseR = false;
-    g_s.stateBound = 0;
     g_s.tosPath = tos;
     g_s.lastMachine = m.machineType();
     if (std::find(g_s.triedTos.begin(), g_s.triedTos.end(), tos) == g_s.triedTos.end()) g_s.triedTos.push_back(tos);
@@ -1781,6 +1786,16 @@ RETRO_API bool retro_load_game(const retro_game_info* game) {
         return false;
     }
     setInputDescriptors();
+    // La taille d'un état peut croître dans la session : les redémarrages automatiques
+    // (checkMissingMemory : 1 → 2 ou 4 Mo ; checkMissingHardware : autre machine), un
+    // GEMDOS qui grandit, une disquette plus grande. La borne de retro_serialize_size
+    // ne fait que croître (elle n'est remise à zéro qu'ici, au chargement d'un contenu),
+    // mais le contrat (libretro.h, retro_serialize_size) veut une taille jamais dépassée
+    // dans la session : on le dit, pour que le frontend la relise au lieu de garder un
+    // tampon trop court (run-ahead, rewind et netplay s'arrêtaient sans rien dire).
+    uint64_t quirks = RETRO_SERIALIZATION_QUIRK_CORE_VARIABLE_SIZE;
+    g_env(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS, &quirks);
+    g_s.stateBound = 0;
     return loadContentOrDrop(game ? game->path : nullptr);
 }
 
