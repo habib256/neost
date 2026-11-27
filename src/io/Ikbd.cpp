@@ -220,6 +220,7 @@ uint8_t Ikbd::read8(uint32_t addr) {
     const uint8_t b = rdr_;          // RDR courant (conservé si relu à vide)
     const bool had = rdrf_;
     rdrf_ = false;
+    if (had && sched_) rdrReadClock_ = sched_->liveNow();
     if (ovrn_ && !srRead_) NEOST_F("ikbd.ovrn_clear_rdr_only");
     if (srRead_) {                   // séquence SR puis RDR → OVRN acquitté
         srRead_ = false;
@@ -1689,9 +1690,14 @@ void Ikbd::onRxDeliver() {
         // qu'à la lecture de RDR ([B] MC6850 § Receiver Overrun p. 8-9) ; en
         // attendant la cause d'IRQ RX reste active ([D] Hatari acia.c:721-724 @ f0736b24, RX_Overrun dans
         // ACIA_UpdateIRQ).
-        NEOST_F("ikbd.overrun_date");
         rxOverrun_ = true;
     } else {
+        // L'inconnue de date (Ikbd.hpp, rxOverrun_ et onRxDeliver) ne change le résultat que si RDR a été
+        // vidé dans le dernier demi-bit : à la date de la fiche (milieu du dernier bit), l'octet aurait
+        // trouvé RDR plein et se serait perdu. Un programme qui ne lit pas l'ACIA (IRQ masquées pendant un
+        // dépack) perd ses octets à toute date : ce cas-là n'est pas compté.
+        if (rdrReadClock_ != INT64_MIN && due >= 0 && due - rdrReadClock_ < kAciaTxBitCycles / 2)
+            NEOST_F("ikbd.overrun_date");
         rdr_ = b;
         rdrf_ = true;
     }

@@ -1,5 +1,25 @@
 # Changelog — NeoST
 
+## 2026-11-27 — Inconnues [F] : ce que les titres traversent, puis ce dont ils dépendent
+
+- **72 chemins [F] instrumentés** (`NEOST_F("id")`, `src/util/Unknowns.hpp`, rapport
+  `neost-headless --unknowns`) et **classés par nombre de titres** (`tools/rank_unknowns.py`) :
+  collection en ST, STE et Mega STE, plus les 881 disquettes LGD en ST, 979 disques, 1 175 runs. Un run
+  de base sur `disks/diskA.st` retranche ce que le TOS traverse seul.
+- **Compter la sensibilité, pas le passage.** Trois sites comptaient un contexte, pas l'inconnue :
+  la phase du LOAD vidéo se déclenchait sur toute trame qui touche la palette (885 titres, dont
+  les lignes qui clignotent pendant un dépack), alors que sa date ne sert que hors RAM ; posé là
+  où la décaler de ±4 cycles change le mot lu, il tombe à 5 titres. La date de perte d'un octet
+  en overrun ACIA (37 titres) ne compte que si RDR a été vidé dans le dernier demi-bit : aucun
+  titre. Nouveau site pour la règle des 16 µs après un `$Dx` ([B] WD177X-00 p. 1-16, non
+  modélisée) : aucun titre ne s'y expose.
+- **Banc de sensibilité** (`tools/sensitivity_unknown.py`) : rejoue les runs d'un site avec un
+  binaire où le choix [F] est remplacé, compare l'état (`--arch-hash-every`) et l'image. Bus
+  ouvert d'une banque RAM vide (35 titres, 57 runs) : avec `$FF` (MAME) ou `$00`, l'état change
+  pour 11 runs, l'image pour 2 titres seulement — The Union Demo (l'animation de l'intro se
+  décale, puis tout se rejoint à la partie suivante) et E605 sur ST (114 pixels). La valeur du
+  bus ouvert reste [F], mais presque rien n'en dépend.
+
 ## 2026-11-26 — GPIP5 : disquette et disque dur ACSI câblés ensemble
 
 - **Source primaire retrouvée** : Atari, « Atari Computer System Interface (ACSI) », notes

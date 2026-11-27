@@ -3251,13 +3251,14 @@ void Fdc::executeCommand(uint8_t cmd) {
      // chargeurs enchaînant $D0 et commande en quelques instructions.
      default: {                                               // FORCE INTERRUPT (type IV)
         commandType_ = 4;
-        NEOST_F("fdc.force_int_prepare");
+        forceIntClock_ = nowCyc();
         // [B] WD177X-00 p. 1-16 : au repos, l'état reflète un type I. Moteur ON et spin-up à 0 : fiche
         // muette (p. 1-7 exclut seulement Force Interrupt du flag h) ; [D] fdc.c:4381-4382 @ f0736b24,
         // « verified on STF », relevé d'un tiers.
         // [B] p. 1-16 : au repos, « the rest of the status bits are updated or cleared ». TR00, Index et WPRT se
         // rafraîchissent à la lecture ; RNF et CRC tombent ici. [D] Hatari garde RNF : la fiche prime.
         if (!(str_ & STR_BUSY)) {                             // FDC inactif → statut type I, moteur ON
+            NEOST_F("fdc.force_int_prepare");                 // moteur ON au repos : le [D] ci-dessus
             statusTypeI_ = true;
             updateStr(STR_SPINUP | STR_RNF | STR_CRC, STR_MOTOR);
         }
@@ -3516,6 +3517,13 @@ void Fdc::write8(uint32_t addr, uint8_t v) {
             indexCheckUpdate();
             switch (dmaMode_ & (DMA_A1 | DMA_A0)) {
                 case 0: {                            // FDC_CS : commande
+                    // [B] WD177X-00 p. 1-16 : « Wait 16 µsec (double density) […] before issuing a new command
+                    // after issuing a forced interrupt. Loading a new command sooner than this nullifies the
+                    // forced interrupt. » Non modélisé, ni chez Hatari. [F] Ce que devient alors la commande en
+                    // cours et la nouvelle : fiche muette. Compté ici, là seulement où la règle changerait le
+                    // résultat (128 cycles à 8 MHz, MFM : DDEN est à la masse sur ST).
+                    if (cmdType(v) != 4 && forceIntClock_ != INT64_MIN && nowCyc() - forceIntClock_ < 128)
+                        NEOST_F("fdc.force_int_nullified");
                     // [B] WD177X-00 p. 1-5 : BUSY levé, seul un Force Interrupt est chargé.
                     // ⚠ [B] p. 1-3, p. 1-5 : aucun remplacement prévu. [D] fdc.c:161-168, 4608-4632
                     // @ f0736b24 : Hatari l'admet pendant prepare+spinup d'après un logiciel réel

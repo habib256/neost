@@ -485,6 +485,9 @@ private:
     // caractère ; Hatari lit le stop (acia.c:1071-1075 @ f0736b24), NeoST date la fin de trame. Tranché
     // par : un overrun provoqué sur un vrai 6850, IRQ à l'oscilloscope.
     bool    rxOverrun_ = false;              // octet(s) perdu(s) non encore signalé(s)
+    // Date de la dernière lecture de RDR pleine, pour le seul compteur NEOST_F (ikbd.overrun_date) :
+    // non sérialisée, sans effet sur l'émulation.
+    int64_t rdrReadClock_ = INT64_MIN;
     bool    ovrn_ = false;                   // [B] MC6850 Table 1 p. 7 : bit 5 du SR
     bool    srRead_ = false;                 // [D] Hatari acia.c:768 @ f0736b24 : SR lu depuis la dernière lecture RDR
     // [D] Hatari acia.c:285,343,801-804 @ f0736b24 : Clock_Divider != 0, conservé aux resets ACIA.

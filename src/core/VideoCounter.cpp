@@ -88,7 +88,6 @@ void Shifter::endVideoLine() {
     static const bool noSnap = envFlag("NEOST_NO_SNAP", false);
     if (!noSnap && (!glue_.syncWrites.empty() || spec512Active_ || shifterStopLine_ >= 0 || !scrollWrites_.empty()) && bpl > 0 &&
         sl >= 0 && sl < static_cast<int>(lineSnapLen_.size())) {
-        NEOST_F("vc.load_phase_st");
         int n = bpl + scrollCounterAdvance(sl) + 8;
         if (n > kLineSnapBytes - kSnapLead) n = kLineSnapBytes - kSnapLead;
         uint8_t* snap = lineSnap_.data() + static_cast<std::size_t>(sl) * kLineSnapBytes;
@@ -106,6 +105,8 @@ void Shifter::endVideoLine() {
         // le premier front montant LOAD est à DE+6 cycles, puis tous les 4 cycles.
         // Relevé par tools/probe_video_load.py. [F] phase sur silicium ST
         // à mesurer ; le RTL configuré ST/STE et l'exemple de tIn fournissent le témoin.
+        // La date ne sert qu'hors RAM (Bus::videoRead16At : la RAM se relit au commit) ;
+        // le compteur vc.load_phase_st y est posé, là où décaler la date change le mot.
         for (int i = 0; i < n + kSnapLead; i += 2) {
             const uint16_t word = bus_.videoRead16At(
                 (vc_.lineBase - kSnapLead + i) & kVideoAddrMask,

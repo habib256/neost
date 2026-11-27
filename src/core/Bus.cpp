@@ -929,6 +929,9 @@ uint8_t Bus::ramSpaceRead8(uint32_t addr) {
     // VoidMem_bget/wget → regs.db). Pour un accès MOT (assemblé ici octet
     // par octet), l'adresse paire porte l'octet fort : le mot relu vaut
     // exactement cpuDb, comme VoidMem_wget. [F] valeur du bus ouvert, cf. read8Slow.
+    // Sensibilité mesurée le 2026-11-27 (tools/sensitivity_unknown.py, 57 runs de la collection
+    // et du CD LGD) : $FF ou $00 à la place ne changent l'image que de The Union Demo (phase de
+    // l'animation d'intro, avec $FF seulement) et d'E605 sur ST (114 pixels).
     NEOST_F("bus.open_bus_void_ram");
     if (ioAccessWidth_ >= 2) return uint8_t((addr & 1) ? cpuDb : cpuDb >> 8);
     return uint8_t(cpuDb);                       // accès octet : VoidMem_bget
@@ -942,13 +945,20 @@ uint16_t Bus::videoRead16At(uint32_t addr, int64_t clock) {
     NEOST_F("bus.video_void_bus_masters");
     if (!videoBusCount) return cpuDb;
     const uint32_t first = (videoBusNext + kVideoBusHistory - videoBusCount) % kVideoBusHistory;
-    uint32_t lo = 0, hi = videoBusCount;
-    while (lo < hi) {
-        const uint32_t mid = lo + (hi - lo) / 2;
-        if (videoBusClock[(first + mid) % kVideoBusHistory] <= clock) lo = mid + 1;
-        else hi = mid;
-    }
-    return lo ? videoBusWord[(first + lo - 1) % kVideoBusHistory] : 0;
+    const auto at = [&](int64_t c) {
+        uint32_t lo = 0, hi = videoBusCount;
+        while (lo < hi) {
+            const uint32_t mid = lo + (hi - lo) / 2;
+            if (videoBusClock[(first + mid) % kVideoBusHistory] <= c) lo = mid + 1;
+            else hi = mid;
+        }
+        return lo ? videoBusWord[(first + lo - 1) % kVideoBusHistory] : uint16_t(0);
+    };
+    const uint16_t w = at(clock);
+    // [F] Phase du LOAD sur silicium ST (VideoCounter.cpp, commitScanline) : elle ne compte que si
+    // une période LOAD plus tôt ou plus tard (±4 cycles) le bus portait un autre mot.
+    if (at(clock - 4) != w || at(clock + 4) != w) NEOST_F("vc.load_phase_st");
+    return w;
 }
 
 uint16_t Bus::ramCycleRead16Slow(uint32_t addr) {
