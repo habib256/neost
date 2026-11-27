@@ -1425,7 +1425,11 @@ void Ikbd::sendRelMousePacket(bool left, bool right) {
     inMouseEmit_ = true;
     struct Release { bool& f; ~Release() { f = false; } } release{inMouseEmit_};
     for (int guard = 0; guard < 256; ++guard) {
-        const int dX = mouseDeltaX_, dY = mouseDeltaY_;
+        // [C] ROM IKBD $F41F-$F42D puis $F4C4-$F4FE : le sens de Y ($0F/$10) s'applique au
+        // décodage des impulsions, AVANT la saturation du cumul à +$7F/−$80. Saturer
+        // puis inverser changeait −128 en +128, réécrit $80 sur 8 bits : un mouvement
+        // rapide partait à rebours. ([D] Hatari ikbd.c:1395-1416 @ 36a8acf0 a ce défaut.)
+        const int dX = mouseDeltaX_, dY = mouseDeltaY_ * yAxis_;
         int bx = dX; if (bx > 127) bx = 127; else if (bx < -128) bx = -128;
         int by = dY; if (by > 127) by = 127; else if (by < -128) by = -128;
         auto reaches = [](int v, int thr) { return thr == 0 || (v < 0 && v <= -thr) || (v > 0 && v >= thr); };
@@ -1438,10 +1442,10 @@ void Ikbd::sendRelMousePacket(bool left, bool right) {
         if (rxFree(3)) {
             pushRx(uint8_t(0xF8 | (right ? 0x01 : 0) | (left ? 0x02 : 0)));
             pushRx(static_cast<uint8_t>(static_cast<int8_t>(bx)));
-            pushRx(static_cast<uint8_t>(static_cast<int8_t>(by * yAxis_)));
+            pushRx(static_cast<uint8_t>(static_cast<int8_t>(by)));
         }
         mouseDeltaX_ -= bx;
-        mouseDeltaY_ -= by;
+        mouseDeltaY_ -= by * yAxis_;
         // $07 bit 2 : après le $F8, la ROM saute en $F62B et émet les touches
         // boutons dans le même passage ($F59D-$F5A2).
         if (mouseAction_ & 0x4) emitButtonKeys(left, right);

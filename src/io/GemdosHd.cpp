@@ -802,7 +802,7 @@ bool GemdosHd::romGemdosClock(uint16_t& tw, uint16_t& dw) {
         for (int b : bytes) { if (b >= 0 && rom[i] != uint8_t(b)) return false; ++i; }
         return true;
     };
-    for (size_t i = 0; i + 1 < n; i += 2) {
+    for (size_t i = 0; i + 6 <= n; i += 2) {             // l'opcode ET son adresse absolue
         if (rom[i] != 0x30 || rom[i + 1] != 0x39) continue;
         const uint32_t var = uint32_t(rom[i + 2] << 24 | rom[i + 3] << 16 | rom[i + 4] << 8 | rom[i + 5]);
         size_t start = n;

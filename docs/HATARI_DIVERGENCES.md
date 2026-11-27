@@ -1145,6 +1145,10 @@ supprimé : tout y était implémenté.
 
 ### Écarts voulus — ne pas réaligner
 
+- **Souris relative, Y inversé (`$0F`)** · voulu [C] · basse · 2026-11-27 — Hatari borne Δy à
+  [−128, 127] puis applique le sens (`ikbd.c:1395-1416 @ 36a8acf0`) : −128 sort `$80`, à rebours.
+  NeoST suit la ROM 6301 : sens au décodage ($F41F-$F42D), saturation ensuite ($F4C4-$F4FE)
+  (`Ikbd::sendRelMousePacket`).
 - **IKBD `$19` selon la ROM** · voulu [C] · basse · 2026-11-12 — Hatari scrute toutes les ~1 ms avec des
   dixièmes de 100 ms et sans anti-rebond ; NeoST suit la ROM 6301 : dixièmes de 101 ms, prédiviseur par
   axe phasé à l'appui, anti-rebond de 4 ms (directions) et 9 ms (feu), bascule VX sans émission si TX=0,
