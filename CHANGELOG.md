@@ -1,5 +1,20 @@
 # Changelog — NeoST
 
+## 2026-11-27 — Sensibilité des inconnues suivantes ; FIFO du son DMA tranchée par Atari
+
+- **FIFO du son DMA du STE : quatre mots**, d'après le STE Developer Information Addendum d'Atari
+  (25 mai 1989, § « Additional Considerations », ajouté à `setup_silicon_refs.sh`). NeoST et Hatari
+  avaient déjà 8 octets ; le RTL MiSTery en a 7 mots, choix d'auteur. L'inconnue passe de [F] à
+  [B] et sort du TODO. Avec 7 mots, le son de trois titres se décale (Lethal Xcess : ~1 ms).
+- **Le banc de sensibilité compare aussi le son** (`--sound-dump`). Sept inconnues rejouées sur
+  leurs runs, avec un témoin (binaire alternatif sans alternative active) toujours à zéro :
+  phase TX de l'ACIA libre (son de 9 runs sur 31, décalé de quelques ms : A_416 7,6 ms),
+  fenêtre de reprise du blitter supprimée (son de 7 runs sur 24), moteur ON après un `$D0` au
+  repos (image d'Epic, 273 pixels sur une capture), OVRN acquitté par RDR seul, Lost Data après un
+  Read Track, octet pair du MFP : état interne modifié, rien de visible ni d'audible. Les deux écarts
+  de son examinés sont des décalages (corrélation 0,93 à 0,99 une fois recalés), pas un autre son ;
+  ceux du blitter restent à examiner.
+
 ## 2026-11-27 — Inconnues [F] : ce que les titres traversent, puis ce dont ils dépendent
 
 - **72 chemins [F] instrumentés** (`NEOST_F("id")`, `src/util/Unknowns.hpp`, rapport

@@ -154,6 +154,12 @@ doc Atari_Falcon030_DevDoc_1993-01-25.pdf abf48cb4ec0010417f9ea9852d341a0c187f54
 doc Atari_ACSI_AppNotes_1985.pdf a027f606fe71b0df5c33f2e86f38f20216a891bb1b4e613bdf3e8bf00e74f9fb \
     http://www.bitsavers.org/pdf/atari/ST/Atari_ST_GEM_Programming_1986/GEM_0942.pdf
 
+# Atari, STE Developer Information Addendum, 25 mai 1989 (scan archive.org, sans couche texte ;
+# l'OCR est STE_Developer_Addendum_May_25_1989_djvu.txt du même item) : registres et son DMA, dont
+# la FIFO de quatre mots (§ « Additional Considerations »).
+doc STE_Developer_Addendum_1989.pdf e7797ba85823faf068e1594878b9ccb064a6cf946117d27686b8c7f16d1de40e \
+    https://archive.org/download/STE_Developer_Addendum_May_25_1989/STE_Developer_Addendum_May_25_1989.pdf
+
 doc ASICs-new.zip 89512ee7d588b60d1ea964e048152a66c04672560c216862ff7e9f797ca06097 \
     https://www.chzsoft.de/asic-web/ASICs-new.zip
 # Noms d'entrée à antislashs : unzip les normalise, pas zipfile de Python.
