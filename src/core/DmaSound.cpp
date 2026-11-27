@@ -410,10 +410,17 @@ uint16_t DmaSound::mwMaskRead() const {
     return uint16_t((mwMask_ << (16 - mwSteps_)) | (mwMask_ >> mwSteps_));
 }
 
-// Une étape du transfert série Microwire (datée toutes les 8 cycles par le
-// Scheduler). $FF8922 lit `data << (16 - étapes_restantes)` → atteint 0 après 16
-// décalages (port de Hatari DmaSnd_InterruptHandler_Microwire). À 0, on décode la
-// commande LMC1992. Le masque ($FF8924) tourne mais revient identique → decode OK.
+// Une étape du transfert série Microwire (datée toutes les 8 cycles par le Scheduler). $FF8922
+// lit `data << (16 - étapes_restantes)` et atteint 0 après 16 décalages ; à 0, on décode la
+// commande LMC1992. Le masque ($FF8924) tourne et revient identique.
+// [B] Atari, STE Developer Information Addendum, 25 mai 1989, § « MICROWIRE Interface »
+// (extern/datasheets/STE_Developer_Addendum_1989.pdf, sha256 e7797ba8…) : l'envoi « takes
+// approximately 16 µsec » (16 pas de 8 cycles) ; on lit « a snapshot of the shift register », et
+// l'envoi est fini quand « these registers (or either one) return to their original state ».
+// [C] ROM TOS 1.62 $E002FC-$E00306 : « move.w d0,$8922(a5) » puis « tst.w $8922(a5) / bne » jusqu'à
+// 0 (TOS 2.06 et EmuTOS idem) : sur le fer, la donnée revient donc à 0, seul le masque revient à
+// sa valeur. Le « (or either one) » de la note se lit ainsi. Comme [D] Hatari dmaSnd.c:1070-1071
+// @ 36a8acf0 et MiSTery gstshifter.v:338-347 @ 4a6db7cc.
 void DmaSound::onMicrowireShift() {
     const int64_t now = sched_ ? sched_->liveNow() : 0;
     const int64_t due = sched_ ? sched_->firingDue() : -1;
@@ -765,11 +772,11 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
         //     laisserait tourné de 13 crans : exclu. Ignorer (Hatari, ici) et arrêter
         //     (MiSTery) passent tous deux ; ils ne diffèrent que par la commande
         //     interrompue ($048C, aigus +12 dB) : appliquée ici, perdue sous MiSTery.
-        // [F] Inconnu : ignorer ou arrêter, et l'écriture data en cours de décalage (la démo
-        //     n'en fait pas). Tranché par : la musique de la démo enregistrée sur un vrai STE
-        //     (aigus relevés de 12 dB ou non), ou la netlist du Shifter STE.
+        // [B] Atari, STE Developer Information Addendum, 25 mai 1989, § « MICROWIRE Interface » :
+        //     « Subsequent writes to the data and mask registers are blocked until sending is
+        //     complete. » Ignorer, donc, pour la donnée comme pour le masque : l'arrêt de MiSTery
+        //     n'est pas suivi.
         case 0x22:
-            if (mwSteps_ != 0) NEOST_F("dmasnd.mw_data_during_shift_b");
             if (mwSteps_ == 0) {
                 // L'autre octet vient du registre visible, déjà décalé à zéro
                 // après la commande précédente (Hatari : IoMem_ReadWord).
@@ -791,7 +798,6 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
             // transfert série Microwire (16 décalages de 8 cycles, cf. Hatari
             // DmaSnd_MicrowireData_WriteWord). $FF8922 lira la valeur décalée
             // jusqu'à 0, puis decodeMicrowire(). Sans scheduler → décodage immédiat.
-            if (mwSteps_ != 0) NEOST_F("dmasnd.mw_data_during_shift_b");
             if (mwSteps_ == 0) {
                 // En accès mot, le haut vient d'être posé sans déclenchement.
                 // En accès octet, reprendre le haut visible après les shifts.
@@ -802,10 +808,8 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
                 else        { mwShift_ = 0; decodeMicrowire(); }
             }
             break;
-        case 0x24: if (mwSteps_ != 0) NEOST_F("dmasnd.mw_mask_during_shift_a");
-                   if (mwSteps_ == 0) mwMask_ = uint16_t((mwMask_ & 0x00FF) | (v << 8)); break;
-        case 0x25: if (mwSteps_ != 0) NEOST_F("dmasnd.mw_mask_during_shift_a");
-                   if (mwSteps_ == 0) mwMask_ = uint16_t((mwMask_ & 0xFF00) | v); break;
+        case 0x24: if (mwSteps_ == 0) mwMask_ = uint16_t((mwMask_ & 0x00FF) | (v << 8)); break;
+        case 0x25: if (mwSteps_ == 0) mwMask_ = uint16_t((mwMask_ & 0xFF00) | v); break;
         default: break;                                // compteur courant : lecture seule
     }
 }
