@@ -6,8 +6,8 @@ les adaptations et la recette d'acceptation.
 
 ## La porte
 
-Ce qui doit être prêt avant l'échange (porte élargie, banc étendu, sort des `.state`) et
-ce qui est gelé d'ici là : [`../TODO.md`](../TODO.md) § 2 et § 9.
+Le suivi de la comparaison et les questions ouvertes du 68000 figurent dans
+[`../TODO.md`](../TODO.md) § 2 et § 9.
 
 `tools/cpu_swap_gate.py` rejoue quatre suites, NeoST contre NeoST, sans Hatari ni Pillow :
 
@@ -39,19 +39,22 @@ python3 tools/cpu_swap_gate.py --show replay/golden_axe_ste
 python3 tools/cpu_swap_gate.py --list --suite megaste
 ```
 
-La 0.6.5 publiée (`b3ced823`) garde sa référence historique, enregistrée avec
-le binaire du tag. La référence avant/après du portage utilise le dernier
-commit avec l'ancien cœur et son propre binaire. Les empreintes restent hors Git.
+La référence du portage a été enregistrée avec le binaire de son parent `4bccff0f` :
+68 étalons, 29 parcours, 294 scénarios de collection et 42 sondes Mega STE, soit
+433 scénarios. Pour la référence historique de la 0.6.5 publiée (`b3ced823`),
+utiliser le binaire et le corpus du tag. Les empreintes restent hors Git.
 
 La porte a été éprouvée le 2026-11-10 (commit `8dcbf65`) : accord contre elle-même ;
 `NEOST_MFP_BATCH=0` est vu en `machine` seul, sur plusieurs scénarios ; `NEOST_IPLDELAY=1`
 en `machine` et `cpu` dès la trame 10.
 
-**Un écart se localise, il ne se recale pas.** On prend la dernière trame en accord, puis
-`--trace F --trace-from N --regs --irq` sous les deux binaires, et `tools/trace_diff.py`.
-L'instruction fautive se tranche au banc fx68k (`docs/FX68K_BENCH.md`) : si le cœur candidat est plus
-proche de fx68k, c'est un progrès, consigné et la référence ré-enregistrée ; sinon c'est
-une régression du cœur.
+À partir de la dernière trame en accord, relancer les deux binaires avec
+`--trace F --trace-from N --regs --irq` et comparer avec `tools/trace_diff.py`.
+Le [banc fx68k](FX68K_BENCH.md) aide à localiser les accès et leur date sur le cœur nu.
+Arbitrer selon [l'échelle des références](REFERENCE_LADDER.md#les-règles-darbitrage) :
+les mesures matérielles priment, les documents primaires précisent le contrat, et un
+écart soutenu par le seul RTL garde son incertitude. Consigner la justification avant
+tout recalage d'une référence.
 
 ### Ce que la porte ne couvre pas, à rejouer à part
 
@@ -69,8 +72,8 @@ une régression du cœur.
 
 ## Ce que NeoST attend du cœur
 
-Relevé le 2026-11-10 dans `src/core/Cpu68k.cpp` (classe `NeostMoira`). Tout ce qui suit doit
-exister dans le cœur officiel adapté, avec la même sémantique en 68000.
+Le contrat relevé le 2026-11-10 dans `src/core/Cpu68k.cpp` (classe `NeostMoira`) est
+maintenu en mode 68000 lors de chaque import.
 
 ### Mots du bus CPU pour la vidéo
 
@@ -78,7 +81,7 @@ Depuis le correctif Ika du 15 novembre 2026, les adaptateurs mémoire transmette
 chaque mot observé à `Bus::latchCpuDb(value, busOfClock(getClock()))`. Les octets
 conservent la duplication sur les deux voies du modèle existant. Le nouveau cœur
 doit préserver la valeur **et la date en cycles bus** : la vidéo consulte cet
-historique pour la RAM absente. L’historique fait partie de l’état machine v68.
+historique pour la RAM absente. L’historique entre dans l’état machine depuis la v68.
 Aucun changement du cœur vendorisé ; ajout limité à l’adaptateur `latchDb`.
 
 ### Méthodes surchargées
@@ -115,9 +118,9 @@ son heure et la pile est **suspendue au milieu de l'instruction**, depuis `sync(
   appels hôte — aucun état lié à l'adresse de pile ou au fil ;
 - laisser traverser `execute()` une exception qui ne dérive **pas** de `std::exception`
   (`EmuFiber::Abort`, levée pour abandonner une instruction garée au reset ou à la
-  destruction). Moira n'intercepte que `std::exception` (`Moira.cpp:276` et suivantes) ; un
-  `catch (...)` dans le chemin d'exécution du cœur casserait l'abandon. Le JIT de POM68K
-  devra garder cette propriété sur ses blocs compilés qui appellent `sync`.
+  destruction). Les gardes d'exécution de Moira traitent les fautes dérivées de
+  `std::exception`. Un `catch (...)` interne peut libérer un verrou, puis doit
+  relancer l'exception pour permettre l'abandon.
 
 `tools/check_hog_park.py` (palier `fast`) vérifie l'accord à l'octet avec une exécution d'un
 seul tenant (`NEOST_NO_FIBER=1`), le refus de l'état pendant le garage et l'abandon au reset.

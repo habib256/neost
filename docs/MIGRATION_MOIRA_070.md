@@ -84,3 +84,38 @@ la mesure de débit à une machine libre.
 
 Contrats détaillés et hiérarchie des témoins dans [CPU_SWAP_GATE.md](CPU_SWAP_GATE.md),
 [FX68K_BENCH.md](FX68K_BENCH.md) et [REFERENCE_LADDER.md](REFERENCE_LADDER.md).
+
+## Relevés du port sur le commit de code `ea55549d`
+
+Le binaire Release annonce NeoST 0.7.0. ST, Mega ST, STE et Mega STE
+sélectionnent `M68000`. Les tests des modèles 68030 et 68040 s'exécutent
+dans les bancs CPU de Moira.
+
+| Contrôle | Résultat observé |
+|---|---|
+| Compatibilité 68000, profil MAME | 261 894 cas standard et 55 606 erreurs d'adresse conformes sur les registres, les cycles et le bus. |
+| Reprise sur faute des 68030 et 68040 | 9 783 cas sur 68030 et 9 784 sur 68040 réussissent, selon le banc officiel `RetryMoira`. |
+| Bus physique du 68000 | 37/48 variantes en accord cycle à cycle avec le RTL fx68k ; 34/48 sur la base. Les trois gains concernent les doubles fautes. Les 11 écarts restants sont détaillés dans [le banc fx68k](FX68K_BENCH.md). |
+| États et déterminisme | 16 empreintes reproductibles, puis 8 identiques après reprise à la trame 400. Le binaire parent relit son état v68 et le candidat le refuse. Un blit HOG suspend l'instruction pendant 5 trames et les deux exécutions se rejoignent ensuite. |
+| Libretro | 35/35 contrôles réussis. Un second client rejoint l'hôte à la trame 500, charge son état et reproduit les 400 trames suivantes. |
+| Web | Chrome 158 et Emscripten 6.0.8 passent les 99 contrôles, dont les huit démos, les sauvegardes, la reprise après exception et le repli sans JSPI. |
+| CI | Les sept jobs applicables de [Tests](https://github.com/habib256/neost/actions/runs/46104418324) passent. La [matrice des artefacts](https://github.com/habib256/neost/actions/runs/46104937659) passe après relance isolée du job Windows : les huit ports Winsock du test NAT étaient indisponibles sur le premier runner. |
+
+La base de comparaison `4bccff0f` contient 433 scénarios et 162 354
+empreintes machine/CPU. Les 68 étalons fournissent 15 606 empreintes, les
+29 parcours 27 644, les 294 démarrages de la collection 117 596 et les
+42 sondes Mega STE 1 508. Aucun média absent. SHA-256 du JSON de référence
+privé : `5bd25113b9116b0392e5686f700ef5cf3f207dba12e60c5b3ce5af10704b8df1`.
+
+### Parcours Pacemaker sur STE
+
+Le témoin de la trame 12 000 reproduit le générique de la démo Paradox sur
+le tag 0.6.5 (empreinte RGB `1beba5d3…`). Entre ce tag et la base du
+portage, sept pixels noirs ont pris une couleur sur la ligne 268, entre
+les colonnes 54 et 88 du tampon 416 × 276. Le texte de remerciements et le
+motif bleu sont visibles dans les deux captures. La base et Moira 6 rendent
+la même image (`e55c6530…`) ainsi que les trois scènes précédentes.
+Hatari montre les quatre mêmes images, au pixel près, huit trames plus tard.
+Les 1 200 empreintes machine/CPU concordent entre les deux cœurs. Le manifeste
+du replay conserve désormais le témoin du parent. La comparaison caractérise
+une évolution vidéo antérieure au port, sans mesure de cette scène sur STE réel.
