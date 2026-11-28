@@ -1,58 +1,37 @@
 # Community 287
 
-> 30 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **MMU** (16 connections) — `extern/moira/Moira/MMU/MMU.h`
-- **MmuReg** (8 connections) — `extern/moira/Moira/MMU/MMU030.h`
-- **MMU.h** (8 connections) — `extern/moira/Moira/MMU/MMU.h`
-- **MMUModel** (7 connections) — `extern/moira/Moira/MMU/MMU.h`
-- **MMU030.h** (7 connections) — `extern/moira/Moira/MMU/MMU030.h`
-- **optional** (6 connections)
-- **.peek()** (5 connections) — `extern/moira/Moira/MMU/MMU.h`
-- **.translate()** (5 connections) — `extern/moira/Moira/MMU/MMU.h`
-- **MMU040.h** (5 connections) — `extern/moira/Moira/MMU/MMU040.h`
-- **.getModel()** (2 connections) — `extern/moira/Moira/MMU/MMU.h`
-- **.isEnabled()** (2 connections) — `extern/moira/Moira/MMU/MMU.h`
-- **.MMU()** (2 connections) — `extern/moira/Moira/MMU/MMU.h`
-- **.setModel()** (2 connections) — `extern/moira/Moira/MMU/MMU.h`
-- **u32** (2 connections)
-- **u8** (2 connections)
-- **.isPresent()** (1 connections) — `extern/moira/Moira/MMU/MMU.h`
-- **.reset()** (1 connections) — `extern/moira/Moira/MMU/MMU.h`
-- **CRP** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
-- **MMUSR** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
-- **SRP** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
-- **TC** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
-- **TT0** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
-- **TT1** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
-- **Moira** (1 connections)
-- **mmu030** (1 connections) — `extern/moira/Moira/MMU/MMU.h`
-- *... and 5 more nodes in this community*
+- **isize** (13 connections)
+- **.guardNr()** (9 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.dumpLogBuffer()** (7 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.disassembleRange()** (7 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.isDisabled()** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.disassembleRecorded()** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.isEnabled()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.ignore()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.loggedInstructions()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **string** (4 connections)
+- **ostream** (2 connections)
+- **pair** (1 connections)
 
 ## Relationships
 
-- [Community 229](Community_229.md) (3 shared connections)
-- [Community 57](Community_57.md) (3 shared connections)
-- [Community 284](Community_284.md) (2 shared connections)
-- [Community 155](Community_155.md) (1 shared connections)
-- [Community 16](Community_16.md) (1 shared connections)
-- [Community 391](Community_391.md) (1 shared connections)
-- [Community 306](Community_306.md) (1 shared connections)
-- [Community 469](Community_469.md) (1 shared connections)
-- [Community 496](Community_496.md) (1 shared connections)
+- [Community 121](Community_121.md) (13 shared connections)
+- [Community 219](Community_219.md) (8 shared connections)
+- [Community 134](Community_134.md) (5 shared connections)
+- [Community 291](Community_291.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MMU/MMU.h`
-- `extern/moira/Moira/MMU/MMU030.h`
-- `extern/moira/Moira/MMU/MMU040.h`
+- `extern/moira/Moira/MoiraDebugger.h`
 
 ## Audit Trail
 
-- EXTRACTED: 54 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 40 (87%)
+- INFERRED: 6 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

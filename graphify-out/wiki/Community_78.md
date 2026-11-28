@@ -1,10 +1,11 @@
 # Community 78
 
-> 35 nodes
+> 39 nodes
 
 ## Key Concepts
 
 - **FloppyDisk** (38 connections) — `src/io/Fdc.hpp`
+- **StOverrideTrack** (8 connections) — `src/io/Fdc.hpp`
 - **ImgFormat** (4 connections) — `src/io/Fdc.hpp`
 - **TransitionPhase** (4 connections) — `src/io/Fdc.hpp`
 - **ImgType** (3 connections) — `src/io/Fdc.hpp`
@@ -28,17 +29,18 @@
 - **transitionPhase** (1 connections) — `src/io/Fdc.hpp`
 - **transitionPhase2** (1 connections) — `src/io/Fdc.hpp`
 - **wd1772Path** (1 connections) — `src/io/Fdc.hpp`
-- **writeProtect** (1 connections) — `src/io/Fdc.hpp`
-- *... and 10 more nodes in this community*
+- *... and 14 more nodes in this community*
 
 ## Relationships
 
-- [Community 406](Community_406.md) (4 shared connections)
-- [Community 138](Community_138.md) (3 shared connections)
+- [Community 95](Community_95.md) (4 shared connections)
+- [Community 406](Community_406.md) (3 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
 - [Community 12](Community_12.md) (2 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
 - [Community 31](Community_31.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
 - [Community 204](Community_204.md) (1 shared connections)
+- [Community 170](Community_170.md) (1 shared connections)
 
 ## Source Files
 
@@ -46,7 +48,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 46 (100%)
+- EXTRACTED: 53 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

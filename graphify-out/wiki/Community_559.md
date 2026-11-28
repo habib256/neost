@@ -1,27 +1,26 @@
 # Community 559
 
-> 5 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **ShadowMask** (5 connections) — `src/gui/CrtParams.h`
-- **Aperture** (1 connections) — `src/gui/CrtParams.h`
-- **Dot** (1 connections) — `src/gui/CrtParams.h`
-- **Off** (1 connections) — `src/gui/CrtParams.h`
-- **Triad** (1 connections) — `src/gui/CrtParams.h`
+- **scc_status_modes_logic.cpp** (4 connections) — `tests/scc_status_modes_logic.cpp`
+- **testSccStatusModes()** (3 connections) — `tests/scc_status_modes_logic.cpp`
+- **main()** (2 connections) — `tests/scc_status_modes_logic.cpp`
 
 ## Relationships
 
-- [Community 129](Community_129.md) (1 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/CrtParams.h`
+- `tests/scc_status_modes_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 5 (83%)
+- INFERRED: 1 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

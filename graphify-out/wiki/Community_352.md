@@ -8,10 +8,10 @@
 - **10. GEMDOS HD / cartouche / RTC / SCU / joysticks (gemdos.c, cart.c, rtc.c, scu_vme.c, joy.c)** (7 connections) — `docs/HATARI_MAPPING.md`
 - **13. GEMDOS HD — `GemdosHd.cpp` ↔ `gemdos.c`, `inffile.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
 - **.pexecBpCreated()** (4 connections) — `src/io/GemdosHd.hpp`
+- **1. Bus & mémoire (ioMem.c, cpu/memory.c, stMemory.c)** (3 connections) — `docs/HATARI_MAPPING.md`
 - **.setAnalog()** (2 connections) — `src/io/StePads.hpp`
 - **Refermés** (2 connections) — `docs/HATARI_DIVERGENCES.md`
 - **Écarts voulus — ne pas réaligner** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **7. IKBD / ACIA / MIDI (acia.c, ikbd.c, midi.c)** (2 connections) — `docs/HATARI_MAPPING.md`
 - **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 - **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 - **11. FPU 68881 — opérations et conversions (actualisé le 2026-10-18)** (1 connections) — `docs/HATARI_MAPPING.md`
@@ -33,10 +33,11 @@
 - [Community 106](Community_106.md) (1 shared connections)
 - [Community 397](Community_397.md) (1 shared connections)
 - [Community 218](Community_218.md) (1 shared connections)
-- [Community 483](Community_483.md) (1 shared connections)
+- [Community 319](Community_319.md) (1 shared connections)
+- [Community 449](Community_449.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
 - [Community 39](Community_39.md) (1 shared connections)
-- [Community 319](Community_319.md) (1 shared connections)
+- [Community 386](Community_386.md) (1 shared connections)
 - [Community 472](Community_472.md) (1 shared connections)
 
 ## Source Files
@@ -48,8 +49,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 24 (80%)
-- INFERRED: 6 (20%)
+- EXTRACTED: 24 (77%)
+- INFERRED: 7 (23%)
 - AMBIGUOUS: 0 (0%)
 
 ---

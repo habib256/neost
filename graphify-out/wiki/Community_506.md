@@ -14,7 +14,7 @@
 ## Relationships
 
 - [Community 222](Community_222.md) (1 shared connections)
-- [Community 357](Community_357.md) (1 shared connections)
+- [Community 245](Community_245.md) (1 shared connections)
 
 ## Source Files
 

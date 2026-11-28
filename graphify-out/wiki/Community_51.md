@@ -1,6 +1,6 @@
 # Community 51
 
-> 47 nodes
+> 45 nodes
 
 ## Key Concepts
 
@@ -8,11 +8,9 @@
 - **PortDevices.cpp** (24 connections) — `src/io/PortDevices.cpp`
 - **.at()** (13 connections) — `src/io/PortDevices.hpp`
 - **.fits()** (11 connections) — `src/io/PortDevices.hpp`
-- **autoDongleSync()** (11 connections) — `src/gui/App.cpp`
 - **.label()** (9 connections) — `src/io/PortDevices.hpp`
 - **Port** (8 connections) — `src/io/PortDevices.hpp`
 - **.id()** (8 connections) — `src/io/PortDevices.hpp`
-- **formatDongleSetup()** (8 connections) — `src/io/DongleTable.cpp`
 - **Device** (8 connections)
 - **.defaultPort()** (7 connections) — `src/io/PortDevices.hpp`
 - **.portId()** (6 connections) — `src/io/PortDevices.hpp`
@@ -29,35 +27,35 @@
 - **.serialize()** (3 connections) — `src/io/PortDevices.hpp`
 - **.gpipRead()** (3 connections) — `src/io/PortDevices.hpp`
 - **Mfp** (3 connections)
-- *... and 22 more nodes in this community*
+- **.unplugAll()** (2 connections) — `src/io/PortDevices.hpp`
+- **.any()** (2 connections) — `src/io/PortDevices.hpp`
+- *... and 20 more nodes in this community*
 
 ## Relationships
 
-- [Community 99](Community_99.md) (13 shared connections)
+- [Community 99](Community_99.md) (12 shared connections)
 - [Community 68](Community_68.md) (6 shared connections)
-- [Community 298](Community_298.md) (5 shared connections)
-- [Community 214](Community_214.md) (4 shared connections)
-- [Community 4](Community_4.md) (4 shared connections)
+- [Community 189](Community_189.md) (5 shared connections)
+- [Community 21](Community_21.md) (4 shared connections)
 - [Community 228](Community_228.md) (3 shared connections)
 - [Community 325](Community_325.md) (3 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 214](Community_214.md) (2 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
 - [Community 168](Community_168.md) (2 shared connections)
-- [Community 491](Community_491.md) (2 shared connections)
-- [Community 149](Community_149.md) (2 shared connections)
-- [Community 565](Community_565.md) (2 shared connections)
+- [Community 92](Community_92.md) (2 shared connections)
 - [Community 160](Community_160.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/App.cpp`
-- `src/io/DongleTable.cpp`
 - `src/io/PortDevices.cpp`
 - `src/io/PortDevices.hpp`
 - `src/web/main_web.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 135 (89%)
-- INFERRED: 16 (11%)
+- EXTRACTED: 126 (91%)
+- INFERRED: 13 (9%)
 - AMBIGUOUS: 0 (0%)
 
 ---

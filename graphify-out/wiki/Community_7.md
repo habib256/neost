@@ -1,12 +1,11 @@
 # Community 7
 
-> 127 nodes
+> 126 nodes
 
 ## Key Concepts
 
 - **Ikbd** (212 connections) — `src/io/Ikbd.hpp`
 - **Mfp** (2 connections) — `src/io/Ikbd.hpp`
-- **.setClock()** (2 connections) — `src/io/Ikbd.hpp`
 - **.setJoystickProbe()** (2 connections) — `src/io/Ikbd.hpp`
 - **.setScheduler()** (2 connections) — `src/io/Ikbd.hpp`
 - **function** (2 connections)
@@ -29,22 +28,22 @@
 - **chaosFirst_** (1 connections) — `src/io/Ikbd.hpp`
 - **chaosIgnore_** (1 connections) — `src/io/Ikbd.hpp`
 - **chaosIndex_** (1 connections) — `src/io/Ikbd.hpp`
-- *... and 102 more nodes in this community*
+- **clock_** (1 connections) — `src/io/Ikbd.hpp`
+- *... and 101 more nodes in this community*
 
 ## Relationships
 
-- [Community 483](Community_483.md) (27 shared connections)
-- [Community 47](Community_47.md) (19 shared connections)
-- [Community 171](Community_171.md) (17 shared connections)
-- [Community 442](Community_442.md) (9 shared connections)
+- [Community 483](Community_483.md) (32 shared connections)
+- [Community 47](Community_47.md) (22 shared connections)
+- [Community 171](Community_171.md) (15 shared connections)
 - [Community 370](Community_370.md) (8 shared connections)
+- [Community 386](Community_386.md) (4 shared connections)
 - [Community 102](Community_102.md) (2 shared connections)
-- [Community 499](Community_499.md) (1 shared connections)
 - [Community 290](Community_290.md) (1 shared connections)
 - [Community 233](Community_233.md) (1 shared connections)
 - [Community 255](Community_255.md) (1 shared connections)
+- [Community 104](Community_104.md) (1 shared connections)
 - [Community 334](Community_334.md) (1 shared connections)
-- [Community 183](Community_183.md) (1 shared connections)
 
 ## Source Files
 
@@ -53,7 +52,7 @@
 ## Audit Trail
 
 - EXTRACTED: 215 (100%)
-- INFERRED: 1 (0%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

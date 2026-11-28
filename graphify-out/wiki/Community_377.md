@@ -1,11 +1,10 @@
 # Community 377
 
-> 10 nodes
+> 9 nodes
 
 ## Key Concepts
 
 - **.fifoPush()** (10 connections) — `src/io/Fdc.hpp`
-- **Bug hunt multi-agents (2026-07-29)** (10 connections) — `CHANGELOG.md`
 - **dmaAddressMask()** (9 connections) — `src/io/Fdc.cpp`
 - **.fifoPull()** (7 connections) — `src/io/Fdc.hpp`
 - **FDC WD1772 et DMA** (5 connections) — `docs/MAME_DIVERGENCES.md`
@@ -17,30 +16,24 @@
 
 ## Relationships
 
-- [Community 406](Community_406.md) (9 shared connections)
+- [Community 95](Community_95.md) (12 shared connections)
 - [Community 12](Community_12.md) (5 shared connections)
-- [Community 95](Community_95.md) (5 shared connections)
 - [Community 24](Community_24.md) (4 shared connections)
-- [Community 205](Community_205.md) (2 shared connections)
-- [Community 88](Community_88.md) (2 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 15](Community_15.md) (1 shared connections)
-- [Community 204](Community_204.md) (1 shared connections)
-- [Community 60](Community_60.md) (1 shared connections)
+- [Community 472](Community_472.md) (1 shared connections)
+- [Community 406](Community_406.md) (1 shared connections)
 - [Community 480](Community_480.md) (1 shared connections)
-- [Community 607](Community_607.md) (1 shared connections)
+- [Community 405](Community_405.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
 - `docs/MAME_DIVERGENCES.md`
 - `src/io/Fdc.cpp`
 - `src/io/Fdc.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (50%)
-- INFERRED: 23 (50%)
+- EXTRACTED: 22 (59%)
+- INFERRED: 15 (41%)
 - AMBIGUOUS: 0 (0%)
 
 ---

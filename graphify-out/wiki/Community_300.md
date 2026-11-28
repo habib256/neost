@@ -1,39 +1,35 @@
 # Community 300
 
-> 14 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **impl_** (16 connections) — `src/core/EmuFiber.hpp`
-- **pthread_t** (1 connections)
-- **condition_variable** (1 connections)
-- **mutex** (1 connections)
-- **size_t** (1 connections)
-- **cv** (1 connections) — `src/core/EmuFiber.cpp`
-- **fiber** (1 connections) — `src/core/EmuFiber.cpp`
-- **fiberTurn** (1 connections) — `src/core/EmuFiber.cpp`
-- **host** (1 connections) — `src/core/EmuFiber.cpp`
-- **m** (1 connections) — `src/core/EmuFiber.cpp`
-- **map** (1 connections) — `src/core/EmuFiber.cpp`
-- **mapBytes** (1 connections) — `src/core/EmuFiber.cpp`
-- **quit** (1 connections) — `src/core/EmuFiber.cpp`
-- **ucontext_t** (1 connections)
+- **Validation sur matériel réel — registre par cible** (11 connections) — `docs/HW_VALIDATION.md`
+- **Ce qui se vérifie STATIQUEMENT, sans la cible (2026-09-01)** (2 connections) — `docs/HW_VALIDATION.md`
+- **Raspberry Pi (borne) — ⭘ aucun budget temps réel mesuré** (2 connections) — `docs/HW_VALIDATION.md`
+- **Android arm64 — ◐ émulateur arm64 API 36, jamais posé sur un appareil** (1 connections) — `docs/HW_VALIDATION.md`
+- **La mesure de débit : `--budget`** (1 connections) — `docs/HW_VALIDATION.md`
+- **Le protocole d'une passe** (1 connections) — `docs/HW_VALIDATION.md`
+- **⚠ Le trou structurel que cette passe a mis au jour** (1 connections) — `docs/HW_VALIDATION.md`
+- **Linux x86_64 — ⭘ non consigné** (1 connections) — `docs/HW_VALIDATION.md`
+- **Pas 1 et 2 — passés sur les HUIT paquets (2026-09-01)** (1 connections) — `docs/HW_VALIDATION.md`
+- **Pourquoi ce fichier** (1 connections) — `docs/HW_VALIDATION.md`
+- **Windows x64 — ⭘ jamais lancé hors CI** (1 connections) — `docs/HW_VALIDATION.md`
 
 ## Relationships
 
-- [Community 59](Community_59.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 291](Community_291.md) (1 shared connections)
+- [Community 141](Community_141.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
+- [Community 138](Community_138.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/EmuFiber.cpp`
-- `src/core/EmuFiber.hpp`
+- `docs/HW_VALIDATION.md`
 
 ## Audit Trail
 
-- EXTRACTED: 16 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 12 (92%)
+- INFERRED: 1 (8%)
 - AMBIGUOUS: 0 (0%)
 
 ---

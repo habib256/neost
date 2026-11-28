@@ -1,6 +1,6 @@
 # Community 143
 
-> 12 nodes
+> 13 nodes
 
 ## Key Concepts
 
@@ -11,6 +11,7 @@
 - **readTrackDump()** (6 connections) — `src/io/IpfImage.cpp`
 - **.byte()** (6 connections) — `src/io/IpfImage.cpp`
 - **.wrap()** (6 connections) — `src/io/IpfImage.cpp`
+- **crc16Ccitt()** (4 connections) — `src/io/IpfImage.cpp`
 - **.raw16()** (4 connections) — `src/io/IpfImage.cpp`
 - **.timeAt()** (4 connections) — `src/io/IpfImage.cpp`
 - **.weak()** (4 connections) — `src/io/IpfImage.cpp`
@@ -25,7 +26,7 @@
 - [Community 503](Community_503.md) (2 shared connections)
 - [Community 546](Community_546.md) (2 shared connections)
 - [Community 217](Community_217.md) (1 shared connections)
-- [Community 204](Community_204.md) (1 shared connections)
+- [Community 95](Community_95.md) (1 shared connections)
 
 ## Source Files
 
@@ -33,7 +34,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 48 (98%)
+- EXTRACTED: 50 (98%)
 - INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 

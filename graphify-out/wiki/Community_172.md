@@ -1,6 +1,6 @@
 # Community 172
 
-> 51 nodes
+> 48 nodes
 
 ## Key Concepts
 
@@ -12,7 +12,6 @@
 - **Rng** (8 connections) — `tests/fuzz_diskimage.cpp`
 - **.data()** (8 connections) — `tests/fuzz_diskimage.cpp`
 - **seedCorpus()** (8 connections) — `tests/fuzz_diskimage.cpp`
-- **fuzzOne()** (7 connections) — `tests/fuzz_diskimage.cpp`
 - **seedZip()** (7 connections) — `tests/fuzz_diskimage.cpp`
 - **writeBytes()** (7 connections) — `tests/fuzz_diskimage.cpp`
 - **.cmd()** (6 connections) — `tests/fuzz_diskimage.cpp`
@@ -29,20 +28,20 @@
 - **.below()** (5 connections) — `tests/fuzz_diskimage.cpp`
 - **DiskImageCodec.hpp** (5 connections) — `src/io/DiskImageCodec.hpp`
 - **fail()** (4 connections) — `tests/fuzz_diskimage.cpp`
-- *... and 26 more nodes in this community*
+- **.mode()** (4 connections) — `tests/fuzz_diskimage.cpp`
+- *... and 23 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (19 shared connections)
-- [Community 4](Community_4.md) (9 shared connections)
-- [Community 565](Community_565.md) (7 shared connections)
-- [Community 31](Community_31.md) (4 shared connections)
+- [Community 102](Community_102.md) (28 shared connections)
+- [Community 31](Community_31.md) (7 shared connections)
+- [Community 4](Community_4.md) (6 shared connections)
 - [Community 213](Community_213.md) (2 shared connections)
-- [Community 406](Community_406.md) (2 shared connections)
 - [Community 163](Community_163.md) (1 shared connections)
 - [Community 145](Community_145.md) (1 shared connections)
+- [Community 95](Community_95.md) (1 shared connections)
 - [Community 176](Community_176.md) (1 shared connections)
-- [Community 301](Community_301.md) (1 shared connections)
+- [Community 186](Community_186.md) (1 shared connections)
 
 ## Source Files
 
@@ -51,8 +50,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 151 (94%)
-- INFERRED: 9 (6%)
+- EXTRACTED: 148 (96%)
+- INFERRED: 6 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,6 +1,6 @@
 # Community 12
 
-> 98 nodes
+> 99 nodes
 
 ## Key Concepts
 
@@ -16,6 +16,7 @@
 - **.serialize()** (3 connections) — `src/io/Fdc.hpp`
 - **.setMediaPathResolver()** (3 connections) — `src/io/Fdc.hpp`
 - **StateArchive** (3 connections)
+- **.sidesPerDisk()** (2 connections) — `src/io/Fdc.hpp`
 - **.acsiOverlayBytes()** (2 connections) — `src/io/Fdc.hpp`
 - **.acsiWriteOverlays()** (2 connections) — `src/io/Fdc.hpp`
 - **.attachUltraSatan()** (2 connections) — `src/io/Fdc.hpp`
@@ -28,20 +29,18 @@
 - **.acsiActive()** (1 connections) — `src/io/Fdc.hpp`
 - **.acsiAnyImage()** (1 connections) — `src/io/Fdc.hpp`
 - **.acsiImageFingerprint()** (1 connections) — `src/io/Fdc.hpp`
-- **.acsiPartitionCount()** (1 connections) — `src/io/Fdc.hpp`
-- *... and 73 more nodes in this community*
+- *... and 74 more nodes in this community*
 
 ## Relationships
 
-- [Community 24](Community_24.md) (30 shared connections)
-- [Community 95](Community_95.md) (26 shared connections)
-- [Community 406](Community_406.md) (24 shared connections)
-- [Community 138](Community_138.md) (15 shared connections)
-- [Community 204](Community_204.md) (14 shared connections)
+- [Community 95](Community_95.md) (48 shared connections)
+- [Community 24](Community_24.md) (29 shared connections)
+- [Community 406](Community_406.md) (26 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
 - [Community 377](Community_377.md) (5 shared connections)
-- [Community 565](Community_565.md) (4 shared connections)
-- [Community 102](Community_102.md) (3 shared connections)
+- [Community 204](Community_204.md) (4 shared connections)
 - [Community 78](Community_78.md) (2 shared connections)
+- [Community 170](Community_170.md) (2 shared connections)
 - [Community 103](Community_103.md) (1 shared connections)
 
 ## Source Files
@@ -50,7 +49,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 233 (100%)
+- EXTRACTED: 234 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

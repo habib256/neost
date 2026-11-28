@@ -1,37 +1,32 @@
 # Community 392
 
-> 10 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **Parser** (15 connections) — `src/audio/MidiMessageParser.hpp`
-- **.reset()** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **size_t** (1 connections)
-- **data_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **got_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **inSysex_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **kMaxSysex** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **needed_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **status_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **sysex_** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **PsgBusRig** (10 connections) — `tests/psg_odd_write_logic.cpp`
+- **.PsgBusRig()** (1 connections) — `tests/psg_odd_write_logic.cpp`
+- **Bus** (1 connections)
+- **YM2149** (1 connections)
+- **bus** (1 connections) — `tests/psg_odd_write_logic.cpp`
+- **portB** (1 connections) — `tests/psg_odd_write_logic.cpp`
+- **printed** (1 connections) — `tests/psg_odd_write_logic.cpp`
+- **psg** (1 connections) — `tests/psg_odd_write_logic.cpp`
 
 ## Relationships
 
-- [Community 44](Community_44.md) (1 shared connections)
-- [Community 185](Community_185.md) (1 shared connections)
+- [Community 189](Community_189.md) (1 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
-- [Community 42](Community_42.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 48](Community_48.md) (1 shared connections)
+- [Community 565](Community_565.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/MidiMessageParser.hpp`
+- `tests/psg_odd_write_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (93%)
-- INFERRED: 1 (7%)
+- EXTRACTED: 10 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

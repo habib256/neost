@@ -1,42 +1,29 @@
 # Community 433
 
-> 9 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **Architecture** (8 connections) — `DEV.md`
-- **MmuGlue** (7 connections) — `src/core/MmuGlue.hpp`
-- **Framing** (5 connections) — `src/libretro/neost_libretro.cpp`
-- **.read8()** (1 connections) — `src/core/MmuGlue.hpp`
-- **.write8()** (1 connections) — `src/core/MmuGlue.hpp`
-- **memConfig_** (1 connections) — `src/core/MmuGlue.hpp`
-- **Active** (1 connections) — `src/libretro/neost_libretro.cpp`
-- **Adaptive** (1 connections) — `src/libretro/neost_libretro.cpp`
-- **Full** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **Options** (7 connections) — `src/headless/Server.hpp`
+- **string** (1 connections)
+- **identityHead** (1 connections) — `src/headless/Server.hpp`
+- **identityTail** (1 connections) — `src/headless/Server.hpp`
+- **probes** (1 connections) — `src/headless/Server.hpp`
+- **slots** (1 connections) — `src/headless/Server.hpp`
 
 ## Relationships
 
-- [Community 14](Community_14.md) (1 shared connections)
-- [Community 10](Community_10.md) (1 shared connections)
-- [Community 565](Community_565.md) (1 shared connections)
-- [Community 484](Community_484.md) (1 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
-- [Community 103](Community_103.md) (1 shared connections)
-- [Community 20](Community_20.md) (1 shared connections)
-- [Community 31](Community_31.md) (1 shared connections)
-- [Community 396](Community_396.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
+- [Community 165](Community_165.md) (1 shared connections)
+- [Community 383](Community_383.md) (1 shared connections)
 
 ## Source Files
 
-- `DEV.md`
-- `src/core/MmuGlue.hpp`
-- `src/libretro/neost_libretro.cpp`
+- `src/headless/Server.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 11 (61%)
-- INFERRED: 7 (39%)
+- EXTRACTED: 7 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

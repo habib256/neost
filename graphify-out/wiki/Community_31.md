@@ -1,6 +1,6 @@
 # Community 31
 
-> 53 nodes
+> 57 nodes
 
 ## Key Concepts
 
@@ -13,8 +13,10 @@
 - **.loadOverlayBytes()** (11 connections) — `src/io/StxImage.hpp`
 - **.overlayBytes()** (7 connections) — `src/io/StxImage.hpp`
 - **.loadWd1772()** (7 connections) — `src/io/StxImage.hpp`
+- **fuzzOne()** (7 connections) — `tests/fuzz_diskimage.cpp`
 - **hatariCompatibleExtraBlocks()** (7 connections) — `tests/stx_absent_track_logic.cpp`
 - **WrittenTrack.hpp** (7 connections) — `src/io/WrittenTrack.hpp`
+- **cassert** (7 connections)
 - **.addTrack()** (6 connections) — `src/io/StxImage.hpp`
 - **.findSectorByPosition()** (6 connections) — `src/io/StxImage.hpp`
 - **.reinterpretSaveTrack()** (6 connections) — `src/io/StxImage.hpp`
@@ -24,23 +26,21 @@
 - **forgeFlux()** (5 connections) — `tests/stx_writetrack_test.cpp`
 - **.saveWd1772()** (4 connections) — `src/io/StxImage.hpp`
 - **.resetOverlay()** (4 connections) — `src/io/StxImage.hpp`
+- **fuzzIpf()** (4 connections) — `tests/fuzz_diskimage.cpp`
 - **add()** (4 connections) — `tests/stx_writetrack_test.cpp`
 - **forgeStx()** (4 connections) — `tests/stx_writetrack_test.cpp`
-- **WrittenTrack.cpp** (4 connections) — `src/io/WrittenTrack.cpp`
-- **.sides()** (3 connections) — `src/io/StxImage.hpp`
-- **.tracksPerSide()** (3 connections) — `src/io/StxImage.hpp`
-- *... and 28 more nodes in this community*
+- *... and 32 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (16 shared connections)
-- [Community 204](Community_204.md) (13 shared connections)
-- [Community 4](Community_4.md) (10 shared connections)
-- [Community 565](Community_565.md) (7 shared connections)
+- [Community 102](Community_102.md) (31 shared connections)
+- [Community 204](Community_204.md) (9 shared connections)
+- [Community 172](Community_172.md) (7 shared connections)
 - [Community 201](Community_201.md) (6 shared connections)
-- [Community 172](Community_172.md) (4 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
+- [Community 406](Community_406.md) (3 shared connections)
 - [Community 163](Community_163.md) (3 shared connections)
-- [Community 301](Community_301.md) (2 shared connections)
+- [Community 95](Community_95.md) (2 shared connections)
 - [Community 78](Community_78.md) (1 shared connections)
 - [Community 374](Community_374.md) (1 shared connections)
 - [Community 419](Community_419.md) (1 shared connections)
@@ -52,13 +52,14 @@
 - `src/io/StxImage.hpp`
 - `src/io/WrittenTrack.cpp`
 - `src/io/WrittenTrack.hpp`
+- `tests/fuzz_diskimage.cpp`
 - `tests/stx_absent_track_logic.cpp`
 - `tests/stx_writetrack_test.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 129 (75%)
-- INFERRED: 42 (25%)
+- EXTRACTED: 143 (77%)
+- INFERRED: 43 (23%)
 - AMBIGUOUS: 0 (0%)
 
 ---

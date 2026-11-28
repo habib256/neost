@@ -1,24 +1,21 @@
 # Community 499
 
-> 5 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **MouseMode** (7 connections) — `src/io/Ikbd.hpp`
-- **ABS** (1 connections) — `src/io/Ikbd.hpp`
-- **CURSOR** (1 connections) — `src/io/Ikbd.hpp`
-- **OFF** (1 connections) — `src/io/Ikbd.hpp`
-- **REL** (1 connections) — `src/io/Ikbd.hpp`
+- **bus_mmio_mirror_logic.cpp** (5 connections) — `tests/bus_mmio_mirror_logic.cpp`
+- **testBusMmioMirror()** (3 connections) — `tests/bus_mmio_mirror_logic.cpp`
+- **main()** (2 connections) — `tests/bus_mmio_mirror_logic.cpp`
 
 ## Relationships
 
-- [Community 47](Community_47.md) (1 shared connections)
-- [Community 7](Community_7.md) (1 shared connections)
-- [Community 472](Community_472.md) (1 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Ikbd.hpp`
+- `tests/bus_mmio_mirror_logic.cpp`
 
 ## Audit Trail
 

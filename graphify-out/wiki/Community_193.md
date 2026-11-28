@@ -20,10 +20,8 @@
 
 ## Relationships
 
-- [Community 565](Community_565.md) (3 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 48](Community_48.md) (1 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
 
 ## Source Files
 

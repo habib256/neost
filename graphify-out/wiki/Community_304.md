@@ -1,43 +1,41 @@
 # Community 304
 
-> 13 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **KeyZone** (14 connections) — `src/audio/MidiZones.hpp`
-- **.feed()** (9 connections) — `src/audio/MidiInHost.hpp`
-- **.pushForTest()** (7 connections) — `src/audio/MidiInHost.hpp`
-- **.deviceForTest()** (6 connections) — `src/audio/MidiInHost.hpp`
-- **.emitMessage()** (5 connections) — `src/audio/MidiInHost.hpp`
-- **.enqueue()** (3 connections) — `src/audio/MidiInHost.hpp`
-- **Device** (3 connections)
-- **size_t** (3 connections)
-- **.operator==()** (1 connections) — `src/audio/MidiZones.hpp`
-- **channel** (1 connections) — `src/audio/MidiZones.hpp`
-- **hi** (1 connections) — `src/audio/MidiZones.hpp`
-- **lo** (1 connections) — `src/audio/MidiZones.hpp`
-- **transpose** (1 connections) — `src/audio/MidiZones.hpp`
+- **AudioMix.hpp** (12 connections) — `src/core/AudioMix.hpp`
+- **FrameMixBuffers** (7 connections) — `src/core/AudioMix.hpp`
+- **mixEmulatedFrame()** (5 connections) — `src/core/AudioMix.cpp`
+- **AudioMix.cpp** (4 connections) — `src/core/AudioMix.cpp`
+- **DmaSound** (1 connections) — `src/core/AudioMix.hpp`
+- **YM2149** (1 connections) — `src/core/AudioMix.hpp`
+- **DmaSound** (1 connections)
+- **YM2149** (1 connections)
+- **st** (1 connections) — `src/core/AudioMix.hpp`
+- **ym** (1 connections) — `src/core/AudioMix.hpp`
 
 ## Relationships
 
-- [Community 223](Community_223.md) (7 shared connections)
-- [Community 102](Community_102.md) (5 shared connections)
-- [Community 220](Community_220.md) (5 shared connections)
-- [Community 185](Community_185.md) (2 shared connections)
-- [Community 286](Community_286.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 217](Community_217.md) (1 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 61](Community_61.md) (1 shared connections)
+- [Community 239](Community_239.md) (1 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
+- [Community 228](Community_228.md) (1 shared connections)
 - [Community 186](Community_186.md) (1 shared connections)
+- [Community 248](Community_248.md) (1 shared connections)
+- [Community 68](Community_68.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/MidiInHost.hpp`
-- `src/audio/MidiZones.hpp`
+- `src/core/AudioMix.cpp`
+- `src/core/AudioMix.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 32 (82%)
-- INFERRED: 7 (18%)
+- EXTRACTED: 23 (96%)
+- INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

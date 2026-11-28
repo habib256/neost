@@ -1,35 +1,26 @@
 # Community 482
 
-> 8 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **.command()** (17 connections) — `src/io/Fpu.hpp`
-- **.encodeFmt()** (11 connections) — `src/io/Fpu.hpp`
-- **.startMoveOut()** (7 connections) — `src/io/Fpu.hpp`
-- **.setCC()** (6 connections) — `src/io/Fpu.hpp`
-- **.armOut()** (6 connections) — `src/io/Fpu.hpp`
-- **.fmtLen()** (4 connections) — `src/io/Fpu.hpp`
-- **put32()** (4 connections) — `src/io/Fpu.cpp`
-- **put64()** (3 connections) — `src/io/Fpu.cpp`
+- **Checks** (4 connections) — `tests/fdc_written_marks_logic.cpp`
+- **.equal()** (2 connections) — `tests/fdc_written_marks_logic.cpp`
+- **count** (1 connections) — `tests/fdc_written_marks_logic.cpp`
+- **failures** (1 connections) — `tests/fdc_written_marks_logic.cpp`
 
 ## Relationships
 
-- [Community 253](Community_253.md) (18 shared connections)
-- [Community 20](Community_20.md) (6 shared connections)
-- [Community 405](Community_405.md) (5 shared connections)
-- [Community 477](Community_477.md) (2 shared connections)
-- [Community 15](Community_15.md) (1 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
 
 ## Source Files
 
-- `src/io/Fpu.cpp`
-- `src/io/Fpu.hpp`
+- `tests/fdc_written_marks_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 21 (47%)
-- INFERRED: 24 (53%)
+- EXTRACTED: 5 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

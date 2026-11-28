@@ -1,25 +1,17 @@
 # Community 230
 
-> 61 nodes
+> 30 nodes
 
 ## Key Concepts
 
 - **Rig** (27 connections) — `tests/gemdos_process_logic.cpp`
 - **testGemdosProcess()** (17 connections) — `tests/gemdos_process_logic.cpp`
-- **AvTracker** (14 connections) — `src/core/Pacing.hpp`
 - **.trap()** (11 connections) — `tests/gemdos_process_logic.cpp`
-- **Validation sur matériel réel — registre par cible** (11 connections) — `docs/HW_VALIDATION.md`
 - **string** (7 connections)
-- **.same()** (6 connections) — `src/core/Pacing.hpp`
 - **.named()** (6 connections) — `tests/gemdos_process_logic.cpp`
-- **Av** (5 connections) — `src/core/Pacing.hpp`
-- **.fps()** (5 connections) — `src/core/Pacing.hpp`
-- **testAvTracker()** (5 connections) — `tests/libretro_frontier_logic.cpp`
-- **Change** (4 connections) — `src/core/Pacing.hpp`
 - **.dgetpath()** (4 connections) — `tests/gemdos_process_logic.cpp`
 - **.dsetpath()** (4 connections) — `tests/gemdos_process_logic.cpp`
 - **.frename()** (4 connections) — `tests/gemdos_process_logic.cpp`
-- **.onFrame()** (3 connections) — `src/core/Pacing.hpp`
 - **.basepage()** (3 connections) — `tests/gemdos_process_logic.cpp`
 - **.dtaName()** (3 connections) — `tests/gemdos_process_logic.cpp`
 - **.fdatime()** (3 connections) — `tests/gemdos_process_logic.cpp`
@@ -28,35 +20,32 @@
 - **.readByte()** (3 connections) — `tests/gemdos_process_logic.cpp`
 - **.Rig()** (3 connections) — `tests/gemdos_process_logic.cpp`
 - **.write()** (3 connections) — `tests/gemdos_process_logic.cpp`
-- **macOS arm64 — ◐ passe faite le 2026-09-01, le VISUEL reste** (3 connections) — `docs/HW_VALIDATION.md`
-- *... and 36 more nodes in this community*
+- **main()** (2 connections) — `tests/gemdos_process_logic.cpp`
+- **.cartRelaunch()** (2 connections) — `tests/gemdos_process_logic.cpp`
+- **.run()** (2 connections) — `tests/gemdos_process_logic.cpp`
+- **.str()** (2 connections) — `tests/gemdos_process_logic.cpp`
+- **Bus** (1 connections)
+- **Cpu68k** (1 connections)
+- **GemdosHd** (1 connections)
+- **bus** (1 connections) — `tests/gemdos_process_logic.cpp`
+- **cpu** (1 connections) — `tests/gemdos_process_logic.cpp`
+- *... and 5 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 48](Community_48.md) (2 shared connections)
-- [Community 239](Community_239.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 421](Community_421.md) (1 shared connections)
-- [Community 299](Community_299.md) (1 shared connections)
-- [Community 248](Community_248.md) (1 shared connections)
-- [Community 162](Community_162.md) (1 shared connections)
-- [Community 478](Community_478.md) (1 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
 - [Community 330](Community_330.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
-- [Community 101](Community_101.md) (1 shared connections)
+- [Community 138](Community_138.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HW_VALIDATION.md`
-- `src/core/Pacing.hpp`
 - `tests/gemdos_process_logic.cpp`
-- `tests/libretro_frontier_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 96 (87%)
-- INFERRED: 14 (13%)
+- EXTRACTED: 61 (95%)
+- INFERRED: 3 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

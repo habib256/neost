@@ -1,6 +1,6 @@
 # Community 171
 
-> 17 nodes
+> 15 nodes
 
 ## Key Concepts
 
@@ -15,19 +15,18 @@
 - **.sendAutoJoysticks()** (5 connections) — `src/io/Ikbd.hpp`
 - **.mouseEvent()** (5 connections) — `src/io/Ikbd.hpp`
 - **.sendOnMouseAction()** (5 connections) — `src/io/Ikbd.hpp`
-- **.onRxDeliver()** (5 connections) — `src/io/Ikbd.hpp`
 - **.sendAutoJoysticksMonitoring()** (4 connections) — `src/io/Ikbd.hpp`
 - **.effectiveButtons()** (4 connections) — `src/io/Ikbd.hpp`
-- **.outputBlocked()** (4 connections) — `src/io/Ikbd.hpp`
 - **.onAutoSend()** (3 connections) — `src/io/Ikbd.hpp`
 - **.updateInternalAbsPos()** (3 connections) — `src/io/Ikbd.hpp`
 
 ## Relationships
 
-- [Community 483](Community_483.md) (20 shared connections)
-- [Community 7](Community_7.md) (17 shared connections)
+- [Community 483](Community_483.md) (18 shared connections)
+- [Community 7](Community_7.md) (15 shared connections)
 - [Community 47](Community_47.md) (11 shared connections)
 - [Community 370](Community_370.md) (2 shared connections)
+- [Community 386](Community_386.md) (1 shared connections)
 
 ## Source Files
 
@@ -35,8 +34,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 34 (42%)
-- INFERRED: 46 (57%)
+- EXTRACTED: 31 (42%)
+- INFERRED: 43 (58%)
 - AMBIGUOUS: 0 (0%)
 
 ---

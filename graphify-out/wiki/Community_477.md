@@ -1,32 +1,34 @@
 # Community 477
 
-> 8 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **After** (9 connections) — `src/io/Fpu.hpp`
-- **.armIn()** (5 connections) — `src/io/Fpu.hpp`
-- **CtrlIn** (1 connections) — `src/io/Fpu.hpp`
-- **GenOp** (1 connections) — `src/io/Fpu.hpp`
-- **MovemIn** (1 connections) — `src/io/Fpu.hpp`
-- **MoveOutDone** (1 connections) — `src/io/Fpu.hpp`
-- **None** (1 connections) — `src/io/Fpu.hpp`
-- **RestoreIn** (1 connections) — `src/io/Fpu.hpp`
+- **.parseSpec()** (7 connections) — `src/io/UsbDevice.hpp`
+- **.netUsbeeApply()** (5 connections) — `src/gui/App.hpp`
+- **.attach()** (4 connections) — `src/io/UsbDevice.hpp`
+- **Kind** (2 connections)
+- **string** (2 connections)
 
 ## Relationships
 
-- [Community 482](Community_482.md) (2 shared connections)
-- [Community 20](Community_20.md) (2 shared connections)
-- [Community 253](Community_253.md) (2 shared connections)
+- [Community 449](Community_449.md) (2 shared connections)
+- [Community 315](Community_315.md) (2 shared connections)
+- [Community 22](Community_22.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 1](Community_1.md) (1 shared connections)
+- [Community 214](Community_214.md) (1 shared connections)
+- [Community 189](Community_189.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Fpu.hpp`
+- `src/gui/App.hpp`
+- `src/io/UsbDevice.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 11 (85%)
-- INFERRED: 2 (15%)
+- EXTRACTED: 14 (93%)
+- INFERRED: 1 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

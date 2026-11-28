@@ -1,37 +1,37 @@
 # Community 386
 
-> 10 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **Performance du cœur NeoST — profil, optimisations, recette de build** (7 connections) — `docs/PERFORMANCE.md`
-- **3. Les optimisations, et ce qu'elles paient** (6 connections) — `docs/PERFORMANCE.md`
-- **2. Le profil de départ (boot TOS 1.62, 300 trames)** (3 connections) — `docs/PERFORMANCE.md`
-- **3.2 Bus — cache du décodage MMU et chemin rapide en ligne** (3 connections) — `docs/PERFORMANCE.md`
-- **3.3 `busFaultN` — sortie anticipée pour la RAM ordinaire** (2 connections) — `docs/PERFORMANCE.md`
-- **5. La recette de build : PGO + LTO** (2 connections) — `docs/PERFORMANCE.md`
-- **1. Refaire le profil** (1 connections) — `docs/PERFORMANCE.md`
-- **4. Résultat des optimisations de code** (1 connections) — `docs/PERFORMANCE.md`
-- **6. Ce qui reste sur la table** (1 connections) — `docs/PERFORMANCE.md`
-- **⚠ Le piège du PGO, qui coûte le gain sans rien dire** (1 connections) — `docs/PERFORMANCE.md`
+- **.customCodeCrcForTest()** (6 connections) — `src/io/Ikbd.hpp`
+- **.loadMemoryByte()** (5 connections) — `src/io/Ikbd.hpp`
+- **crc32AddByte()** (5 connections) — `src/io/Ikbd.cpp`
+- **crc32Reset()** (5 connections) — `src/io/Ikbd.cpp`
+- **.commonBoot()** (4 connections) — `src/io/Ikbd.hpp`
+- **.armCommonBootForTest()** (3 connections) — `src/io/Ikbd.hpp`
+- **size_t** (2 connections)
+- **7. IKBD / ACIA / MIDI (acia.c, ikbd.c, midi.c)** (2 connections) — `docs/HATARI_MAPPING.md`
 
 ## Relationships
 
-- [Community 319](Community_319.md) (2 shared connections)
-- [Community 39](Community_39.md) (2 shared connections)
-- [Community 203](Community_203.md) (2 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
+- [Community 483](Community_483.md) (7 shared connections)
+- [Community 7](Community_7.md) (4 shared connections)
+- [Community 47](Community_47.md) (2 shared connections)
+- [Community 38](Community_38.md) (1 shared connections)
+- [Community 171](Community_171.md) (1 shared connections)
+- [Community 352](Community_352.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/PERFORMANCE.md`
+- `docs/HATARI_MAPPING.md`
+- `src/io/Ikbd.cpp`
+- `src/io/Ikbd.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 13 (72%)
-- INFERRED: 5 (28%)
+- EXTRACTED: 21 (88%)
+- INFERRED: 3 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

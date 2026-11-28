@@ -1,55 +1,60 @@
 # Community 20
 
-> 27 nodes
+> 70 nodes
 
 ## Key Concepts
 
 - **Fpu** (57 connections) — `src/io/Fpu.hpp`
-- **.roundMode()** (2 connections) — `src/io/Fpu.hpp`
-- **.trace()** (2 connections) — `src/io/Fpu.hpp`
-- **.fixSerializedBools()** (2 connections) — `src/io/Fpu.hpp`
-- **.stateValid()** (1 connections) — `src/io/Fpu.hpp`
-- **after_** (1 connections) — `src/io/Fpu.hpp`
-- **BASE** (1 connections) — `src/io/Fpu.hpp`
-- **buf_** (1 connections) — `src/io/Fpu.hpp`
-- **bufIn_** (1 connections) — `src/io/Fpu.hpp`
-- **bufLen_** (1 connections) — `src/io/Fpu.hpp`
-- **bufPos_** (1 connections) — `src/io/Fpu.hpp`
-- **cmd_** (1 connections) — `src/io/Fpu.hpp`
-- **END** (1 connections) — `src/io/Fpu.hpp`
-- **excVector_** (1 connections) — `src/io/Fpu.hpp`
-- **fp_** (1 connections) — `src/io/Fpu.hpp`
-- **fpcr_** (1 connections) — `src/io/Fpu.hpp`
-- **fpiar_** (1 connections) — `src/io/Fpu.hpp`
-- **fpsr_** (1 connections) — `src/io/Fpu.hpp`
-- **latch_** (1 connections) — `src/io/Fpu.hpp`
-- **pad0_** (1 connections) — `src/io/Fpu.hpp`
-- **pad1_** (1 connections) — `src/io/Fpu.hpp`
-- **pad2_** (1 connections) — `src/io/Fpu.hpp`
-- **pad3_** (1 connections) — `src/io/Fpu.hpp`
-- **present** (1 connections) — `src/io/Fpu.hpp`
-- **response_** (1 connections) — `src/io/Fpu.hpp`
-- *... and 2 more nodes in this community*
+- **Fpu.cpp** (36 connections) — `src/io/Fpu.cpp`
+- **.command()** (17 connections) — `src/io/Fpu.hpp`
+- **Ext** (14 connections) — `src/io/Fpu.hpp`
+- **.genOp()** (13 connections) — `src/io/Fpu.hpp`
+- **.encodeFmt()** (11 connections) — `src/io/Fpu.hpp`
+- **.completeInput()** (10 connections) — `src/io/Fpu.hpp`
+- **After** (9 connections) — `src/io/Fpu.hpp`
+- **.decodeFmt()** (9 connections) — `src/io/Fpu.hpp`
+- **.setIdle()** (9 connections) — `src/io/Fpu.hpp`
+- **.sfStatus()** (7 connections) — `src/io/Fpu.hpp`
+- **.checkException()** (7 connections) — `src/io/Fpu.hpp`
+- **.write8()** (7 connections) — `src/io/Fpu.hpp`
+- **.startMoveOut()** (7 connections) — `src/io/Fpu.hpp`
+- **.setCC()** (6 connections) — `src/io/Fpu.hpp`
+- **.sfFold()** (6 connections) — `src/io/Fpu.hpp`
+- **.armOut()** (6 connections) — `src/io/Fpu.hpp`
+- **Fpu.hpp** (6 connections) — `src/io/Fpu.hpp`
+- **.romConstant()** (5 connections) — `src/io/Fpu.hpp`
+- **.armIn()** (5 connections) — `src/io/Fpu.hpp`
+- **.read8()** (5 connections) — `src/io/Fpu.hpp`
+- **.restoreHeader()** (5 connections) — `src/io/Fpu.hpp`
+- **.dToExt()** (5 connections) — `src/io/Fpu.hpp`
+- **.toE()** (5 connections) — `src/io/Fpu.hpp`
+- **.fmtLen()** (4 connections) — `src/io/Fpu.hpp`
+- *... and 45 more nodes in this community*
 
 ## Relationships
 
-- [Community 253](Community_253.md) (15 shared connections)
-- [Community 482](Community_482.md) (6 shared connections)
-- [Community 405](Community_405.md) (5 shared connections)
+- [Community 15](Community_15.md) (8 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
 - [Community 175](Community_175.md) (3 shared connections)
-- [Community 477](Community_477.md) (2 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
 - [Community 14](Community_14.md) (1 shared connections)
-- [Community 565](Community_565.md) (1 shared connections)
-- [Community 433](Community_433.md) (1 shared connections)
+- [Community 484](Community_484.md) (1 shared connections)
+- [Community 444](Community_444.md) (1 shared connections)
+- [Community 218](Community_218.md) (1 shared connections)
+- [Community 297](Community_297.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 100](Community_100.md) (1 shared connections)
 
 ## Source Files
 
+- `CHANGELOG.md`
+- `src/io/Fpu.cpp`
 - `src/io/Fpu.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 56 (93%)
-- INFERRED: 4 (7%)
+- EXTRACTED: 127 (69%)
+- INFERRED: 57 (31%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,6 +1,6 @@
 # Community 155
 
-> 36 nodes
+> 42 nodes
 
 ## Key Concepts
 
@@ -9,6 +9,7 @@
 - **.isValidExtMMU()** (11 connections) — `extern/moira/Moira/Moira.h`
 - **Moira::isValidExtMMU()** (9 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
 - **MoiraDasmMMU_cpp.h** (9 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
+- **MmuReg** (8 connections) — `extern/moira/Moira/MMU/MMU030.h`
 - **Moira::dasmPFlush()** (8 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
 - **Moira::dasmPFlusha()** (8 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
 - **Moira::dasmPLoad()** (8 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
@@ -28,34 +29,33 @@
 - **Moira::execPTest()** (4 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
 - **Moira::execPFlusha()** (3 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
 - **Moira::mmuFC()** (3 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
-- **Moira::translate()** (3 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
-- *... and 11 more nodes in this community*
+- *... and 17 more nodes in this community*
 
 ## Relationships
 
 - [Community 0](Community_0.md) (9 shared connections)
 - [Community 2](Community_2.md) (9 shared connections)
 - [Community 16](Community_16.md) (2 shared connections)
-- [Community 287](Community_287.md) (1 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
 - [Community 169](Community_169.md) (1 shared connections)
+- [Community 60](Community_60.md) (1 shared connections)
 - [Community 197](Community_197.md) (1 shared connections)
 - [Community 33](Community_33.md) (1 shared connections)
 - [Community 64](Community_64.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
 
 ## Source Files
 
 - `extern/moira/Moira/FPU/FpuEnv.h`
+- `extern/moira/Moira/MMU/MMU030.h`
 - `extern/moira/Moira/Moira.h`
 - `extern/moira/Moira/MoiraDasmMMU_cpp.h`
 - `extern/moira/Moira/MoiraExecMMU_cpp.h`
 - `extern/moira/Moira/MoiraTypes.h`
-- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 95 (85%)
-- INFERRED: 17 (15%)
+- EXTRACTED: 101 (86%)
+- INFERRED: 17 (14%)
 - AMBIGUOUS: 0 (0%)
 
 ---

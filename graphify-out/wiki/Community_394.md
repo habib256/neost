@@ -1,34 +1,30 @@
 # Community 394
 
-> 8 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **testBlitterRmw()** (10 connections) — `tests/blitter_rmw_logic.cpp`
-- **Checks** (4 connections) — `tests/blitter_rmw_logic.cpp`
-- **.step()** (3 connections) — `tests/blitter_rmw_logic.cpp`
-- **.equal()** (2 connections) — `tests/blitter_rmw_logic.cpp`
-- **main()** (2 connections) — `tests/blitter_rmw_logic.cpp`
-- **.copyToOperand()** (2 connections) — `tests/blitter_rmw_logic.cpp`
-- **count** (1 connections) — `tests/blitter_rmw_logic.cpp`
-- **failures** (1 connections) — `tests/blitter_rmw_logic.cpp`
+- **FPUModel** (7 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **.setModel()** (3 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **.getModel()** (2 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **M68040** (1 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **M68881** (1 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **M68882** (1 connections) — `extern/moira/Moira/FPU/FPU.h`
 
 ## Relationships
 
-- [Community 565](Community_565.md) (3 shared connections)
-- [Community 132](Community_132.md) (3 shared connections)
-- [Community 48](Community_48.md) (2 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 452](Community_452.md) (1 shared connections)
+- [Community 63](Community_63.md) (3 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/blitter_rmw_logic.cpp`
+- `extern/moira/Moira/FPU/FPU.h`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (83%)
-- INFERRED: 3 (17%)
+- EXTRACTED: 10 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

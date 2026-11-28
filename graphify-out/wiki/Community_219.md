@@ -1,55 +1,43 @@
 # Community 219
 
-> 44 nodes
+> 16 nodes
 
 ## Key Concepts
 
-- **FdcRig** (16 connections) — `tests/selftest_logic.cpp`
-- **BlitRig** (11 connections) — `tests/selftest_logic.cpp`
-- **IkbdRig** (11 connections) — `tests/selftest_logic.cpp`
-- **SndRig** (11 connections) — `tests/selftest_logic.cpp`
-- **testFdcTruthTable()** (9 connections) — `tests/selftest_logic.cpp`
-- **testMmioFidelity()** (7 connections) — `tests/mmio_fidelity_logic.cpp`
-- **testBlitterTruthTable()** (7 connections) — `tests/selftest_logic.cpp`
-- **.counter()** (4 connections) — `tests/selftest_logic.cpp`
-- **Scheduler** (4 connections)
-- **.setDmaAddr()** (3 connections) — `tests/selftest_logic.cpp`
-- **.settle()** (3 connections) — `tests/selftest_logic.cpp`
-- **Bus** (3 connections)
-- **main()** (2 connections) — `tests/mmio_fidelity_logic.cpp`
-- **.peek16()** (2 connections) — `tests/selftest_logic.cpp`
-- **.poke16()** (2 connections) — `tests/selftest_logic.cpp`
-- **.program()** (2 connections) — `tests/selftest_logic.cpp`
-- **.dmaAddr()** (2 connections) — `tests/selftest_logic.cpp`
-- **.setMode()** (2 connections) — `tests/selftest_logic.cpp`
-- **.setEnd()** (2 connections) — `tests/selftest_logic.cpp`
-- **.setStart()** (2 connections) — `tests/selftest_logic.cpp`
-- **Mfp** (2 connections)
-- **.BlitRig()** (1 connections) — `tests/selftest_logic.cpp`
-- **.FdcRig()** (1 connections) — `tests/selftest_logic.cpp`
-- **.IkbdRig()** (1 connections) — `tests/selftest_logic.cpp`
-- **.SndRig()** (1 connections) — `tests/selftest_logic.cpp`
-- *... and 19 more nodes in this community*
+- **Guards** (41 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **isize** (8 connections)
+- **.setEnable()** (7 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.setEnableAll()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.toggle()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.disable()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.enable()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.isSet()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.disableAll()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.elements()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.enableAll()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.removeAll()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.setNeedsCheck()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **capacity** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **count** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **hit** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
 
 ## Relationships
 
-- [Community 48](Community_48.md) (20 shared connections)
-- [Community 565](Community_565.md) (2 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 434](Community_434.md) (1 shared connections)
-- [Community 298](Community_298.md) (1 shared connections)
-- [Community 406](Community_406.md) (1 shared connections)
-- [Community 226](Community_226.md) (1 shared connections)
+- [Community 121](Community_121.md) (10 shared connections)
+- [Community 291](Community_291.md) (9 shared connections)
+- [Community 287](Community_287.md) (8 shared connections)
+- [Community 134](Community_134.md) (5 shared connections)
+- [Community 492](Community_492.md) (1 shared connections)
+- [Community 444](Community_444.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/mmio_fidelity_logic.cpp`
-- `tests/selftest_logic.cpp`
+- `extern/moira/Moira/MoiraDebugger.h`
 
 ## Audit Trail
 
-- EXTRACTED: 73 (92%)
-- INFERRED: 6 (8%)
+- EXTRACTED: 58 (97%)
+- INFERRED: 2 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

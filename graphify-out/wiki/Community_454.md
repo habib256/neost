@@ -1,39 +1,30 @@
 # Community 454
 
-> 15 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **.writeControl()** (24 connections) — `src/io/Scc.hpp`
-- **.writeDataReg()** (12 connections) — `src/io/Scc.hpp`
-- **.updateIRQ()** (11 connections) — `src/io/Scc.hpp`
-- **.processTX()** (11 connections) — `src/io/Scc.hpp`
-- **.updateRR3()** (9 connections) — `src/io/Scc.hpp`
-- **.refreshRx()** (9 connections) — `src/io/Scc.hpp`
-- **.transmitAllowed()** (8 connections) — `src/io/Scc.hpp`
-- **.setLoopback()** (7 connections) — `src/io/Scc.hpp`
-- **.copyTdrTsr()** (7 connections) — `src/io/Scc.hpp`
-- **.intSourcesChange()** (6 connections) — `src/io/Scc.hpp`
-- **.updateRts()** (6 connections) — `src/io/Scc.hpp`
-- **.updateRR0Clear()** (5 connections) — `src/io/Scc.hpp`
-- **.updateRR0Set()** (5 connections) — `src/io/Scc.hpp`
-- **.intSourcesClear()** (4 connections) — `src/io/Scc.hpp`
-- **.intSourcesSet()** (3 connections) — `src/io/Scc.hpp`
+- **** (10 connections) — `src/io/StJoyBits.hpp`
+- **DOWN** (1 connections) — `src/io/StJoyBits.hpp`
+- **FIRE** (1 connections) — `src/io/StJoyBits.hpp`
+- **LEFT** (1 connections) — `src/io/StJoyBits.hpp`
+- **RIGHT** (1 connections) — `src/io/StJoyBits.hpp`
+- **UP** (1 connections) — `src/io/StJoyBits.hpp`
 
 ## Relationships
 
-- [Community 466](Community_466.md) (23 shared connections)
-- [Community 19](Community_19.md) (22 shared connections)
-- [Community 495](Community_495.md) (10 shared connections)
+- [Community 91](Community_91.md) (1 shared connections)
+- [Community 248](Community_248.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Scc.hpp`
+- `src/io/StJoyBits.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 29 (32%)
-- INFERRED: 62 (68%)
+- EXTRACTED: 9 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

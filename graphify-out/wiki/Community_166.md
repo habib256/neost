@@ -1,6 +1,6 @@
 # Community 166
 
-> 79 nodes
+> 86 nodes
 
 ## Key Concepts
 
@@ -16,6 +16,7 @@
 - **.didReachWatchpoint()** (8 connections) — `src/core/Cpu68k.cpp`
 - **.dsack()** (8 connections) — `src/core/Cpu68k.cpp`
 - **.setFC()** (7 connections) — `extern/moira/Moira/Moira.h`
+- **MoiraInterface.h** (7 connections) — `extern/moira/Moira/MoiraInterface.h`
 - **didAccessBus()** (6 connections) — `extern/moira/Moira/MoiraInterface.h`
 - **Mode** (6 connections)
 - **Size** (6 connections)
@@ -28,20 +29,18 @@
 - **Moira::write2x16()** (4 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
 - **Moira::writeLongSplit()** (4 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
 - **u8** (4 connections)
-- **Moira::completeBusError()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- *... and 54 more nodes in this community*
+- *... and 61 more nodes in this community*
 
 ## Relationships
 
-- [Community 64](Community_64.md) (9 shared connections)
-- [Community 9](Community_9.md) (6 shared connections)
-- [Community 301](Community_301.md) (4 shared connections)
-- [Community 16](Community_16.md) (3 shared connections)
-- [Community 57](Community_57.md) (3 shared connections)
+- [Community 64](Community_64.md) (8 shared connections)
+- [Community 16](Community_16.md) (7 shared connections)
+- [Community 9](Community_9.md) (7 shared connections)
+- [Community 57](Community_57.md) (4 shared connections)
 - [Community 182](Community_182.md) (2 shared connections)
 - [Community 391](Community_391.md) (2 shared connections)
-- [Community 23](Community_23.md) (1 shared connections)
-- [Community 468](Community_468.md) (1 shared connections)
+- [Community 58](Community_58.md) (1 shared connections)
+- [Community 149](Community_149.md) (1 shared connections)
 
 ## Source Files
 
@@ -53,8 +52,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 149 (76%)
-- INFERRED: 47 (24%)
+- EXTRACTED: 157 (76%)
+- INFERRED: 49 (24%)
 - AMBIGUOUS: 0 (0%)
 
 ---

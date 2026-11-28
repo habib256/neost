@@ -1,24 +1,21 @@
 # Community 360
 
-> 9 nodes
+> 7 nodes
 
 ## Key Concepts
 
 - **make_disk()** (8 connections) — `tools/make_doublerez_test.py`
 - **lines()** (5 connections) — `tools/make_doublerez_test.py`
-- **make_doublerez_test.py** (5 connections) — `tools/make_doublerez_test.py`
 - **w()** (4 connections) — `tools/make_doublerez_test.py`
 - **delay()** (3 connections) — `tools/make_doublerez_test.py`
 - **relative()** (3 connections) — `tools/make_doublerez_test.py`
 - **label()** (2 connections) — `tools/make_doublerez_test.py`
 - **Path** (1 connections)
-- **Disquette libre, STE : résolutions mêlées dans une trame, compteur écrit en…** (1 connections) — `tools/make_doublerez_test.py`
 
 ## Relationships
 
-- [Community 3](Community_3.md) (2 shared connections)
-- [Community 582](Community_582.md) (1 shared connections)
-- [Community 173](Community_173.md) (1 shared connections)
+- [Community 3](Community_3.md) (1 shared connections)
+- [Community 100](Community_100.md) (1 shared connections)
 
 ## Source Files
 
@@ -26,7 +23,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 18 (100%)
+- EXTRACTED: 14 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

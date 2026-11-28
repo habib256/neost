@@ -1,14 +1,14 @@
 # Community 228
 
-> 43 nodes
+> 40 nodes
 
 ## Key Concepts
 
 - **main_android.cpp** (51 connections) — `src/android/main_android.cpp`
 - **main()** (30 connections) — `src/android/main_android.cpp`
 - **string** (11 connections)
+- **handleTouch()** (9 connections) — `src/android/main_android.cpp`
 - **prepareData()** (9 connections) — `src/android/main_android.cpp`
-- **compile()** (7 connections) — `src/android/main_android.cpp`
 - **writeFileAtomic()** (7 connections) — `src/android/main_android.cpp`
 - **loadDongles()** (6 connections) — `src/android/main_android.cpp`
 - **saveDongles()** (6 connections) — `src/android/main_android.cpp`
@@ -18,7 +18,6 @@
 - **readSmallFile()** (5 connections) — `src/android/main_android.cpp`
 - **switchRom()** (5 connections) — `src/android/main_android.cpp`
 - **Machine** (5 connections)
-- **Cœur libretro** (5 connections) — `TODO.md`
 - **injectClick()** (4 connections) — `src/android/main_android.cpp`
 - **readPad()** (4 connections) — `src/android/main_android.cpp`
 - **saveRomChoice()** (4 connections) — `src/android/main_android.cpp`
@@ -29,34 +28,33 @@
 - **positionalForSdl()** (3 connections) — `src/android/main_android.cpp`
 - **produceAudioFrame()** (3 connections) — `src/android/main_android.cpp`
 - **audioCallback()** (2 connections) — `src/android/main_android.cpp`
-- *... and 18 more nodes in this community*
+- **cancelPendingInput()** (2 connections) — `src/android/main_android.cpp`
+- *... and 15 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (11 shared connections)
+- [Community 4](Community_4.md) (10 shared connections)
+- [Community 102](Community_102.md) (8 shared connections)
 - [Community 298](Community_298.md) (6 shared connections)
 - [Community 114](Community_114.md) (5 shared connections)
-- [Community 102](Community_102.md) (5 shared connections)
 - [Community 51](Community_51.md) (3 shared connections)
 - [Community 99](Community_99.md) (2 shared connections)
+- [Community 364](Community_364.md) (2 shared connections)
 - [Community 430](Community_430.md) (2 shared connections)
-- [Community 434](Community_434.md) (2 shared connections)
-- [Community 565](Community_565.md) (2 shared connections)
-- [Community 160](Community_160.md) (1 shared connections)
-- [Community 325](Community_325.md) (1 shared connections)
-- [Community 591](Community_591.md) (1 shared connections)
+- [Community 449](Community_449.md) (2 shared connections)
+- [Community 200](Community_200.md) (1 shared connections)
+- [Community 406](Community_406.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
-- `TODO.md`
-- `docs/OPENDST.md`
 - `src/android/main_android.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 117 (87%)
-- INFERRED: 17 (13%)
+- EXTRACTED: 117 (90%)
+- INFERRED: 13 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

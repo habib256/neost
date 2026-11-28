@@ -1,6 +1,6 @@
 # Community 263
 
-> 38 nodes
+> 39 nodes
 
 ## Key Concepts
 
@@ -29,21 +29,23 @@
 - **CPU_IsSupported_SSE41()** (3 connections) — `extern/lzma/CpuArch.c`
 - **CPU_IsSupported_SSSE3()** (3 connections) — `extern/lzma/CpuArch.c`
 - **CPU_IsSupported_CRYPTO()** (2 connections) — `extern/lzma/CpuArch.c`
-- *... and 13 more nodes in this community*
+- *... and 14 more nodes in this community*
 
 ## Relationships
 
-- [Community 153](Community_153.md) (8 shared connections)
+- [Community 285](Community_285.md) (5 shared connections)
+- [Community 153](Community_153.md) (3 shared connections)
 - [Community 245](Community_245.md) (2 shared connections)
-- [Community 291](Community_291.md) (1 shared connections)
+- [Community 59](Community_59.md) (1 shared connections)
 
 ## Source Files
 
+- `extern/lzma/7zWindows.h`
 - `extern/lzma/CpuArch.c`
 
 ## Audit Trail
 
-- EXTRACTED: 94 (99%)
+- EXTRACTED: 95 (99%)
 - INFERRED: 1 (1%)
 - AMBIGUOUS: 0 (0%)
 

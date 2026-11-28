@@ -1,33 +1,32 @@
 # Community 393
 
-> 9 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **write_floppy()** (6 connections) — `tools/run_libretro.py`
-- **case_autorun()** (5 connections) — `tools/run_libretro.py`
-- **case_tos_fallback()** (5 connections) — `tools/run_libretro.py`
-- **case_fast_floppy()** (3 connections) — `tools/run_libretro.py`
-- **frames_to_title()** (3 connections) — `tools/run_libretro.py`
-- **Disquette FAT12 720 Ko NON amorçable (cf. fat12_volume).** (1 connections) — `tools/run_libretro.py`
-- **Chargement accéléré : ChuChu Rocket (330 Ko) copié sur une disquette non…** (1 connections) — `tools/run_libretro.py`
-- **Disquette non amorçable à un seul programme : il démarre seul…** (1 connections) — `tools/run_libretro.py`
-- **Repli de TOS : une disquette qui devait démarrer seule (programme dans \\AUTO)…** (1 connections) — `tools/run_libretro.py`
+- **NavRepeat** (6 connections) — `src/gui/NavRepeat.hpp`
+- **NavRepeat.hpp** (4 connections) — `src/gui/NavRepeat.hpp`
+- **.tick()** (2 connections) — `src/gui/NavRepeat.hpp`
+- **kFirstDelayMs** (1 connections) — `src/gui/NavRepeat.hpp`
+- **kRepeatMs** (1 connections) — `src/gui/NavRepeat.hpp`
+- **next_** (1 connections) — `src/gui/NavRepeat.hpp`
+- **previous_** (1 connections) — `src/gui/NavRepeat.hpp`
 
 ## Relationships
 
-- [Community 247](Community_247.md) (7 shared connections)
-- [Community 124](Community_124.md) (2 shared connections)
-- [Community 292](Community_292.md) (1 shared connections)
+- [Community 422](Community_422.md) (1 shared connections)
+- [Community 214](Community_214.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/run_libretro.py`
+- `src/gui/NavRepeat.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 18 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 9 (90%)
+- INFERRED: 1 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

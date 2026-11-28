@@ -1,28 +1,26 @@
 # Community 530
 
-> 6 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **Pending** (6 connections) — `src/audio/MidiOutHost.hpp`
-- **time_point** (2 connections)
-- **b** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **len** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **msg** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **when** (1 connections) — `src/audio/MidiOutHost.hpp`
+- **scc_auto_enables_logic.cpp** (4 connections) — `tests/scc_auto_enables_logic.cpp`
+- **testSccAutoEnables()** (3 connections) — `tests/scc_auto_enables_logic.cpp`
+- **main()** (2 connections) — `tests/scc_auto_enables_logic.cpp`
 
 ## Relationships
 
-- [Community 42](Community_42.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/MidiOutHost.hpp`
+- `tests/scc_auto_enables_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 5 (83%)
+- INFERRED: 1 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

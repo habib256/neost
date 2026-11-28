@@ -1,57 +1,58 @@
 # Community 58
 
-> 25 nodes
+> 40 nodes
 
 ## Key Concepts
 
-- **drawSideWindows()** (15 connections) — `src/gui/AppLoop.cpp`
-- **drawJoystickWindow()** (7 connections) — `src/gui/DebugWindows.cpp`
-- **drawKeyboardWindow()** (7 connections) — `src/gui/KeyboardWindow.cpp`
-- **keyboardWindowReleaseAll()** (7 connections) — `src/gui/KeyboardWindow.cpp`
-- **applyCrtPreset()** (5 connections) — `src/gui/CrtUi.cpp`
-- **drawCrtControls()** (5 connections) — `src/gui/CrtUi.cpp`
-- **drawCpuState()** (5 connections) — `src/gui/DebugWindows.cpp`
-- **drawDebugger()** (5 connections) — `src/gui/DebugWindows.cpp`
-- **App** (5 connections)
-- **drawCrtSettings()** (4 connections) — `src/gui/CrtUi.cpp`
-- **drawBitmapExplorer()** (4 connections) — `src/gui/DebugWindows.cpp`
-- **drawHexViewer()** (4 connections) — `src/gui/DebugWindows.cpp`
-- **releaseSticky()** (4 connections) — `src/gui/KeyboardWindow.cpp`
-- **loadTexture()** (3 connections) — `src/gui/KeyboardWindow.cpp`
-- **Machine** (3 connections)
-- **drawJoyDirLed()** (2 connections) — `src/gui/DebugWindows.cpp`
-- **drawJoystickAxisBar()** (2 connections) — `src/gui/DebugWindows.cpp`
-- **parseBpAddr()** (2 connections) — `src/gui/DebugWindows.cpp`
-- **App** (2 connections)
-- **Machine** (2 connections)
-- **string** (2 connections)
-- **string** (1 connections)
-- **Bus** (1 connections)
-- **Cpu68k** (1 connections)
-- **GLFWwindow** (1 connections)
+- **StrWriter_cpp.h** (15 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **StatusRegister** (14 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **DasmNumberFormat** (12 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **sprintx()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **sprintx_signed()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **u64** (6 connections)
+- **decDigits()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **hexDigits()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **sprint()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **sprint_signed()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **sprintd()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **sprintd_signed()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **binDigits()** (4 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **u8** (4 connections)
+- **uaeHex()** (3 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **uaeHexSigned()** (3 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **i64** (3 connections)
+- **.log10()** (2 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **.log2()** (2 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **Moira::disassembleSR()** (2 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **uaeDigits()** (2 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **uaeHexExt()** (2 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **i32** (2 connections)
+- **.validate()** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **plainZero** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- *... and 15 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (12 shared connections)
-- [Community 214](Community_214.md) (5 shared connections)
-- [Community 91](Community_91.md) (4 shared connections)
-- [Community 135](Community_135.md) (3 shared connections)
-- [Community 325](Community_325.md) (2 shared connections)
-- [Community 149](Community_149.md) (1 shared connections)
-- [Community 129](Community_129.md) (1 shared connections)
-- [Community 333](Community_333.md) (1 shared connections)
+- [Community 57](Community_57.md) (2 shared connections)
+- [Community 64](Community_64.md) (2 shared connections)
+- [Community 197](Community_197.md) (2 shared connections)
+- [Community 124](Community_124.md) (1 shared connections)
+- [Community 2](Community_2.md) (1 shared connections)
+- [Community 166](Community_166.md) (1 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/AppLoop.cpp`
-- `src/gui/CrtUi.cpp`
-- `src/gui/DebugWindows.cpp`
-- `src/gui/KeyboardWindow.cpp`
+- `extern/moira/Moira/FPU/FpuEnv.h`
+- `extern/moira/Moira/MoiraDasm_cpp.h`
+- `extern/moira/Moira/MoiraTypes.h`
+- `extern/moira/Moira/StrWriter_cpp.h`
 
 ## Audit Trail
 
-- EXTRACTED: 47 (73%)
-- INFERRED: 17 (27%)
+- EXTRACTED: 71 (97%)
+- INFERRED: 2 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

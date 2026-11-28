@@ -16,6 +16,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #pragma once
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstdint>

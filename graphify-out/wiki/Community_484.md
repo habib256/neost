@@ -1,11 +1,24 @@
 # Community 484
 
-> 13 nodes
+> 28 nodes
 
 ## Key Concepts
 
+- **DEV.md — Guide développeur NeoST** (12 connections) — `DEV.md`
 - **RuntimeOptions** (11 connections) — `src/libretro/neost_libretro.cpp`
+- **Architecture** (8 connections) — `DEV.md`
+- **MmuGlue** (7 connections) — `src/core/MmuGlue.hpp`
+- **Framing** (5 connections) — `src/libretro/neost_libretro.cpp`
+- **Le CPU (Moira, cycle-exact)** (5 connections) — `DEV.md`
 - **PadA** (4 connections) — `src/libretro/neost_libretro.cpp`
+- **Pièges matériels (vérifiés en debug)** (3 connections) — `DEV.md`
+- **Ajouter / modifier un composant** (2 connections) — `DEV.md`
+- **.read8()** (1 connections) — `src/core/MmuGlue.hpp`
+- **.write8()** (1 connections) — `src/core/MmuGlue.hpp`
+- **memConfig_** (1 connections) — `src/core/MmuGlue.hpp`
+- **Active** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **Adaptive** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **Full** (1 connections) — `src/libretro/neost_libretro.cpp`
 - **Fire** (1 connections) — `src/libretro/neost_libretro.cpp`
 - **Space** (1 connections) — `src/libretro/neost_libretro.cpp`
 - **Up** (1 connections) — `src/libretro/neost_libretro.cpp`
@@ -16,21 +29,33 @@
 - **midiIn** (1 connections) — `src/libretro/neost_libretro.cpp`
 - **mouseSpeed** (1 connections) — `src/libretro/neost_libretro.cpp`
 - **mouseStick** (1 connections) — `src/libretro/neost_libretro.cpp`
-- **padA** (1 connections) — `src/libretro/neost_libretro.cpp`
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
+- [Community 27](Community_27.md) (2 shared connections)
+- [Community 203](Community_203.md) (2 shared connections)
+- [Community 9](Community_9.md) (2 shared connections)
+- [Community 14](Community_14.md) (1 shared connections)
+- [Community 10](Community_10.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 - [Community 248](Community_248.md) (1 shared connections)
-- [Community 433](Community_433.md) (1 shared connections)
+- [Community 103](Community_103.md) (1 shared connections)
+- [Community 20](Community_20.md) (1 shared connections)
+- [Community 31](Community_31.md) (1 shared connections)
+- [Community 396](Community_396.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
 
 ## Source Files
 
+- `DEV.md`
+- `src/core/MmuGlue.hpp`
 - `src/libretro/neost_libretro.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 35 (71%)
+- INFERRED: 14 (29%)
 - AMBIGUOUS: 0 (0%)
 
 ---

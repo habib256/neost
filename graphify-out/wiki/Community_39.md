@@ -20,9 +20,9 @@
 - **.ctz64()** (4 connections) — `src/core/Scheduler.hpp`
 - **.nextDue()** (4 connections) — `src/core/Scheduler.hpp`
 - **2026-11-27 — Restes de la chasse : TAI au RESET, états forgés, web, fuzz des archives** (4 connections) — `CHANGELOG.md`
+- **A34 — un seul modèle d'exécution, et les 83 verrous du cœur sont enfin classés (2026-08-28)** (4 connections) — `CHANGELOG.md`
 - **Les cycles volés par le blitter avancent enfin l'horloge des timers (2026-08-25)** (4 connections) — `CHANGELOG.md`
 - **Refermés** (4 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Cœur & boot** (4 connections) — `docs/IMPLEMENTED.md`
 - **3.1 Ordonnanceur — du balayage linéaire au minimum tenu à jour** (4 connections) — `docs/PERFORMANCE.md`
 - **.armedInvariant()** (3 connections) — `src/core/Scheduler.hpp`
 - **.cyclesUntil()** (3 connections) — `src/core/Scheduler.hpp`
@@ -34,16 +34,16 @@
 ## Relationships
 
 - [Community 215](Community_215.md) (10 shared connections)
+- [Community 130](Community_130.md) (8 shared connections)
 - [Community 77](Community_77.md) (7 shared connections)
-- [Community 130](Community_130.md) (7 shared connections)
-- [Community 27](Community_27.md) (4 shared connections)
-- [Community 60](Community_60.md) (3 shared connections)
+- [Community 9](Community_9.md) (4 shared connections)
+- [Community 319](Community_319.md) (4 shared connections)
+- [Community 27](Community_27.md) (3 shared connections)
+- [Community 203](Community_203.md) (3 shared connections)
 - [Community 446](Community_446.md) (3 shared connections)
 - [Community 6](Community_6.md) (2 shared connections)
 - [Community 397](Community_397.md) (2 shared connections)
 - [Community 218](Community_218.md) (2 shared connections)
-- [Community 386](Community_386.md) (2 shared connections)
-- [Community 434](Community_434.md) (2 shared connections)
 - [Community 296](Community_296.md) (2 shared connections)
 
 ## Source Files
@@ -51,7 +51,6 @@
 - `CHANGELOG.md`
 - `docs/HATARI_DIVERGENCES.md`
 - `docs/HATARI_MAPPING.md`
-- `docs/IMPLEMENTED.md`
 - `docs/PERFORMANCE.md`
 - `src/core/Scheduler.hpp`
 - `src/io/Mfp.hpp`

@@ -1,44 +1,47 @@
 # Community 165
 
-> 19 nodes
+> 20 nodes
 
 ## Key Concepts
 
-- **compare_screenshot.py** (18 connections) — `tools/compare_screenshot.py`
-- **_load_image()** (8 connections) — `tools/compare_screenshot.py`
-- **compare()** (7 connections) — `tools/compare_screenshot.py`
-- **_align_buffer()** (5 connections) — `tools/compare_screenshot.py`
-- **main()** (5 connections) — `tools/compare_screenshot.py`
-- **_read_png()** (4 connections) — `tools/compare_screenshot.py`
-- **_read_ppm()** (4 connections) — `tools/compare_screenshot.py`
-- **Path** (4 connections)
-- **_crop()** (3 connections) — `tools/compare_screenshot.py`
-- **_downscale2()** (3 connections) — `tools/compare_screenshot.py`
-- **parse_zone()** (3 connections) — `tools/compare_screenshot.py`
-- **_print_report()** (3 connections) — `tools/compare_screenshot.py`
-- **_region()** (2 connections) — `tools/compare_screenshot.py`
-- **_rgb()** (2 connections) — `tools/compare_screenshot.py`
-- **skip_to_nl()** (1 connections) — `tools/compare_screenshot.py`
-- **Moyenne 2×2 — oracle Hatari plein écran → résolution NeoST.** (1 connections) — `tools/compare_screenshot.py`
-- **Recadre un plein écran Hatari 2× sur le buffer NeoST 416×276.** (1 connections) — `tools/compare_screenshot.py`
-- **« X,Y,W,H » → rectangle ; refuse une zone vide ou négative.** (1 connections) — `tools/compare_screenshot.py`
-- **Décodeur PNG en Python pur (zlib seulement) : 8 bits, gris/RGB/RGBA (± alpha),…** (1 connections) — `tools/compare_screenshot.py`
+- **Observe.hpp** (19 connections) — `src/headless/Observe.hpp`
+- **ProbeSet** (11 connections) — `src/headless/Observe.hpp`
+- **ProbeSpec** (10 connections) — `src/headless/Observe.hpp`
+- **probeFields()** (8 connections) — `src/headless/Observe.hpp`
+- **Machine** (6 connections)
+- **addProbe()** (5 connections) — `src/headless/Observe.hpp`
+- **emitProbeLine()** (5 connections) — `src/headless/Observe.hpp`
+- **parseProbeSpec()** (5 connections) — `src/headless/Observe.hpp`
+- **probeValue()** (5 connections) — `src/headless/Observe.hpp`
+- **ramHash()** (4 connections) — `src/headless/Observe.hpp`
+- **read8()** (4 connections) — `src/headless/Observe.hpp`
+- **screenHash()** (4 connections) — `src/headless/Observe.hpp`
+- **string** (4 connections)
+- **hashRam** (1 connections) — `src/headless/Observe.hpp`
+- **hashRamAddr** (1 connections) — `src/headless/Observe.hpp`
+- **hashRamLen** (1 connections) — `src/headless/Observe.hpp`
+- **probes** (1 connections) — `src/headless/Observe.hpp`
+- **addr** (1 connections) — `src/headless/Observe.hpp`
+- **len** (1 connections) — `src/headless/Observe.hpp`
+- **name** (1 connections) — `src/headless/Observe.hpp`
 
 ## Relationships
 
-- [Community 100](Community_100.md) (4 shared connections)
-- [Community 582](Community_582.md) (3 shared connections)
-- [Community 207](Community_207.md) (2 shared connections)
-- [Community 173](Community_173.md) (1 shared connections)
+- [Community 189](Community_189.md) (5 shared connections)
+- [Community 383](Community_383.md) (4 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 433](Community_433.md) (1 shared connections)
+- [Community 186](Community_186.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/compare_screenshot.py`
+- `src/headless/Observe.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 43 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 55 (96%)
+- INFERRED: 2 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

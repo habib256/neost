@@ -12,7 +12,7 @@
 - **Cpu68k** (2 connections) — `src/io/GemdosHd.hpp`
 - **.areg()** (2 connections) — `src/io/GemdosHd.hpp`
 - **.dreg()** (2 connections) — `src/io/GemdosHd.hpp`
-- **.normalizeAutoStartProgram()** (2 connections) — `src/io/GemdosHd.hpp`
+- **.gemChDir()** (2 connections) — `src/io/GemdosHd.hpp`
 - **.setClockProvider()** (2 connections) — `src/io/GemdosHd.hpp`
 - **.setFloppyProvider()** (2 connections) — `src/io/GemdosHd.hpp`
 - **.setPartitionCountProvider()** (2 connections) — `src/io/GemdosHd.hpp`
@@ -33,8 +33,8 @@
 
 ## Relationships
 
-- [Community 152](Community_152.md) (37 shared connections)
-- [Community 36](Community_36.md) (22 shared connections)
+- [Community 152](Community_152.md) (39 shared connections)
+- [Community 36](Community_36.md) (19 shared connections)
 - [Community 123](Community_123.md) (5 shared connections)
 - [Community 450](Community_450.md) (4 shared connections)
 - [Community 4](Community_4.md) (3 shared connections)
@@ -52,8 +52,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 182 (99%)
-- INFERRED: 1 (1%)
+- EXTRACTED: 181 (99%)
+- INFERRED: 2 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

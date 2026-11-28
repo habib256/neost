@@ -1,19 +1,16 @@
 # Community 114
 
-> 25 nodes
+> 22 nodes
 
 ## Key Concepts
 
 - **Touch** (18 connections) — `src/android/main_android.cpp`
-- **handleTouch()** (9 connections) — `src/android/main_android.cpp`
 - **Finger** (6 connections) — `src/android/main_android.cpp`
 - **.slotOf()** (3 connections) — `src/android/main_android.cpp`
 - **SDL_FingerID** (3 connections)
 - **.freeSlot()** (2 connections) — `src/android/main_android.cpp`
 - **.promote()** (2 connections) — `src/android/main_android.cpp`
 - **count** (2 connections) — `src/android/main_android.cpp`
-- **Chasse round 3 : trois axes rendent ZÉRO, et la lentille de régression démolit deux de mes correctifs (2026-09-01)** (2 connections) — `CHANGELOG.md`
-- **SDL_Event** (1 connections)
 - **Uint64** (1 connections)
 - **id** (1 connections) — `src/android/main_android.cpp`
 - **used** (1 connections) — `src/android/main_android.cpp`
@@ -33,18 +30,15 @@
 ## Relationships
 
 - [Community 228](Community_228.md) (5 shared connections)
-- [Community 200](Community_200.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
 - `src/android/main_android.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 33 (94%)
-- INFERRED: 2 (6%)
+- EXTRACTED: 28 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

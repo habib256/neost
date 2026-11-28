@@ -1,17 +1,17 @@
 # Graph Report - neost  (2026-11-28)
 
 ## Corpus Check
-- 681 files · ~1,700,086 words
+- 681 files · ~1,700,603 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 62 file(s) not represented in the graph (top: .ppm 11, (none) 8, .slangp 5)
 
 ## Summary
-- 14555 nodes · 30580 edges · 617 communities (524 shown, 93 thin omitted)
+- 14556 nodes · 30583 edges · 605 communities (519 shown, 86 thin omitted)
 - Extraction: 88% EXTRACTED · 12% INFERRED · 0% AMBIGUOUS · INFERRED: 3583 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `7a881ae2`
+- Built from commit: `327aa401`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -39,7 +39,7 @@
 - Fpu
 - Config
 - UsbDevice
-- Registers
+- Restart
 - Passes d'audit et chasses aux bugs
 - MidiAcia
 - argparse
@@ -74,9 +74,9 @@
 - cpu_swap_gate.py
 - HayesModem
 - MoiraTypes.h
-- drawSideWindows
+- StrWriter_cpp.h
 - EmuFiber
-- .write8
+- VideoGlue.cpp
 - Audio
 - Rig
 - retro_key
@@ -110,6 +110,7 @@
 - CrtEffectStack.cpp
 - AndroidMenu
 - Rig
+- Fdc.cpp
 - Rig
 - Rig
 - Rig
@@ -118,7 +119,7 @@
 - AppConfig.cpp
 - vector
 - Acsi
-- Assembler
+- FpuFormat
 - Generator
 - StePads
 - Asm
@@ -138,24 +139,24 @@
 - MoiraDebugger.cpp
 - testAcsiCapacityLimit
 - FileHandle
-- write_prg
+- DasmStyle
 - Rig
 - MidiWinmm.hpp
 - make_hd_image.py
 - Tracer
 - CrtParams
 - Changelog — NeoST
-- DriveSound
+- 7zTypes.h
 - Rig
 - midi_simplify.py
 - MoiraDebugger.cpp
-- appInit
+- DockLayout.cpp
 - MidiRing
 - Session
-- .writeTrackBuffer
+- AvTracker
 - testSccAckPriority
 - YM2149.cpp
-- Moira.h
+- run_perfbench.py
 - Rig
 - IpfImage.cpp
 - Debugger
@@ -163,7 +164,7 @@
 - neost_libretro.cpp
 - testSccRxErrorMode
 - string
-- string
+- M68kException
 - CartridgeKey
 - test_timing_oracle.py
 - string
@@ -179,14 +180,14 @@
 - Rig
 - Rig
 - Rig
-- compare_screenshot.py
+- Observe.hpp
 - run_fx68k_bench.py
 - MoiraDasmFPU_cpp.h
 - Device
 - u32
-- .readTrackStx
+- .loadImage
 - fuzz_diskimage.cpp
-- pathlib
+- json
 - Rig
 - Chasse aux bugs multi-agents : 9 défauts trouvés et corrigés, dont un hors bornes qui ne visait que Windows (2026-09-01)
 - Rig
@@ -202,7 +203,7 @@
 - MidiRing.cpp
 - SampleRing
 - Dev
-- parseRamBytes
+- main
 - Rig
 - Rig
 - CpuRig
@@ -218,9 +219,9 @@
 - Model
 - 2. Plan mémoire figé
 - Track
-- Convergence Moira ↔ WinUAE — chantier « full timing-engine » (beam-sync)
+- VideoCounter.cpp
 - Rig
-- argparse
+- hashlib
 - IpfImage.cpp
 - Breakpoints
 - MoiraDebugger.h
@@ -230,13 +231,13 @@
 - AppLoop.cpp
 - Mfp.cpp
 - testSccFirstErrorReset
-- Decoder
+- decode
 - string
-- Precomp.h
+- Guards
 - MidiInHost
 - HayesModem.cpp
 - u16
-- MidiInHost.cpp
+- Scenario
 - Key
 - Rig
 - Banc CPU + GSTMCU — ce que le 68000 voit du faisceau
@@ -266,12 +267,12 @@
 - build_apk.sh script
 - setup.sh script
 - libretro_frontier_logic.cpp
-- Fpu.cpp
+- TosInfo
 - Logiciels étalons — cas limites d'émulation
 - CustomR
 - NeostReport
 - hatari_oracle.sh
-- Frame
+- ConfigPath.cpp
 - NeoSTActivity
 - neost-bt.sh
 - Rig
@@ -295,16 +296,15 @@
 - pgo_train.sh
 - run_fx68k_bench.py
 - Breakpoints
-- libretro_frontend.py
-- nat_backend_test.cpp
+- InterruptRig
+- MMU030
 - retro_disk_control_ext_callback
 - MidiInDev
-- Ce qui est implémenté — par sous-système
 - run_glue_sweep.py
 - DtaResult
 - JoystickMode
-- EmuFiber.cpp
-- fat12_volume
+- Guard
+- check_hog_park.py
 - rtc_write_only_logic.cpp
 - retro_vr_hand_joint
 - smoke_package.sh
@@ -312,13 +312,13 @@
 - rtc_long_elapsed_logic.cpp
 - Rewind
 - .setIPL
-- impl_
-- cstdlib
-- .installSchedulerCallbacks
+- Validation sur matériel réel — registre par cible
+- Unknowns.hpp
+- machineIsMega
 - Reader
-- KeyZone
+- AudioMix.hpp
 - CellTrack
-- Info
+- GLuint
 - Audio::Audio
 - make_appimage.sh
 - package_macos.sh
@@ -359,7 +359,7 @@
 - 7zDec.c
 - Paquet Android
 - Kind
-- KioskKey
+- .resolveQuartz
 - Syntax
 - .geometry
 - make_disk
@@ -378,7 +378,7 @@
 - `hd/` — disques durs
 - Rig
 - Bug hunt multi-agents (2026-07-29)
-- DmaSound.cpp
+- .mixSegment
 - setup_silicon_refs.sh
 - a
 - .megaSteCacheFlush
@@ -386,14 +386,14 @@
 - Observe.hpp
 - run_moira_runner.sh
 - UInt8
-- Performance du cœur NeoST — profil, optimisations, recette de build
+- .customCodeCrcForTest
 - ImGuiContext
 - MegaSteCache
 - TrackRev
 - Cache
-- Parser
-- write_floppy
-- testBlitterRmw
+- PsgBusRig
+- NavRepeat
+- FPUModel
 - Mode borne (kiosk)
 - VideoGlue
 - Divergences NeoST ↔ Hatari — inventaire par sous-système
@@ -404,7 +404,6 @@
 - dataCallback
 - IoSpan
 - machine_scc_logic.cpp
-- Ext
 - Acsi.cpp
 - .serialize
 - Fctrl
@@ -427,23 +426,24 @@
 - Mt32Synth
 - BitmapExplorerState
 - RomProbe.cpp
-- UInt32
+- FrameGeometry
 - FramePacer
 - Banc différentiel Moira ↔ fx68k — le 68000 nu contre le RTL
 - RELEASES_PASSEES.md
-- Architecture
-- machineIsSte
-- BitmapView.cpp
+- Options
+- Docs à corriger
+- AudioPacer
 - Sector
 - Checks
 - Debugger
 - string
 - Precomp
 - Divergences NeoST ↔ MAME — plan mémoire, bus errors, DMA, SCC
+- src_io_stepads
 - dataCallback
-- src_io_joystickinput
+- Frontend & outillage
 - WireTrace
-- run_glue_sweep.py
+- DmaSound.cpp
 - setMouseCaptured
 - ParentDirTime
 - MachineType
@@ -451,48 +451,48 @@
 - libretro_frontend.py
 - cpu_stop_irq_logic.cpp
 - retro_game_info
+- src_io_stjoybits
 - retro_camera_callback
 - HayesModem::DialJob
 - make_vblank_test.py
 - QuartzInfo
 - Fault
 - Blitter.cpp
-- gemdos_drive_mapping_logic.cpp
+- ym_c10_noise_logic.cpp
 - Fpu.cpp
 - SysExJob
 - .mmioTable
-- retro_hw_render_callback
+- Chasse aux P3 ; format d'état v67 (2026-11-12)
 - retro_hdr_metadata
 - make_vblank_test.py
-- 2. Vidéo (GLUE, MMU, Shifter) — `Shifter.cpp`, `VideoGlue.cpp`, `VideoCounter.cpp` ↔ `video.c`, `spec512.c`
+- Banc du blitter — NeoST contre `stBlitter.sv` et fx68k
 - retro_game_info
 - 6. ACIA 6850, IKBD HD6301, MIDI — `Ikbd.cpp`, `MidiAcia.cpp` ↔ `acia.c`, `ikbd.c`, `midi.c`
 - A32 clos : le Shifter en trois classes (2026-11-11)
 - retro_perf_callback
 - Result
 - .writeControl
-- After
 - retro_hw_context_type
 - FatImage
 - impl_
-- .command
+- Checks
 - Ikbd.cpp
-- retro_microphone_interface
-- case_midi_hidden
+- DEV.md — Guide développeur NeoST
+- .neBackend
 - Log.cpp
 - 10. RTC RP5C15 (Mega ST, Mega STE) — `Rtc.cpp` ↔ `rtc.c`
 - Scc.cpp
 - 7zAlloc.c
 - retro_hw_upscaler_inputs
-- .draw
+- MediaScan.cpp
 - MoiraDebugger.h
 - compileShader
 - RuntimeOptions
-- .scanNextDue
+- Porte d'échange du cœur 68000 (Moira de NeoST → Moira officiel)
 - Guard
 - retro_location_callback
 - retro_game_info_ext
-- MouseMode
+- bus_mmio_mirror_logic.cpp
 - MoiraDebugger.h
 - retro_midi_interface
 - .completeInput
@@ -502,7 +502,7 @@
 - CPpmd7_Context_
 - 12. CPU 68000 et intégration — `Cpu68k.cpp`, `extern/moira` ↔ `cpu/newcpu.c`, `gencpu.c`, `hatari-glue.c`
 - 14. TOS et configuration — `Machine.cpp` ↔ `tos.c`
-- REFERENCE_LADDER.md
+- Balayage GLUE — la machine de NeoST contre le modèle GSTMCU
 - Parser
 - Ext
 - retro_hw_render_interface_type
@@ -513,7 +513,7 @@
 - Z7_C_IFACE_DECL
 - retro_calendar_time_interface
 - After
-- retro_camera_planar_frame
+- scc_async_logic.cpp
 - retro_display_color_caps
 - Atari TT030 — jalon d’amorçage
 - retro_message_ext
@@ -523,7 +523,7 @@
 - retro_video_view
 - Site
 - Av
-- Pending
+- scc_auto_enables_logic.cpp
 - 1. MFP 68901 — `Mfp.cpp` ↔ `mfp.c`, `rs232.c`
 - .setDestinations
 - GlueProbe
@@ -552,26 +552,24 @@
 - machineHasBlitter
 - Balayage GLUE — la machine de NeoST contre le modèle GSTMCU
 - Banc du blitter — NeoST contre `stBlitter.sv` et fx68k
-- ShadowMask
+- scc_status_modes_logic.cpp
 - retro_audio_callback
 - retro_audio_sample_multi_callback
 - retro_sensor_interface
 - Voice
 - sf2In
-- Mfp.hpp
+- Cpu68k.hpp
 - ShadowMask
 - retro_camera_buffer
 - 5. Son (YM2149, DMA STE, Microwire/LMC1992) — `YM2149.cpp`, `DmaSound.cpp` ↔ `psg.c`, `sound.c`, `dmaSnd.c`
 - retro_hw_render_context_negotiation_interface_type
 - retro_message_type
 - retro_vr_hand
-- 5. Le mode serveur — `--server`
 - Carte du code NeoST avec Graphify
 - EM_JS
 - retro_savestate_lifetime
 - Event
 - src_io_ipfimage
-- ArchState
 - .parseSpec
 - parse
 - retro_core_option_v2_category
@@ -579,12 +577,10 @@
 - retro_message_target
 - retro_system_content_info_override
 - retro_vfs_authorized_location
-- retro_vr_eye_state
 - retro_vr_reference_space
 - PointerAction
 - Slice
 - Checks
-- AndroidRoms.hpp
 - Porte d'échange du cœur 68000 (Moira NeoST → Moira POM68K)
 - Scale
 - RtcPhaseRig
@@ -592,19 +588,12 @@
 - retro_keyboard_callback
 - retro_led_interface
 - retro_rumble_interface
-- retro_core_option_display
 - retro_core_options_v2_intl
-- EM_JS
-- Event
 - .voidWrites
 - Moira::dump8
-- dataCallback
 - An
 - mfp_gpip_composite_logic.cpp
 - mfp_rx_irq_timing_logic.cpp
-- machine_scc_logic.cpp
-- case_state_replay
-- case_touch_pointer
 - src_io_ipfimage
 
 ## God Nodes (most connected - your core abstractions)
@@ -620,21 +609,21 @@
 10. `MFloat80` - 174 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `Commentaires code (signalés au passage)` --references--> `kHblOff()`  [INFERRED]
+  docs/archive/HATARI_MAPPING_AUDIT_2026-07.md → src/core/Machine.cpp
 - `Verrouillage pour une expo publique` --references--> `saveConfig()`  [INFERRED]
   packaging/raspberry/README.md → src/gui/App.cpp
+- `A36 — `neost.cfg` sait où il habite, y compris installé dans `/usr` (2026-08-28)` --references--> `cfgPath()`  [INFERRED]
+  CHANGELOG.md → src/gui/AppConfig.cpp
 - `Ce que la 0.6.1 emporte, déjà dans `main`` --references--> `writeConfigAtomic()`  [INFERRED]
   docs/archive/RELEASES_PASSEES.md → src/gui/AppConfig.cpp
-- `Dossiers ROM` --references--> `kioskScanDisks()`  [INFERRED]
-  docs/KIOSK.md → src/gui/KioskMenu.cpp
-- `UltraSatan — interface SD/MMC sur le bus ACSI (`--ultrasatan`, GUI Hard disks)` --references--> `Acsi`  [INFERRED]
-  docs/EXTENSIONS.md → src/io/Acsi.hpp
-- `Recette de capture matérielle (à faire quand une clé et un logiciel sont réunis)` --references--> `CartridgeKey`  [INFERRED]
-  docs/EXTENSIONS.md → src/io/CartridgeKey.hpp
+- `Paquet Android : premier APK qui tourne (2026-08-11)` --references--> `kioskScanDisks()`  [INFERRED]
+  CHANGELOG.md → src/gui/KioskMenu.cpp
 
 ## Import Cycles
 - None detected.
 
-## Communities (617 total, 93 thin omitted)
+## Communities (605 total, 86 thin omitted)
 
 ### Community 0 - "Instr"
 Cohesion: 0.01
@@ -653,12 +642,12 @@ Cohesion: 0.02
 Nodes (82): main(), metadata(), names_of(), superblock(), bpb(), entries(), main(), next_cluster() (+74 more)
 
 ### Community 4 - "cstdint"
-Cohesion: 0.05
-Nodes (29): DmaSound, YM2149, thread, Shifter, Machine, NetBackend, feedMouse(), App (+21 more)
+Cohesion: 0.04
+Nodes (36): dataCallback(), formatZones(), parseZones(), Shifter, Machine, NetBackend, App, App (+28 more)
 
 ### Community 5 - "Shifter"
 Cohesion: 0.02
-Nodes (55): Shifter, activeX_, activeY_, colorWrites_, curAH_, curH_, curW_, frameMode_ (+47 more)
+Nodes (54): Shifter, activeX_, activeY_, colorWrites_, curAH_, curH_, curW_, frameMode_ (+46 more)
 
 ### Community 6 - "Mfp"
 Cohesion: 0.02
@@ -669,16 +658,16 @@ Cohesion: 0.02
 Nodes (117): Ikbd, absMaxX_, absMaxY_, absX_, absY_, aciaClockInitialized_, asMagic_, asReadCount_ (+109 more)
 
 ### Community 8 - "Asm"
-Cohesion: 0.07
-Nodes (30): main(), seen(), media_prg(), Session, build_code(), build_prg(), check_record(), check_rw_pos() (+22 more)
+Cohesion: 0.06
+Nodes (37): main(), seen(), media_prg(), Session, build_code(), build_prg(), check_record(), check_rw_pos() (+29 more)
 
 ### Community 9 - "StxImage.cpp"
-Cohesion: 0.09
-Nodes (19): Banc fx68k : bus error et double faute (2026-11-10), Clé Steinberg sur le port cartouche : `CubaseDongle` (2026-08-23), Builds spécialisés, Chaîne d'interruption (subtile), DEV.md — Guide développeur NeoST, Le CPU (Moira, cycle-exact), Pièges matériels (vérifiés en debug), Techniques vérifiées (+11 more)
+Cohesion: 0.07
+Nodes (23): Banc fx68k : bus error et double faute (2026-11-10), Clé Steinberg sur le port cartouche : `CubaseDongle` (2026-08-23), Ce que NeoST attend du cœur, Instruction garée (coroutine de `runFrame`), Membres internes touchés, Mots du bus CPU pour la vidéo, Patches de NeoST à vérifier à chaque import, Refermés (+15 more)
 
 ### Community 10 - "Machine"
 Cohesion: 0.02
-Nodes (62): Machine, blitter, bus, cpl_, cpu, cpuSectionBegin_, cpuSectionEnd_, curLineLen_ (+54 more)
+Nodes (64): IACK MFP +4 cyc (raster Super Hang-On verrouillé à l'oracle) + chaîne son STE fidèle (2026-08-06/07), Reset à chaud : la trame reste sur la grille du bus (2026-11-13), Machine, blitter, bus, cpl_, cpu, cpuSectionBegin_ (+56 more)
 
 ### Community 11 - "ConfigUi"
 Cohesion: 0.02
@@ -702,7 +691,7 @@ Nodes (136): Refermés, div128by128(), float128toint64(), fromDecimal(), fromDec
 
 ### Community 16 - "Moira"
 Cohesion: 0.02
-Nodes (53): Moira, budget, clock, cpModel, cpuModel, dasm, dasmAlt, dasmModel (+45 more)
+Nodes (55): Bus error et double faute (2026-11-10), Moira, budget, clock, cpModel, cpuModel, dasm, dasmAlt (+47 more)
 
 ### Community 17 - "GemdosHd"
 Cohesion: 0.02
@@ -710,31 +699,31 @@ Nodes (42): Bus, Cpu68k, GemdosHd, actPd_, autoPrg_, BASE_FILEHANDLE, bootDrive_
 
 ### Community 18 - "subprocess"
 Cohesion: 0.05
-Nodes (41): lexemes(), main(), free_etalons(), func_line_count(), fx68k_ref(), git_count(), machine_etalons(), main() (+33 more)
+Nodes (43): free_etalons(), func_line_count(), fx68k_ref(), git_count(), machine_etalons(), main(), rung_count(), function() (+35 more)
 
 ### Community 19 - "Scc"
-Cohesion: 0.10
-Nodes (9): Scc, activeReg_, brgPeriod_, chn_, extLoopback_, irqLine_, ius_, sched_ (+1 more)
+Cohesion: 0.09
+Nodes (13): LE MEGASTE AU BANC FIELD SERVICE — suite Q 12/12, l'objectif de tête du TODO est ATTEINT (2026-08-27), brgSource(), Scc, activeReg_, brgPeriod_, chn_, extLoopback_, irqLine_ (+5 more)
 
 ### Community 20 - "Fpu"
 Cohesion: 0.07
-Nodes (22): Fpu, after_, BASE, buf_, bufIn_, bufLen_, bufPos_, cmd_ (+14 more)
+Nodes (38): Le FPU arrondissait deux fois — et son banc de test ne voyait pas les tests qu'on lui ajoutait (2026-09-02), After, CtrlIn, GenOp, MovemIn, MoveOutDone, None, RestoreIn (+30 more)
 
 ### Community 21 - "Config"
-Cohesion: 0.03
-Nodes (78): Config, acsi, audioLatencyMs, autoDongle, autoZoom, cart, cartbutton, cpu (+70 more)
+Cohesion: 0.02
+Nodes (81): autoDongleSync(), loadRtcFromConfig(), snapshotRtc(), Config, acsi, audioLatencyMs, autoDongle, autoZoom (+73 more)
 
 ### Community 22 - "UsbDevice"
 Cohesion: 0.05
 Nodes (33): UsbDevice, blocks_, bot_, buttons_, configuration_, controlStall_, cswStatus_, dataLeft_ (+25 more)
 
-### Community 23 - "Registers"
-Cohesion: 0.05
-Nodes (42): Moira::disassembleSR(), Moira::restoreRegisters(), PrefetchQueue, edb, irc, ird, Registers, caar (+34 more)
+### Community 23 - "Restart"
+Cohesion: 0.12
+Nodes (15): PrefetchQueue, edb, irc, ird, Restart, entrySsp, entryUsp, fault (+7 more)
 
 ### Community 24 - "Passes d'audit et chasses aux bugs"
-Cohesion: 0.10
-Nodes (7): 3. FDC WD1772, DMA, STX, IPF — `Fdc.cpp`, `StxImage.cpp`, `WrittenTrack.cpp`, `IpfImage.cpp` ↔ `fdc.c`, `floppies/stx.c`, `msa.c`, `dim.c`, `ipf.c`, Faux positifs, Refermés, Écarts ouverts, Passes d'audit et chasses aux bugs, cmdType(), soundSink_
+Cohesion: 0.11
+Nodes (4): Images IPF (SPS/CAPS) dans les lecteurs A et B, sans libcapsimage (2026-10-22), Refermés, Passes d'audit et chasses aux bugs, cmdType()
 
 ### Community 25 - "MidiAcia"
 Cohesion: 0.06
@@ -742,15 +731,15 @@ Nodes (26): MIDI — NeoST choisit son appareil, dans les deux sens (2026-08-29)
 
 ### Community 26 - "argparse"
 Cohesion: 0.07
-Nodes (40): Parcours de conduite, main(), best_shift(), compare(), correlation(), envelope(), floppy_bytes(), main() (+32 more)
+Nodes (36): Parcours de conduite, main(), best_shift(), compare(), correlation(), envelope(), floppy_bytes(), main() (+28 more)
 
 ### Community 27 - "Cpu68k.cpp"
 Cohesion: 0.04
-Nodes (23): Autostart `--auto`, EMail 1.56, chasse aux bugs (2026-10-24), L'élection de l'exception MFP : la règle chronologique existait mais ne pouvait jamais s'appliquer (2026-09-02), Ajouter / modifier un composant, 4. Le 68000, hors du cœur, Cpu68k, aciaPrevInstrClock_, instrStartClock_, psgPrevInstrClock_ (+15 more)
+Nodes (33): Autostart `--auto`, EMail 1.56, chasse aux bugs (2026-10-24), L'élection de l'exception MFP : la règle chronologique existait mais ne pouvait jamais s'appliquer (2026-09-02), 4. Le 68000, hors du cœur, ArchState, busClock, d, halted, irc (+25 more)
 
 ### Community 28 - "YM2149"
-Cohesion: 0.03
-Nodes (50): tonePeriod(), YM2149, audioRegs_, buf250_, buf250Rd_, buf250Wr_, CLOCK_HZ, cycleClock_ (+42 more)
+Cohesion: 0.04
+Nodes (49): YM2149, audioRegs_, buf250_, buf250Rd_, buf250Wr_, CLOCK_HZ, cycleClock_, dacGain_ (+41 more)
 
 ### Community 29 - "UltraSatan"
 Cohesion: 0.06
@@ -761,8 +750,8 @@ Cohesion: 0.07
 Nodes (38): background(), bars_layer(), main(), tile_mask(), mk_host(), mk_rel(), mk_leak(), mk_main() (+30 more)
 
 ### Community 31 - "Track"
-Cohesion: 0.07
-Nodes (28): crc16(), originalTrackBytes(), rd16be(), rd16le(), rd32be(), rd32le(), SaveTrack, data (+20 more)
+Cohesion: 0.06
+Nodes (30): crc16(), originalTrackBytes(), rd16be(), rd16le(), rd32be(), rd32le(), SaveTrack, data (+22 more)
 
 ### Community 32 - "MoiraALU_cpp.h"
 Cohesion: 0.08
@@ -781,7 +770,7 @@ Cohesion: 0.06
 Nodes (30): runs-on, steps, timeout-minutes, NEOST_MCPU, NEOST_VERSION, mcpu, jobs, borne (+22 more)
 
 ### Community 36 - "GemdosHd.cpp"
-Cohesion: 0.13
+Cohesion: 0.14
 Nodes (6): ProcPaths, forced, parent, path, ran, tbase
 
 ### Community 37 - "Blitter"
@@ -794,7 +783,7 @@ Nodes (10): Checks, count, failures, main(), Rig, ikbd, live, mfp (+2 more)
 
 ### Community 39 - "Scheduler"
 Cohesion: 0.05
-Nodes (29): 2026-11-27 — Restes de la chasse : TAI au RESET, états forgés, web, fuzz des archives, A42 soldé : l'élection de l'IRQ MFP voit enfin tout le lot de dispatch (2026-09-03), Audit Hatari, 5ᵉ passe : statuts remis en phase, chantiers Super Hang-On et Rick Dangerous (2026-07-07, complétée le 2026-07-08), Les cycles volés par le blitter avancent enfin l'horloge des timers (2026-08-25), Les trois autres pistes « Super Hang-On » d'Hatari, instruites (2026-09-02), Performance du cœur : ~2,4× sur la même machine, à sortie octet-identique (2026-08-02), Super Hang-On : le vrai coupable était `MFP_UpdateTimers` — que j'avais porté puis retiré le matin même (2026-09-02), Refermés (+21 more)
+Nodes (29): 2026-11-27 — Restes de la chasse : TAI au RESET, états forgés, web, fuzz des archives, A34 — un seul modèle d'exécution, et les 83 verrous du cœur sont enfin classés (2026-08-28), A42 soldé : l'élection de l'IRQ MFP voit enfin tout le lot de dispatch (2026-09-03), Audit Hatari, 5ᵉ passe : statuts remis en phase, chantiers Super Hang-On et Rick Dangerous (2026-07-07, complétée le 2026-07-08), Les cycles volés par le blitter avancent enfin l'horloge des timers (2026-08-25), Les trois autres pistes « Super Hang-On » d'Hatari, instruites (2026-09-02), Performance du cœur : ~2,4× sur la même machine, à sortie octet-identique (2026-08-02), Super Hang-On : le vrai coupable était `MFP_UpdateTimers` — que j'avais porté puis retiré le matin même (2026-09-02) (+21 more)
 
 ### Community 40 - "Moira.cpp"
 Cohesion: 0.10
@@ -802,19 +791,19 @@ Nodes (4): NatBackend, error_, impl_, trace
 
 ### Community 41 - ".saver"
 Cohesion: 0.04
-Nodes (89): main(), testAciaOddByte(), main(), testDmaSoundMicrowireByte(), main(), testDmaSoundMmioState(), main(), testIkbdTxControl() (+81 more)
+Nodes (97): main(), testAciaOddByte(), main(), testDmaSoundMicrowireByte(), main(), testDmaSoundMmioState(), main(), testIkbdTxControl() (+89 more)
 
 ### Community 42 - "MidiOutHost"
 Cohesion: 0.04
-Nodes (35): Le MIDI Windows rejoint macOS et Linux — backend winmm (2026-08-31), Le synthé GM intégré cesse d'être un privilège macOS (2026-08-30), MIDI — profil Circuit Tracks et avance de sortie réglable (2026-08-29), Quatre bugs d'outillage que Windows a mis au jour, byte(), dataBytesFor(), shortMessageLength(), displayName() (+27 more)
+Nodes (36): Le MIDI Windows rejoint macOS et Linux — backend winmm (2026-08-31), Le synthé GM intégré cesse d'être un privilège macOS (2026-08-30), MIDI — profil Circuit Tracks et avance de sortie réglable (2026-08-29), displayName(), MidiOutHost, anchorCycle_, anchored_, anchorHost_ (+28 more)
 
 ### Community 43 - "CrtEffectStack"
 Cohesion: 0.05
 Nodes (34): CrtEffectStack, errorMsg, failedH, failedW, fbo, firstFrame, initialized, outH (+26 more)
 
 ### Community 44 - "GmSynth"
-Cohesion: 0.10
-Nodes (12): GmSynth, curCycle_, error_, gain_, parser_, pending_, rate_, scratch_ (+4 more)
+Cohesion: 0.06
+Nodes (24): Event, cycle, len, msg, GmSynth, curCycle_, error_, gain_ (+16 more)
 
 ### Community 45 - "Isp1160"
 Cohesion: 0.04
@@ -825,12 +814,12 @@ Cohesion: 0.07
 Nodes (18): 5. Rattrapage — si la borne ne démarre plus, Checks, count, failures, main(), Rig, bus, fdc (+10 more)
 
 ### Community 47 - ".dispatchCommand"
-Cohesion: 0.17
-Nodes (3): bcdCheck(), joyProbe_, kbdTraceEnabled()
+Cohesion: 0.11
+Nodes (8): Relecture adversariale pré-release (2026-08-01), bcdCheck(), joyProbe_, MouseMode, ABS, CURSOR, OFF, REL
 
 ### Community 48 - "DmaSound.cpp"
-Cohesion: 0.08
-Nodes (63): Pd, BitmapLayout, height, planes, strideBytes, MissingHw, chip, needs (+55 more)
+Cohesion: 0.04
+Nodes (72): Pd, androidRomIndex(), formatAndroidRomChoice(), parseAndroidRomChoice(), MissingHw, chip, needs, refillThreshold() (+64 more)
 
 ### Community 49 - "run_etalons.py"
 Cohesion: 0.16
@@ -842,7 +831,7 @@ Nodes (26): concurrency, cancel-in-progress, group, jobs, oracle, name, on, sche
 
 ### Community 51 - "PortDevices"
 Cohesion: 0.09
-Nodes (21): autoDongleSync(), formatDongleSetup(), di(), Entry, id, label, port, Port (+13 more)
+Nodes (19): di(), Entry, id, label, port, Port, CartButton, Count (+11 more)
 
 ### Community 52 - "Rtc"
 Cohesion: 0.09
@@ -853,8 +842,8 @@ Cohesion: 0.05
 Nodes (40): Chn, breakPending, breakRaw, brgFraction, brgPulseEnd, brgPulseStart, brgSource, intSources (+32 more)
 
 ### Community 54 - "BareMoira"
-Cohesion: 0.06
-Nodes (35): DasmNumberFormat, plainZero, prefix, radix, upperCase, IrqMode, AUTO, SPURIOUS (+27 more)
+Cohesion: 0.10
+Nodes (18): V3 est CLOS : l'attribution de ligne à la grille réelle devient le défaut — et le verrou ne faisait rien (2026-09-01), IrqMode, AUTO, SPURIOUS, UNINITIALIZED, USER, BareMoira, done (+10 more)
 
 ### Community 55 - "cpu_swap_gate.py"
 Cohesion: 0.01
@@ -866,19 +855,19 @@ Nodes (14): HayesModem, allowed_, cmd_, dialLabel_, dtrKnown_, dtrMode_, dtrOn_,
 
 ### Community 57 - "MoiraTypes.h"
 Cohesion: 0.03
-Nodes (63): Moira::execFUnimplemented(), AddrSpace, DATA, PROG, beFrameFlags(), Compatibility, DEFAULT, MAME (+55 more)
+Nodes (55): MMU, mmu030, mmu040, model, MMUModel, M68030, M68040, NONE (+47 more)
 
-### Community 58 - "drawSideWindows"
-Cohesion: 0.12
-Nodes (16): drawSideWindows(), applyCrtPreset(), drawCrtControls(), drawCrtSettings(), drawBitmapExplorer(), drawCpuState(), drawDebugger(), drawHexViewer() (+8 more)
+### Community 58 - "StrWriter_cpp.h"
+Cohesion: 0.08
+Nodes (30): Moira::disassembleSR(), DasmNumberFormat, plainZero, prefix, radix, upperCase, StatusRegister, c (+22 more)
 
 ### Community 59 - "EmuFiber"
-Cohesion: 0.11
-Nodes (9): Abort, EmuFiber, aborted_, abortReq_, error_, inside_, job_, kStackBytes (+1 more)
+Cohesion: 0.05
+Nodes (23): Abort, EM_JS(), EmuFiber, aborted_, abortReq_, error_, impl_, cv (+15 more)
 
-### Community 60 - ".write8"
-Cohesion: 0.08
-Nodes (19): A10 — la couverture Spectrum 512 est RENDUE, sans une ligne de ROM Atari (2026-08-28), Passe de cohérence doc ↔ code, 3ᵉ tour (2026-08-19), Rechargement du compteur pendant VSYNC (2026-11-15), Réveil STOP avec HBL préarmée (2026-11-15), Validé, 1. L'outil n°1 — harnais différentiel de cycles (Moira ↔ WinUAE), 3. Vérités MESURÉES cette session (corrigent la mémoire), 5. ✅ CONVERGENCE INSTRUCTION — COMPLÈTE (validée par workflow 6 classes) (+11 more)
+### Community 60 - "VideoGlue.cpp"
+Cohesion: 0.06
+Nodes (26): A10 — la couverture Spectrum 512 est RENDUE, sans une ligne de ROM Atari (2026-08-28), Passe de cohérence doc ↔ code, 3ᵉ tour (2026-08-19), machineIsSte(), GlueProbe, bytes, end, lineStart, mask (+18 more)
 
 ### Community 61 - "Audio"
 Cohesion: 0.05
@@ -893,8 +882,8 @@ Cohesion: 0.04
 Nodes (21): divide(), FPU, env, fpcr, fpiar, fpr, fpsr, model (+13 more)
 
 ### Community 64 - "M68kException"
-Cohesion: 0.04
-Nodes (68): Blitter partagé : reprise CPU, bornes bus et traces strictes (2026-10-19), Méthodes surchargées, Bus error et double faute (2026-11-10), Moira::earlyAddressError(), Moira::jumpToVector(), hasIndexedOperand(), Moira::execAddressError(), Moira::execBusError() (+60 more)
+Cohesion: 0.05
+Nodes (58): Blitter partagé : reprise CPU, bornes bus et traces strictes (2026-10-19), Méthodes surchargées, Moira::earlyAddressError(), hasIndexedOperand(), Moira::execAddressError(), Moira::execBusError(), Moira::execException(), Moira::execFpuTrap() (+50 more)
 
 ### Community 65 - "Access"
 Cohesion: 0.15
@@ -905,8 +894,8 @@ Cohesion: 0.04
 Nodes (43): A42 : un CPU halté le DIT enfin — et la réserve de No Cooper tombe (2026-08-30), CpuState, appliedIpl, blitterAccessCounted, blitterBusAccess, blitterOverlap, blitterRmw, blitterStartedInAccess (+35 more)
 
 ### Community 67 - "Cas tranchés — diagnostics de terrain"
-Cohesion: 0.07
-Nodes (28): Blit HOG : la trame continue, l'hôte reprend la main (2026-11-11), Blit HOG long sur le web et Android (2026-11-12), Chantiers de la chasse aux bugs fermés ; format d'état v61 (2026-11-11), Chasse aux P3 ; format d'état v67 (2026-11-12), Les bandes de Super Hang-On : UNE trame de transitoire faisait sauter le cadre pendant 0,6 s (2026-09-02), Modèle d'horloge (`Machine::runFrame`), Autre échec : une interruption audio relance le timer arrêté, Cas tranchés — diagnostics de terrain (+20 more)
+Cohesion: 0.08
+Nodes (26): Blit HOG : la trame continue, l'hôte reprend la main (2026-11-11), Blit HOG long sur le web et Android (2026-11-12), Chantiers de la chasse aux bugs fermés ; format d'état v61 (2026-11-11), Les bandes de Super Hang-On : UNE trame de transitoire faisait sauter le cadre pendant 0,6 s (2026-09-02), Autre échec : une interruption audio relance le timer arrêté, Cas tranchés — diagnostics de terrain, Contre-épreuve des phases audio, Croisement des deux images et des deux TOS (2026-11-05) (+18 more)
 
 ### Community 68 - "main_web.cpp"
 Cohesion: 0.06
@@ -917,8 +906,8 @@ Cohesion: 0.09
 Nodes (15): Checks, count, failures, crc16(), main(), Rig, bus, fdc (+7 more)
 
 ### Community 70 - "Rig"
-Cohesion: 0.08
-Nodes (30): checkDump(), Checks, count, failures, checksum(), dumpTrack(), main(), position() (+22 more)
+Cohesion: 0.10
+Nodes (15): checkDump(), Checks, count, failures, main(), Rig, bus, fdc (+7 more)
 
 ### Community 71 - "Rig"
 Cohesion: 0.09
@@ -937,16 +926,16 @@ Cohesion: 0.09
 Nodes (14): Checks, count, failures, main(), readAddress(), Rig, bus, fdc (+6 more)
 
 ### Community 75 - "HostPath.cpp"
-Cohesion: 0.13
-Nodes (25): Probe, dirWritable, env, exists, profilesDirFor(), resolve(), systemProbe(), userConfigDir() (+17 more)
+Cohesion: 0.21
+Nodes (17): currentDir(), hasDriveLetter(), isAbsolute(), join(), lexicalAbsolute(), makeAbsolute(), neost::hostpath::precomposeUtf8(), normalizeSeparators() (+9 more)
 
 ### Community 77 - "Source"
 Cohesion: 0.05
 Nodes (40): Source, ACSI_IRQ, BLITTER, DMASND, FDC, FDC_INDEX, HBL, IKBD (+32 more)
 
 ### Community 78 - "FloppyDisk"
-Cohesion: 0.06
-Nodes (33): FloppyDisk, density, gen, headTrack, hostWriteBack, image, imgFormat, imgType (+25 more)
+Cohesion: 0.05
+Nodes (36): FloppyDisk, density, gen, headTrack, hostWriteBack, image, imgFormat, imgType (+28 more)
 
 ### Community 79 - "Rig"
 Cohesion: 0.09
@@ -977,16 +966,16 @@ Cohesion: 0.06
 Nodes (31): Reg, HCATLBUFLEN, HCATLPORT, HCBUFSTAT, HCCHIPID, HCCMDSTAT, HCCONTROL, HCDMACFG (+23 more)
 
 ### Community 86 - "Rig"
-Cohesion: 0.09
-Nodes (13): Checks, count, failures, main(), Rig, bus, fdc, live (+5 more)
+Cohesion: 0.10
+Nodes (12): Checks, count, failures, main(), Rig, bus, fdc, live (+4 more)
 
 ### Community 87 - "src_io_fdc"
 Cohesion: 0.07
 Nodes (30): , CMD_BIT_HEADLOAD, CMD_BIT_MULTI, CMD_BIT_SPINUP, CMD_BIT_UPDATETRACK, CMD_BIT_VERIFY, DMA_A0, DMA_A1 (+22 more)
 
 ### Community 88 - "Shifter.cpp"
-Cohesion: 0.08
-Nodes (23): A11 — les deux écarts oracle « inexpliqués » sont tranchés : un n'existait pas (2026-08-29), Audit Hatari, 6ᵉ passe : chasse avant release (2026-07-12), Bug hunt 11ᵉ passe : 24 correctifs sur six sous-systèmes, save-state v51 (2026-10-20), Closure : l'image rejoint l'oracle — scroll hardware STF 4 px / stab med (2026-08-12), shforstv : ligne suivante invalidée, P1 — Registres vidéo STE : 2 restes, 2. Vidéo (GLUE, MMU, Shifter) — `Shifter.cpp`, `VideoGlue.cpp`, `VideoCounter.cpp` ↔ `video.c`, `spec512.c`, Faux positifs (+15 more)
+Cohesion: 0.09
+Nodes (16): A11 — les deux écarts oracle « inexpliqués » sont tranchés : un n'existait pas (2026-08-29), Audit Hatari, 6ᵉ passe : chasse avant release (2026-07-12), Audit Hatari, 7ᵉ à 9ᵉ passes : chasses après le gain de performance (2026-08-06), 2. Vidéo (GLUE, MMU, Shifter) — `Shifter.cpp`, `VideoGlue.cpp`, `VideoCounter.cpp` ↔ `video.c`, `spec512.c`, Faux positifs, Refermés, Écarts ouverts, Écarts voulus — ne pas réaligner (+8 more)
 
 ### Community 89 - "Ne2000"
 Cohesion: 0.05
@@ -997,16 +986,20 @@ Cohesion: 0.07
 Nodes (26): Action, left, right, x, y, DesktopPointer, barrel, bufferH (+18 more)
 
 ### Community 91 - "CrtEffectStack.cpp"
-Cohesion: 0.07
-Nodes (24): Web : la première touche tuait l'émulateur (2026-10-27), bindFramebufferCompat(), checkFramebufferStatusCompat(), deleteFramebuffersCompat(), framebufferTexture2DCompat(), genFramebuffersCompat(), loadEntryPoints(), WinSettings_ApplyAll() (+16 more)
+Cohesion: 0.06
+Nodes (34): Web : la première touche tuait l'émulateur (2026-10-27), Signature, loadEntryPoints(), mouseReachesSt(), onKey(), onMouseButton(), drawKeyboardWindow(), keyboardWindowReleaseAll() (+26 more)
 
 ### Community 92 - "AndroidMenu"
-Cohesion: 0.07
-Nodes (28): AndroidMenu, cartKey, dataDir, disks, diskSel, donglePage, dongleSlot, importDir (+20 more)
+Cohesion: 0.06
+Nodes (30): actionRow(), AndroidMenu, cartKey, dataDir, disks, diskSel, donglePage, dongleSlot (+22 more)
 
 ### Community 94 - "Rig"
 Cohesion: 0.10
 Nodes (12): Checks, count, failures, main(), Rig, bus, fdc, live (+4 more)
+
+### Community 95 - "Fdc.cpp"
+Cohesion: 0.14
+Nodes (6): crc16(), doubleCheckFormat(), soundSink_, findDiskDetails(), lsnOffset(), stxTrackWithSectorWrites()
 
 ### Community 96 - "Rig"
 Cohesion: 0.10
@@ -1022,27 +1015,27 @@ Nodes (23): Checks, count, failures, main(), Rig, bus, fdc, live (+15 more)
 
 ### Community 99 - "DongleTable.cpp"
 Cohesion: 0.08
-Nodes (28): dongleFromId(), Model, Auto, Cubase2, Cubase3, None, Notator, cartKeyFromId() (+20 more)
+Nodes (29): dongleFromId(), Model, Auto, Cubase2, Cubase3, None, Notator, cartKeyFromId() (+21 more)
 
 ### Community 100 - "libretro.h"
 Cohesion: 0.03
-Nodes (64): check_fat12(), main(), check(), lot_2026_11_12(), main(), rc_of(), run(), hashes() (+56 more)
+Nodes (76): execute(), main(), build_variant(), pcs(), replace_once(), build(), check_fat12(), main() (+68 more)
 
 ### Community 101 - "AppConfig.cpp"
-Cohesion: 0.15
-Nodes (28): A36 — `neost.cfg` sait où il habite, y compris installé dans `/usr` (2026-08-28), Chemins hôte unifiés, logique pure testable, `main.cpp` dégrossi (2026-08-17), MIDI — le studio en double : une clé répétable n'est pas une clé (2026-08-29), Profils de réglages nommés (2026-08-10), Un réglage de sensibilité pour la souris émulée (2026-09-02), cfgPath(), crtF(), decodeRecords() (+20 more)
+Cohesion: 0.14
+Nodes (29): Chemins hôte unifiés, logique pure testable, `main.cpp` dégrossi (2026-08-17), MIDI — le studio en double : une clé répétable n'est pas une clé (2026-08-29), Profils de réglages nommés (2026-08-10), Un réglage de sensibilité pour la souris émulée (2026-09-02), cfgPath(), crtF(), decodeRecords(), deleteProfile() (+21 more)
 
 ### Community 102 - "vector"
-Cohesion: 0.04
-Nodes (24): formatZones(), parseZones(), routeVoice(), vector, number, main(), testIkbdMonitorMachine(), main() (+16 more)
+Cohesion: 0.05
+Nodes (27): Scheduler, StateArchive, vector, objVec(), podVec(), saveImage(), trackImage(), crc16() (+19 more)
 
 ### Community 103 - "Acsi"
 Cohesion: 0.06
 Nodes (16): UltraSatan + NetUSBee : le vrai couple stockage/réseau du ST (2026-08-21), Acsi, buf_, command_, devs_, dmaBlockAddr_, dmaTarget_, dmaWrite_ (+8 more)
 
-### Community 104 - "Assembler"
-Cohesion: 0.28
-Nodes (9): build(), build_clock(), main(), measure(), measure_clock(), build(), build(), Assembler (+1 more)
+### Community 104 - "FpuFormat"
+Cohesion: 0.10
+Nodes (24): FpuFormat, BYTE, DOUBLE, EXTENDED, LONG, PACKED, PACKED_DYN, SINGLE (+16 more)
 
 ### Community 105 - "Generator"
 Cohesion: 0.06
@@ -1077,12 +1070,12 @@ Cohesion: 0.15
 Nodes (23): Moira::execFBcc(), Moira::execFDbcc(), Moira::execFGen(), Moira::execFGeneric(), Moira::execFMove(), Moira::execFMovecr(), Moira::execFMovem(), Moira::execFNop() (+15 more)
 
 ### Community 113 - "DriveSound"
-Cohesion: 0.09
-Nodes (21): DriveSoundMix, click_, motor_, motorLevel_, seek_, spin_, spinPos_, startup_ (+13 more)
+Cohesion: 0.05
+Nodes (29): DriveSound, clickPath_, engine_, motor_, motorPlaying_, seekPath_, startupPath_, tick_ (+21 more)
 
 ### Community 114 - "Touch"
-Cohesion: 0.09
-Nodes (19): Chasse round 3 : trois axes rendent ZÉRO, et la lentille de régression démolit deux de mes correctifs (2026-09-01), Finger, id, used, x, y, handleTouch(), Touch (+11 more)
+Cohesion: 0.10
+Nodes (17): Finger, id, used, x, y, Touch, active, count (+9 more)
 
 ### Community 115 - "StopRig"
 Cohesion: 0.19
@@ -1101,16 +1094,12 @@ Cohesion: 0.24
 Nodes (5): main(), Rig, blitter, bus, testBlitterResetRetention()
 
 ### Community 119 - "Symbols.cpp"
-Cohesion: 0.18
+Cohesion: 0.19
 Nodes (9): be16(), be32(), lower(), Sym, addr, name, SymbolTable, byName_ (+1 more)
 
 ### Community 120 - "Timing"
 Cohesion: 0.10
 Nodes (21): Timing, Hbl_Pos_Hi, Hbl_Pos_Low_50, Hbl_Pos_Low_60, HBlank_Off_Low_50, HBlank_Off_Low_60, HDE_Off_Hi, HDE_Off_Low_50 (+13 more)
-
-### Community 121 - "MoiraDebugger.cpp"
-Cohesion: 0.10
-Nodes (9): Guard, addr, enabled, ignore, Guards, capacity, count, guards (+1 more)
 
 ### Community 122 - "testAcsiCapacityLimit"
 Cohesion: 0.12
@@ -1120,9 +1109,9 @@ Nodes (14): Checks, count, failures, main(), read32(), send(), testAcsiCapacityL
 Cohesion: 0.08
 Nodes (24): EmuDrive, driveNumber, fsCurrPath, hdEmuDir, used, FileHandle, actualName, basepage (+16 more)
 
-### Community 124 - "write_prg"
+### Community 124 - "DasmStyle"
 Cohesion: 0.09
-Nodes (11): case_blitter_megast_fallback(), case_blitter_ste(), case_fast_floppy_idle(), case_midi_in(), case_needs_ste(), case_netplay_keyboard(), case_probe_kept(), case_probe_restored() (+3 more)
+Nodes (16): DasmStyle, letterCase, numberFormat, syntax, tab, LetterCase, LOWER_CASE, MIXED_CASE (+8 more)
 
 ### Community 125 - "Rig"
 Cohesion: 0.12
@@ -1141,20 +1130,20 @@ Cohesion: 0.12
 Nodes (8): Cpu68k, Tracer, count_, cpu_, f_, logIrq_, logRegs_, ownsFile_
 
 ### Community 129 - "CrtParams"
-Cohesion: 0.13
-Nodes (14): CrtParams, barrel, brightness, centerLighting, contrast, hue, luminanceGain, persistence (+6 more)
+Cohesion: 0.10
+Nodes (19): CrtParams, barrel, brightness, centerLighting, contrast, hue, luminanceGain, persistence (+11 more)
 
 ### Community 130 - "Changelog — NeoST"
 Cohesion: 0.01
-Nodes (281): 0.5.1 — Windows, et le vrai paquet Pi 400 (2026-08-10), 0.5.2 — la 0.5.1, mais réellement livrée (2026-08-10), 0.5.4 — dongles, ports, MIDI vérifié (2026-08-23), 0.5 « Newborn » — première release taguée (2026-08-10), 0.6.1 — vos réglages restent en place (2026-09-02), 0.6.2 — plus près du silicium (2026-10-20), 0.6.3 — USB du NetUSBee et réseau intégré (2026-11-10), 0.6.4 — un filet avant le nouveau cœur (2026-11-11) (+273 more)
+Nodes (286): 0.5.1 — Windows, et le vrai paquet Pi 400 (2026-08-10), 0.5.2 — la 0.5.1, mais réellement livrée (2026-08-10), 0.5.4 — dongles, ports, MIDI vérifié (2026-08-23), 0.5 « Newborn » — première release taguée (2026-08-10), 0.6.1 — vos réglages restent en place (2026-09-02), 0.6.2 — plus près du silicium (2026-10-20), 0.6.3 — USB du NetUSBee et réseau intégré (2026-11-10), 0.6.4 — un filet avant le nouveau cœur (2026-11-11) (+278 more)
 
-### Community 131 - "DriveSound"
-Cohesion: 0.14
-Nodes (8): DriveSound, clickPath_, engine_, motor_, motorPlaying_, seekPath_, startupPath_, tick_
+### Community 131 - "7zTypes.h"
+Cohesion: 0.10
+Nodes (5): ISzAlloc, Z7_C_IFACE_DECL(), Delta_Decode(), Delta_Encode(), Delta_Init()
 
 ### Community 132 - "Rig"
-Cohesion: 0.08
-Nodes (18): MegaSteRig, blitter, bus, cpu, scheduler, Rig, blitter, bus (+10 more)
+Cohesion: 0.05
+Nodes (31): Checks, count, failures, main(), MegaSteRig, blitter, bus, cpu (+23 more)
 
 ### Community 133 - "midi_simplify.py"
 Cohesion: 0.17
@@ -1162,11 +1151,11 @@ Nodes (12): build(), build_per_channel(), mtrk(), clamp_tempo(), detach_repeats(
 
 ### Community 134 - "MoiraDebugger.cpp"
 Cohesion: 0.09
-Nodes (9): Debugger, breakpoints, catchpoints, logBuffer, logBufferCapacity, logCnt, softStop, swTraps (+1 more)
+Nodes (12): Breakpoints, Catchpoints, Debugger, breakpoints, catchpoints, logBuffer, logBufferCapacity, logCnt (+4 more)
 
-### Community 135 - "appInit"
-Cohesion: 0.13
-Nodes (14): Mega ST / Mega STE — RTC, SCU, cache, SCC, loadRtcFromConfig(), snapshotRtc(), clampAudioLatencyMs(), appInit(), parseCommandLine(), kioskPageJoy(), applyDockLayout() (+6 more)
+### Community 135 - "DockLayout.cpp"
+Cohesion: 0.22
+Nodes (8): App, applyDockLayout(), registerWindowSettings(), renderDockSpace(), WinSettings_ApplyAll(), WinSettings_ReadLine(), WinSettings_ReadOpen(), WinSettings_WriteAll()
 
 ### Community 136 - "MidiRing"
 Cohesion: 0.06
@@ -1176,29 +1165,29 @@ Nodes (28): MidiRing, fd_, haveOldSession_, haveSrc_, jitter_, kDefaultListen, k
 Cohesion: 0.13
 Nodes (12): Checks, count, failures, main(), Rig, live, mfp, route (+4 more)
 
-### Community 138 - ".writeTrackBuffer"
-Cohesion: 0.15
-Nodes (4): lsnOffset(), StOverrideTrack, raw, secs
+### Community 138 - "AvTracker"
+Cohesion: 0.12
+Nodes (16): macOS arm64 — ◐ passe faite le 2026-09-01, le VISUEL reste, Av, frameCycles, height, width, AvTracker, announced_, armed_ (+8 more)
 
 ### Community 139 - "testSccAckPriority"
-Cohesion: 0.33
+Cohesion: 0.32
 Nodes (4): main(), PriorityRig, scc, testSccAckPriority()
 
 ### Community 140 - "YM2149.cpp"
-Cohesion: 0.19
-Nodes (5): Le PSG grésillait dans Super Hang-On : un digidrum à 45 kHz décimé de 61 % (2026-09-02), Refermés, fixedToSample(), rndCompute(), sampleToFixed()
+Cohesion: 0.23
+Nodes (5): Le PSG grésillait dans Super Hang-On : un digidrum à 45 kHz décimé de 61 % (2026-09-02), fixedToSample(), rndCompute(), sampleToFixed(), tonePeriod()
 
-### Community 141 - "Moira.h"
-Cohesion: 0.16
-Nodes (10): build_code(), build_floppy(), alloc(), set_fat(), build_prg(), main(), main(), replace_program() (+2 more)
+### Community 141 - "run_perfbench.py"
+Cohesion: 0.07
+Nodes (26): build_code(), build_floppy(), alloc(), set_fat(), build_prg(), main(), handle(), pump() (+18 more)
 
 ### Community 142 - "Rig"
 Cohesion: 0.14
 Nodes (7): main(), Rig, ikbd, live, mfp, sched, testIkbdPause()
 
 ### Community 143 - "IpfImage.cpp"
-Cohesion: 0.45
-Nodes (6): findSectors(), readDataField(), readTrackDump(), Stream, n, start
+Cohesion: 0.41
+Nodes (7): crc16Ccitt(), findSectors(), readDataField(), readTrackDump(), Stream, n, start
 
 ### Community 144 - "Debugger"
 Cohesion: 0.16
@@ -1209,8 +1198,8 @@ Cohesion: 0.14
 Nodes (18): sourceImage(), blankSt(), fail(), fixMediaCrc(), fuzzBody(), fuzzMedia(), le32(), main() (+10 more)
 
 ### Community 146 - "neost_libretro.cpp"
-Cohesion: 0.05
-Nodes (38): execute(), main(), build_variant(), pcs(), replace_once(), build(), boot_disk(), delay() (+30 more)
+Cohesion: 0.07
+Nodes (24): boot_disk(), delay(), trick(), w(), screen_words(), build(), build(), done_dbra() (+16 more)
 
 ### Community 147 - "testSccRxErrorMode"
 Cohesion: 0.26
@@ -1220,33 +1209,33 @@ Nodes (5): ErrorModeRig, channel, scc, main(), testSccRxErrorMode()
 Cohesion: 0.13
 Nodes (15): GH_REPO, GH_TOKEN, NEOST_MCPU, NEOST_VERSION, REF_NAME, REF_TYPE, SHA, TAG (+7 more)
 
-### Community 149 - "string"
-Cohesion: 0.24
-Nodes (13): archiveCacheRoot(), archiveFloppies(), fileExists(), looksLikeTosHeader(), mountableFloppy(), pickTosForMachine(), resolveData(), romLoadable() (+5 more)
+### Community 149 - "M68kException"
+Cohesion: 0.10
+Nodes (20): Moira::jumpToVector(), M68kException, ADDRESS_ERROR, BKPT, BUS_ERROR, CHK, DIVIDE_BY_ZERO, FORMAT_ERROR (+12 more)
 
 ### Community 150 - "CartridgeKey"
 Cohesion: 0.10
-Nodes (12): Dongles, 2e passe : oracle de rejeu, un périphérique par port, port cartouche abstrait (2026-08-23), Traces de référence pour `trace_diff` (2026-11-12), CartridgeKey, chosen_, d_, feedb1_, last_, locked_ (+4 more)
+Nodes (13): Dongles, 2e passe : oracle de rejeu, un périphérique par port, port cartouche abstrait (2026-08-23), Traces de référence pour `trace_diff` (2026-11-12), CartridgeKey, chosen_, d_, feedb1_, last_, locked_ (+5 more)
 
 ### Community 151 - "test_timing_oracle.py"
-Cohesion: 0.06
-Nodes (18): main(), measure(), run_timed(), compare(), fdc_fixture(), HardwareProbeProtocol, TimingComparison, TraceRegisters (+10 more)
+Cohesion: 0.07
+Nodes (22): main(), main(), parse_hex(), read_word(), runs(), Server, menu(), main() (+14 more)
 
 ### Community 152 - "string"
 Cohesion: 0.06
-Nodes (16): A39 — le disque dur GEMDOS passe son premier audit, et reçoit son premier test (2026-08-28), Audit Hatari, 7ᵉ à 9ᵉ passes : chasses après le gain de performance (2026-08-06), Retours 0.5.2 : HD GEMDOS sous Windows, disquette livrée (2026-08-16), addSlash(), cleanFileName(), convertAttribute(), dirExists(), GemdosHd::GemdosHd() (+8 more)
+Nodes (15): A39 — le disque dur GEMDOS passe son premier audit, et reçoit son premier test (2026-08-28), Retours 0.5.2 : HD GEMDOS sous Windows, disquette livrée (2026-08-16), addSlash(), cleanFileName(), convertAttribute(), dirExists(), GemdosHd::GemdosHd(), hostAttrRead() (+7 more)
 
 ### Community 153 - "testGemdosDirectoryEntries"
-Cohesion: 0.12
-Nodes (10): CrcCalc(), CrcUpdate(), void(), Z7_CRC_UPDATE_T1_FUNC_NAME(), Z7_FASTCALL(), z7_GetFunc_CrcUpdate(), Z7_BRANCH_CONV_ST(), Z7_BRANCH_CONV_ENC() (+2 more)
+Cohesion: 0.14
+Nodes (11): CrcCalc(), CrcUpdate(), void(), Z7_CRC_UPDATE_T1_FUNC_NAME(), Z7_FASTCALL(), z7_GetFunc_CrcUpdate(), crc32(), crc32Bytewise() (+3 more)
 
 ### Community 154 - "Rig"
 Cohesion: 0.12
 Nodes (10): Checks, count, failures, main(), Rig, bus, live, scheduler (+2 more)
 
 ### Community 155 - "u16"
-Cohesion: 0.14
-Nodes (24): mode, Moira::dasmPFlush(), Moira::dasmPFlush40(), Moira::dasmPFlusha(), Moira::dasmPGen(), Moira::dasmPLoad(), Moira::dasmPMove(), Moira::dasmPTest() (+16 more)
+Cohesion: 0.11
+Nodes (30): mode, MmuReg, CRP, MMUSR, SRP, TC, TT0, TT1 (+22 more)
 
 ### Community 156 - "ConfigPage"
 Cohesion: 0.12
@@ -1265,8 +1254,8 @@ Cohesion: 0.14
 Nodes (10): Checks, count, failures, main(), Rig, ikbd, live, mfp (+2 more)
 
 ### Community 160 - "Machine.cpp"
-Cohesion: 0.10
-Nodes (14): 2026-11-24 — Frontière libretro : ce qu'un cinquième frontend exige du cœur, 2026-11-24 — Web : disques durs dans la page, lien de cours, états avec disquettes, A34 — un seul modèle d'exécution, et les 83 verrous du cœur sont enfin classés (2026-08-28), Pilotage externe déterministe de NeoST (2026-09-04), Mode kiosk — invariants d'implémentation (`gui/AppInit.cpp`, `gui/AppLoop.cpp`, `gui/KioskMenu.cpp`), TOS 2.06 : la VBL écrase le contexte sur la pile temporaire (2026-11-04), Clavier, souris, joystick (ACIA 6850 / IKBD HD6301), Mesures : coût d'un état face à une trame (+6 more)
+Cohesion: 0.07
+Nodes (19): 2026-11-24 — Frontière libretro : ce qu'un cinquième frontend exige du cœur, 2026-11-24 — Web : disques durs dans la page, lien de cours, états avec disquettes, Headless : `--joy-at`, `--joy-script` et `--mouse-at` deviennent répétables (`OUTIL-1`) (2026-08-25), Pilotage externe déterministe de NeoST (2026-09-04), Mode kiosk — invariants d'implémentation (`gui/AppInit.cpp`, `gui/AppLoop.cpp`, `gui/KioskMenu.cpp`), Clavier, souris, joystick (ACIA 6850 / IKBD HD6301), Ce qui ne change pas, Libretro — carte de la frontière (+11 more)
 
 ### Community 161 - "Rig"
 Cohesion: 0.16
@@ -1277,20 +1266,20 @@ Cohesion: 0.18
 Nodes (6): main(), Rig, bus, sched, snd, testDmaSoundMono()
 
 ### Community 163 - "Rig"
-Cohesion: 0.07
-Nodes (28): be32(), buildIpf(), Checks, count, failures, Kind, BAD_DATA_CRC, BAD_ID_CRC (+20 more)
+Cohesion: 0.06
+Nodes (32): TrackRev, bytes, cylinder, head, be32(), buildIpf(), Checks, count (+24 more)
 
 ### Community 164 - "Rig"
 Cohesion: 0.11
 Nodes (15): Checks, count, failures, compareSci(), main(), Oracle, left, state (+7 more)
 
-### Community 165 - "compare_screenshot.py"
-Cohesion: 0.19
-Nodes (12): _align_buffer(), compare(), _crop(), _downscale2(), _load_image(), main(), parse_zone(), _print_report() (+4 more)
+### Community 165 - "Observe.hpp"
+Cohesion: 0.21
+Nodes (17): addProbe(), emitProbeLine(), parseProbeSpec(), probeFields(), ProbeSet, hashRam, hashRamAddr, hashRamLen (+9 more)
 
 ### Community 166 - "run_fx68k_bench.py"
 Cohesion: 0.05
-Nodes (56): Moira::addrMask(), Moira::baseDispWords(), Moira::checkEven(), Moira::checkEvenPC(), Moira::completeBusError(), Moira::computeEA(), Moira::computeEAbrief(), Moira::computeEAfull() (+48 more)
+Nodes (59): Moira::addrMask(), Moira::baseDispWords(), Moira::checkEven(), Moira::checkEvenPC(), Moira::completeBusError(), Moira::computeEA(), Moira::computeEAbrief(), Moira::computeEAfull() (+51 more)
 
 ### Community 167 - "MoiraDasmFPU_cpp.h"
 Cohesion: 0.41
@@ -1304,24 +1293,24 @@ Nodes (14): Device, Bat2, Count, Cricket, JeanneDArc, LeaderBoard, Multiface, Mu
 Cohesion: 0.13
 Nodes (13): Imd, raw, ImPacked, a, b, c, Imu, raw (+5 more)
 
-### Community 170 - ".readTrackStx"
-Cohesion: 0.22
-Nodes (8): Fdc::MediaCopy, gen, hostWriteBack, image, overlayKnown, path, stOverride, stx
+### Community 170 - ".loadImage"
+Cohesion: 0.11
+Nodes (23): A30 — les parseurs d'images disquette passent au fuzzer, et la CI ne bâtissait pas ce qu'elle lance (2026-08-28), 3. FDC WD1772, DMA, STX, IPF — `Fdc.cpp`, `StxImage.cpp`, `WrittenTrack.cpp`, `IpfImage.cpp` ↔ `fdc.c`, `floppies/stx.c`, `msa.c`, `dim.c`, `ipf.c`, Faux positifs, Écarts ouverts, Écarts voulus — ne pas réaligner, decodeContainer(), decodeDim(), decodeDimLax() (+15 more)
 
 ### Community 172 - "fuzz_diskimage.cpp"
 Cohesion: 0.09
-Nodes (30): deflateStored(), fail(), FdcRig, bus, fdc, live, mfp, psg (+22 more)
+Nodes (28): deflateStored(), fail(), FdcRig, bus, fdc, live, mfp, psg (+20 more)
 
-### Community 173 - "pathlib"
-Cohesion: 0.09
-Nodes (17): main(), main(), parse_p6(), main(), assess(), compare_argv(), main(), play() (+9 more)
+### Community 173 - "json"
+Cohesion: 0.05
+Nodes (36): Quatre bugs d'outillage que Windows a mis au jour, changes(), main(), main(), scan(), main(), main(), capture() (+28 more)
 
 ### Community 174 - "Rig"
 Cohesion: 0.11
 Nodes (12): Checks, count, failures, main(), Rig, bus, fdc, live (+4 more)
 
 ### Community 175 - "Chasse aux bugs multi-agents : 9 défauts trouvés et corrigés, dont un hors bornes qui ne visait que Windows (2026-09-01)"
-Cohesion: 0.11
+Cohesion: 0.10
 Nodes (14): Chasse aux bugs multi-agents : 9 défauts trouvés et corrigés, dont un hors bornes qui ne visait que Windows (2026-09-01), Chasse round 2 : 6 défauts de plus, dont un trou dans le correctif du matin (2026-09-01), Disque dur GEMDOS (`GemdosHd`), Référence d’implémentation : composant NeoST ↔ Hatari, fixBools(), Scu, gpr1, gpr2 (+6 more)
 
 ### Community 176 - "Rig"
@@ -1349,24 +1338,24 @@ Cohesion: 0.24
 Nodes (5): ErrorIrqRig, channel, scc, main(), testSccRxErrorIrq()
 
 ### Community 182 - "Moira — copie vendorisée (fork NeoST)"
-Cohesion: 0.08
-Nodes (24): ANDI/ORI/EORI #,SR/#,CCR et MOVE to CCR : double rechargement (2026-10-20), Bornes bus et trace d'instruction (2026-10-19), Contenu conservé, DIVS : valeurs absolues sans comportement indéfini (2026-10-20), DIVU/DIVS : cycles internes avant le préfetch (2026-10-20), En-têtes standard explicites (2026-11-09), Import pour la 0.7.0, MC68030 : cycles physiques du parcours PMMU (2026-11-28) (+16 more)
+Cohesion: 0.10
+Nodes (20): ANDI/ORI/EORI #,SR/#,CCR et MOVE to CCR : double rechargement (2026-10-20), Bornes bus et trace d'instruction (2026-10-19), Contenu conservé, DIVS : valeurs absolues sans comportement indéfini (2026-10-20), DIVU/DIVS : cycles internes avant le préfetch (2026-10-20), En-têtes standard explicites (2026-11-09), Import pour la 0.7.0, MC68030 : cycles physiques du parcours PMMU (2026-11-28) (+12 more)
 
 ### Community 183 - "testIpfImage"
-Cohesion: 0.06
-Nodes (58): FpuFormat, BYTE, DOUBLE, EXTENDED, LONG, PACKED, PACKED_DYN, SINGLE (+50 more)
+Cohesion: 0.11
+Nodes (33): RoundingMode, DOWN, NEAREST, UP, ZERO, BinFloat, exp, sig (+25 more)
 
 ### Community 184 - "Rig"
 Cohesion: 0.12
 Nodes (11): Checks, count, failures, main(), Rig, live, mfp, midi (+3 more)
 
 ### Community 185 - "Device"
-Cohesion: 0.13
-Nodes (14): Device, forceChannel, hdrs, name, owner, parser, src, uid (+6 more)
+Cohesion: 0.10
+Nodes (20): Device, forceChannel, hdrs, name, owner, parser, src, uid (+12 more)
 
 ### Community 186 - "MidiRing.cpp"
-Cohesion: 0.09
-Nodes (15): FujiNet retiré : NeoST n'émule plus que du matériel qui a existé (2026-08-22), be32(), putBe32(), rtrace(), netInitOnce(), sockClose(), socketValid(), sockHasData() (+7 more)
+Cohesion: 0.07
+Nodes (23): FujiNet retiré : NeoST n'émule plus que du matériel qui a existé (2026-08-22), thread, be32(), putBe32(), rtrace(), netInitOnce(), sockClose(), socketValid() (+15 more)
 
 ### Community 187 - "SampleRing"
 Cohesion: 0.17
@@ -1376,9 +1365,9 @@ Nodes (5): SampleRing, buf_, mask_, r_, w_
 Cohesion: 0.13
 Nodes (12): Dev, blockSize, enabled, fp, hdSize, lastBlockAddr, lastError, overlay (+4 more)
 
-### Community 189 - "parseRamBytes"
-Cohesion: 0.14
-Nodes (11): parseMachine(), parseRamBytes(), ramDisplayName(), ramLabel(), tosHeaderIsEmuTos(), tosHeaderVersion(), tosImageBase(), tosUnsupportedMachine() (+3 more)
+### Community 189 - "main"
+Cohesion: 0.20
+Nodes (15): Chasse round 5 : le save-state acceptait une AUTRE ROM, et le harnais annonçait des écritures tronquées comme réussies (2026-09-02), argFrame(), argHex(), argInt(), argU32(), badArg(), enecSelfTest(), main() (+7 more)
 
 ### Community 190 - "Rig"
 Cohesion: 0.17
@@ -1410,7 +1399,7 @@ Nodes (7): BrgControlRig, channel, output, scc, scheduler, main(), testSccEchoBr
 
 ### Community 197 - "testSccMieIus"
 Cohesion: 0.07
-Nodes (14): compare(), FpuEnv, exceptions, limitExponent, prec, FpuEnv::Scope::Scope(), increment(), isqrt() (+6 more)
+Nodes (15): compare(), FpuEnv, exceptions, limitExponent, prec, FpuEnv::Scope::Scope(), increment(), isqrt() (+7 more)
 
 ### Community 198 - "MoiraDasmMMU_cpp.h"
 Cohesion: 0.18
@@ -1421,8 +1410,8 @@ Cohesion: 0.17
 Nodes (11): concurrency, cancel-in-progress, group, jobs, net-off, name, name, runs-on (+3 more)
 
 ### Community 200 - "App.cpp"
-Cohesion: 0.11
-Nodes (6): 2026-11-18 — Web : commandes tactiles et plein écran sur iPhone, A12 — la première cible de livraison est validée sur du vrai matériel, et le paquet macOS n'enregistrait rien (2026-09-01), Et les trois avertissements que personne ne voyait plus, classify(), run_one(), Core
+Cohesion: 0.06
+Nodes (12): 2026-11-18 — Web : commandes tactiles et plein écran sur iPhone, A12 — la première cible de livraison est validée sur du vrai matériel, et le paquet macOS n'enregistrait rien (2026-09-01), Et les trois avertissements que personne ne voyait plus, AvInfo, Core, DiskControlExt, Game, Geometry (+4 more)
 
 ### Community 201 - "Rig"
 Cohesion: 0.12
@@ -1433,24 +1422,24 @@ Cohesion: 0.11
 Nodes (66): abs(), acos_(), asin_(), atan_(), atanh_(), atanhSeries(), atanSeries(), atanW() (+58 more)
 
 ### Community 203 - "2. Plan mémoire figé"
-Cohesion: 0.19
-Nodes (3): Chasse aux bugs sur les changements du jour (2026-10-22), 2. Plan mémoire figé, Où en est le cœur
+Cohesion: 0.14
+Nodes (6): Bug hunt 11ᵉ passe : 24 correctifs sur six sous-systèmes, save-state v51 (2026-10-20), Chasse aux bugs sur les changements du jour (2026-10-22), 2. Plan mémoire figé, Bus, bus error & cartouches de diagnostic, tosImageBase(), tosUnsupportedMachine()
 
 ### Community 204 - "Track"
-Cohesion: 0.06
-Nodes (30): Images IPF (SPS/CAPS) dans les lecteurs A et B, sans libcapsimage (2026-10-22), Disquette (FDC WD1772 + DMA), crc16(), stxTrackWithSectorWrites(), Track, added, blockSize, flags (+22 more)
-
-### Community 205 - "Convergence Moira ↔ WinUAE — chantier « full timing-engine » (beam-sync)"
 Cohesion: 0.07
-Nodes (24): A32 — le Shifter perd 1 586 lignes, le GLUE vidéo retrouve son nom (2026-08-28), FrameGeometry, ah, h, w, x, y, Mode (+16 more)
+Nodes (26): Track, added, blockSize, flags, fuzzySize, mfmSize, pFuzzy, pSectorsImage (+18 more)
+
+### Community 205 - "VideoCounter.cpp"
+Cohesion: 0.11
+Nodes (13): A32 — le Shifter perd 1 586 lignes, le GLUE vidéo retrouve son nom (2026-08-28), beamClock_, envFlag(), lineLenAttrEnv(), SpreadTable, v, Shifter::beamLineActive(), Shifter::beamPos() (+5 more)
 
 ### Community 206 - "Rig"
 Cohesion: 0.21
 Nodes (6): main(), Rig, output, scc, sched, testSccSerial()
 
-### Community 207 - "argparse"
-Cohesion: 0.04
-Nodes (63): main(), phases(), times(), changes(), main(), contact_sheet(), main(), inputs() (+55 more)
+### Community 207 - "hashlib"
+Cohesion: 0.05
+Nodes (39): main(), phases(), times(), build(), byte(), w(), build(), build_clock() (+31 more)
 
 ### Community 208 - "IpfImage.cpp"
 Cohesion: 0.33
@@ -1474,11 +1463,11 @@ Nodes (4): Acsi::~Acsi(), partitionCountOne(), main(), testAcsiPartitions()
 
 ### Community 213 - "CpuArch.c"
 Cohesion: 0.06
-Nodes (46): Débogage headless (l'outil n°1), extractZip(), fail(), gunzip(), inflateRaw(), is7z(), isGzip(), isZip() (+38 more)
+Nodes (47): Débogage headless (l'outil n°1), Techniques vérifiées, extractZip(), fail(), gunzip(), inflateRaw(), is7z(), isGzip() (+39 more)
 
 ### Community 214 - "AppLoop.cpp"
-Cohesion: 0.05
-Nodes (68): Le palier P1 de l'audit est soldé : A16-A24, neuf corrections en une passe (2026-08-27), saveConfig(), appLoop(), applyHostRequests(), applyRequests(), appShutdown(), beginDraw(), captureWindow() (+60 more)
+Cohesion: 0.06
+Nodes (73): Le palier P1 de l'audit est soldé : A16-A24, neuf corrections en une passe (2026-08-27), saveConfig(), appLoop(), applyHostRequests(), applyRequests(), appShutdown(), beginDraw(), captureWindow() (+65 more)
 
 ### Community 215 - "Mfp.cpp"
 Cohesion: 0.11
@@ -1488,21 +1477,21 @@ Nodes (7): 2026-11-16 — Save-states forgés : débordements signés dans la va
 Cohesion: 0.29
 Nodes (5): FirstResetRig, channel, scc, main(), testSccFirstErrorReset()
 
-### Community 217 - "Decoder"
-Cohesion: 0.26
-Nodes (7): be32(), decode(), Decoder, err, info, tinfos, data
+### Community 217 - "decode"
+Cohesion: 0.54
+Nodes (3): be32(), decode(), data
 
 ### Community 218 - "string"
 Cohesion: 0.24
 Nodes (11): Audit Hatari, passes 1 à 4 : l'inventaire et ses premiers correctifs (2026-06-15), Sur macOS, un fichier accentué du lecteur GEMDOS était introuvable (2026-09-02), Disque dur GEMDOS (émulation HD façon Hatari), clip_to_83(), determineMaxPartitions(), filenameInvalidChar(), fsfirst_match(), host2atari() (+3 more)
 
-### Community 219 - "Precomp.h"
-Cohesion: 0.05
-Nodes (22): main(), testMmioFidelity(), BlitRig, blit, bus, sched, FdcRig, bus (+14 more)
+### Community 219 - "Guards"
+Cohesion: 0.22
+Nodes (4): Guards, capacity, count, hit
 
 ### Community 220 - "MidiInHost"
 Cohesion: 0.07
-Nodes (17): MidiInHost, client_, dec_, devices_, devMtx_, jitter_, kMaxJitter, lastStatus_ (+9 more)
+Nodes (24): displayName(), InBuffer, data, hdr, MidiInHost, client_, MidiInHost::coreMidiRead(), dec_ (+16 more)
 
 ### Community 221 - "HayesModem.cpp"
 Cohesion: 0.38
@@ -1512,9 +1501,9 @@ Nodes (3): Effets CRT : version GLSL choisie à l'exécution (débloque le Raspb
 Cohesion: 0.17
 Nodes (10): Cn, raw, FRegList, raw, RegList, raw, RegRegList, raw (+2 more)
 
-### Community 223 - "MidiInHost.cpp"
-Cohesion: 0.18
-Nodes (7): displayName(), InBuffer, data, hdr, MidiInHost::coreMidiRead(), MIDIPacketList, uniqueId()
+### Community 223 - "Scenario"
+Cohesion: 0.17
+Nodes (15): checksum(), dumpTrack(), position(), put16(), put32(), rotatedDump(), Scenario, ambiguousDam (+7 more)
 
 ### Community 224 - "Key"
 Cohesion: 0.25
@@ -1533,16 +1522,16 @@ Cohesion: 0.13
 Nodes (11): dialCmd(), expect(), Listener, fd, port, main(), peerSeesEof(), Rig (+3 more)
 
 ### Community 228 - "main_android.cpp"
-Cohesion: 0.10
-Nodes (30): Pilotage externe : menu, spécification du protocole, recherche d'adresses (2026-09-05), 0. Démarrer en cinq commandes, audioCallback(), cancelPendingInput(), compile(), copyAsset(), currentDongles(), drawScreen() (+22 more)
+Cohesion: 0.11
+Nodes (28): Chasse round 3 : trois axes rendent ZÉRO, et la lentille de régression démolit deux de mes correctifs (2026-09-01), audioCallback(), cancelPendingInput(), copyAsset(), currentDongles(), drawScreen(), fileSize(), fnv1a() (+20 more)
 
 ### Community 229 - "7zArcIn.c"
 Cohesion: 0.07
 Nodes (23): Atc040Entry, history, logical, physical, status, super, valid, MMU040 (+15 more)
 
 ### Community 230 - "Rig"
-Cohesion: 0.05
-Nodes (37): Android arm64 — ◐ émulateur arm64 API 36, jamais posé sur un appareil, Ce qui se vérifie STATIQUEMENT, sans la cible (2026-09-01), La mesure de débit : `--budget`, Le protocole d'une passe, ⚠ Le trou structurel que cette passe a mis au jour, Linux x86_64 — ⭘ non consigné, macOS arm64 — ◐ passe faite le 2026-09-01, le VISUEL reste, Pas 1 et 2 — passés sur les HUIT paquets (2026-09-01) (+29 more)
+Cohesion: 0.13
+Nodes (10): main(), Rig, bus, cpu, gemdos, intercepted, relaunched, relaunchServedByHost (+2 more)
 
 ### Community 231 - "IconButton"
 Cohesion: 0.42
@@ -1574,7 +1563,7 @@ Nodes (15): Sector, bitPosition, dataOffset, fdcStatus, idCrc, idHead, idSector,
 
 ### Community 239 - "TrackInfo"
 Cohesion: 0.03
-Nodes (58): FrameMixBuffers, st, ym, mixEmulatedFrame(), PointerAction, left, x, y (+50 more)
+Nodes (54): PointerAction, left, x, y, Session, announcedFc, aspect, av (+46 more)
 
 ### Community 240 - "install_kiosk.sh"
 Cohesion: 0.48
@@ -1594,19 +1583,19 @@ Nodes (8): DmaEvent, capW, cycle, end, kind, mode, repeat, start
 
 ### Community 245 - "ConfigPath.cpp"
 Cohesion: 0.06
-Nodes (10): Z7_CRC_NUM_TABLES_USE(), ISzAlloc, Z7_C_IFACE_DECL(), Bcj2Dec_Init(), BranchConv_ARM64(), BranchConv_SPARC(), Z7_BRANCH_FUNC_MAIN(), Delta_Decode() (+2 more)
+Nodes (10): Z7_CRC_NUM_TABLES_USE(), Bcj2Dec_Init(), Z7_BRANCH_CONV_ST(), BranchConv_ARM64(), BranchConv_SPARC(), Z7_BRANCH_CONV_ENC(), Z7_BRANCH_FUNC_MAIN(), Ppmd7z_RangeDec_Init() (+2 more)
 
 ### Community 246 - "Rig"
 Cohesion: 0.18
 Nodes (6): Rig, ikbd, live, mfp, sched, testIkbdAutoSend()
 
 ### Community 247 - "run_libretro.py"
-Cohesion: 0.08
-Nodes (20): case_boot_ntsc(), case_boot_pal(), case_drive_sound(), case_floppy_private_copy(), case_framing(), case_gzip(), case_mono(), case_options_french() (+12 more)
+Cohesion: 0.03
+Nodes (49): 2026-11-25 — Libretro : disques durs, toucher, un invité rejoint l'hôte, bconout_midi(), case_autorun(), case_blitter_megast_fallback(), case_blitter_ste(), case_boot_ntsc(), case_boot_pal(), case_drive_sound() (+41 more)
 
 ### Community 248 - "La carte, point par point"
 Cohesion: 0.05
-Nodes (79): 2026-11-26 — Libretro : le disque dur dans l'état, 2026-11-27 — Trois passes adversariales de chasse aux défauts : cinq corrigés, Ce qui ne change pas, La carte, point par point, Libretro — carte de la frontière, Positionnement : un cœur ST qui n'est pas Hatari, Principe, retro_system_av_info (+71 more)
+Nodes (70): 2026-11-26 — Libretro : le disque dur dans l'état, 2026-11-27 — Trois passes adversariales de chasse aux défauts : cinq corrigés, La carte, point par point, Où en est le cœur, Principe, retro_system_av_info, geometry, timing (+62 more)
 
 ### Community 249 - "StKeysSymbolic.cpp"
 Cohesion: 0.05
@@ -1621,8 +1610,12 @@ Cohesion: 0.47
 Nodes (4): run.sh script, say(), setup.sh script, warn()
 
 ### Community 252 - "libretro_frontier_logic.cpp"
-Cohesion: 0.33
+Cohesion: 0.29
 Nodes (6): makeImage(), makeMachine(), readFile(), testMachineReconstruct(), testMediaState(), writeFile()
+
+### Community 253 - "TosInfo"
+Cohesion: 0.18
+Nodes (12): Terminal sobre ; la page ROM choisit le modèle (2026-11-13), fadeStereo(), pickMachineForTos(), pickTosForMachine(), TosInfo, country, emuTos, ntsc (+4 more)
 
 ### Community 254 - "Logiciels étalons — cas limites d'émulation"
 Cohesion: 0.07
@@ -1640,9 +1633,9 @@ Nodes (4): NeostReport, foreignSysexSeen_, last_, repeats_
 Cohesion: 0.40
 Nodes (5): HOME, run_hatari(), SDL_AUDIODRIVER, SDL_VIDEODRIVER, hatari_oracle.sh script
 
-### Community 258 - "Frame"
-Cohesion: 0.12
-Nodes (16): Frame, cyclesPerLine, displayLines, geo, hi, lineStartCycle, mode, startRes (+8 more)
+### Community 258 - "ConfigPath.cpp"
+Cohesion: 0.27
+Nodes (8): Probe, dirWritable, env, exists, profilesDirFor(), resolve(), systemProbe(), userConfigDir()
 
 ### Community 261 - "neost-bt.sh"
 Cohesion: 0.80
@@ -1653,11 +1646,11 @@ Cohesion: 0.12
 Nodes (8): Rig, bus, fdc, indexes, live, mfp, psg, sched
 
 ### Community 263 - "MoiraDasmMMU_cpp.h"
-Cohesion: 0.12
+Cohesion: 0.11
 Nodes (29): CPU_IsSupported_AES(), CPU_IsSupported_AVX(), CPU_IsSupported_AVX2(), CPU_IsSupported_AVX512F_AVX512VL(), CPU_IsSupported_CMOV(), CPU_IsSupported_CRC32(), CPU_IsSupported_CRYPTO(), CPU_IsSupported_NEON() (+21 more)
 
 ### Community 264 - "fdc_written_marks_logic.cpp"
-Cohesion: 0.06
+Cohesion: 0.07
 Nodes (18): FloatFlags, ALL, DIV_BY_ZERO, INEXACT, INVALID, OVFL, SIG_NAN, UNFL (+10 more)
 
 ### Community 265 - "testGemdosDirectoryEntries"
@@ -1673,8 +1666,8 @@ Cohesion: 0.40
 Nodes (5): pi400, needs, runs-on, steps, timeout-minutes
 
 ### Community 268 - "Échelle des références"
-Cohesion: 0.18
-Nodes (10): Ce que le modèle confirme déjà, L'échelon `rtl`, Les documents primaires, Les règles d'arbitrage, Les verdicts hors étalons pixel, Les échelons, Quand le RTL se trompe (2026-11-04), Quand une fiche lue à la lettre bloque le logiciel réel (2026-11-04) (+2 more)
+Cohesion: 0.22
+Nodes (9): L'échelon `rtl`, Les documents primaires, Les règles d'arbitrage, Les verdicts hors étalons pixel, Les échelons, Quand le RTL se trompe (2026-11-04), Quand une fiche lue à la lettre bloque le logiciel réel (2026-11-04), Sans machine réelle (+1 more)
 
 ### Community 269 - ".fifoPush"
 Cohesion: 0.25
@@ -1729,28 +1722,24 @@ Cohesion: 0.21
 Nodes (13): build_fx68k(), compare(), cut(), first_frame_write(), fmt(), ipl_sweep(), main(), need_rebuild() (+5 more)
 
 ### Community 282 - "Breakpoints"
-Cohesion: 0.15
-Nodes (12): CompDiskCatalog, byNumber_, byStem_, entries_, fileKeys_, teamKeys_, CompDiskInfo, games (+4 more)
+Cohesion: 0.14
+Nodes (13): CompDiskCatalog, byNumber_, byStem_, entries_, fileKeys_, teamKeys_, CompDiskInfo, games (+5 more)
 
-### Community 283 - "libretro_frontend.py"
-Cohesion: 0.12
-Nodes (8): AvInfo, DiskControlExt, Game, Geometry, MidiInterface, SystemInfo, Timing, Variable
+### Community 283 - "InterruptRig"
+Cohesion: 0.32
+Nodes (4): InterruptRig, scc, main(), testSccMieIus()
 
-### Community 284 - "nat_backend_test.cpp"
-Cohesion: 0.11
-Nodes (11): MMU030, atc, crp, mmusr, peeking, srp, tc, tt0 (+3 more)
+### Community 284 - "MMU030"
+Cohesion: 0.05
+Nodes (40): AtcEntry, busError, ci, fc, history, logical, modified, physical (+32 more)
 
 ### Community 285 - "retro_disk_control_ext_callback"
 Cohesion: 0.16
-Nodes (21): CountDefinedBits(), ReadBitUi32s(), ReadBitVector(), ReadNumber(), ReadPackInfo(), ReadUi32s(), RememberBitVector(), SkipBitUi32s() (+13 more)
+Nodes (23): CountDefinedBits(), ReadBitUi32s(), ReadBitVector(), ReadNumber(), ReadPackInfo(), ReadUi32s(), RememberBitVector(), SkipBitUi32s() (+15 more)
 
 ### Community 286 - "MidiInDev"
 Cohesion: 0.12
-Nodes (16): EnvOverrides, acsi, gemdos, savedAcsi, savedCart, savedGemdos, MidiInDev, channel (+8 more)
-
-### Community 287 - "Ce qui est implémenté — par sous-système"
-Cohesion: 0.09
-Nodes (15): MmuReg, CRP, MMUSR, SRP, TC, TT0, TT1, MMU (+7 more)
+Nodes (15): EnvOverrides, acsi, gemdos, savedAcsi, savedCart, savedGemdos, MidiInDev, channel (+7 more)
 
 ### Community 288 - "run_glue_sweep.py"
 Cohesion: 0.20
@@ -1764,13 +1753,13 @@ Nodes (4): DtaResult, Error, Ok, Skip
 Cohesion: 0.33
 Nodes (6): JoystickMode, JOY_AUTO, JOY_FIRE, JOY_KEYCODE, JOY_MONITOR, JOY_OFF
 
-### Community 291 - "EmuFiber.cpp"
-Cohesion: 0.16
-Nodes (4): emuFiberEnter(), fiberEntry(), fiberEntryWin(), fiberThreadEntry()
+### Community 291 - "Guard"
+Cohesion: 0.23
+Nodes (4): Guard, addr, enabled, ignore
 
-### Community 292 - "fat12_volume"
-Cohesion: 0.14
-Nodes (8): 2026-11-25 — Libretro : disques durs, toucher, un invité rejoint l'hôte, case_hard_disk(), case_hard_disk_state(), fat12_volume(), alloc(), fat(), hd_writer_prg(), write_hard_disk()
+### Community 292 - "check_hog_park.py"
+Cohesion: 0.23
+Nodes (4): hashes(), hog_prg(), main(), run()
 
 ### Community 293 - "rtc_write_only_logic.cpp"
 Cohesion: 0.36
@@ -1785,36 +1774,36 @@ Cohesion: 0.26
 Nodes (6): afterEpoch(), Checks, count, failures, main(), testRtcLongElapsed()
 
 ### Community 298 - "Rewind"
-Cohesion: 0.05
-Nodes (33): Chasse round 5 : le save-state acceptait une AUTRE ROM, et le harnais annonçait des écritures tronquées comme réussies (2026-09-02), Headless : `--joy-at`, `--joy-script` et `--mouse-at` deviennent répétables (`OUTIL-1`) (2026-08-25), Rewind, budget_, interval_, kDefaultBudget, kDefaultInterval, ring_ (+25 more)
+Cohesion: 0.09
+Nodes (11): Rewind, budget_, interval_, kDefaultBudget, kDefaultInterval, ring_, since_, Snap (+3 more)
 
 ### Community 299 - ".setIPL"
-Cohesion: 0.11
-Nodes (14): AudioPacer, kMaxAdjust, kServoDivisor, volSmooth_, cpuHz(), frameNanos(), FatImage, img (+6 more)
+Cohesion: 0.23
+Nodes (7): FatImage, img, kData, kRoot, next, slot, testFloppyCatalog()
 
-### Community 300 - "impl_"
-Cohesion: 0.14
-Nodes (9): impl_, cv, fiber, fiberTurn, host, m, map, mapBytes (+1 more)
+### Community 300 - "Validation sur matériel réel — registre par cible"
+Cohesion: 0.18
+Nodes (11): Android arm64 — ◐ émulateur arm64 API 36, jamais posé sur un appareil, Ce qui se vérifie STATIQUEMENT, sans la cible (2026-09-01), La mesure de débit : `--budget`, Le protocole d'une passe, ⚠ Le trou structurel que cette passe a mis au jour, Linux x86_64 — ⭘ non consigné, Pas 1 et 2 — passés sur les HUIT paquets (2026-09-01), Pourquoi ce fichier (+3 more)
 
-### Community 301 - "cstdlib"
-Cohesion: 0.05
-Nodes (19): SpreadTable, v, Shifter::glueBenchReplay(), Registrar, site, repoPath(), Site, file (+11 more)
+### Community 301 - "Unknowns.hpp"
+Cohesion: 0.22
+Nodes (9): Registrar, site, repoPath(), Site, file, hits, id, line (+1 more)
 
 ### Community 303 - "Reader"
-Cohesion: 0.24
+Cohesion: 0.22
 Nodes (5): lowerAscii(), Reader, i_, splitDiskName(), stemOf()
 
-### Community 304 - "KeyZone"
-Cohesion: 0.21
-Nodes (5): KeyZone, channel, hi, lo, transpose
+### Community 304 - "AudioMix.hpp"
+Cohesion: 0.22
+Nodes (6): DmaSound, FrameMixBuffers, st, ym, mixEmulatedFrame(), YM2149
 
 ### Community 305 - "CellTrack"
 Cohesion: 0.20
 Nodes (21): Ppmd7_Alloc(), Ppmd7_AllocUnits(), Ppmd7_AllocUnitsRare(), Ppmd7_Construct(), Ppmd7_CreateSuccessors(), Ppmd7_Free(), Ppmd7_GlueFreeBlocks(), Ppmd7_Init() (+13 more)
 
-### Community 306 - "Info"
-Cohesion: 0.13
-Nodes (19): MmuContext, addrBits, ci, depth, descrAddr, faultAddr, fc, flags (+11 more)
+### Community 306 - "GLuint"
+Cohesion: 0.28
+Nodes (5): bindFramebufferCompat(), checkFramebufferStatusCompat(), deleteFramebuffersCompat(), framebufferTexture2DCompat(), genFramebuffersCompat()
 
 ### Community 308 - "make_appimage.sh"
 Cohesion: 0.80
@@ -1829,7 +1818,7 @@ Cohesion: 0.11
 Nodes (27): Moira::createJumpTable(), Moira::createJumpTable1(), Moira::createJumpTable10(), Moira::createJumpTable11(), Moira::createJumpTable12(), Moira::createJumpTable2(), Moira::createJumpTable3(), Moira::createJumpTable4() (+19 more)
 
 ### Community 315 - "UsbDevice.cpp"
-Cohesion: 0.13
+Cohesion: 0.17
 Nodes (5): be32(), le16(), le32(), put32(), setup_
 
 ### Community 316 - "ForcedHandle"
@@ -1837,24 +1826,24 @@ Cohesion: 0.67
 Nodes (3): ForcedHandle, basepage, handle
 
 ### Community 317 - "Précision cycle — modèle, acquis, restant (oracle : Hatari)"
-Cohesion: 0.12
-Nodes (16): 1. Pourquoi — le timing au cycle change le comportement, 2.1 Une horloge globale, des compteurs par instruction (`cycles.c`), 2.2 Ordonnanceur d'événements datés (`cycInt.c`), 2.3 Unité interne CPU↔MFP (anti-arrondi), 2.4 Vidéo au cycle (`video.c`), 2.5 MFP (`mfp.c`) et FDC (`fdc.c`), 2. Le modèle d'Hatari (l'architecture cible), 3. Ce qui est ACQUIS (phases 0-6 + extensions) (+8 more)
+Cohesion: 0.11
+Nodes (17): 1. Pourquoi — le timing au cycle change le comportement, 2.1 Une horloge globale, des compteurs par instruction (`cycles.c`), 2.2 Ordonnanceur d'événements datés (`cycInt.c`), 2.3 Unité interne CPU↔MFP (anti-arrondi), 2.4 Vidéo au cycle (`video.c`), 2.5 MFP (`mfp.c`) et FDC (`fdc.c`), 2. Le modèle d'Hatari (l'architecture cible), 3. Ce qui est ACQUIS (phases 0-6 + extensions) (+9 more)
 
 ### Community 318 - "Rig"
 Cohesion: 0.10
 Nodes (12): Checks, count, failures, index(), Rig, got, ikbd, live (+4 more)
 
 ### Community 319 - ".mmuTranslate"
-Cohesion: 0.18
-Nodes (13): Audit doc↔code, compteur vidéo 22 bits, `$FF8261`/res 3, repos GPIP matériel, RAM 2,5 Mo (2026-10-20), Écarts voulus — ne pas réaligner, 1. Bus & mémoire (ioMem.c, cpu/memory.c, stMemory.c), Types de machine & mémoire, Plan mémoire et MMU, mmuFastLimit_, watchHook, mmuBank0Size() (+5 more)
+Cohesion: 0.11
+Nodes (22): Audit doc↔code, compteur vidéo 22 bits, `$FF8261`/res 3, repos GPIP matériel, RAM 2,5 Mo (2026-10-20), Écarts voulus — ne pas réaligner, Types de machine & mémoire, Plan mémoire et MMU, 1. Refaire le profil, 2. Le profil de départ (boot TOS 1.62, 300 trames), 3.2 Bus — cache du décodage MMU et chemin rapide en ligne, 3.3 `busFaultN` — sortie anticipée pour la RAM ordinaire (+14 more)
 
 ### Community 321 - "StateArchive"
-Cohesion: 0.17
-Nodes (7): arr(), operator()(), podVec(), StateArchive, in_, inEnd_, out_
+Cohesion: 0.18
+Nodes (6): arr(), operator()(), StateArchive, in_, inEnd_, out_
 
 ### Community 325 - "drawConfigWindow"
-Cohesion: 0.15
-Nodes (17): machineName(), drawOverlays(), drawStatusBar(), drawConfigWindow(), drawFloppyWindow(), machineForcedByTos(), machineLabel(), pickMachineForRom() (+9 more)
+Cohesion: 0.08
+Nodes (22): tosHeaderIsEmuTos(), tosHeaderVersion(), readTosInfo(), archiveCacheRoot(), drawConfigWindow(), drawFloppyWindow(), machineLabel(), pickMachineForRom() (+14 more)
 
 ### Community 326 - ".isValidExt"
 Cohesion: 0.08
@@ -1863,6 +1852,10 @@ Nodes (19): retro_disk_control_callback, add_image_index, get_eject_state, get_i
 ### Community 327 - "i32"
 Cohesion: 0.32
 Nodes (5): Ims, raw, sz, Int, raw
+
+### Community 328 - "GlueView"
+Cohesion: 0.05
+Nodes (17): Frame, cyclesPerLine, displayLines, geo, hi, lineStartCycle, mode, startRes (+9 more)
 
 ### Community 329 - "drawStKiosk"
 Cohesion: 0.22
@@ -1877,12 +1870,12 @@ Cohesion: 0.07
 Nodes (29): retro_vr_hand_joint, RETRO_VR_HAND_JOINT_COUNT, RETRO_VR_HAND_JOINT_DUMMY, RETRO_VR_HAND_JOINT_INDEX_DISTAL, RETRO_VR_HAND_JOINT_INDEX_INTERMEDIATE, RETRO_VR_HAND_JOINT_INDEX_METACARPAL, RETRO_VR_HAND_JOINT_INDEX_PROXIMAL, RETRO_VR_HAND_JOINT_INDEX_TIP (+21 more)
 
 ### Community 332 - "IpfImage.cpp"
-Cohesion: 0.24
-Nodes (11): crc16Ccitt(), crc32(), isIpf(), put16le(), put32le(), set32le(), toStx(), TrackRev (+3 more)
+Cohesion: 0.46
+Nodes (6): crc32(), isIpf(), put16le(), put32le(), set32le(), toStx()
 
 ### Community 333 - "A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30)"
-Cohesion: 0.08
-Nodes (13): A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30), Bug hunt sur les travaux du 27-30 août : quatre bugs, quatre correctifs, quatre tests (2026-08-30), Et une affirmation fausse trouvée en corrigeant ces renvois, Slirp : le « dernier pas » est clos — 5/5, le coupable était Little Snitch (2026-08-27), Dest, channels, name, uid (+5 more)
+Cohesion: 0.14
+Nodes (10): Bug hunt sur les travaux du 27-30 août : quatre bugs, quatre correctifs, quatre tests (2026-08-30), Dest, channels, name, uid, OpenDest, channels, ep (+2 more)
 
 ### Community 335 - "NeoST"
 Cohesion: 0.13
@@ -1902,7 +1895,7 @@ Nodes (6): Bot, Cbw, Csw, DataIn, DataOut, Invalid
 
 ### Community 352 - "Cartographie Hatari ↔ NeoST — audit de correspondance"
 Cohesion: 0.10
-Nodes (19): 13. GEMDOS HD — `GemdosHd.cpp` ↔ `gemdos.c`, `inffile.c`, Faux positifs, Refermés, Écarts ouverts, Écarts voulus — ne pas réaligner, 10. GEMDOS HD / cartouche / RTC / SCU / joysticks (gemdos.c, cart.c, rtc.c, scu_vme.c, joy.c), 11. FPU 68881 — opérations et conversions (actualisé le 2026-10-18), 4. FDC / DMA disque / ACSI (fdc.c, floppy.c, floppies/*, hdc.c) (+11 more)
+Nodes (19): 13. GEMDOS HD — `GemdosHd.cpp` ↔ `gemdos.c`, `inffile.c`, Faux positifs, Refermés, Écarts ouverts, Écarts voulus — ne pas réaligner, 10. GEMDOS HD / cartouche / RTC / SCU / joysticks (gemdos.c, cart.c, rtc.c, scu_vme.c, joy.c), 11. FPU 68881 — opérations et conversions (actualisé le 2026-10-18), 1. Bus & mémoire (ioMem.c, cpu/memory.c, stMemory.c) (+11 more)
 
 ### Community 353 - "MegaSteBusComparison"
 Cohesion: 0.19
@@ -1920,9 +1913,9 @@ Nodes (14): Ce que c'est (et ce que ce n'est pas), Construire, Données embarqu�
 Cohesion: 0.33
 Nodes (5): Kind, Keyboard, Mouse, None, Storage
 
-### Community 357 - "KioskKey"
-Cohesion: 0.18
-Nodes (3): Ppmd7z_RangeDec_Init(), Ppmd7z_RD_Decode(), typedef()
+### Community 357 - ".resolveQuartz"
+Cohesion: 0.25
+Nodes (7): parseQuartz(), Quartz, Pal, Q32042, Q32216, setQuartzGlobal(), quartzFromConfig()
 
 ### Community 358 - "Syntax"
 Cohesion: 0.33
@@ -1933,8 +1926,12 @@ Cohesion: 0.14
 Nodes (18): 2026-11-25 — Libretro : campagne de compatibilité, autorun et machine automatique revus, FloppyCatalog, autoFolder, bootable, folders, root, FloppyEntry, attr (+10 more)
 
 ### Community 360 - "make_disk"
-Cohesion: 0.39
+Cohesion: 0.57
 Nodes (6): make_disk(), delay(), label(), lines(), relative(), w()
+
+### Community 361 - "Out"
+Cohesion: 0.22
+Nodes (6): Decoder, err, info, tinfos, Out, pos
 
 ### Community 362 - "Borne NeoST sur Raspberry Pi — démarrage direct sur l'émulateur"
 Cohesion: 0.12
@@ -1945,12 +1942,12 @@ Cohesion: 0.33
 Nodes (6): with, if-no-files-found, key, name, path, submodules
 
 ### Community 364 - "Piloter NeoST depuis l'extérieur (exploration d'états, fuzzing, Go-Explore)"
-Cohesion: 0.15
-Nodes (13): 10. Outils — `memdiff`, `explore`, 11. Rapporter une divergence, 2. Ce que ça vaut, mesuré, 3. Injecter les entrées, 4. Observer — `--probe`, `--probe-every`, `--hash-ram`, 6. La boucle d'exploration, en ligne de commande, 7. Recette vérifiée — Rick Dangerous jusqu'en jeu, 8. Pièges connus (+5 more)
+Cohesion: 0.11
+Nodes (17): Pilotage externe : menu, spécification du protocole, recherche d'adresses (2026-09-05), 0. Démarrer en cinq commandes, 10. Outils — `memdiff`, `explore`, 11. Rapporter une divergence, 1. Le contrat de déterminisme, 2. Ce que ça vaut, mesuré, 3. Injecter les entrées, 4. Observer — `--probe`, `--probe-every`, `--hash-ram` (+9 more)
 
 ### Community 366 - "run_nat_sting.py"
 Cohesion: 0.11
-Nodes (23): Appareils MIDI de l'hôte — le câble DIN du ST vers du vrai matériel, Code temporel MTC en sortie (`midi_mtc=`), Interfaces multi-ports et SMPTE (Unitor, Midex) : ce qui manque pour émuler le boîtier, Port virtuel sous Windows : Windows MIDI Services, cardLongname(), endpoints(), enumerate(), Port (+15 more)
+Nodes (27): Appareils MIDI de l'hôte — le câble DIN du ST vers du vrai matériel, Code temporel MTC en sortie (`midi_mtc=`), Interfaces multi-ports et SMPTE (Unitor, Midex) : ce qui manque pour émuler le boîtier, Port virtuel sous Windows : Windows MIDI Services, cardLongname(), endpoints(), enumerate(), Port (+19 more)
 
 ### Community 367 - "Évaluation d'architecture — regard extérieur après une journée dans le code (2026-08-28)"
 Cohesion: 0.29
@@ -1977,12 +1974,8 @@ Cohesion: 0.14
 Nodes (9): index(), Rig, got, k, live, m, s, testIkbdSciFraming() (+1 more)
 
 ### Community 377 - "Bug hunt multi-agents (2026-07-29)"
-Cohesion: 0.29
-Nodes (4): Bug hunt multi-agents (2026-07-29), FDC WD1772 et DMA, dmaAddressMask(), dmaMaskAddressHigh()
-
-### Community 378 - "DmaSound.cpp"
-Cohesion: 0.12
-Nodes (3): Son de la démo WASM : les samples redeviennent audibles (2026-08-11), fir121(), shelf1()
+Cohesion: 0.33
+Nodes (3): FDC WD1772 et DMA, dmaAddressMask(), dmaMaskAddressHigh()
 
 ### Community 379 - "setup_silicon_refs.sh"
 Cohesion: 0.60
@@ -1997,12 +1990,12 @@ Cohesion: 0.50
 Nodes (3): Graphify, NeoST, Objectif matériel
 
 ### Community 383 - "Observe.hpp"
-Cohesion: 0.07
-Nodes (40): addProbe(), emitProbeLine(), parseProbeSpec(), probeFields(), ProbeSet, hashRam, hashRamAddr, hashRamLen (+32 more)
+Cohesion: 0.12
+Nodes (18): applyJoy(), arity(), parseLong(), reply(), run(), Slot, data, frame (+10 more)
 
-### Community 386 - "Performance du cœur NeoST — profil, optimisations, recette de build"
-Cohesion: 0.20
-Nodes (10): 1. Refaire le profil, 2. Le profil de départ (boot TOS 1.62, 300 trames), 3.2 Bus — cache du décodage MMU et chemin rapide en ligne, 3.3 `busFaultN` — sortie anticipée pour la RAM ordinaire, 3. Les optimisations, et ce qu'elles paient, 4. Résultat des optimisations de code, 5. La recette de build : PGO + LTO, 6. Ce qui reste sur la table (+2 more)
+### Community 386 - ".customCodeCrcForTest"
+Cohesion: 0.29
+Nodes (3): 7. IKBD / ACIA / MIDI (acia.c, ikbd.c, midi.c), crc32AddByte(), crc32Reset()
 
 ### Community 388 - "ImGuiContext"
 Cohesion: 0.40
@@ -2017,20 +2010,20 @@ Cohesion: 0.40
 Nodes (5): on, pull_request, push, workflow_dispatch, branches
 
 ### Community 391 - "Cache"
-Cohesion: 0.08
-Nodes (18): Cache, active, capacity, data, emulated, frozen, layout, tags (+10 more)
+Cohesion: 0.07
+Nodes (21): 5. Le mode serveur — `--server`, Paralléliser, Spécification du protocole (pour écrire un client), Cache, active, capacity, data, emulated (+13 more)
 
-### Community 392 - "Parser"
-Cohesion: 0.20
-Nodes (8): Parser, data_, got_, inSysex_, kMaxSysex, needed_, status_, sysex_
-
-### Community 393 - "write_floppy"
-Cohesion: 0.22
-Nodes (5): case_autorun(), case_fast_floppy(), frames_to_title(), case_tos_fallback(), write_floppy()
-
-### Community 394 - "testBlitterRmw"
+### Community 392 - "PsgBusRig"
 Cohesion: 0.25
-Nodes (5): Checks, count, failures, main(), testBlitterRmw()
+Nodes (5): PsgBusRig, bus, portB, printed, psg
+
+### Community 393 - "NavRepeat"
+Cohesion: 0.29
+Nodes (5): NavRepeat, kFirstDelayMs, kRepeatMs, next_, previous_
+
+### Community 394 - "FPUModel"
+Cohesion: 0.33
+Nodes (4): FPUModel, M68040, M68881, M68882
 
 ### Community 395 - "Mode borne (kiosk)"
 Cohesion: 0.18
@@ -2038,7 +2031,7 @@ Nodes (10): Chasse aux bugs en quatre vagues ; format d'état v60 (2026-11-11), 
 
 ### Community 396 - "VideoGlue"
 Cohesion: 0.03
-Nodes (63): 5. Vidéo, par classe, 6. Divers, Chiffrage, Hypothèses ST dans le code — ce que le TT et le Falcon remettent en cause, , GlueLine, borderMask, displayEndCycle (+55 more)
+Nodes (62): 5. Vidéo, par classe, 6. Divers, Chiffrage, Hypothèses ST dans le code — ce que le TT et le Falcon remettent en cause, Ce que le modèle confirme déjà, , GlueLine, borderMask (+54 more)
 
 ### Community 397 - "Divergences NeoST ↔ Hatari — inventaire par sous-système"
 Cohesion: 0.09
@@ -2064,13 +2057,9 @@ Nodes (4): nat, name, runs-on, timeout-minutes
 Cohesion: 0.50
 Nodes (4): pixel, name, runs-on, timeout-minutes
 
-### Community 405 - "Ext"
-Cohesion: 0.20
-Nodes (5): Le FPU arrondissait deux fois — et son banc de test ne voyait pas les tests qu'on lui ajoutait (2026-09-02), Ext, man, pad_, se
-
 ### Community 406 - "Acsi.cpp"
-Cohesion: 0.10
-Nodes (22): 2026-11-27 — Fuzz du chargement des états (A44) ; le web ne recrée plus hors de ses dossiers, A30 — les parseurs d'images disquette passent au fuzzer, et la CI ne bâtissait pas ce qu'elle lance (2026-08-28), Écarts voulus — ne pas réaligner, archOverrides(), archSector(), archString(), decodeContainer(), decodeDim() (+14 more)
+Cohesion: 0.09
+Nodes (9): Disquette (FDC WD1772 + DMA), archOverrides(), archSector(), archString(), encodeMsa(), mediaResolver_, recreateFilter_, msaFindRun() (+1 more)
 
 ### Community 407 - ".serialize"
 Cohesion: 0.50
@@ -2113,8 +2102,8 @@ Cohesion: 0.15
 Nodes (11): L'image : zoom adaptatif et shaders, Le reste du métier, à hauteur de POM2, Shaders : ce qu'un shader slang peut savoir, Zoom adaptatif : ce que libretro permet, FramingLatch, latchBot, latchTop, latchWide (+3 more)
 
 ### Community 422 - "runKioskMenu"
-Cohesion: 0.09
-Nodes (29): FPU transcendantes bit-exact, suite Hatari rejouée, nouveaux étalons et sondes (2026-10-20), Paquet Android : premier APK qui tourne (2026-08-11), KioskNav, cancel, down, left, ok, pgDn (+21 more)
+Cohesion: 0.11
+Nodes (28): FPU transcendantes bit-exact, suite Hatari rejouée, nouveaux étalons et sondes (2026-10-20), KioskNav, cancel, down, left, ok, pgDn, pgUp (+20 more)
 
 ### Community 427 - "BitmapExplorerState"
 Cohesion: 0.15
@@ -2124,13 +2113,13 @@ Nodes (12): BitmapExplorerState, addr, argb, bytes, follow, height, palette, pla
 Cohesion: 0.36
 Nodes (10): extOf(), isArchiveName(), isFloppyArchiveName(), lowerOf(), macJunk(), readAll(), unpackDirFor(), unpackedFloppies() (+2 more)
 
-### Community 429 - "UInt32"
-Cohesion: 0.12
-Nodes (7): Le Bus, Bus::Bus(), MmioSlot, hi, lo, name, machineRamBytes()
+### Community 429 - "FrameGeometry"
+Cohesion: 0.33
+Nodes (6): FrameGeometry, ah, h, w, x, y
 
 ### Community 430 - "FramePacer"
-Cohesion: 0.21
-Nodes (8): A28 — le servo audio et la cadence rentrent dans le cœur (2026-08-28), Restes de la chasse : fiches, horloge GEMDOS, STX, Android ; format d'état v65 (2026-11-12), frameMillis(), FramePacer, armed_, kMaxCatchUp, nextMs_, runDue()
+Cohesion: 0.25
+Nodes (5): A28 — le servo audio et la cadence rentrent dans le cœur (2026-08-28), FramePacer, armed_, kMaxCatchUp, nextMs_
 
 ### Community 431 - "Banc différentiel Moira ↔ fx68k — le 68000 nu contre le RTL"
 Cohesion: 0.17
@@ -2140,17 +2129,17 @@ Nodes (12): Autovecteur par VPA et E-clock (2026-11-04), Banc différentiel Moir
 Cohesion: 0.17
 Nodes (12): Ce que la 0.6.1 emporte, déjà dans `main`, Dossier 0.6.3 — préparé le 2026-11-10, Dossier 0.6.4 — 2026-11-11, Dossier 0.6.5 — 2026-11-13, Dossiers des releases passées (archive), ✅ Fait le 2026-09-02 — le dernier blocage est soldé, Le JOUR J 0.6.1 — dossier de la release précédente (préparé le 2026-09-01), Le JOUR J 0.6.2 — dossier préparé le 2026-10-20 (+4 more)
 
-### Community 433 - "Architecture"
-Cohesion: 0.22
-Nodes (7): Architecture, MmuGlue, memConfig_, Framing, Active, Adaptive, Full
+### Community 433 - "Options"
+Cohesion: 0.33
+Nodes (5): Options, identityHead, identityTail, probes, slots
 
-### Community 434 - "machineIsSte"
-Cohesion: 0.06
-Nodes (26): Audit Hatari, 10ᵉ passe : le banc Super Hang-On, la chaîne son STE et sa chasse, en détail (2026-08-06/07), Chasse round 4 : le tactile Android est REPRIS D'UN BLOC, et le web public démarrait le STE sur une ROM ST (2026-09-01), IACK MFP +4 cyc (raster Super Hang-On verrouillé à l'oracle) + chaîne son STE fidèle (2026-08-06/07), Le modèle choisit son TOS (2026-11-13), Reset à chaud : la trame reste sur la grille du bus (2026-11-13), Audit de cartographie Hatari ↔ NeoST — tables du 2026-07-08 (archive), ✗ Candidats réfutés (mémo anti-faux-positifs), CHANGELOG.md (+18 more)
+### Community 434 - "Docs à corriger"
+Cohesion: 0.17
+Nodes (12): Audit de cartographie Hatari ↔ NeoST — tables du 2026-07-08 (archive), ✗ Candidats réfutés (mémo anti-faux-positifs), CHANGELOG.md, Commentaires code (signalés au passage), DEV.md, docs/CYCLE_ACCURACY.md, docs/HATARI_DIVERGENCES.md, Docs à corriger (+4 more)
 
-### Community 435 - "BitmapView.cpp"
-Cohesion: 0.46
-Nodes (6): bitmapBytes(), bitmapPalette(), bitmapPixelIndex(), bitmapPlanes(), bitmapWidthPx(), decodeBitmap()
+### Community 435 - "AudioPacer"
+Cohesion: 0.11
+Nodes (21): Restes de la chasse : fiches, horloge GEMDOS, STX, Android ; format d'état v65 (2026-11-12), bitmapBytes(), BitmapLayout, height, planes, strideBytes, bitmapPalette(), bitmapPixelIndex() (+13 more)
 
 ### Community 436 - "Sector"
 Cohesion: 0.17
@@ -2172,21 +2161,25 @@ Nodes (17): retro_video_decode_gpu_frame, api, array_slice, crop_x, crop_y, done
 Cohesion: 0.12
 Nodes (13): retro_hw_render_callback, bottom_left_origin, cache_context, context_destroy, context_reset, context_type, debug_context, depth (+5 more)
 
+### Community 442 - "src_io_stepads"
+Cohesion: 0.33
+Nodes (6): , DOWN, FIRE, LEFT, RIGHT, UP
+
 ### Community 443 - "dataCallback"
 Cohesion: 0.12
 Nodes (16): retro_hdr_metadata, color_primaries, expand_gamut, max_cll, max_fall, max_nits, min_nits, output_mode (+8 more)
 
-### Community 444 - "src_io_joystickinput"
-Cohesion: 0.08
-Nodes (30): Terminal sobre ; la page ROM choisit le modèle (2026-11-13), Blitter, Bus, bus error & cartouches de diagnostic, Ce qui est implémenté — par sous-système, FPU MC68881, Frontend & outillage, Ports, cartouches et clés, Réseau — extensions NeoST (INACTIVES par défaut, cf. `docs/EXTENSIONS.md`) (+22 more)
+### Community 444 - "Frontend & outillage"
+Cohesion: 0.16
+Nodes (12): Blitter, Ce qui est implémenté — par sous-système, FPU MC68881, Frontend & outillage, Ports, cartouches et clés, Rechargement du compteur pendant VSYNC (2026-11-15), Réseau — extensions NeoST (INACTIVES par défaut, cf. `docs/EXTENSIONS.md`), Réveil STOP avec HBL préarmée (2026-11-15) (+4 more)
 
 ### Community 445 - "WireTrace"
-Cohesion: 0.21
+Cohesion: 0.23
 Nodes (3): WireTrace, asked, on
 
-### Community 446 - "run_glue_sweep.py"
-Cohesion: 0.17
-Nodes (5): Le fetch du son DMA se mesure enfin — et c'est l'oracle qui ne se reproduit pas (2026-09-02), Passe de cohérence doc ↔ code, 2ᵉ tour (2026-08-19), P2 — Son DMA STE (`dmaSnd.c:737`), Audio, fetchWindowOpen
+### Community 446 - "DmaSound.cpp"
+Cohesion: 0.11
+Nodes (7): Le fetch du son DMA se mesure enfin — et c'est l'oracle qui ne se reproduit pas (2026-09-02), Passe de cohérence doc ↔ code, 2ᵉ tour (2026-08-19), P2 — Son DMA STE (`dmaSnd.c:737`), Refermés, Audio, fetchWindowOpen, shelf1()
 
 ### Community 447 - "setMouseCaptured"
 Cohesion: 0.38
@@ -2197,8 +2190,8 @@ Cohesion: 0.29
 Nodes (4): ParentDirTime, dir_, ok_, time_
 
 ### Community 449 - "MachineType"
-Cohesion: 0.06
-Nodes (35): Inventaire des hypothèses ST dans le code (2026-11-10), Build & run, Conventions non négociables, Disquettes & ROM, Les grades de preuve — à écrire dans le code, ⭐ Méthode imposée (ordre strict), Où trouver quoi, Tester = le headless (outil n°1) (+27 more)
+Cohesion: 0.05
+Nodes (46): A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30), Audit Hatari, 10ᵉ passe : le banc Super Hang-On, la chaîne son STE et sa chasse, en détail (2026-08-06/07), Et une affirmation fausse trouvée en corrigeant ces renvois, Inventaire des hypothèses ST dans le code (2026-11-10), Build & run, Conventions non négociables, Disquettes & ROM, Les grades de preuve — à écrire dans le code (+38 more)
 
 ### Community 450 - "retro_memory_descriptor"
 Cohesion: 0.13
@@ -2209,12 +2202,16 @@ Cohesion: 0.21
 Nodes (5): Moira::availabilityMask(), Moira::getAddrMask(), Moira::getCacrMask(), Moira::isAvailable(), Moira::isValidExt()
 
 ### Community 452 - "cpu_stop_irq_logic.cpp"
-Cohesion: 0.25
-Nodes (7): probeRom(), Result, data, halted, runProbe(), testCpuStopIrq(), word
+Cohesion: 0.39
+Nodes (6): probeRom(), Result, data, halted, runProbe(), testCpuStopIrq()
 
 ### Community 453 - "retro_game_info"
 Cohesion: 0.13
 Nodes (8): retro_perf_callback, get_cpu_features, get_perf_counter, get_time_usec, perf_log, perf_register, perf_start, perf_stop
+
+### Community 454 - "src_io_stjoybits"
+Cohesion: 0.33
+Nodes (6): , DOWN, FIRE, LEFT, RIGHT, UP
 
 ### Community 455 - "retro_camera_callback"
 Cohesion: 0.33
@@ -2240,9 +2237,9 @@ Nodes (13): TrackInfo, blockCount, cylinder, data, dataSize, hasData, head, inde
 Cohesion: 0.19
 Nodes (4): P2 — Blitter non-hog (`blitter.c:251,395`), accessObserver, blitWordFault(), regWriteMask()
 
-### Community 461 - "gemdos_drive_mapping_logic.cpp"
-Cohesion: 0.38
-Nodes (5): Checks, count, failures, main(), testGemdosDriveMapping()
+### Community 461 - "ym_c10_noise_logic.cpp"
+Cohesion: 0.53
+Nodes (4): render(), setReg(), swing(), testYmC10Noise()
 
 ### Community 463 - "Fpu.cpp"
 Cohesion: 0.14
@@ -2256,25 +2253,29 @@ Nodes (4): SysExJob, buf, h, hdr
 Cohesion: 0.14
 Nodes (8): retro_netpacket_callback, connected, disconnected, poll, protocol_version, receive, start, stop
 
+### Community 466 - "Chasse aux P3 ; format d'état v67 (2026-11-12)"
+Cohesion: 0.40
+Nodes (4): Chasse aux P3 ; format d'état v67 (2026-11-12), Modèle d'horloge (`Machine::runFrame`), busHzExact(), cpuHzInt()
+
 ### Community 467 - "retro_hdr_metadata"
 Cohesion: 0.26
 Nodes (9): Print_Alloc(), Print_Free(), SzAlloc(), SzAllocTemp(), SzFree(), SzFreeTemp(), retro_memory_status, free (+1 more)
 
 ### Community 468 - "make_vblank_test.py"
-Cohesion: 0.26
-Nodes (7): 2. Carte des divergences (source-grounded, 3 agents — file:line des DEUX côtés), Patch local : `NEOST_IPLFETCH` (reconnaissance IPL différée), bra(), delay(), label(), relative(), w()
+Cohesion: 0.31
+Nodes (6): Mega ST / Mega STE — RTC, SCU, cache, SCC, bra(), delay(), label(), relative(), w()
 
-### Community 469 - "2. Vidéo (GLUE, MMU, Shifter) — `Shifter.cpp`, `VideoGlue.cpp`, `VideoCounter.cpp` ↔ `video.c`, `spec512.c`"
-Cohesion: 0.15
-Nodes (10): AtcEntry, busError, ci, fc, history, logical, modified, physical (+2 more)
+### Community 469 - "Banc du blitter — NeoST contre `stBlitter.sv` et fx68k"
+Cohesion: 0.40
+Nodes (5): Banc du blitter — NeoST contre `stBlitter.sv` et fx68k, Ce que le banc a trouvé (2026-11-04), Ce qui manque, Comment, Pourquoi
 
 ### Community 470 - "retro_game_info"
-Cohesion: 0.33
-Nodes (6): retro_game_info, data, meta, path, size, retro_load_game_special()
+Cohesion: 0.14
+Nodes (13): retro_game_info, data, meta, path, size, retro_system_info, block_extract, library_name (+5 more)
 
 ### Community 472 - "A32 clos : le Shifter en trois classes (2026-11-11)"
-Cohesion: 0.13
-Nodes (12): 2026-11-26 — Campagne CD LGD : boot des 881 disquettes, deux corrections, A16b — le segfault du chantier V3 : un invariant rompu par `replayGlue`, pas un défaut du selftest (2026-08-28), A32 clos : le Shifter en trois classes (2026-11-11), Relecture adversariale pré-release (2026-08-01), V3 est CLOS : l'attribution de ligne à la grille réelle devient le défaut — et le verrou ne faisait rien (2026-09-01), 2. Vidéo / Shifter / Glue (video.c, spec512.c, conv_st.c), 8. 🎯 PLAN D'ATTAQUE COORDONNÉ (refonte beam-sync) — pour la prochaine passe, lineGeom (+4 more)
+Cohesion: 0.12
+Nodes (14): 2026-11-26 — Campagne CD LGD : boot des 881 disquettes, deux corrections, A16b — le segfault du chantier V3 : un invariant rompu par `replayGlue`, pas un défaut du selftest (2026-08-28), A32 clos : le Shifter en trois classes (2026-11-11), Bug hunt multi-agents (2026-07-29), Closure : l'image rejoint l'oracle — scroll hardware STF 4 px / stab med (2026-08-12), 2. Vidéo / Shifter / Glue (video.c, spec512.c, conv_st.c), Vidéo (Shifter), 7. CHANTIER RESTANT (plus de deadlock, mais EL scramble en jeu) (+6 more)
 
 ### Community 473 - "retro_perf_callback"
 Cohesion: 0.40
@@ -2288,10 +2289,6 @@ Nodes (4): Result, Ack, Nak, Stall
 Cohesion: 0.15
 Nodes (13): retro_hw_upscaler_inputs, depth, exposure, exposure_scale, flags, frame_time_ms, jitter_x, jitter_y (+5 more)
 
-### Community 477 - "After"
-Cohesion: 0.25
-Nodes (7): After, CtrlIn, GenOp, MovemIn, MoveOutDone, None, RestoreIn
-
 ### Community 478 - "retro_hw_context_type"
 Cohesion: 0.48
 Nodes (4): address(), configure(), main(), testRtcElapsedDifferential()
@@ -2304,17 +2301,17 @@ Nodes (13): retro_vfs_file_identity, ctime, ctime_nsec, dev, flags, gid, id, mti
 Cohesion: 0.20
 Nodes (7): A31 — le dispatch MMIO devient une table, et sa cohérence est PROUVÉE (2026-08-28), Blitter, Bus errors et décodage IO, Divergences NeoST ↔ MAME — plan mémoire, bus errors, DMA, SCC, MFP 68901, RTC RP5C15, YM2149 — survol, SCC Z85C30 (Mega STE), Écarts qu'une source de rang supérieur tranche
 
+### Community 482 - "Checks"
+Cohesion: 0.50
+Nodes (3): Checks, count, failures
+
 ### Community 483 - "Ikbd.cpp"
 Cohesion: 0.10
-Nodes (4): bcdAdjust(), crc32AddByte(), crc32Reset(), Ikbd::Ikbd()
+Nodes (3): bcdAdjust(), Ikbd::Ikbd(), kbdTraceEnabled()
 
-### Community 484 - "retro_microphone_interface"
-Cohesion: 0.15
-Nodes (13): PadA, Fire, Space, Up, RuntimeOptions, driveSound, driveVolume, fastFloppy (+5 more)
-
-### Community 485 - "case_midi_hidden"
-Cohesion: 0.33
-Nodes (3): bconout_midi(), case_midi_hidden(), case_midi_out()
+### Community 484 - "DEV.md — Guide développeur NeoST"
+Cohesion: 0.07
+Nodes (26): Ajouter / modifier un composant, Architecture, Builds spécialisés, Chaîne d'interruption (subtile), DEV.md — Guide développeur NeoST, Le CPU (Moira, cycle-exact), Pièges matériels (vérifiés en debug), MmuGlue (+18 more)
 
 ### Community 487 - "10. RTC RP5C15 (Mega ST, Mega STE) — `Rtc.cpp` ↔ `rtc.c`"
 Cohesion: 0.40
@@ -2332,13 +2329,13 @@ Nodes (12): retro_game_info_ext, archive_file, archive_path, data, dir, ext, fil
 Cohesion: 0.40
 Nodes (3): retro_frame_time_callback, callback, reference
 
-### Community 491 - ".draw"
-Cohesion: 0.21
-Nodes (7): actionRow(), lowerOf(), areSiblingImages(), commonPrefixLenCI(), lowerOf(), scanDiskImages(), main()
+### Community 491 - "MediaScan.cpp"
+Cohesion: 0.62
+Nodes (4): areSiblingImages(), commonPrefixLenCI(), lowerOf(), scanDiskImages()
 
 ### Community 492 - "MoiraDebugger.h"
-Cohesion: 0.11
-Nodes (7): Breakpoints, Catchpoints, SoftwareTrap, instruction, SoftwareTraps, traps, Watchpoints
+Cohesion: 0.22
+Nodes (4): SoftwareTrap, instruction, SoftwareTraps, traps
 
 ### Community 493 - "compileShader"
 Cohesion: 0.18
@@ -2348,9 +2345,13 @@ Nodes (6): retro_midi_interface, flush, input_enabled, output_enabled, read, wri
 Cohesion: 0.18
 Nodes (11): retro_hw_upscaler_request, flags, max_render_height, max_render_width, min_render_height, min_render_width, mip_bias, output_height (+3 more)
 
+### Community 495 - "Porte d'échange du cœur 68000 (Moira de NeoST → Moira officiel)"
+Cohesion: 0.67
+Nodes (3): Ce que la porte ne couvre pas, à rejouer à part, La porte, Porte d'échange du cœur 68000 (Moira de NeoST → Moira officiel)
+
 ### Community 496 - "Guard"
-Cohesion: 0.15
-Nodes (10): FpuFrameType, BUSY, IDLE, INVALID, NULL_FRAME, UNIMP, FPUModel, M68040 (+2 more)
+Cohesion: 0.29
+Nodes (6): FpuFrameType, BUSY, IDLE, INVALID, NULL_FRAME, UNIMP
 
 ### Community 497 - "retro_location_callback"
 Cohesion: 0.27
@@ -2359,10 +2360,6 @@ Nodes (6): Sz, raw, Szb, raw, Usz, raw
 ### Community 498 - "retro_game_info_ext"
 Cohesion: 0.20
 Nodes (9): Build, Content, Controls, Drive sounds, Install, NeoST for RetroArch, Shaders, TOS (+1 more)
-
-### Community 499 - "MouseMode"
-Cohesion: 0.40
-Nodes (5): MouseMode, ABS, CURSOR, OFF, REL
 
 ### Community 500 - "MoiraDebugger.h"
 Cohesion: 0.20
@@ -2396,9 +2393,9 @@ Nodes (5): 12. CPU 68000 et intégration — `Cpu68k.cpp`, `extern/moira` ↔ `c
 Cohesion: 0.40
 Nodes (5): 14. TOS et configuration — `Machine.cpp` ↔ `tos.c`, Faux positifs, Refermés, Écarts ouverts, Écarts voulus — ne pas réaligner
 
-### Community 509 - "REFERENCE_LADDER.md"
-Cohesion: 0.13
-Nodes (13): Ce que la porte ne couvre pas, à rejouer à part, La porte, Porte d'échange du cœur 68000 (Moira de NeoST → Moira officiel), Balayage GLUE — la machine de NeoST contre le modèle GSTMCU, Comment, Les écarts restants, inscrits en référence, Résultat (2026-11-04), Sur un écran entier à 60 Hz (+5 more)
+### Community 509 - "Balayage GLUE — la machine de NeoST contre le modèle GSTMCU"
+Cohesion: 0.40
+Nodes (5): Balayage GLUE — la machine de NeoST contre le modèle GSTMCU, Comment, Les écarts restants, inscrits en référence, Résultat (2026-11-04), Sur un écran entier à 60 Hz
 
 ### Community 510 - "Parser"
 Cohesion: 0.40
@@ -2440,17 +2437,13 @@ Nodes (8): retro_subsystem_rom_info, block_extract, desc, memory, need_fullpath,
 Cohesion: 0.25
 Nodes (8): retro_video_view, aspect_ratio, eye, height, screen, width, x, y
 
-### Community 520 - "retro_camera_planar_frame"
-Cohesion: 0.39
-Nodes (5): crc32(), crc32Bytewise(), crc32Sliced(), Tables, t
-
 ### Community 521 - "retro_display_color_caps"
 Cohesion: 0.29
 Nodes (6): retro_perf_counter, call_cnt, ident, registered, start, total
 
 ### Community 522 - "Atari TT030 — jalon d’amorçage"
 Cohesion: 0.33
-Nodes (5): Affichage TT-medium, Atari TT030 — jalon d’amorçage, Relevé d’amorçage, ROM et trace, Sources
+Nodes (6): Affichage TT-medium, Atari TT030 — jalon d’amorçage, Bureau GEM en TT-medium, Relevé d’amorçage, ROM et trace, Sources
 
 ### Community 523 - "retro_message_ext"
 Cohesion: 0.29
@@ -2479,10 +2472,6 @@ Nodes (7): retro_vr_hand_state, aim, flags, grip, interaction_profile, joints, p
 ### Community 529 - "Av"
 Cohesion: 0.33
 Nodes (5): Av, ext1, I, M, S
-
-### Community 530 - "Pending"
-Cohesion: 0.33
-Nodes (5): Pending, b, len, msg, when
 
 ### Community 531 - "1. MFP 68901 — `Mfp.cpp` ↔ `mfp.c`, `rs232.c`"
 Cohesion: 0.40
@@ -2596,10 +2585,6 @@ Nodes (3): retro_audio_sample_multi_callback, batch_float, batch_int16
 Cohesion: 0.40
 Nodes (3): retro_sensor_interface, get_sensor_input, set_sensor_state
 
-### Community 559 - "ShadowMask"
-Cohesion: 0.40
-Nodes (5): ShadowMask, Aperture, Dot, Off, Triad
-
 ### Community 560 - "retro_audio_callback"
 Cohesion: 0.40
 Nodes (5): , ACIA_IRQ, ACIA_OVRN, ACIA_RDRF, ACIA_TDRE
@@ -2620,9 +2605,9 @@ Nodes (5): retro_fastforwarding_override, fastforward, inhibit_toggle, notificat
 Cohesion: 0.40
 Nodes (5): retro_hw_render_context_negotiation_interface_type, RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_D3D11, RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_D3D12, RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_DUMMY, RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN
 
-### Community 565 - "Mfp.hpp"
-Cohesion: 0.05
-Nodes (49): Scheduler, StateArchive, Bus, Scheduler, StateArchive, Tracer, objVec(),  (+41 more)
+### Community 565 - "Cpu68k.hpp"
+Cohesion: 0.09
+Nodes (22): Bus, Scheduler, StateArchive, Tracer, run(), Slice, accesses, last (+14 more)
 
 ### Community 566 - "ShadowMask"
 Cohesion: 0.40
@@ -2639,10 +2624,6 @@ Nodes (4): 5. Son (YM2149, DMA STE, Microwire/LMC1992) — `YM2149.cpp`, `DmaSou
 ### Community 571 - "retro_vr_hand"
 Cohesion: 0.50
 Nodes (3): retro_savestate_lifetime, release, version
-
-### Community 572 - "5. Le mode serveur — `--server`"
-Cohesion: 0.50
-Nodes (3): 5. Le mode serveur — `--server`, Paralléliser, Spécification du protocole (pour écrire un client)
 
 ### Community 573 - "Carte du code NeoST avec Graphify"
 Cohesion: 0.67
@@ -2664,10 +2645,6 @@ Nodes (4): retro_device_power, percent, seconds, state
 Cohesion: 0.50
 Nodes (4): retro_message_target, RETRO_MESSAGE_TARGET_ALL, RETRO_MESSAGE_TARGET_LOG, RETRO_MESSAGE_TARGET_OSD
 
-### Community 578 - "ArchState"
-Cohesion: 0.18
-Nodes (11): ArchState, busClock, d, halted, irc, ird, pc0, sr (+3 more)
-
 ### Community 579 - ".parseSpec"
 Cohesion: 0.50
 Nodes (4): retro_vfs_authorized_location, flags, label, path
@@ -2682,15 +2659,11 @@ Nodes (4): retro_vr_reference_space, RETRO_VR_REFERENCE_SPACE_DUMMY, RETRO_VR_RE
 
 ### Community 582 - "retro_device_power"
 Cohesion: 0.06
-Nodes (25): main(), download(), find_download_links(), main(), download_zip_member(), fetch_entry(), main(), build() (+17 more)
+Nodes (27): _align_buffer(), compare(), _crop(), _downscale2(), _load_image(), main(), parse_zone(), _print_report() (+19 more)
 
 ### Community 583 - "retro_message_target"
 Cohesion: 0.25
 Nodes (6): CellTrack, cells, cylinder, head, noise, timeNs
-
-### Community 586 - "retro_vr_eye_state"
-Cohesion: 0.43
-Nodes (5): Checks, count, failures, main(), testGemdosDirectoryEntries()
 
 ### Community 588 - "PointerAction"
 Cohesion: 0.67
@@ -2699,10 +2672,6 @@ Nodes (3): retro_message, frames, msg
 ### Community 589 - "Slice"
 Cohesion: 0.67
 Nodes (3): ScrollWrite, count, frameCycle
-
-### Community 591 - "AndroidRoms.hpp"
-Cohesion: 0.70
-Nodes (3): androidRomIndex(), formatAndroidRomChoice(), parseAndroidRomChoice()
 
 ### Community 592 - "Porte d'échange du cœur 68000 (Moira NeoST → Moira POM68K)"
 Cohesion: 0.67
@@ -2713,20 +2682,20 @@ Cohesion: 0.67
 Nodes (3): retro_vfs_authorized_locations, count, locations
 
 ### Community 595 - "RtcPhaseRig"
-Cohesion: 0.40
-Nodes (3): RtcPhaseRig, clock, rtc
+Cohesion: 0.28
+Nodes (6): main(), rtcAddress(), RtcPhaseRig, clock, rtc, testRtcLongPhase()
 
 ### Community 596 - "KioskKey"
 Cohesion: 0.50
 Nodes (4): KioskKey, kind, label, scancode
 
-### Community 605 - "Event"
-Cohesion: 0.50
-Nodes (4): Event, cycle, len, msg
-
 ### Community 607 - "Moira::dump8"
-Cohesion: 0.06
-Nodes (3): IoSpan, addr, span
+Cohesion: 0.05
+Nodes (9): Le Bus, Bus::Bus(), IoSpan, addr, span, MmioSlot, hi, lo (+1 more)
+
+### Community 611 - "mfp_rx_irq_timing_logic.cpp"
+Cohesion: 0.40
+Nodes (4): main(), testMfpRxIrqTiming(), main(), testSccSync()
 
 ### Community 615 - "src_io_ipfimage"
 Cohesion: 0.50
@@ -2735,22 +2704,22 @@ Nodes (4): , CELL_0, CELL_1, CELL_WEAK
 ## Knowledge Gaps
 - **4479 isolated node(s):** `NumStats`, `Union2`, `Union4`, `Suffix`, `capacity` (+4474 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 7041 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **93 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **86 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `vector` connect `vector` to `App`, `cstdint`, `Shifter`, `Machine`, `ConfigUi`, `Fdc`, `DmaSound`, `Bus`, `GemdosHd`, `Config`, `UsbDevice`, `Cpu68k.cpp`, `YM2149`, `Track`, `retro_subsystem_info`, `Rig`, `.saver`, `MidiOutHost`, `GmSynth`, `Isp1160`, `DmaSound.cpp`, `Mfp.hpp`, `BareMoira`, `HayesModem`, `Audio`, `Rig`, `Access`, `main_web.cpp`, `Rig`, `retro_message_target`, `FloppyDisk`, `Rig`, `Ne2000`, `CrtEffectStack.cpp`, `AndroidMenu`, `DongleTable.cpp`, `AppConfig.cpp`, `Acsi`, `Generator`, `DriveSound`, `StopRig`, `Mt32Synth`, `Symbols.cpp`, `testAcsiCapacityLimit`, `FileHandle`, `MidiWinmm.hpp`, `appInit`, `MidiRing`, `.writeTrackBuffer`, `IpfImage.cpp`, `MoiraExecFPU_cpp.h`, `string`, `NetBackend`, `Rig`, `Machine.cpp`, `Rig`, `Rig`, `.readTrackStx`, `fuzz_diskimage.cpp`, `Rig`, `EchoClockRig`, `Moira — copie vendorisée (fork NeoST)`, `testIpfImage`, `Device`, `MidiRing.cpp`, `SampleRing`, `Dev`, `PsgResetRig`, `BrgEchoRig`, `BrgControlRig`, `Rig`, `Track`, `Rig`, `CpuArch.c`, `Decoder`, `string`, `MidiInHost`, `MidiInHost.cpp`, `main_android.cpp`, `Rig`, `TrackInfo`, `La carte, point par point`, `libretro_frontier_logic.cpp`, `gstmcu_bench.cpp`, `Breakpoints`, `MidiInDev`, `rtc_write_only_logic.cpp`, `Rewind`, `.setIPL`, `cstdlib`, `KeyZone`, `UsbDevice.cpp`, `Rig`, `StateArchive`, `IpfImage.cpp`, `A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30)`, `.geometry`, `Out`, `run_nat_sting.py`, `NetUSBee : Ethernet et périphériques USB`, `Rig`, `Observe.hpp`, `Parser`, `VideoGlue`, `Acsi.cpp`, `Rig`, `BitmapExplorerState`, `RomProbe.cpp`, `Sector`, `WireTrace`, `MachineType`, `cpu_stop_irq_logic.cpp`, `SysExJob`, `retro_hw_context_type`, `Log.cpp`, `.draw`, `retro_hw_upscaler_request`?**
+- **Why does `vector` connect `vector` to `App`, `cstdint`, `Shifter`, `Machine`, `ConfigUi`, `Fdc`, `DmaSound`, `Bus`, `Moira`, `GemdosHd`, `Config`, `UsbDevice`, `Cpu68k.cpp`, `YM2149`, `Track`, `retro_subsystem_info`, `Rig`, `.saver`, `MidiOutHost`, `GmSynth`, `Isp1160`, `DmaSound.cpp`, `Cpu68k.hpp`, `BareMoira`, `HayesModem`, `MoiraTypes.h`, `Audio`, `Rig`, `Access`, `main_web.cpp`, `Rig`, `retro_message_target`, `FloppyDisk`, `RtcPhaseRig`, `Shifter.cpp`, `Ne2000`, `CrtEffectStack.cpp`, `AndroidMenu`, `Fdc.cpp`, `DongleTable.cpp`, `AppConfig.cpp`, `Acsi`, `Generator`, `DriveSound`, `StopRig`, `Mt32Synth`, `Symbols.cpp`, `FileHandle`, `MidiWinmm.hpp`, `MidiRing`, `testSccAckPriority`, `YM2149.cpp`, `IpfImage.cpp`, `MoiraExecFPU_cpp.h`, `NetBackend`, `Rig`, `Machine.cpp`, `Rig`, `Rig`, `Observe.hpp`, `.loadImage`, `fuzz_diskimage.cpp`, `Rig`, `EchoClockRig`, `testIpfImage`, `Device`, `MidiRing.cpp`, `SampleRing`, `Dev`, `PsgResetRig`, `BrgEchoRig`, `BrgControlRig`, `Rig`, `Track`, `Rig`, `CpuArch.c`, `AppLoop.cpp`, `decode`, `string`, `MidiInHost`, `Scenario`, `main_android.cpp`, `Rig`, `TrackInfo`, `testSccExtendedRead`, `La carte, point par point`, `libretro_frontier_logic.cpp`, `TosInfo`, `gstmcu_bench.cpp`, `Breakpoints`, `InterruptRig`, `MidiInDev`, `rtc_write_only_logic.cpp`, `Rewind`, `.setIPL`, `Unknowns.hpp`, `AudioMix.hpp`, `UsbDevice.cpp`, `Rig`, `StateArchive`, `IpfImage.cpp`, `A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30)`, `.geometry`, `Out`, `run_nat_sting.py`, `NetUSBee : Ethernet et périphériques USB`, `Rig`, `Observe.hpp`, `PsgBusRig`, `VideoGlue`, `Acsi.cpp`, `Rig`, `BitmapExplorerState`, `RomProbe.cpp`, `Sector`, `WireTrace`, `MachineType`, `cpu_stop_irq_logic.cpp`, `ym_c10_noise_logic.cpp`, `SysExJob`, `retro_hw_context_type`, `Log.cpp`, `MediaScan.cpp`, `retro_hw_upscaler_request`?**
   _High betweenness centrality (0.327) - this node is a cross-community bridge._
 - **What connects `NumStats`, `Union2`, `Union4` to the rest of the system?**
   _4479 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Instr` be split into smaller, more focused modules?**
   _Cohesion score 0.006734006734006734 - nodes in this community are weakly interconnected._
-- **Why does `Changelog — NeoST` connect `Changelog — NeoST` to `StxImage.cpp`, `Mode borne (kiosk)`, `YM2149.cpp`, `VideoCounter`, `Chantier CLOSURE (Sync) — état de l'enquête`, `Ext`, `Acsi.cpp`, `CartridgeKey`, `string`, `MidiAcia`, `Cpu68k.cpp`, `Machine.cpp`, `fat12_volume`, `runKioskMenu`, `Scheduler`, `.gpipSetLine`, `Rewind`, `MidiOutHost`, `FramePacer`, `Chasse aux bugs multi-agents : 9 défauts trouvés et corrigés, dont un hors bornes qui ne visait que Windows (2026-09-01)`, `Rig`, `.installSchedulerCallbacks`, `machineIsSte`, `run_etalons.py`, `MidiRing.cpp`, `.write8`, `src_io_joystickinput`, `run_glue_sweep.py`, `.mmuTranslate`, `M68kException`, `MachineType`, `CpuState`, `Cas tranchés — diagnostics de terrain`, `main_web.cpp`, `App.cpp`, `drawStKiosk`, `2. Plan mémoire figé`, `Track`, `Convergence Moira ↔ WinUAE — chantier « full timing-engine » (beam-sync)`, `A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30)`, `retro_keyboard_callback`, `AppLoop.cpp`, `Mfp.cpp`, `A32 clos : le Shifter en trois classes (2026-11-11)`, `Shifter.cpp`, `string`, `6. ACIA 6850, IKBD HD6301, MIDI — `Ikbd.cpp`, `MidiAcia.cpp` ↔ `acia.c`, `ikbd.c`, `midi.c``, `CrtEffectStack.cpp`, `HayesModem.cpp`, `impl_`, `main_android.cpp`, `AppConfig.cpp`, `.geometry`, `CLAUDE.md`, `Acsi`, `.scanNextDue`, `Évaluation d'architecture — regard extérieur après une journée dans le code (2026-08-28)`, `Touch`, `A11 — l'oracle Hatari entre en CI, et sa première exécution trouve deux références non re-dérivables (2026-09-01)`, `La carte, point par point`, `Bug hunt multi-agents (2026-07-29)`, `DmaSound.cpp`?**
-  _High betweenness centrality (0.064) - this node is a cross-community bridge._
+- **Why does `Changelog — NeoST` connect `Changelog — NeoST` to `StxImage.cpp`, `Machine`, `Mode borne (kiosk)`, `YM2149.cpp`, `VideoCounter`, `Chantier CLOSURE (Sync) — état de l'enquête`, `Fpu`, `Scc`, `CartridgeKey`, `string`, `Passes d'audit et chasses aux bugs`, `MidiAcia`, `Cpu68k.cpp`, `Machine.cpp`, `runKioskMenu`, `Scheduler`, `.gpipSetLine`, `.loadImage`, `MidiOutHost`, `FramePacer`, `Chasse aux bugs multi-agents : 9 défauts trouvés et corrigés, dont un hors bornes qui ne visait que Windows (2026-09-01)`, `Rig`, `machineIsMega`, `run_etalons.py`, `.dispatchCommand`, `AudioPacer`, `BareMoira`, `MidiRing.cpp`, `VideoGlue.cpp`, `main`, `DmaSound.cpp`, `.mmuTranslate`, `M68kException`, `MachineType`, `CpuState`, `Cas tranchés — diagnostics de terrain`, `main_web.cpp`, `App.cpp`, `drawStKiosk`, `2. Plan mémoire figé`, `VideoCounter.cpp`, `A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30)`, `Chasse aux P3 ; format d'état v67 (2026-11-12)`, `retro_keyboard_callback`, `AppLoop.cpp`, `Mfp.cpp`, `Shifter.cpp`, `A32 clos : le Shifter en trois classes (2026-11-11)`, `string`, `6. ACIA 6850, IKBD HD6301, MIDI — `Ikbd.cpp`, `MidiAcia.cpp` ↔ `acia.c`, `ikbd.c`, `midi.c``, `CrtEffectStack.cpp`, `HayesModem.cpp`, `impl_`, `main_android.cpp`, `AppConfig.cpp`, `.neBackend`, `.geometry`, `CLAUDE.md`, `Acsi`, `Piloter NeoST depuis l'extérieur (exploration d'états, fuzzing, Go-Explore)`, `Évaluation d'architecture — regard extérieur après une journée dans le code (2026-08-28)`, `A11 — l'oracle Hatari entre en CI, et sa première exécution trouve deux références non re-dérivables (2026-09-01)`, `run_libretro.py`, `La carte, point par point`, `.mixSegment`, `TosInfo`?**
+  _High betweenness centrality (0.062) - this node is a cross-community bridge._
 - **Should `App` be split into smaller, more focused modules?**
   _Cohesion score 0.012269938650306749 - nodes in this community are weakly interconnected._
 - **Why does `Instr` connect `Instr` to `M68kException`, `StrWriter`, `libretro_frontend.py`, `MoiraDasmFPU_cpp.h`, `Docs à corriger`, `Av`, `MoiraTypes.h`, `u16`, `retro_key`?**
   _High betweenness centrality (0.046) - this node is a cross-community bridge._
 - **Should `StrWriter` be split into smaller, more focused modules?**
-  _Cohesion score 0.07372678801250229 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0744571801323269 - nodes in this community are weakly interconnected._

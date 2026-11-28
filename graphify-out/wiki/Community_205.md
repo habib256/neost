@@ -1,55 +1,52 @@
 # Community 205
 
-> 39 nodes
+> 24 nodes
 
 ## Key Concepts
 
-- **.geometry()** (27 connections) — `src/core/Shifter.hpp`
+- **VideoCounter.cpp** (22 connections) — `src/core/VideoCounter.cpp`
 - **lineLenAttrEnv()** (12 connections) — `src/core/ShifterInternal.hpp`
-- **.geometryFor()** (10 connections) — `src/core/Shifter.hpp`
-- **.resizeFor()** (10 connections) — `src/core/Shifter.hpp`
 - **Shifter::endVideoLine()** (9 connections) — `src/core/VideoCounter.cpp`
-- **FrameGeometry** (7 connections) — `src/core/Shifter.hpp`
-- **.read8()** (7 connections) — `src/core/Shifter.hpp`
-- **.beginFrame()** (7 connections) — `src/core/Shifter.hpp`
-- **.syncGlueFrame()** (7 connections) — `src/core/Shifter.hpp`
+- **ShifterInternal.hpp** (9 connections) — `src/core/ShifterInternal.hpp`
 - **envFlag()** (7 connections) — `src/core/ShifterInternal.hpp`
 - **A32 — le Shifter perd 1 586 lignes, le GLUE vidéo retrouve son nom (2026-08-28)** (7 connections) — `CHANGELOG.md`
-- **Mode** (5 connections) — `src/core/Shifter.hpp`
-- **.reset()** (5 connections) — `src/core/Shifter.hpp`
-- **Shifter::Shifter()** (5 connections) — `src/core/Shifter.cpp`
+- **.commitAnchor()** (5 connections) — `src/core/Shifter.hpp`
 - **.lineLenEnv()** (4 connections) — `src/core/Shifter.hpp`
 - **Shifter::timerBFrameCycleForLine()** (4 connections) — `src/core/VideoGlue.cpp`
 - **beamClock_** (4 connections) — `src/core/Shifter.hpp`
-- **.frameTimingChanged()** (3 connections) — `src/core/Shifter.hpp`
+- **SpreadTable** (3 connections) — `src/core/ShifterInternal.hpp`
 - **Shifter::beamPos()** (3 connections) — `src/core/VideoCounter.cpp`
+- **Shifter::commitScanline()** (3 connections) — `src/core/VideoCounter.cpp`
 - **Shifter::videoCounter()** (3 connections) — `src/core/VideoCounter.cpp`
-- **Shifter::lineStoppedOver()** (3 connections) — `src/core/VideoGlue.cpp`
-- **Shifter::realLinePos()** (3 connections) — `src/core/VideoGlue.cpp`
-- **VideoGlue::vblankAtLine()** (3 connections) — `src/core/VideoGlue.cpp`
-- **.lineBorder336()** (2 connections) — `src/core/Shifter.hpp`
 - **.lineStoppedOver()** (2 connections) — `src/core/Shifter.hpp`
-- *... and 14 more nodes in this community*
+- **.timerBPosForLine()** (2 connections) — `src/core/Shifter.hpp`
+- **Shifter::beamLineActive()** (2 connections) — `src/core/VideoCounter.cpp`
+- **VideoCounter::read()** (2 connections) — `src/core/VideoCounter.cpp`
+- **.SpreadTable()** (1 connections) — `src/core/ShifterInternal.hpp`
+- **Shifter::commitAnchor()** (1 connections) — `src/core/VideoCounter.cpp`
+- **Shifter::lineState()** (1 connections) — `src/core/VideoCounter.cpp`
+- **Shifter::restartVideoCounter()** (1 connections) — `src/core/VideoCounter.cpp`
+- **Shifter::traceSyncWrites()** (1 connections) — `src/core/VideoCounter.cpp`
+- **v** (1 connections) — `src/core/ShifterInternal.hpp`
 
 ## Relationships
 
-- [Community 5](Community_5.md) (17 shared connections)
-- [Community 88](Community_88.md) (14 shared connections)
-- [Community 301](Community_301.md) (14 shared connections)
-- [Community 60](Community_60.md) (10 shared connections)
-- [Community 565](Community_565.md) (7 shared connections)
-- [Community 472](Community_472.md) (3 shared connections)
-- [Community 434](Community_434.md) (2 shared connections)
-- [Community 377](Community_377.md) (2 shared connections)
+- [Community 88](Community_88.md) (9 shared connections)
+- [Community 60](Community_60.md) (9 shared connections)
+- [Community 472](Community_472.md) (7 shared connections)
+- [Community 102](Community_102.md) (6 shared connections)
+- [Community 5](Community_5.md) (5 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 186](Community_186.md) (2 shared connections)
 - [Community 160](Community_160.md) (1 shared connections)
-- [Community 258](Community_258.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 449](Community_449.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
+- [Community 328](Community_328.md) (1 shared connections)
+- [Community 565](Community_565.md) (1 shared connections)
+- [Community 301](Community_301.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
-- `src/core/Shifter.cpp`
 - `src/core/Shifter.hpp`
 - `src/core/ShifterInternal.hpp`
 - `src/core/VideoCounter.cpp`
@@ -57,8 +54,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 59 (47%)
-- INFERRED: 67 (53%)
+- EXTRACTED: 43 (54%)
+- INFERRED: 36 (46%)
 - AMBIGUOUS: 0 (0%)
 
 ---

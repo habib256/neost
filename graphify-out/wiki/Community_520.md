@@ -1,31 +1,26 @@
 # Community 520
 
-> 8 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **Crc32.cpp** (8 connections) — `src/util/Crc32.cpp`
-- **crc32Sliced()** (4 connections) — `src/util/Crc32.cpp`
-- **crc32()** (3 connections) — `src/util/Crc32.cpp`
-- **crc32Bytewise()** (3 connections) — `src/util/Crc32.cpp`
-- **size_t** (3 connections)
-- **Tables** (2 connections) — `src/util/Crc32.cpp`
-- **crc32Hardware()** (1 connections) — `src/util/Crc32.cpp`
-- **t** (1 connections) — `src/util/Crc32.cpp`
+- **scc_async_logic.cpp** (4 connections) — `tests/scc_async_logic.cpp`
+- **testSccAsync()** (3 connections) — `tests/scc_async_logic.cpp`
+- **main()** (2 connections) — `tests/scc_async_logic.cpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 153](Community_153.md) (1 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `src/util/Crc32.cpp`
+- `tests/scc_async_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 5 (83%)
+- INFERRED: 1 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

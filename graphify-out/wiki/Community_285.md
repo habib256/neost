@@ -1,9 +1,10 @@
 # Community 285
 
-> 34 nodes
+> 36 nodes
 
 ## Key Concepts
 
+- **UInt32** (30 connections) — `extern/moira/Moira/StrWriter.h`
 - **7zArcIn.c** (27 connections) — `extern/lzma/7zArcIn.c`
 - **CSzData** (12 connections)
 - **ReadBitUi32s()** (9 connections) — `extern/lzma/7zArcIn.c`
@@ -28,27 +29,32 @@
 - **SzAr_Init()** (4 connections) — `extern/lzma/7zArcIn.c`
 - **SzBitUi32s_Alloc()** (4 connections) — `extern/lzma/7zArcIn.c`
 - **SzBitUi64s_Free()** (4 connections) — `extern/lzma/7zArcIn.c`
-- **CSzBitUi32s** (4 connections)
-- *... and 9 more nodes in this community*
+- *... and 11 more nodes in this community*
 
 ## Relationships
 
-- [Community 153](Community_153.md) (10 shared connections)
-- [Community 245](Community_245.md) (3 shared connections)
-- [Community 353](Community_353.md) (1 shared connections)
-- [Community 213](Community_213.md) (1 shared connections)
+- [Community 245](Community_245.md) (5 shared connections)
+- [Community 263](Community_263.md) (5 shared connections)
+- [Community 153](Community_153.md) (4 shared connections)
+- [Community 353](Community_353.md) (3 shared connections)
+- [Community 169](Community_169.md) (2 shared connections)
+- [Community 213](Community_213.md) (2 shared connections)
+- [Community 305](Community_305.md) (2 shared connections)
+- [Community 131](Community_131.md) (2 shared connections)
+- [Community 109](Community_109.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
 - [Community 502](Community_502.md) (1 shared connections)
 
 ## Source Files
 
 - `extern/lzma/7zArcIn.c`
+- `extern/moira/Moira/StrWriter.h`
 - `src/util/Archive.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 102 (97%)
-- INFERRED: 3 (3%)
+- EXTRACTED: 123 (98%)
+- INFERRED: 3 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,13 +1,15 @@
 # Community 317
 
-> 16 nodes
+> 18 nodes
 
 ## Key Concepts
 
 - **4. Ce qui RESTE — l'angle « précision cycle »** (8 connections) — `docs/CYCLE_ACCURACY.md`
 - **Précision cycle — modèle, acquis, restant (oracle : Hatari)** (7 connections) — `docs/CYCLE_ACCURACY.md`
 - **2. Le modèle d'Hatari (l'architecture cible)** (6 connections) — `docs/CYCLE_ACCURACY.md`
+- **.glueSelfTest()** (5 connections) — `src/core/Shifter.hpp`
 - **3. Ce qui est ACQUIS (phases 0-6 + extensions)** (4 connections) — `docs/CYCLE_ACCURACY.md`
+- **P1 — Registres vidéo STE : 2 restes** (3 connections) — `docs/CYCLE_ACCURACY.md`
 - **1. Pourquoi — le timing au cycle change le comportement** (1 connections) — `docs/CYCLE_ACCURACY.md`
 - **2.1 Une horloge globale, des compteurs par instruction (`cycles.c`)** (1 connections) — `docs/CYCLE_ACCURACY.md`
 - **2.2 Ordonnanceur d'événements datés (`cycInt.c`)** (1 connections) — `docs/CYCLE_ACCURACY.md`
@@ -23,22 +25,26 @@
 
 ## Relationships
 
+- [Community 472](Community_472.md) (2 shared connections)
+- [Community 5](Community_5.md) (1 shared connections)
+- [Community 152](Community_152.md) (1 shared connections)
+- [Community 254](Community_254.md) (1 shared connections)
 - [Community 39](Community_39.md) (1 shared connections)
 - [Community 67](Community_67.md) (1 shared connections)
-- [Community 472](Community_472.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
 - [Community 460](Community_460.md) (1 shared connections)
 - [Community 446](Community_446.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
 
 ## Source Files
 
 - `docs/CYCLE_ACCURACY.md`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 19 (86%)
-- INFERRED: 3 (14%)
+- EXTRACTED: 20 (71%)
+- INFERRED: 8 (29%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,57 +1,56 @@
 # Community 189
 
-> 20 nodes
+> 18 nodes
 
 ## Key Concepts
 
-- **parseRamBytes()** (11 connections) — `src/core/MachineType.hpp`
-- **.loadTos()** (9 connections) — `src/core/Bus.hpp`
-- **size_t** (9 connections)
-- **ramLabel()** (8 connections) — `src/core/MachineType.hpp`
-- **tosUnsupportedMachine()** (8 connections) — `src/core/MachineType.hpp`
-- **tosHeaderIsEmuTos()** (7 connections) — `src/core/MachineType.hpp`
-- **tosHeaderVersion()** (7 connections) — `src/core/MachineType.hpp`
-- **testRamDisplay()** (6 connections) — `tests/selftest_logic.cpp`
-- **ramDisplayName()** (5 connections) — `src/core/MachineType.hpp`
-- **readTosInfo()** (5 connections) — `src/core/TosChoice.cpp`
-- **machineSummary()** (5 connections) — `src/gui/MachineSummary.hpp`
-- **.seedResetVectors()** (4 connections) — `src/core/Bus.hpp`
-- **tosImageBase()** (4 connections) — `src/core/MachineType.hpp`
-- **.loadCart()** (3 connections) — `src/core/Bus.hpp`
-- **parseMachine()** (3 connections) — `src/core/MachineType.hpp`
-- **string** (3 connections)
-- **string** (2 connections)
-- **string** (1 connections)
-- **Machine** (1 connections)
-- **string** (1 connections)
+- **main()** (52 connections) — `src/headless/main_headless.cpp`
+- **netusbeeSelfTest()** (8 connections) — `src/headless/main_headless.cpp`
+- **.check()** (7 connections) — `src/core/StateArchive.hpp`
+- **natSelfTest()** (7 connections) — `src/headless/main_headless.cpp`
+- **serialLoopbackSelfTest()** (6 connections) — `src/headless/main_headless.cpp`
+- **argInt()** (5 connections) — `src/headless/main_headless.cpp`
+- **usatanSelfTest()** (5 connections) — `src/headless/main_headless.cpp`
+- **Machine** (5 connections)
+- **argHex()** (4 connections) — `src/headless/main_headless.cpp`
+- **argU32()** (4 connections) — `src/headless/main_headless.cpp`
+- **badArg()** (4 connections) — `src/headless/main_headless.cpp`
+- **enecSelfTest()** (4 connections) — `src/headless/main_headless.cpp`
+- **.mfpPhaseForSeed()** (3 connections) — `src/core/Machine.hpp`
+- **argFrame()** (3 connections) — `src/headless/main_headless.cpp`
+- **writePpm()** (3 connections) — `src/headless/Observe.hpp`
+- **Chasse round 5 : le save-state acceptait une AUTRE ROM, et le harnais annonçait des écritures tronquées comme réussies (2026-09-02)** (3 connections) — `CHANGELOG.md`
+- **usage()** (2 connections) — `src/headless/main_headless.cpp`
+- **portA** (2 connections) — `tests/psg_odd_write_logic.cpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (9 shared connections)
-- [Community 325](Community_325.md) (5 shared connections)
-- [Community 149](Community_149.md) (5 shared connections)
-- [Community 449](Community_449.md) (4 shared connections)
-- [Community 203](Community_203.md) (4 shared connections)
-- [Community 48](Community_48.md) (4 shared connections)
-- [Community 607](Community_607.md) (3 shared connections)
-- [Community 14](Community_14.md) (3 shared connections)
-- [Community 135](Community_135.md) (2 shared connections)
-- [Community 298](Community_298.md) (2 shared connections)
-- [Community 68](Community_68.md) (2 shared connections)
-- [Community 319](Community_319.md) (2 shared connections)
+- [Community 186](Community_186.md) (12 shared connections)
+- [Community 298](Community_298.md) (8 shared connections)
+- [Community 165](Community_165.md) (5 shared connections)
+- [Community 449](Community_449.md) (5 shared connections)
+- [Community 51](Community_51.md) (5 shared connections)
+- [Community 119](Community_119.md) (4 shared connections)
+- [Community 160](Community_160.md) (3 shared connections)
+- [Community 27](Community_27.md) (3 shared connections)
+- [Community 99](Community_99.md) (3 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 10](Community_10.md) (1 shared connections)
+- [Community 321](Community_321.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Bus.hpp`
-- `src/core/MachineType.hpp`
-- `src/core/TosChoice.cpp`
-- `src/gui/MachineSummary.hpp`
-- `tests/selftest_logic.cpp`
+- `CHANGELOG.md`
+- `src/core/Machine.hpp`
+- `src/core/StateArchive.hpp`
+- `src/headless/Observe.hpp`
+- `src/headless/main_headless.cpp`
+- `tests/psg_odd_write_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 38 (51%)
-- INFERRED: 37 (49%)
+- EXTRACTED: 62 (64%)
+- INFERRED: 35 (36%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,6 +1,6 @@
 # Community 248
 
-> 92 nodes
+> 83 nodes
 
 ## Key Concepts
 
@@ -9,10 +9,8 @@
 - **RETRO_API** (23 connections)
 - **La carte, point par point** (16 connections) — `docs/LIBRETRO.md`
 - **chooseTos()** (10 connections) — `src/libretro/neost_libretro.cpp`
-- **Libretro — carte de la frontière** (9 connections) — `docs/LIBRETRO.md`
 - **Rect** (8 connections) — `src/libretro/neost_libretro.cpp`
 - **siblingDisks()** (8 connections) — `src/libretro/neost_libretro.cpp`
-- **retro_system_info** (7 connections) — `src/libretro/libretro.h`
 - **Disk** (7 connections) — `src/libretro/neost_libretro.cpp`
 - **logf()** (7 connections) — `src/libretro/neost_libretro.cpp`
 - **privateCopy()** (7 connections) — `src/libretro/neost_libretro.cpp`
@@ -29,22 +27,24 @@
 - **lower()** (5 connections) — `src/libretro/neost_libretro.cpp`
 - **neostSaveDir()** (5 connections) — `src/libretro/neost_libretro.cpp`
 - **resolveForeignDisk()** (5 connections) — `src/libretro/neost_libretro.cpp`
-- *... and 67 more nodes in this community*
+- **retro_run()** (5 connections) — `src/libretro/neost_libretro.cpp`
+- **retro_set_environment()** (5 connections) — `src/libretro/neost_libretro.cpp`
+- *... and 58 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (15 shared connections)
-- [Community 449](Community_449.md) (10 shared connections)
+- [Community 4](Community_4.md) (13 shared connections)
+- [Community 102](Community_102.md) (12 shared connections)
 - [Community 160](Community_160.md) (7 shared connections)
-- [Community 102](Community_102.md) (6 shared connections)
-- [Community 565](Community_565.md) (5 shared connections)
+- [Community 449](Community_449.md) (5 shared connections)
+- [Community 253](Community_253.md) (5 shared connections)
+- [Community 470](Community_470.md) (5 shared connections)
 - [Community 239](Community_239.md) (4 shared connections)
-- [Community 83](Community_83.md) (3 shared connections)
-- [Community 421](Community_421.md) (3 shared connections)
-- [Community 470](Community_470.md) (3 shared connections)
-- [Community 203](Community_203.md) (2 shared connections)
+- [Community 83](Community_83.md) (2 shared connections)
+- [Community 421](Community_421.md) (2 shared connections)
 - [Community 130](Community_130.md) (2 shared connections)
 - [Community 25](Community_25.md) (2 shared connections)
+- [Community 541](Community_541.md) (1 shared connections)
 
 ## Source Files
 
@@ -55,8 +55,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 231 (89%)
-- INFERRED: 30 (11%)
+- EXTRACTED: 218 (88%)
+- INFERRED: 31 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

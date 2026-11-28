@@ -20,7 +20,7 @@
 
 ## Relationships
 
-- [Community 586](Community_586.md) (1 shared connections)
+- [Community 565](Community_565.md) (1 shared connections)
 
 ## Source Files
 

@@ -1,29 +1,29 @@
 # Community 485
 
-> 6 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **case_midi_hidden()** (5 connections) — `tools/run_libretro.py`
-- **case_midi_out()** (5 connections) — `tools/run_libretro.py`
-- **bconout_midi()** (4 connections) — `tools/run_libretro.py`
-- **Bconout(3, b) : un octet sur le port MIDI par le BIOS.** (1 connections) — `tools/run_libretro.py`
-- **MIDI OUT vers l'interface MIDI de RetroArch : note on envoyée par Bconout(3),…** (1 connections) — `tools/run_libretro.py`
-- **Trames cachées de l'anticipation (son coupé) : rien ne part vers le MIDI.** (1 connections) — `tools/run_libretro.py`
+- **.neBackend()** (5 connections) — `src/gui/App.hpp`
+- **Slirp : le « dernier pas » est clos — 5/5, le coupable était Little Snitch (2026-08-27)** (2 connections) — `CHANGELOG.md`
+- **NetBackend** (1 connections)
 
 ## Relationships
 
-- [Community 247](Community_247.md) (5 shared connections)
-- [Community 124](Community_124.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 1](Community_1.md) (1 shared connections)
+- [Community 449](Community_449.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/run_libretro.py`
+- `CHANGELOG.md`
+- `src/gui/App.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 12 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 4 (67%)
+- INFERRED: 2 (33%)
 - AMBIGUOUS: 0 (0%)
 
 ---

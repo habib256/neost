@@ -1,44 +1,38 @@
 # Community 466
 
-> 14 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **Scc.cpp** (53 connections) — `src/io/Scc.cpp`
-- **.updateSerial()** (12 connections) — `src/io/Scc.hpp`
-- **.onSerialEvent()** (11 connections) — `src/io/Scc.hpp`
-- **.deliverByte()** (8 connections) — `src/io/Scc.hpp`
-- **.receiveAllowed()** (8 connections) — `src/io/Scc.hpp`
-- **.receiveByte()** (8 connections) — `src/io/Scc.hpp`
-- **.startRxFrame()** (6 connections) — `src/io/Scc.hpp`
-- **serialSource()** (6 connections) — `src/io/Scc.cpp`
-- **.serialWriteByte()** (5 connections) — `src/io/Scc.hpp`
-- **.serialPeriod()** (5 connections) — `src/io/Scc.hpp`
-- **.getDCD()** (4 connections) — `src/io/Scc.hpp`
-- **.localLoopbackOnly()** (4 connections) — `src/io/Scc.hpp`
-- **.echoByteAllowed()** (4 connections) — `src/io/Scc.hpp`
-- **sink_** (4 connections) — `src/io/Scc.hpp`
+- **Chasse aux P3 ; format d'état v67 (2026-11-12)** (5 connections) — `CHANGELOG.md`
+- **Modèle d'horloge (`Machine::runFrame`)** (5 connections) — `DEV.md`
+- **busHzExact()** (3 connections) — `src/core/Pacing.hpp`
+- **cpuHzInt()** (3 connections) — `src/core/Pacing.hpp`
+- **.lastRunFrames()** (2 connections) — `src/core/Machine.hpp`
 
 ## Relationships
 
-- [Community 19](Community_19.md) (27 shared connections)
-- [Community 454](Community_454.md) (23 shared connections)
-- [Community 495](Community_495.md) (10 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
 - [Community 102](Community_102.md) (2 shared connections)
-- [Community 77](Community_77.md) (1 shared connections)
-- [Community 301](Community_301.md) (1 shared connections)
-- [Community 565](Community_565.md) (1 shared connections)
+- [Community 10](Community_10.md) (1 shared connections)
+- [Community 435](Community_435.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
+- [Community 26](Community_26.md) (1 shared connections)
+- [Community 484](Community_484.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
+- [Community 68](Community_68.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Scc.cpp`
-- `src/io/Scc.hpp`
+- `CHANGELOG.md`
+- `DEV.md`
+- `src/core/Machine.hpp`
+- `src/core/Pacing.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 70 (68%)
-- INFERRED: 33 (32%)
+- EXTRACTED: 6 (43%)
+- INFERRED: 8 (57%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,33 +1,30 @@
 # Community 442
 
-> 9 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **.catchUpCpuTx()** (11 connections) — `src/io/Ikbd.hpp`
-- **.scheduleCpuTx()** (6 connections) — `src/io/Ikbd.hpp`
-- **.write8()** (5 connections) — `src/io/Ikbd.hpp`
-- **.resetHw()** (5 connections) — `src/io/Ikbd.hpp`
-- **.nextTxClock()** (4 connections) — `src/io/Ikbd.hpp`
-- **.aciaFrameBits()** (4 connections) — `src/io/Ikbd.hpp`
-- **.read8()** (4 connections) — `src/io/Ikbd.hpp`
-- **.aciaFrameBit()** (3 connections) — `src/io/Ikbd.hpp`
-- **.advanceTx()** (3 connections) — `src/io/Ikbd.hpp`
+- **** (9 connections) — `src/io/StePads.hpp`
+- **DOWN** (1 connections) — `src/io/StePads.hpp`
+- **FIRE** (1 connections) — `src/io/StePads.hpp`
+- **LEFT** (1 connections) — `src/io/StePads.hpp`
+- **RIGHT** (1 connections) — `src/io/StePads.hpp`
+- **UP** (1 connections) — `src/io/StePads.hpp`
 
 ## Relationships
 
-- [Community 483](Community_483.md) (9 shared connections)
-- [Community 7](Community_7.md) (9 shared connections)
-- [Community 47](Community_47.md) (3 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 106](Community_106.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Ikbd.hpp`
+- `src/io/StePads.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 18 (55%)
-- INFERRED: 15 (45%)
+- EXTRACTED: 9 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

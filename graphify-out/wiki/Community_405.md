@@ -1,39 +1,33 @@
 # Community 405
 
-> 10 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **Ext** (14 connections) — `src/io/Fpu.hpp`
-- **.romConstant()** (5 connections) — `src/io/Fpu.hpp`
-- **.toE()** (5 connections) — `src/io/Fpu.hpp`
-- **.extToD()** (4 connections) — `src/io/Fpu.hpp`
-- **.toF()** (4 connections) — `src/io/Fpu.hpp`
-- **Le FPU arrondissait deux fois — et son banc de test ne voyait pas les tests qu'on lui ajoutait (2026-09-02)** (4 connections) — `CHANGELOG.md`
-- **.Ext()** (1 connections) — `src/io/Fpu.hpp`
-- **man** (1 connections) — `src/io/Fpu.hpp`
-- **pad_** (1 connections) — `src/io/Fpu.hpp`
-- **se** (1 connections) — `src/io/Fpu.hpp`
+- **.ramSpaceRead8()** (6 connections) — `src/core/Bus.hpp`
+- **.videoRead16At()** (5 connections) — `src/core/Bus.hpp`
+- **.ramCycleRead16Slow()** (4 connections) — `src/core/Bus.hpp`
+- **.dmaRead8()** (4 connections) — `src/core/Bus.hpp`
+- **.ramCycleRead16()** (3 connections) — `src/core/Bus.hpp`
+- **.ramCycleRead8()** (3 connections) — `src/core/Bus.hpp`
 
 ## Relationships
 
-- [Community 253](Community_253.md) (7 shared connections)
-- [Community 482](Community_482.md) (5 shared connections)
-- [Community 20](Community_20.md) (5 shared connections)
-- [Community 15](Community_15.md) (2 shared connections)
-- [Community 444](Community_444.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 100](Community_100.md) (1 shared connections)
+- [Community 14](Community_14.md) (6 shared connections)
+- [Community 607](Community_607.md) (4 shared connections)
+- [Community 319](Community_319.md) (2 shared connections)
+- [Community 377](Community_377.md) (1 shared connections)
+- [Community 203](Community_203.md) (1 shared connections)
+- [Community 51](Community_51.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/io/Fpu.hpp`
+- `src/core/Bus.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (74%)
-- INFERRED: 8 (26%)
+- EXTRACTED: 12 (60%)
+- INFERRED: 8 (40%)
 - AMBIGUOUS: 0 (0%)
 
 ---
