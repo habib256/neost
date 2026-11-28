@@ -1,23 +1,25 @@
 # Community 604
 
-> 2 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **.Cache()** (2 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **Moira** (1 connections)
+- **EM_JS()** (4 connections) — `src/core/EmuFiber.cpp`
+- **Module** (1 connections)
+- **neost_jspi_park** (1 connections)
+- **neost_jspi_release** (1 connections)
 
 ## Relationships
 
-- [Community 391](Community_391.md) (1 shared connections)
+- [Community 291](Community_291.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/Cache/Cache.h`
+- `src/core/EmuFiber.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 2 (100%)
+- EXTRACTED: 4 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

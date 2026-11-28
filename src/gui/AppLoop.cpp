@@ -1394,8 +1394,8 @@ static void consumeApplyRequests(App& A, Frame& F) {
         // installé (pickPresetRom rend alors le premier) ou une ROM retirée depuis la
         // sélection laissaient le modèle appliqué sans sa ROM, et le rom= fantôme était
         // déjà persisté. Refus : rien ne change, les champs en attente restent affichés.
-        if (!romLoadable(resolveData(rom, exeDir))) {
-            A.stateMsg = romUnloadableReason(resolveData(rom, exeDir)) + " - machine unchanged";
+        if (!romLoadable(resolveData(rom, exeDir), parseMachine(cfgUi.pendMachine))) {
+            A.stateMsg = romUnloadableReason(resolveData(rom, exeDir), parseMachine(cfgUi.pendMachine)) + " - machine unchanged";
             A.stateMsgFrames = 300;
             std::fprintf(stderr, "[cfg] apply refused: ROM %s not loadable\n", rom.c_str());
         } else {
@@ -1499,9 +1499,9 @@ static void consumeProfileRequests(App& A, Frame& F) {
             // ROM absente : la BASCULE MATÉRIELLE est refusée en bloc (modèle, RAM, FPU,
             // ROM restent ceux qui tournent). Appliquer le modèle sans sa ROM laissait
             // une machine hybride, puis « Starting without a TOS » au lancement suivant.
-            if (p.rom != cfg.rom && !romLoadable(resolveData(p.rom, exeDir))) {
-                note(tosFileUnsupportedMachine(resolveData(p.rom, exeDir))
-                         ? "TT/Falcon ROM (not supported)" : "ROM", p.rom);
+            if ((p.rom != cfg.rom || p.machine != cfg.machine) && !romLoadable(resolveData(p.rom, exeDir), parseMachine(p.machine))) {
+                note(tosFileUnsupportedMachine(resolveData(p.rom, exeDir), parseMachine(p.machine))
+                         ? "Incompatible ROM" : "ROM", p.rom);
                 p.rom = cfg.rom; p.machine = cfg.machine; p.mem = cfg.mem; p.fpu = cfg.fpu;
             }
             if (!p.cart.empty() && p.cart != cfg.cart && !fileExists(resolveData(p.cart, exeDir))) {
@@ -2150,7 +2150,8 @@ static void drawOverlays(App& A) {
             // choisi tournait en rond : on parle de la ROM.
             std::string why, advice;
             MissingHw missReq{};
-            const MachineType reqMdl = A.cfg.machine == "st"      ? MachineType::St
+            const MachineType reqMdl = A.cfg.machine == "tt" ? MachineType::Tt
+                                     : A.cfg.machine == "st"      ? MachineType::St
                                      : A.cfg.machine == "megast"  ? MachineType::MegaSt
                                      : A.cfg.machine == "megaste" ? MachineType::MegaSte
                                                                   : MachineType::Ste;

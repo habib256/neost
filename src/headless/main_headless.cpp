@@ -99,10 +99,11 @@ void usage() {
         "  --save-state-test DETERMINISM self-test: run --frames → save → load → re-run,\n"
         "                    the re-serialized state AND the screen must match, then exits\n"
         "  --cpu CORE        68000 core: moira (the only one, cycle-exact)\n"
-        "  --machine TYPE    profile: st, megast, ste (default), megaste\n"
+        "  --machine TYPE    profile: st, megast, ste (default), megaste, tt (experimental)\n"
         "  --mono            monochrome monitor (high resolution)\n"
         "  --fpu             populate the Mega STE MC68881 socket ($FFFA40, functional\n"
         "                    emulation — absent by default: Hatari-faithful \"not found\")\n"
+        "  --tt-ram SIZE     TT fast RAM: 0 (default), 4m or 16m\n"
         "  --mem SIZE        ST-RAM: 256k, 512k (default), 1m, 2m, 2176k, 2560k, 4m\n"
         "  --walk-mouse      after --frames, inject a mouse move + click (diagnostic)\n"
         "  --keys STR        after --frames, type STR on the keyboard (4 frames per char),\n"
@@ -1714,6 +1715,8 @@ int main(int argc, char** argv) {
     CpuCore     cpuCore    = CpuCore::Moira;   // seul cœur disponible (cycle-exact)
     MachineType machType   = MachineType::Ste;
     std::size_t ramBytes   = 512u * 1024u;
+    bool        ramSpecified = false;
+    std::size_t ttRamBytes = 0;
     bool        fpuPresent = false;     // --fpu : MC68881 Mega STE (cf. Fpu.hpp)
 
     for (int i = 1; i < argc; ++i) {
@@ -2045,11 +2048,10 @@ int main(int argc, char** argv) {
                 std::fprintf(stderr, "[headless] --server-slots %ld clamped to %d\n", v, serverSlots);
         }
         else if (!std::strcmp(a, "--dump-at"))     { dumpAtFrame = argFrame(a, next(a));
-                                                     dumpAddr = argHex(a, next(a)) & 0xFFFFFFu;
+                                                     dumpAddr = argHex(a, next(a));
                                                      dumpLen  = argU32(a, next(a));
                                                      dumpPath = next(a);
-                                                     // L'adresse se replie sur 24 bits : au-delà de 16 Mo le dump
-                                                     // ne ferait que boucler (FFFFFFFF = 4 Go de fichier).
+                                                     // Borner la taille du fichier indépendamment de la largeur du bus.
                                                      if (dumpLen > 0x1000000u) {
                                                          std::fprintf(stderr, "--dump-at: LEN must be at most $1000000 (16 MB)\n");
                                                          return 2;
@@ -2131,7 +2133,7 @@ int main(int argc, char** argv) {
             natForwards = fc.natForwards;
             netAllowDomains = fc.netAllowDomains;
             if (!fc.machine.empty()) machType = parseMachine(fc.machine.c_str());
-            if (!fc.mem.empty())     ramBytes = parseRamBytes(fc.mem.c_str());
+            if (!fc.mem.empty()) { ramBytes = parseRamBytes(fc.mem); ramSpecified = true; }
             if (!fc.cpu.empty())     cpuCore  = Cpu68k::parseCore(fc.cpu.c_str());
             if (!fc.quartz.empty())  quartzSpec = fc.quartz;
             machineMono  = fc.mono;
@@ -2179,16 +2181,24 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--machine")) {
             const char* v = next(a);
             if (std::strcmp(v, "st") && std::strcmp(v, "megast") && std::strcmp(v, "ste")
-                && std::strcmp(v, "megaste"))
-                badArg(a, v, "st, megast, ste or megaste");
+                && std::strcmp(v, "megaste") && std::strcmp(v, "tt"))
+                badArg(a, v, "st, megast, ste, megaste or tt");
             machType = parseMachine(v);
         }
         else if (!std::strcmp(a, "--fpu"))        fpuPresent = true;
         else if (!std::strcmp(a, "--mem")) {
             const char* v = next(a);
+            ramSpecified = true;
             ramBytes = parseRamBytes(v);
             if (std::strcmp(ramLabel(ramBytes), v) && std::strcmp(v, "2.5m"))
                 badArg(a, v, "256k, 512k, 1m, 2m, 2176k, 2560k or 4m");
+        }
+        else if (!std::strcmp(a, "--tt-ram")) {
+            const char* v = next(a);
+            if (!std::strcmp(v, "0")) ttRamBytes = 0;
+            else if (!std::strcmp(v, "4m")) ttRamBytes = 4u << 20;
+            else if (!std::strcmp(v, "16m")) ttRamBytes = 16u << 20;
+            else badArg(a, v, "0, 4m or 16m");
         }
         else if (!std::strcmp(a, "--until-pc"))   { untilPc = argHex(a, next(a)); haveUntil = true; }
         else if (!std::strcmp(a, "--break"))      breakAddrs.push_back(argHex(a, next(a)));
@@ -2321,7 +2331,23 @@ int main(int argc, char** argv) {
         return 2;
     }
     neost::pacing::setQuartzGlobal(quartz);
+    if (machType == MachineType::Tt) {
+        if (stateHashEvery || archHashEvery || rewindTest || saveStateTest ||
+            !saveStatePath.empty() || !loadStatePath.empty()) {
+            std::fprintf(stderr, "[headless] TT save states, rewind and state hashes are not supported yet\n");
+            return 2;
+        }
+        if (!ramSpecified) ramBytes = 4u << 20;
+        if (ramBytes != (2u << 20) && ramBytes != (4u << 20)) {
+            std::fprintf(stderr, "[headless] TT ST-RAM: use --mem 2m or 4m\n");
+            return 2;
+        }
+    } else if (ttRamBytes) {
+        std::fprintf(stderr, "[headless] --tt-ram requires --machine tt\n");
+        return 2;
+    }
     Machine machine(ramBytes, cpuCore, machType);
+    if (ttRamBytes && !machine.setTtRamSize(ttRamBytes)) return 2;
     const int mfpPhase = Machine::mfpPhaseForSeed(mfpPhaseSeed);
     machine.setClocks(quartz, mfpPhase);
     if (quartz != neost::pacing::Quartz::Pal || mfpPhase != 0)
@@ -2350,6 +2376,8 @@ int main(int argc, char** argv) {
     if (slirpSelfTestFlag) return natSelfTest(machine);
     std::fprintf(stderr, "[headless] CPU core: %s | machine: %s | RAM: %s\n",
                  Cpu68k::coreName(machine.cpu.core()), machineName(machType), ramLabel(ramBytes));
+    if (machType == MachineType::Tt)
+        std::fprintf(stderr, "[headless] TT030: MC68030 + MC68882, %zu MiB TT-RAM (experimental)\n", ttRamBytes >> 20);
     if (!machine.loadTos(romPath)) {
         std::fprintf(stderr, "[headless] cannot load %s\n", romPath.c_str());
         return 1;
@@ -3173,7 +3201,7 @@ int main(int argc, char** argv) {
                 // l'abandonne hors de execute() (bug hunt 11).
                 uint32_t written = 0;
                 for (uint32_t k = 0; k < dumpLen; ++k) {
-                    const uint8_t b = machine.bus.read8((dumpAddr + k) & 0xFFFFFFu);
+                    const uint8_t b = machine.bus.read8(dumpAddr + k);
                     written += uint32_t(std::fwrite(&b, 1, 1, df));
                 }
                 const bool dumpOk = (written == dumpLen) && (std::fclose(df) == 0);

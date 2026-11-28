@@ -1,6 +1,6 @@
 # Bus
 
-> God node · 196 connections · `src/core/Bus.hpp`
+> God node · 209 connections · `src/core/Bus.hpp`
 
 **Community:** [Community 14](Community_14.md)
 
@@ -17,6 +17,7 @@
 - shifter `EXTRACTED`
 - psg `EXTRACTED`
 - glue `EXTRACTED`
+- mfpTt `EXTRACTED`
 - mfp `EXTRACTED`
 - ikbd `EXTRACTED`
 - fdc `EXTRACTED`
@@ -31,31 +32,30 @@
 - cpu `EXTRACTED`
 - watchBase_ `EXTRACTED`
 - gemdos `EXTRACTED`
-- scc `EXTRACTED`
-- *…and 33 more `defines` connection(s) not listed (lowest-degree first to go)*
+- *…and 38 more `defines` connection(s) not listed (lowest-degree first to go)*
 
 ### method
 - .mmuTranslate() `EXTRACTED`
 - .peek8() `EXTRACTED`
 - .read8Slow() `EXTRACTED`
-- .busFaultN() `EXTRACTED`
 - .busFault() `EXTRACTED`
-- .romWindowSize() `EXTRACTED`
+- .busFaultN() `EXTRACTED`
+- .normalizeAddress() `EXTRACTED`
 - .busFaultNSlow() `EXTRACTED`
+- .mmioWrite8() `EXTRACTED`
 - .loadTos() `EXTRACTED`
+- .romWindowSize() `EXTRACTED`
 - .steCartWindow() `EXTRACTED`
 - .buildIoFault() `EXTRACTED`
-- .mmioWrite8() `EXTRACTED`
+- .write8Slow() `EXTRACTED`
+- .mmioRead8() `EXTRACTED`
 - .mmioTable() `EXTRACTED`
 - .aciaOddByteIsChipCycle() `EXTRACTED`
 - .rebuildMmuCache() `EXTRACTED`
-- .steCartRelocated() `EXTRACTED`
-- .ramSpaceRead8() `EXTRACTED`
-- .write8Slow() `EXTRACTED`
-- .mmioRead8() `EXTRACTED`
-- .mmioSlotFor() `EXTRACTED`
 - .peekMapped8() `EXTRACTED`
-- *…and 95 more `method` connection(s) not listed (lowest-degree first to go)*
+- .steCartRelocated() `EXTRACTED`
+- .hostRamPtr() `EXTRACTED`
+- *…and 103 more `method` connection(s) not listed (lowest-degree first to go)*
 
 ### references
 - [vector](vector.md) `EXTRACTED`

@@ -1,26 +1,28 @@
 # Community 506
 
-> 5 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **15. E/S : imprimante, joypads, joysticks — `Machine.cpp`, `StePads.hpp`, `JoystickInput.hpp` ↔ `psg.c`, `printer.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Refermés** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **CPpmd7_Context_** (7 connections) — `extern/lzma/Ppmd7.h`
+- **CPpmd7_Context_Ref** (1 connections)
+- **NumStats** (1 connections) — `extern/lzma/Ppmd7.h`
+- **Suffix** (1 connections) — `extern/lzma/Ppmd7.h`
+- **Union2** (1 connections) — `extern/lzma/Ppmd7.h`
+- **Union4** (1 connections) — `extern/lzma/Ppmd7.h`
 
 ## Relationships
 
-- [Community 397](Community_397.md) (1 shared connections)
+- [Community 222](Community_222.md) (1 shared connections)
+- [Community 357](Community_357.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
+- `extern/lzma/Ppmd7.h`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 7 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

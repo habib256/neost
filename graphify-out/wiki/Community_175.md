@@ -1,6 +1,6 @@
 # Community 175
 
-> 21 nodes
+> 20 nodes
 
 ## Key Concepts
 
@@ -12,7 +12,6 @@
 - **fixBools()** (3 connections) — `src/core/StateArchive.hpp`
 - **.gemPexec()** (3 connections) — `src/io/GemdosHd.hpp`
 - **.loadAndReloc()** (3 connections) — `src/io/GemdosHd.hpp`
-- **Scu.hpp** (3 connections) — `src/io/Scu.hpp`
 - **.read8()** (1 connections) — `src/io/Scu.hpp`
 - **.reset()** (1 connections) — `src/io/Scu.hpp`
 - **.syncState()** (1 connections) — `src/io/Scu.hpp`
@@ -30,16 +29,16 @@
 
 - [Community 20](Community_20.md) (3 shared connections)
 - [Community 369](Community_369.md) (3 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 565](Community_565.md) (2 shared connections)
 - [Community 17](Community_17.md) (2 shared connections)
 - [Community 130](Community_130.md) (2 shared connections)
 - [Community 106](Community_106.md) (2 shared connections)
-- [Community 135](Community_135.md) (2 shared connections)
+- [Community 42](Community_42.md) (2 shared connections)
 - [Community 14](Community_14.md) (1 shared connections)
-- [Community 160](Community_160.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 135](Community_135.md) (1 shared connections)
 - [Community 53](Community_53.md) (1 shared connections)
-- [Community 149](Community_149.md) (1 shared connections)
+- [Community 204](Community_204.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
 
 ## Source Files
 
@@ -51,8 +50,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 24 (45%)
-- INFERRED: 29 (55%)
+- EXTRACTED: 22 (43%)
+- INFERRED: 29 (57%)
 - AMBIGUOUS: 0 (0%)
 
 ---

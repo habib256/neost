@@ -5,9 +5,9 @@
 ## Key Concepts
 
 - **CLAUDE.md** (34 connections) — `CLAUDE.md`
-- **TODO.md** (24 connections) — `TODO.md`
+- **TODO.md** (25 connections) — `TODO.md`
 - **CHANGELOG.md** (17 connections) — `CHANGELOG.md`
-- **README.md** (14 connections) — `README.md`
+- **README.md** (15 connections) — `README.md`
 - **CYCLE_ACCURACY.md** (11 connections) — `docs/CYCLE_ACCURACY.md`
 - **HATARI_DIVERGENCES.md** (11 connections) — `docs/HATARI_DIVERGENCES.md`
 - **IMPLEMENTED.md** (10 connections) — `docs/IMPLEMENTED.md`
@@ -35,16 +35,16 @@
 
 - [Community 509](Community_509.md) (17 shared connections)
 - [Community 354](Community_354.md) (3 shared connections)
+- [Community 522](Community_522.md) (2 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
 - [Community 449](Community_449.md) (1 shared connections)
 - [Community 567](Community_567.md) (1 shared connections)
 - [Community 355](Community_355.md) (1 shared connections)
-- [Community 203](Community_203.md) (1 shared connections)
+- [Community 9](Community_9.md) (1 shared connections)
 - [Community 434](Community_434.md) (1 shared connections)
 - [Community 67](Community_67.md) (1 shared connections)
 - [Community 275](Community_275.md) (1 shared connections)
 - [Community 317](Community_317.md) (1 shared connections)
-- [Community 416](Community_416.md) (1 shared connections)
 
 ## Source Files
 
@@ -71,7 +71,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 137 (100%)
+- EXTRACTED: 139 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

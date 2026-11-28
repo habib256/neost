@@ -57,6 +57,8 @@ bool Machine::resolveQuartz(const std::string& spec, MachineType machine,
 }
 
 MachineType Machine::adjustMachineForTos(MachineType requested, const std::string& romPath) {
+    // Le TT est un choix explicite ; les ROM contradictoires sont refusées par le Bus.
+    if (requested == MachineType::Tt) return requested;
     std::ifstream f(romPath, std::ios::binary);
     if (!f) return requested;                 // introuvable → loadTos signalera l'erreur
     uint8_t b[2] = {0, 0};
@@ -130,16 +132,17 @@ int kHblOff(bool isSte) {
 } }
 
 Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
-    : bus(ramBytes), cpu(bus, cpuCore) {
+    : bus(ramBytes, machine), cpu(bus, cpuCore) {
     machineType_ = machine;
     bus.machine  = machine;         // profil matériel (gating MMIO / bus errors)
     mfp.setHasBlitter(machineHasBlitter(machine));   // GPIP3 : pull-up R4 sans blitter
-    glue.memConfig_ = memConfigForBytes(ramBytes);   // $FF8001 cohérent (EmuTOS recalcule)
+    glue.memConfig_ = memConfigForBytes(bus.ram.size());   // $FF8001 cohérent (EmuTOS recalcule)
     // Branchement des puces sur le bus (le bus ne possède pas les composants).
     bus.shifter = &shifter;
     bus.psg     = &psg;
     bus.glue    = &glue;
     bus.mfp     = &mfp;
+    bus.mfpTt   = machine == MachineType::Tt ? &mfpTt : nullptr;
     bus.ikbd    = &ikbd;
     bus.fdc     = &fdc;
     bus.dmasnd  = &dmasnd;
@@ -147,7 +150,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     bus.rtc     = &rtc;     // horloge RP5C15 (Mega ST / Mega STE)
     bus.midi    = &midi;    // ACIA MIDI ($FFFC04) — bouclage OUT→IN
     bus.cpu     = &cpu;     // pour rafraîchir l'IPL après chaque accès MMIO
-    bus.scc     = (machine == MachineType::MegaSte) ? &scc : nullptr;  // SCC série (Mega STE)
+    bus.scc     = (machine == MachineType::MegaSte || machine == MachineType::Tt) ? &scc : nullptr;
     // Joypads STE ($FF9200/02) : seul le Mega STE expose les DIP switches motherboard
     // dans l'octet haut de $FF9200 (cf. StePads / IoMemTabMegaSTE_DIPSwitches_Read).
     bus.stePads.setMegaSte(machine == MachineType::MegaSte);
@@ -281,6 +284,8 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     });
     mfp.setScheduler(&sched);   // le MFP date lui-même ses timers (A/C/D, mode délai)
     mfp.setClock(neost::pacing::cpuHzInt(), 0);   // quartz en service, grille historique
+    mfpTt.setScheduler(&sched, /*secondTtMfp=*/true);
+    mfpTt.setClock(neost::pacing::cpuHzInt(), 0);
 
     // A42 — L'ÉLECTION DE L'IRQ MFP EST SUSPENDUE PENDANT UN LOT DE DISPATCH, puis
     // tranchée UNE FOIS à la fin, avant que l'IPL ne soit relu. C'est l'ordre d'Hatari :
@@ -299,8 +304,19 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
                                          return e ? std::atoi(e) != 0 : true; }();
         if (iplBatch)
             sched.setDispatchHooks(
-                [this] { mfp.setInDispatch(true); },
-                [this] { mfp.setInDispatch(false); mfp.flushIrqUpdate(); cpu.updateIpl(); });
+                [this] {
+                    mfp.setInDispatch(true);
+                    if (bus.mfpTt) mfpTt.setInDispatch(true);
+                },
+                [this] {
+                    mfp.setInDispatch(false);
+                    mfp.flushIrqUpdate();
+                    if (bus.mfpTt) {
+                        mfpTt.setInDispatch(false);
+                        mfpTt.flushIrqUpdate();
+                    }
+                    cpu.updateIpl();
+                });
     }
     ikbd.setScheduler(&sched);  // l'IKBD diffère sa réponse de reset ($F1)
     ikbd.startAutoSend();       // scrutation firmware, indépendante de la fréquence vidéo
@@ -416,6 +432,15 @@ void Machine::installSchedulerCallbacks() {
     // Hatari MFP_ProcessIRQ — sinon le délai s'additionnerait au pipeline IPL de
     // Moira et le test « T4 Video Counter » des diagnostics échoue).
     sched.setCallback(Scheduler::MFP_IRQ, [this] { cpu.updateIplNow(); });
+    // [B] Atari TT030 Hardware Reference Manual §II.5, §V : second MC68901.
+    // Chaque échéance est indépendante de celle du MFP ST, sur le même quartz.
+    for (int timer = 0; timer < 4; ++timer) {
+        sched.setCallback(static_cast<Scheduler::Source>(Scheduler::TT_TIMER_A + timer),
+                          [this, timer] { mfpTt.onTimerExpire(timer); cpu.updateIpl(); });
+    }
+    sched.setCallback(Scheduler::TT_MFP_IRQ, [this] { cpu.updateIplNow(); });
+    sched.setCallback(Scheduler::TT_SERIAL_RX, [this] { mfpTt.onSerialRxEvent(); cpu.updateIpl(); });
+    sched.setCallback(Scheduler::TT_SERIAL_TX, [this] { mfpTt.onSerialTxEvent(); cpu.updateIpl(); });
     // Machine à états du FDC (port Hatari) : chaque phase (spin-up, head-load,
     // latence rotationnelle, transfert DMA octet par octet, INTRQ, arrêt moteur)
     // est datée et avancée ici. L'INTRQ (GPIP5 + canal 7) peut être levée/effacée.
@@ -542,7 +567,7 @@ void Machine::onRender() {
     // COURANT des registres (palette/base) — AVANT le tic Timer B (400) et le HBL
     // (508) de la même ligne, dont les handlers changeront les registres pour la
     // ligne SUIVANTE (rasters). Rendu purement « sortie » : n'altère ni CPU ni IRQ.
-    const int h = shifter.activeHeight();          // lignes ACTIVES (≠ buffer overscan)
+    const int h = shifter.rasterLines();          // lignes ACTIVES (≠ buffer overscan)
     if (renderLine_ < h) shifter.renderLine(renderLine_);
     ++renderLine_;
     // L'index actif renderLine_ correspond à la scanline (dispStart_ + renderLine_).
@@ -988,7 +1013,7 @@ void Machine::beginFrame_() {
 // fois quand frameEnd_ est atteint (ou à la fin d'un pas qui franchit la frontière).
 void Machine::finalizeFrame_() {
     if (sched.now() < frameEnd_) sched.syncTo(frameEnd_);
-    const int h = shifter.activeHeight();          // lignes ACTIVES (≠ buffer overscan)
+    const int h = shifter.rasterLines();          // lignes ACTIVES (≠ buffer overscan)
     while (renderLine_ < h) shifter.renderLine(renderLine_++);
     shifter.finishFrame();
 }
@@ -1042,6 +1067,16 @@ static uint32_t cartFingerprint(const std::vector<uint8_t>& cart) {
 static constexpr uint16_t kStateVersion = 69; // v69 : Moira 6, prélecture EDB et registres CPU par champ.
 // v68 : historique des mots CPU pour le busdisplay vidéo ; v67 : anti-rebond IKBD $19, liaison ACIA→SCI (trame, BREAK), BREAK reçu par le MFP ; v66 : Shifter::scrollWrites_ ($FF8264/65 en plein DE) ; v65 : RTL8019AS : CLDA, 9346CR, BPAGE, CONFIG0-3 (v64 : empreintes ACSI, NE2000 TSR/RSR/CNTR, GEMDOS ProcPaths::ran, Shifter noscroll ; v63 : 40 handles hôte en 88..127 ; v62 : Fforce par processus, handle détruit ; v61 : processus, attributs, alias 8.3)
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n);   // défini plus bas
+bool Machine::setTtRamSize(std::size_t bytes) {
+    // [B] Atari TT030 Field Service Manual, §2.2.4 : cartes de 4 ou 16 Mio.
+    if (machineType_ != MachineType::Tt ||
+        (bytes != 0 && bytes != 4u * 1024 * 1024 && bytes != 16u * 1024 * 1024))
+        return false;
+    abortParked_();
+    bus.ttRam.assign(bytes, 0);
+    return true;
+}
+
 void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     uint32_t magic   = 0x4E535453u;   // 'NSTS'
     uint16_t version = kStateVersion; // v58 : broches vidéo déjà montées ; v57 : Blitter sans fetchSrc_ ; v56 : TBI du mode pulse ; v55 : Moira::stopGraceUntil
@@ -1394,6 +1429,10 @@ void Machine::mouseEvent(int dx, int dy, bool left, bool right) {
 
 bool Machine::saveState(std::vector<uint8_t>& out) {
     out.clear();
+    if (machineType_ == MachineType::Tt) {
+        lastStateError_ = "TT save states are not supported yet";
+        return false;
+    }
     // Taille du dernier état : un appelant qui passe un vecteur neuf à chaque trame
     // n'en paie qu'une allocation, au lieu d'une croissance géométrique sur ~1,9 Mo.
     out.reserve(lastStateBytes_);
@@ -1426,6 +1465,7 @@ void Machine::sessionConfig(uint8_t out[kSessionCfgSize]) const {
 void Machine::setClocks(neost::pacing::Quartz quartz, int mfpPhase64) {
     neost::pacing::setQuartzGlobal(quartz);
     mfp.setClock(neost::pacing::cpuHzInt(), mfpPhase64);
+    mfpTt.setClock(neost::pacing::cpuHzInt(), mfpPhase64);
 }
 
 // Graine → phase 0..63. Graine 0 = grille historique (phase 0) ; sinon un mélange
@@ -1448,6 +1488,10 @@ void Machine::acsiFingerprints(uint32_t out[kAcsiTargets]) const {
 // hôte, ce qui ne se défait pas si l'état est ensuite refusé (périphérique branché ou
 // cartouche changée depuis la capture).
 bool Machine::stateHeaderOk(const uint8_t* data, std::size_t n) {
+    if (machineType_ == MachineType::Tt) {
+        lastStateError_ = "TT save states are not supported yet";
+        return false;
+    }
     // Valide l'en-tête (magic + version + empreinte de config + CRC du payload)
     // AVANT de restaurer quoi que ce soit : un état d'une autre machine/RAM/TOS est
     // REFUSÉ (sinon machine hybride ST/STE ou RAM invitée incohérente avec la ROM

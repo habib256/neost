@@ -6,9 +6,9 @@
 
 - **Piloter NeoST depuis l'extérieur (exploration d'états, fuzzing, Go-Explore)** (13 connections) — `docs/OPENDST.md`
 - **10. Outils — `memdiff`, `explore`** (3 connections) — `docs/OPENDST.md`
-- **1. Le contrat de déterminisme** (2 connections) — `docs/OPENDST.md`
 - **2. Ce que ça vaut, mesuré** (2 connections) — `docs/OPENDST.md`
 - **3. Injecter les entrées** (2 connections) — `docs/OPENDST.md`
+- **8. Pièges connus** (2 connections) — `docs/OPENDST.md`
 - **Scripts joystick — `--joy-script N "SCRIPT"`, `--joy-script-file N FICHIER`** (2 connections) — `docs/OPENDST.md`
 - **11. Rapporter une divergence** (1 connections) — `docs/OPENDST.md`
 - **4. Observer — `--probe`, `--probe-every`, `--hash-ram`** (1 connections) — `docs/OPENDST.md`
@@ -20,12 +20,12 @@
 
 ## Relationships
 
-- [Community 434](Community_434.md) (1 shared connections)
 - [Community 160](Community_160.md) (1 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 530](Community_530.md) (1 shared connections)
-- [Community 499](Community_499.md) (1 shared connections)
 - [Community 203](Community_203.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
+- [Community 572](Community_572.md) (1 shared connections)
+- [Community 228](Community_228.md) (1 shared connections)
+- [Community 434](Community_434.md) (1 shared connections)
 - [Community 30](Community_30.md) (1 shared connections)
 
 ## Source Files

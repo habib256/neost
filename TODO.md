@@ -73,7 +73,7 @@ Le filet de validation sert à juger le port et les prochaines corrections de fi
 | **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | restes MFP de la fiche et WS3 en attente de source, DMA disque relevé et reporté au § 9 → § 3 ; étalons `rtl` en cours de ligne, relevés de tiers, documents primaires → § 5 | P2 |
 | **3. Logithèque** | Plus aucun plantage que le vrai matériel n'aurait pas | TOS 2.06 UK jugé (course réelle de la ROM), parcours étendus (son, STE, parties longues) → § 4 | P2 |
 | **4. Livrable** | Ce qui sert l'utilisateur sans toucher à l'émulation | Pilotes EtherNEC, EWeb par le NAT → § 6-7 | P2 |
-| **5. Terrain du TT/Falcon** | Préparer sans rien intégrer | Oracle et fiches TT/Falcon → § 10 ; A32 et inventaire faits (`docs/HYPOTHESES_ST.md`) | P2 |
+| **5. TT et Falcon** | Progresser sur le TT expérimental et préparer le Falcon | Amorçage, fiches et oracles → § 10 | P2 |
 | **6. Cœur libretro** | Valider l’adaptateur et les usages du frontend | Contrôles du module, du netplay et de la reprise d’état → § 7, carte : [`docs/LIBRETRO.md`](docs/LIBRETRO.md) | P2 |
 
 ---
@@ -673,11 +673,18 @@ partagent leurs sources. La chaîne MFP→IPL de NeoST ajoute ses propres délai
 
 ## 10. 🚀 Le TT et le Falcon
 
-Après l'échange. D'ici là : des inventaires, des fiches et des oracles, aucun code de machine.
+Le profil TT expérimental affiche le test mémoire de TOS 3.06 UK en TT-medium.
+Les ROM UK et DE atteignent le bureau GEM en ST basse sans disque. Le menu
+Desk répond à la souris sur la ROM UK. Une disquette avec `NEWDESK.INF`
+sélectionne le bureau TT-medium sur cette ROM. La recette et les relevés sont dans
+[le guide TT](docs/TT_BRINGUP.md).
 
-- **Puces du TT et du Falcon** · P2 ⏸ cœur — DSP56001, VIDEL, Crossbar, second MFP du TT,
-  SCSI NCR5380, IDE, NVRAM MC146818 ; bus 32 bits et cartes MMIO par machine. Fiches à
-  rapatrier par `tools/setup_silicon_refs.sh` ; témoins : `extern/hatari/src/falcon`.
+- **Amorçage et périphériques TT** · P2 ◐ — compléter la datation vidéo TT, les modes natifs restants,
+  le SCSI NCR5380 et les sauvegardes propres au profil. Confronter les cycles
+  de bus et les interruptions à des relevés matériels.
+- **Puces du Falcon** · P2 ⭘ — porter la carte mère, le DSP56001, le VIDEL,
+  le Crossbar et l’IDE. Fiches dans `tools/setup_silicon_refs.sh` et témoin
+  d’implémentation dans `extern/hatari/src/falcon`.
 - **Fiches et oracle, restes** · P3 ⏸ source — fait le 2026-11-11 : MC68030, DSP56001, NCR5380,
   MC146818A, TT030 Hardware Reference Manual et deux éditions de la doc développeur Falcon épinglés
   (`tools/setup_silicon_refs.sh`) ; oracle Hatari en TT et en Falcon jusqu'au bureau avec EmuTOS

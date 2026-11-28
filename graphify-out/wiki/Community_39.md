@@ -1,10 +1,11 @@
 # Community 39
 
-> 61 nodes
+> 64 nodes
 
 ## Key Concepts
 
 - **Scheduler** (51 connections) — `src/core/Scheduler.hpp`
+- **Audit Hatari, 5ᵉ passe : statuts remis en phase, chantiers Super Hang-On et Rick Dangerous (2026-07-07, complétée le 2026-07-08)** (25 connections) — `CHANGELOG.md`
 - **.syncTo()** (14 connections) — `src/core/Scheduler.hpp`
 - **.liveNow()** (11 connections) — `src/core/Scheduler.hpp`
 - **.scanNextDue()** (11 connections) — `src/core/Scheduler.hpp`
@@ -12,10 +13,11 @@
 - **.runMfpTimersTo()** (6 connections) — `src/core/Scheduler.hpp`
 - **.runTo()** (6 connections) — `src/core/Scheduler.hpp`
 - **.schedule()** (6 connections) — `src/core/Scheduler.hpp`
+- **.flushIrqUpdate()** (5 connections) — `src/io/Mfp.hpp`
 - **function** (5 connections)
 - **.addStolenCycles()** (4 connections) — `src/core/Scheduler.hpp`
 - **.cancel()** (4 connections) — `src/core/Scheduler.hpp`
-- **.ctz32()** (4 connections) — `src/core/Scheduler.hpp`
+- **.ctz64()** (4 connections) — `src/core/Scheduler.hpp`
 - **.nextDue()** (4 connections) — `src/core/Scheduler.hpp`
 - **2026-11-27 — Restes de la chasse : TAI au RESET, états forgés, web, fuzz des archives** (4 connections) — `CHANGELOG.md`
 - **Les cycles volés par le blitter avancent enfin l'horloge des timers (2026-08-25)** (4 connections) — `CHANGELOG.md`
@@ -27,24 +29,22 @@
 - **.firingDue()** (3 connections) — `src/core/Scheduler.hpp`
 - **.rawCyclesUntil()** (3 connections) — `src/core/Scheduler.hpp`
 - **.serialize()** (3 connections) — `src/core/Scheduler.hpp`
-- **.setCallback()** (3 connections) — `src/core/Scheduler.hpp`
-- **.syncToRollingFrames()** (3 connections) — `src/core/Scheduler.hpp`
-- *... and 36 more nodes in this community*
+- *... and 39 more nodes in this community*
 
 ## Relationships
 
+- [Community 215](Community_215.md) (10 shared connections)
 - [Community 77](Community_77.md) (7 shared connections)
-- [Community 130](Community_130.md) (6 shared connections)
-- [Community 215](Community_215.md) (4 shared connections)
-- [Community 392](Community_392.md) (3 shared connections)
+- [Community 130](Community_130.md) (7 shared connections)
+- [Community 27](Community_27.md) (4 shared connections)
+- [Community 60](Community_60.md) (3 shared connections)
+- [Community 446](Community_446.md) (3 shared connections)
+- [Community 6](Community_6.md) (2 shared connections)
 - [Community 397](Community_397.md) (2 shared connections)
 - [Community 218](Community_218.md) (2 shared connections)
-- [Community 9](Community_9.md) (2 shared connections)
-- [Community 203](Community_203.md) (2 shared connections)
-- [Community 88](Community_88.md) (2 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 237](Community_237.md) (1 shared connections)
-- [Community 317](Community_317.md) (1 shared connections)
+- [Community 386](Community_386.md) (2 shared connections)
+- [Community 434](Community_434.md) (2 shared connections)
+- [Community 296](Community_296.md) (2 shared connections)
 
 ## Source Files
 
@@ -54,11 +54,12 @@
 - `docs/IMPLEMENTED.md`
 - `docs/PERFORMANCE.md`
 - `src/core/Scheduler.hpp`
+- `src/io/Mfp.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 93 (68%)
-- INFERRED: 44 (32%)
+- EXTRACTED: 98 (59%)
+- INFERRED: 67 (41%)
 - AMBIGUOUS: 0 (0%)
 
 ---

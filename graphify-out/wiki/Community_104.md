@@ -1,41 +1,51 @@
 # Community 104
 
-> 16 nodes
+> 23 nodes
 
 ## Key Concepts
 
-- **Restart** (15 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **PrefetchQueue** (6 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **u16** (4 connections)
-- **edb** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **irc** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ird** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **entrySsp** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **entryUsp** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **fault** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **framePC** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **frameSp** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **frameSr** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **pc** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **pre** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **preSr** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **valid** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **Assembler** (19 connections) — `tools/timing_extended.py`
+- **build()** (14 connections) — `tools/run_megaste_blitter_checks.py`
+- **build_extended()** (14 connections) — `tools/timing_extended.py`
+- **run_hwtst_loop.py** (12 connections) — `tools/run_hwtst_loop.py`
+- **build_clock()** (11 connections) — `tools/run_hwtst_loop.py`
+- **.w()** (11 connections) — `tools/timing_extended.py`
+- **build()** (10 connections) — `tools/run_hwtst_loop.py`
+- **build()** (9 connections) — `tools/run_megaste_bus_oracle.py`
+- **.long()** (8 connections) — `tools/timing_extended.py`
+- **.branch()** (7 connections) — `tools/timing_extended.py`
+- **.byte()** (7 connections) — `tools/timing_extended.py`
+- **.finish()** (6 connections) — `tools/timing_extended.py`
+- **.label()** (6 connections) — `tools/timing_extended.py`
+- **.vector()** (6 connections) — `tools/timing_extended.py`
+- **.address()** (5 connections) — `tools/timing_extended.py`
+- **measure()** (4 connections) — `tools/run_hwtst_loop.py`
+- **measure_clock()** (4 connections) — `tools/run_hwtst_loop.py`
+- **.word()** (4 connections) — `tools/timing_extended.py`
+- **main()** (3 connections) — `tools/run_hwtst_loop.py`
+- **.__init__()** (1 connections) — `tools/timing_extended.py`
+- **Cartouche : Timer A délai /200, donnée 0 (256), IRQ sur niveau 6 ; STOP entre…** (1 connections) — `tools/run_hwtst_loop.py`
+- **Mega STE : vitesse d'une boucle registre à 8 MHz, 16 MHz sans cache et avec…** (1 connections) — `tools/run_hwtst_loop.py`
+- **Cartouche : règle le SCU, recopie la boucle en RAM (le code d'HWTST tourne en…** (1 connections) — `tools/run_hwtst_loop.py`
 
 ## Relationships
 
-- [Community 64](Community_64.md) (3 shared connections)
-- [Community 16](Community_16.md) (2 shared connections)
-- [Community 57](Community_57.md) (2 shared connections)
-- [Community 33](Community_33.md) (1 shared connections)
+- [Community 207](Community_207.md) (15 shared connections)
+- [Community 3](Community_3.md) (2 shared connections)
+- [Community 582](Community_582.md) (2 shared connections)
+- [Community 173](Community_173.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraTypes.h`
+- `tools/run_hwtst_loop.py`
+- `tools/run_megaste_blitter_checks.py`
+- `tools/run_megaste_bus_oracle.py`
+- `tools/timing_extended.py`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 54 (59%)
+- INFERRED: 38 (41%)
 - AMBIGUOUS: 0 (0%)
 
 ---

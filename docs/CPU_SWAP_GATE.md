@@ -141,5 +141,7 @@ Détail et preuves → `extern/moira/NEOST_VENDOR.md`. Origine des adaptations �
 | 2026-10-22 | STOP+8 : retenue d'IRQ de 4 cycles après STOP |
 | 2026-11-03 | ordre des accès d'après fx68k (MOVEM, ADD/SUB.L mémoire, ADDX/SUBX.L, DBcc, JSR, trame de groupe 0, reset +2) |
 | 2026-11-09 | `<cstdlib>` explicite (Emscripten 7) |
+| 2026-11-28 | MC68030 : code de fonction des cycles physiques du parcours PMMU (TT) |
+| 2026-11-28 | MC68030 : invalidation D-cache sur une écriture partielle avec write allocation |
 
 Le moyen le plus sûr : un `diff` de `extern/moira/Moira` contre le pin officiel, en mode 68000.

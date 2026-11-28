@@ -4,29 +4,26 @@
 
 ## Key Concepts
 
-- **compile()** (7 connections) — `src/android/main_android.cpp`
-- **Pilotage externe : menu, spécification du protocole, recherche d'adresses (2026-09-05)** (2 connections) — `CHANGELOG.md`
-- **0. Démarrer en cinq commandes** (2 connections) — `docs/OPENDST.md`
-- **GLenum** (1 connections)
-- **GLuint** (1 connections)
+- **MouseMode** (7 connections) — `src/io/Ikbd.hpp`
+- **ABS** (1 connections) — `src/io/Ikbd.hpp`
+- **CURSOR** (1 connections) — `src/io/Ikbd.hpp`
+- **OFF** (1 connections) — `src/io/Ikbd.hpp`
+- **REL** (1 connections) — `src/io/Ikbd.hpp`
 
 ## Relationships
 
-- [Community 228](Community_228.md) (2 shared connections)
-- [Community 160](Community_160.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 364](Community_364.md) (1 shared connections)
+- [Community 47](Community_47.md) (1 shared connections)
+- [Community 7](Community_7.md) (1 shared connections)
+- [Community 472](Community_472.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/OPENDST.md`
-- `src/android/main_android.cpp`
+- `src/io/Ikbd.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 6 (67%)
-- INFERRED: 3 (33%)
+- EXTRACTED: 6 (86%)
+- INFERRED: 1 (14%)
 - AMBIGUOUS: 0 (0%)
 
 ---

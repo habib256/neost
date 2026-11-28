@@ -1,37 +1,41 @@
 # Community 395
 
-> 10 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **Parser** (15 connections) — `src/audio/MidiMessageParser.hpp`
-- **.reset()** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **size_t** (1 connections)
-- **data_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **got_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **inSysex_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **kMaxSysex** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **needed_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **status_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **sysex_** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **Mode borne (kiosk)** (9 connections) — `docs/KIOSK.md`
+- **.state()** (5 connections) — `src/io/CartridgeKey.hpp`
+- **Chasse aux bugs en quatre vagues ; format d'état v60 (2026-11-11)** (3 connections) — `CHANGELOG.md`
+- **Dossiers ROM** (2 connections) — `docs/KIOSK.md`
+- **Raccourcis** (2 connections) — `docs/KIOSK.md`
+- **Borne Raspberry Pi** (1 connections) — `docs/KIOSK.md`
+- **Clavier & souris (SELECT manette, ou F12)** (1 connections) — `docs/KIOSK.md`
+- **Démarrage direct sur un jeu (attract)** (1 connections) — `docs/KIOSK.md`
+- **Joysticks** (1 connections) — `docs/KIOSK.md`
+- **Menu in-game (START manette, ou F9)** (1 connections) — `docs/KIOSK.md`
+- **Zoom adaptatif (défaut, bascule F10)** (1 connections) — `docs/KIOSK.md`
 
 ## Relationships
 
-- [Community 44](Community_44.md) (1 shared connections)
-- [Community 185](Community_185.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 42](Community_42.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 150](Community_150.md) (1 shared connections)
 - [Community 48](Community_48.md) (1 shared connections)
+- [Community 444](Community_444.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 361](Community_361.md) (1 shared connections)
+- [Community 422](Community_422.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/MidiMessageParser.hpp`
+- `CHANGELOG.md`
+- `docs/KIOSK.md`
+- `src/io/CartridgeKey.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (93%)
-- INFERRED: 1 (7%)
+- EXTRACTED: 11 (65%)
+- INFERRED: 6 (35%)
 - AMBIGUOUS: 0 (0%)
 
 ---

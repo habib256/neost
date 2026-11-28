@@ -1,63 +1,53 @@
 # Community 149
 
-> 32 nodes
+> 17 nodes
 
 ## Key Concepts
 
-- **Disquette (FDC WD1772 + DMA)** (31 connections) — `docs/IMPLEMENTED.md`
-- **.readTrackStx()** (14 connections) — `src/io/Fdc.hpp`
-- **.readTrackST()** (12 connections) — `src/io/Fdc.hpp`
-- **.writeTrackBuffer()** (12 connections) — `src/io/Fdc.hpp`
-- **.bufferAdd()** (11 connections) — `src/io/Fdc.hpp`
-- **.bytesPerTrack()** (9 connections) — `src/io/Fdc.hpp`
-- **.readAddressST()** (9 connections) — `src/io/Fdc.hpp`
-- **.stOverrideHere()** (9 connections) — `src/io/Fdc.hpp`
-- **.nextSectorIDStx()** (9 connections) — `src/io/Fdc.hpp`
-- **.readSectorStx()** (9 connections) — `src/io/Fdc.hpp`
-- **.bufferSize()** (9 connections) — `src/io/Fdc.hpp`
-- **.sectorsCountView()** (9 connections) — `src/io/StxImage.hpp`
-- **.densityFactor()** (8 connections) — `src/io/Fdc.hpp`
-- **.bytesPerTrackStx()** (8 connections) — `src/io/Fdc.hpp`
-- **.readSectorST()** (8 connections) — `src/io/Fdc.hpp`
-- **.stOverrideFromBuffer()** (8 connections) — `src/io/Fdc.hpp`
-- **.stOverrideFound()** (8 connections) — `src/io/Fdc.hpp`
-- **stxTrackWithSectorWrites()** (8 connections) — `src/io/Fdc.cpp`
-- **.parseWrittenTrack()** (7 connections) — `src/io/Fdc.hpp`
-- **.foundIdHasNoData()** (7 connections) — `src/io/Fdc.hpp`
-- **.readAddressStx()** (7 connections) — `src/io/Fdc.hpp`
-- **.tracksPerDisk()** (6 connections) — `src/io/Fdc.hpp`
-- **.indexCurrentPosBytes()** (6 connections) — `src/io/Fdc.hpp`
-- **.indexCurrentPosCycles()** (6 connections) — `src/io/Fdc.hpp`
-- **.rngNext()** (6 connections) — `src/io/Fdc.hpp`
-- *... and 7 more nodes in this community*
+- **.applyConfig()** (17 connections) — `src/gui/App.hpp`
+- **string** (15 connections)
+- **consumeProfileRequests()** (14 connections) — `src/gui/AppLoop.cpp`
+- **resolveData()** (13 connections) — `src/gui/App.cpp`
+- **tosFileUnsupportedMachine()** (9 connections) — `src/gui/App.cpp`
+- **consumeApplyRequests()** (9 connections) — `src/gui/AppLoop.cpp`
+- **romUnloadableReason()** (8 connections) — `src/gui/App.cpp`
+- **archiveCacheRoot()** (7 connections) — `src/gui/App.cpp`
+- **archiveFloppies()** (7 connections) — `src/gui/App.cpp`
+- **fileExists()** (7 connections) — `src/gui/App.cpp`
+- **romLoadable()** (7 connections) — `src/gui/App.cpp`
+- **mountableFloppy()** (6 connections) — `src/gui/App.cpp`
+- **pickTosForMachine()** (5 connections) — `src/gui/App.cpp`
+- **7. 📦 Livraison et interface** (5 connections) — `TODO.md`
+- **looksLikeTosHeader()** (4 connections) — `src/gui/App.cpp`
+- **App** (4 connections)
+- **uintmax_t** (1 connections)
 
 ## Relationships
 
-- [Community 406](Community_406.md) (38 shared connections)
-- [Community 12](Community_12.md) (25 shared connections)
-- [Community 95](Community_95.md) (24 shared connections)
-- [Community 24](Community_24.md) (7 shared connections)
-- [Community 204](Community_204.md) (7 shared connections)
-- [Community 31](Community_31.md) (4 shared connections)
-- [Community 14](Community_14.md) (4 shared connections)
-- [Community 103](Community_103.md) (3 shared connections)
-- [Community 78](Community_78.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 170](Community_170.md) (2 shared connections)
-- [Community 176](Community_176.md) (2 shared connections)
+- [Community 214](Community_214.md) (16 shared connections)
+- [Community 4](Community_4.md) (13 shared connections)
+- [Community 449](Community_449.md) (5 shared connections)
+- [Community 189](Community_189.md) (5 shared connections)
+- [Community 101](Community_101.md) (5 shared connections)
+- [Community 135](Community_135.md) (5 shared connections)
+- [Community 325](Community_325.md) (3 shared connections)
+- [Community 333](Community_333.md) (3 shared connections)
+- [Community 27](Community_27.md) (2 shared connections)
+- [Community 51](Community_51.md) (2 shared connections)
+- [Community 434](Community_434.md) (1 shared connections)
+- [Community 1](Community_1.md) (1 shared connections)
 
 ## Source Files
 
 - `TODO.md`
-- `docs/IMPLEMENTED.md`
-- `src/io/Fdc.cpp`
-- `src/io/Fdc.hpp`
-- `src/io/StxImage.hpp`
+- `src/gui/App.cpp`
+- `src/gui/App.hpp`
+- `src/gui/AppLoop.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 70 (35%)
-- INFERRED: 130 (65%)
+- EXTRACTED: 63 (59%)
+- INFERRED: 43 (41%)
 - AMBIGUOUS: 0 (0%)
 
 ---

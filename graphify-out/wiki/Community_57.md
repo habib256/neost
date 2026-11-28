@@ -15,11 +15,11 @@
 - **LetterCase** (5 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **isMemMode()** (5 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **isPrgMode()** (5 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **.NeostMoira()** (5 connections) — `src/core/Cpu68k.cpp`
 - **Core** (4 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **CpuSpaceType** (4 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **.setDasmStyle()** (4 connections) — `extern/moira/Moira/Moira.h`
 - **.getInstrInfo()** (4 connections) — `extern/moira/Moira/Moira.h`
+- **.NeostMoira()** (4 connections) — `src/core/Cpu68k.cpp`
 - **AddrSpace** (3 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **.setDataStyle()** (3 connections) — `extern/moira/Moira/Moira.h`
 - **.getDasmStyle()** (3 connections) — `extern/moira/Moira/Moira.h`
@@ -33,18 +33,18 @@
 
 ## Relationships
 
-- [Community 16](Community_16.md) (13 shared connections)
+- [Community 16](Community_16.md) (10 shared connections)
 - [Community 64](Community_64.md) (6 shared connections)
-- [Community 183](Community_183.md) (4 shared connections)
+- [Community 301](Community_301.md) (4 shared connections)
 - [Community 314](Community_314.md) (4 shared connections)
-- [Community 131](Community_131.md) (3 shared connections)
+- [Community 23](Community_23.md) (4 shared connections)
+- [Community 54](Community_54.md) (3 shared connections)
+- [Community 183](Community_183.md) (3 shared connections)
 - [Community 112](Community_112.md) (3 shared connections)
 - [Community 33](Community_33.md) (3 shared connections)
 - [Community 166](Community_166.md) (3 shared connections)
+- [Community 391](Community_391.md) (3 shared connections)
 - [Community 287](Community_287.md) (3 shared connections)
-- [Community 492](Community_492.md) (3 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 2](Community_2.md) (2 shared connections)
 
 ## Source Files
 
@@ -56,8 +56,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 139 (90%)
-- INFERRED: 15 (10%)
+- EXTRACTED: 139 (91%)
+- INFERRED: 14 (9%)
 - AMBIGUOUS: 0 (0%)
 
 ---

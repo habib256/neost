@@ -1,29 +1,28 @@
 # Community 464
 
-> 8 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **Site** (6 connections) — `src/util/Unknowns.hpp`
-- **Registrar** (4 connections) — `src/util/Unknowns.hpp`
-- **.Registrar()** (1 connections) — `src/util/Unknowns.hpp`
-- **site** (1 connections) — `src/util/Unknowns.hpp`
-- **file** (1 connections) — `src/util/Unknowns.hpp`
-- **hits** (1 connections) — `src/util/Unknowns.hpp`
-- **id** (1 connections) — `src/util/Unknowns.hpp`
-- **line** (1 connections) — `src/util/Unknowns.hpp`
+- **SysExJob** (7 connections) — `src/audio/MidiOutHost.cpp`
+- **HMIDIOUT** (1 connections)
+- **MIDIHDR** (1 connections)
+- **buf** (1 connections) — `src/audio/MidiOutHost.cpp`
+- **h** (1 connections) — `src/audio/MidiOutHost.cpp`
+- **hdr** (1 connections) — `src/audio/MidiOutHost.cpp`
 
 ## Relationships
 
-- [Community 565](Community_565.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 42](Community_42.md) (1 shared connections)
 
 ## Source Files
 
-- `src/util/Unknowns.hpp`
+- `src/audio/MidiOutHost.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (100%)
+- EXTRACTED: 7 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

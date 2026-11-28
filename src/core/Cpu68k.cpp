@@ -88,7 +88,7 @@ struct CpuState {
     uint32_t    bpAddr       = 0;         // adresse atteinte (PC du BP, ou adresse DONNÉE du WP)
     bool        bpWatch      = false;     // true = WATCHPOINT (accès mémoire), pas un breakpoint PC
     uint32_t    bpSkipPc     = 0xFFFFFFFFu;  // adresse à ignorer UNE fois (reprise propre)
-    int         cpuMul       = 1;         // 1 = 8 MHz, 2 = 16 MHz
+    int         cpuMul       = 1;         // 68000 8/16 MHz, 68030 32 MHz
     int64_t     cpuBias      = 0;         // biais de conversion (0 tant qu'on reste à 8 MHz)
     int         desiredIpl   = 0;         // niveau IPL calculé (immédiat, broche « réelle »)
     int         appliedIpl   = 0;         // niveau dernier PROPAGÉ à la broche Moira (POLL_IPL)
@@ -266,10 +266,11 @@ CpuState* g_cur = nullptr;
             g_cur->pinNextDue = g_cur->vblPinDue;
     }
     inline int64_t busOfClock(int64_t c) {
-        return g_cur->cpuMul == 1 ? c + g_cur->cpuBias : (c + g_cur->cpuBias) >> 1;
+        const int64_t biased = c + g_cur->cpuBias;
+        return g_cur->cpuMul == 1 ? biased : biased >> (g_cur->cpuMul == 4 ? 2 : 1);
     }
     inline int64_t cpuClockForBus(int64_t b) {
-        return g_cur->cpuMul == 1 ? b - g_cur->cpuBias : (b << 1) - g_cur->cpuBias;
+        return b * g_cur->cpuMul - g_cur->cpuBias;
     }
     void    neostUpdateIpl(bool commit = false);   // recalcule l'IPL présenté au cœur
     void    noteBlitterPreStart();
@@ -287,7 +288,6 @@ CpuState* g_cur = nullptr;
 class NeostMoira : public moira::Moira {
 public:
     NeostMoira() {
-        setModel(moira::CPUModel::M68000);
         // Syntaxe Musashi : conserve le format de trace historique (comparaison MAME).
         auto style = getDasmStyle();
         style.syntax = moira::Syntax::MUSASHI;
@@ -297,6 +297,30 @@ public:
         // valeur à 16 MHz.
         // [D] fx68k.sv:222-223 @ 0602ee46 — rIpl puis iIpl sur enPhi2, deux étages.
         if (g_iplFetch) setIplDelay(g_iplFetch4, g_iplFetch2);
+    }
+
+    void selectMachineModel() {
+        const bool tt = g_cur->bus->machine == MachineType::Tt;
+        // [B] Atari TT030 Computer Field Service Manual C302483-001 rév. B,
+        // §2.2.2 : coprocesseur MC68882 à 32 MHz, ID 1.
+        setCPModel(tt ? moira::CPModel::M68882 : moira::CPModel::NONE);
+        setModel(tt ? moira::CPUModel::M68030 : moira::CPUModel::M68000);
+        // [B] Atari TT030 Computer Field Service Manual C302483-001 rév. B, §2.2.1.
+        // Le 68030 de production tourne à 32 MHz. L'ordonnanceur garde
+        // son unité ST de 8 MHz ; le rapport ne décrit pas les états d'attente.
+        const int mul = tt ? 4 : (g_cur->cpuMul == 4 ? 1 : g_cur->cpuMul);
+        if (mul != g_cur->cpuMul) {
+            const auto busClock = busOfClock(getClock());
+            g_cur->cpuMul = mul;
+            g_cur->cpuBias = busClock * mul - getClock();
+        }
+    }
+
+    void resetMachineCpu() {
+        reset();
+        // Moira a besoin des registres pré-instruction pour redémarrer après BERR.
+        // L'option globale est désactivée dans NeoST ; activer la capture pour le TT.
+        if (getModel() == moira::CPUModel::M68030) flags |= moira::State::SAVE_REGS;
     }
 
     // Une adresse non décodée déclenche une bus error : on lève l'exception
@@ -340,7 +364,7 @@ public:
     bool illegalOpcodeHook(moira::u16 opcode) override {
         if (opcode < 0x0008 || opcode > 0x000A || !g_cur->bus || !g_cur->bus->gemdos)
             return false;
-        const moira::u32 pc0 = getPC0() & 0x00FFFFFF;
+        const moira::u32 pc0 = g_cur->bus->normalizeAddress(getPC0());
         if (pc0 < 0xFA0000 || pc0 >= 0xFC0000) return false;
         // Filet : les primitives de GemdosHd sont non-fautives (checkArea) ; une
         // BusError qui s'échapperait (régression future) abandonne l'appel au lieu
@@ -353,7 +377,8 @@ public:
     void willProcessFault(const moira::StackFrame& frame) override {
         g_cur->faultAddr = frame.addr;
         g_cur->faultPc = getPC0();
-        g_cur->faultWrite = !(frame.code & 0x10);
+        g_cur->faultWrite = getModel() == moira::CPUModel::M68030
+                          ? frame.write : !(frame.code & 0x10);
         g_cur->faultValid = true;
     }
     // Moira encadre la construction de la trame de groupe 0 par ces deux
@@ -389,9 +414,11 @@ public:
     // transfert. Sur les doubles fautes de Stardust, Pacemaker et Faster Atari,
     // Moira 6 garde en PC0 le MOVE.L qui écrit sur la pile.
     void didHaltCPU() override {
+        const bool tt = getModel() == moira::CPUModel::M68030;
+        const char* model = tt ? "68030" : "68000";
         if (g_cur->inReset) {
             neost::log::err(
-                "[cpu] 68000 halted: reset vector fetch failed (SSP/PC unreadable).\n");
+                "[cpu] %s halted: reset vector fetch failed (SSP/PC unreadable).\n", model);
             return;
         }
         // A42 : on NOMME la faute quand on l'a. `faultAddr/faultPc` sont ceux du
@@ -402,20 +429,20 @@ public:
         // toute la chaîne, armer NEOST_FAULT_TRACE.
         if (g_cur->faultValid)
             neost::log::err(
-                "[cpu] 68000 halted: double bus/address error while taking exception "
+                "[cpu] %s halted: double bus/address error while taking exception "
                 "vector %d (SSP=$%08X).\n"
-                "      Last fault: %s at address $%08X, PC=$%06X.\n"
+                "      Last fault: %s at address $%08X, PC=$%0*X.\n"
                 "      The emulated machine is frozen until reset.\n",
-                g_cur->grp0Vector, static_cast<unsigned>(getSP()),
+                model, g_cur->grp0Vector, static_cast<unsigned>(getSP()),
                 g_cur->faultWrite ? "writing" : "reading",
                 static_cast<unsigned>(g_cur->faultAddr),
-                static_cast<unsigned>(g_cur->faultPc & 0xFFFFFFu));
+                tt ? 8 : 6, static_cast<unsigned>(g_cur->faultPc & g_cur->bus->addressMask()));
         else
             neost::log::err(
-                "[cpu] 68000 halted: double bus/address error while taking exception "
+                "[cpu] %s halted: double bus/address error while taking exception "
                 "vector %d (SSP=$%08X).\n"
                 "      The emulated machine is frozen until reset.\n",
-                g_cur->grp0Vector, static_cast<unsigned>(getSP()));
+                model, g_cur->grp0Vector, static_cast<unsigned>(getSP()));
     }
 
     [[noreturn]] void raiseBusError(moira::u32 addr, bool write, bool external) const {
@@ -435,13 +462,14 @@ public:
         // façon nommée là où elle compte, dans le message de halt.
         static const bool trace = std::getenv("NEOST_FAULT_TRACE") != nullptr;
         if (trace)
-            neost::log::err("[cpu] bus error %s at address $%08X, PC=$%06X\n",
+            neost::log::err("[cpu] bus error %s at address $%08X, PC=$%0*X\n",
                             write ? "writing" : "reading",
                             static_cast<unsigned>(addr),
-                            static_cast<unsigned>(getPC0() & 0xFFFFFFu));
+                            getModel() == moira::CPUModel::M68030 ? 8 : 6,
+                            static_cast<unsigned>(getPC0() & g_cur->bus->addressMask()));
         // Le chemin mémoire de Moira complète la trame en fonction du mode
         // d'adressage et du mot fautif. Un appel extérieur (GEMDOS) saute ce chemin.
-        if (!external) throw moira::BusError(addr);
+        if (!external || getModel() == moira::CPUModel::M68030) throw moira::BusError(addr);
         moira::StackFrame f{};
         const moira::u16 ird = getIRD();
         // code = IR(15..5) | function-code(2..0) | bit4 R/W (1 = lecture sur 68000).
@@ -487,7 +515,9 @@ public:
         // relu le 2026-11-11) : « The ST will automatically generate this signal [BERR] if a
         // bus cycle does not complete within 64 clock cycles. » Mega STE : [F], pas de source —
         // attente non comptée. Hatari ne compte aucune attente.
-        if (g_cur->bus->machine != MachineType::MegaSte)
+        // [B] Atari TT030 Field Service Manual, §2.2.5.3 : la SCU du TT
+        // a son propre délai de 16 µs. [F] Datation des fautes TT non modélisée.
+        if (g_cur->bus->machine != MachineType::MegaSte && g_cur->bus->machine != MachineType::Tt)
             const_cast<NeostMoira*>(this)->sync(kBerrTimeoutWait);
         raiseBusError(a, write, external);            // [[noreturn]] : lève moira::BusError
         return true;                        // inatteignable
@@ -581,12 +611,37 @@ public:
     void write8 (moira::u32 a, moira::u8  v) const override { if (g_cur->bus->busFaultN(a, 1, true)) { if (faultOrHalt(a, true)) return; } latchDb8(v); if (g_cur->cpuMul == 2) { writeMste16Mhz(a, 1, v); udsDone(a, 1); return; } g_cur->bus->write8(a, v); udsDone(a, 1); }
     void write16(moira::u32 a, moira::u16 v) const override { if (g_cur->bus->busFaultN(a, 2, true)) { if (faultOrHalt(a, true)) return; } latchDb(v); if (g_cur->cpuMul == 2) { writeMste16Mhz(a, 2, v); udsDone(a, 2); return; } g_cur->bus->write16(a, v); udsDone(a, 2); }
     moira::u32 read32(moira::u32 addr) const override {
+        if (getModel() == moira::CPUModel::M68030) {
+            if (g_cur->bus->busFaultN(addr, 4, false) && faultOrHalt(addr, false)) return 0;
+            const auto value = g_cur->bus->read32(addr);
+            latchDb(moira::u16(value));
+            return value;
+        }
         const moira::u32 hi = read16(addr);
         return (hi << 16) | read16(addr + 2);
     }
     void write32(moira::u32 addr, moira::u32 value) const override {
+        if (getModel() == moira::CPUModel::M68030) {
+            if (g_cur->bus->busFaultN(addr, 4, true) && faultOrHalt(addr, true)) return;
+            latchDb(moira::u16(value));
+            g_cur->bus->write32(addr, value);
+            return;
+        }
         write16(addr, moira::u16(value >> 16));
         write16(addr + 2, moira::u16(value));
+    }
+
+    moira::u8 dsack(moira::u32 addr) const override {
+        const auto& bus = *g_cur->bus;
+        if (bus.machine == MachineType::Tt) {
+            addr = bus.normalizeAddress(addr);
+            // [B] Atari TT030 Field Service Manual, §2.2.3–2.2.4 :
+            // ROM et RAM accessibles sur 32 bits depuis le MC68030.
+            if (addr < bus.ram.size() || addr - Bus::kTtRamBase < bus.ttRam.size()
+                || addr - bus.romBase < bus.romWindowSize()) return moira::DSACK_32;
+            // [F] Largeur MMIO provisoire ; à préciser périphérique par périphérique.
+        }
+        return moira::DSACK_16;
     }
 
     // Débogueur : watchpoint mémoire atteint (appelé par la couche dataflow de Moira
@@ -605,7 +660,7 @@ public:
     }
 
     void didReachWatchpoint(moira::u32 addr) override {
-        g_cur->bpHit = true; g_cur->bpAddr = addr & 0xFFFFFFu; g_cur->bpWatch = true; g_cur->endSlice = true;
+        g_cur->bpHit = true; g_cur->bpAddr = addr & g_cur->bus->addressMask(); g_cur->bpWatch = true; g_cur->endSlice = true;
     }
 
     // Format v69. Le PC interne désigne le mot IRC. EDB et NMI font partie de
@@ -801,6 +856,7 @@ public:
     // l'empilement de trame (MoiraExceptions_cpp.h:508) → latence d'entrée PURE,
     // le timing des instructions reste intact.
     void willInterrupt(moira::u8 level) override {
+        if (getModel() == moira::CPUModel::M68030) return;
         static const bool blitDiag = std::getenv("NEOST_BLIT_START_DIAG") != nullptr;
         if (blitDiag)
             neost::log::err("[BLIRQ] entry level=%u clock=%lld\n", unsigned(level),
@@ -893,8 +949,11 @@ public:
         if (blitDiag)
             neost::log::err("[BLIRQ] iack level=%u clock=%lld\n", unsigned(level),
                             (long long)(g_cur->sched ? g_cur->sched->liveNow() : busOfClock(getClock())));
-        if (level == 6 && g_cur->bus->mfp) {                 // MFP : vecteur fourni par le 68901
-            const int v = g_cur->bus->mfp->iack();
+        if (level == 6 && (g_cur->bus->mfp || g_cur->bus->mfpTt)) {
+            // [D] Hatari mfp.c:822–845 @ 36a8acf0 : le second 68901 du TT
+            // a priorité sur le MFP principal au cycle d'acquittement.
+            int v = g_cur->bus->mfpTt ? g_cur->bus->mfpTt->iack() : -1;
+            if (v < 0 && g_cur->bus->mfp) v = g_cur->bus->mfp->iack();
             if (g_cur->tracer) g_cur->tracer->onInterrupt(level, v);
             neostUpdateIpl();
             if (v < 0) return moira::IrqMode::SPURIOUS;
@@ -958,12 +1017,19 @@ void neostUpdateIpl(bool commit) {
     // d'ordonnanceur susceptible de lever une IRQ MFP est suivi d'un updateIpl()
     // (cf. Machine.cpp) : aucune entrée ne peut donc rester non élue.
     if (g_cur->bus && g_cur->bus->mfp) g_cur->bus->mfp->flushIrqUpdate();
-    const bool mfp6 = g_cur->bus && g_cur->bus->mfp && g_cur->bus->mfp->irqPending();
+    bool mfp6 = g_cur->bus && g_cur->bus->mfp && g_cur->bus->mfp->irqPending();
+    if (g_cur->bus && g_cur->bus->mfpTt) {
+        g_cur->bus->mfpTt->flushIrqUpdate();
+        mfp6 |= g_cur->bus->mfpTt->irqPending();
+    }
     int lvl;
     // MegaSTE : TOUTES les IRQ sont GATÉES par le SCU (SysIntMask/VmeIntMask) avant
     // d'atteindre le CPU — toujours actif comme `SCU_IsEnabled()` d'Hatari (= MegaSTE/TT).
     // Tout OS MegaSTE programme le SCU tôt au boot (TOS 2.06, EmuTOS 256K, diagnostic).
-    if (g_cur->bus && g_cur->bus->machine == MachineType::MegaSte) {
+    // [B] Atari TT030 Computer Field Service Manual C302483-001 rév. B,
+    // §2.2.5.1 et §2.2.6.1 : les deux MFP passent par le masque de la SCU.
+    if (g_cur->bus && (g_cur->bus->machine == MachineType::MegaSte ||
+                       g_cur->bus->machine == MachineType::Tt)) {
         const bool scc5 = g_cur->bus->scc && g_cur->bus->scc->irqActive();  // SCC série niveau 5
         g_cur->bus->scu.syncState(mfp6, scc5, g_cur->vblPending, g_cur->hblPending);  // état ← sources vivantes
         lvl = g_cur->bus->scu.gatedLevel();                            // plus haut niveau autorisé
@@ -1061,7 +1127,10 @@ void Cpu68k::rebaseQuantumAndSync(bool rollFrames) {
 // (Ré)initialise le cœur Moira. Appelé par le constructeur ET par setCore()
 // (reconfigure à chaud). Suppose qu'un éventuel ancien cœur a déjà été libéré.
 void Cpu68k::initCore() {
-    state_->moira = new NeostMoira();         // backend cycle-exact M68000
+    activate();
+    auto moira = std::make_unique<NeostMoira>();
+    moira->selectMachineModel();
+    state_->moira = moira.release();
 }
 
 // Conservé pour compat (reconfigure à chaud) : libère l'ancien cœur puis ré-init.
@@ -1094,13 +1163,14 @@ int64_t Cpu68k::busClockNow() const {
 // sur une machine qui n'est pas la machine active (save/load d'une seconde Machine).
 int64_t Cpu68k::busClockOfInstance() const {
     const int64_t c = static_cast<int64_t>(state_->moira->getClock());
-    return state_->cpuMul == 1 ? c + state_->cpuBias : (c + state_->cpuBias) >> 1;
+    const int64_t biased = c + state_->cpuBias;
+    return state_->cpuMul == 1 ? biased : biased >> (state_->cpuMul == 4 ? 2 : 1);
 }
 
 // Pas-à-pas : l'instruction COURANTE doit s'exécuter même si un point d'arrêt est posé
 // dessus, qu'on y soit arrivé par un arrêt, par un pas précédent ou par une pause.
 void Cpu68k::skipBreakpointOnce() {
-    state_->bpSkipPc = state_->moira->getPC() & 0xFFFFFFu;
+    state_->bpSkipPc = state_->moira->getPC() & state_->bus->addressMask();
 }
 
 int64_t Cpu68k::traceClockNow() const {
@@ -1109,6 +1179,7 @@ int64_t Cpu68k::traceClockNow() const {
 
 void Cpu68k::reset() {
     activate();   // A33 : cf. run()
+    state_->moira->selectMachineModel();
     state_->faultValid = false;
     state_->grp0Vector = 0;
     state_->inBusError = false;
@@ -1120,7 +1191,7 @@ void Cpu68k::reset() {
     state_->megaSteAccessHit = false;
     state_->blitterRmw = state_->blitterBusAccess = state_->blitterStartedInAccess
                        = state_->blitterAccessCounted = false;
-    state_->moira->reset();                    // lit SSP/PC via read16OnReset (overlay ROM)
+    state_->moira->resetMachineCpu();          // lit SSP/PC via read16OnReset (overlay ROM)
     state_->inReset = false;
     state_->bus->bootOverlay = false;
 }
@@ -1193,7 +1264,7 @@ int Cpu68k::run(int cycles) {
         // retombait à chaque événement de l'ordonnanceur (1 745 arrêts en 2 trames). Le
         // point d'arrêt tombe au retour de l'exception qui réveille le CPU.
         if (state_->moira->debugger.breakpoints.elements() != 0 && !state_->moira->isStopped()) {
-            const uint32_t pc = state_->moira->getPC() & 0xFFFFFFu;
+            const uint32_t pc = state_->moira->getPC() & state_->bus->addressMask();
             if (pc == state_->bpSkipPc) {
                 state_->bpSkipPc = 0xFFFFFFFFu;                 // laissé passer une fois
             } else if (state_->moira->debugger.breakpoints.isSetAt(pc)) {
@@ -1230,7 +1301,7 @@ int Cpu68k::run(int cycles) {
             // avance d'un nombre PAIR de cycles CPU ; une échéance impaire est servie au
             // cycle pair suivant, le premier où le 68000 peut voir l'IPL.
             moira::i64 jumpClk = cpuClockForBus(jumpTo);
-            if (g_stopPhase && ((jumpClk - state_->moira->getClock()) & 1)) {
+            if (g_stopPhase && state_->cpuMul != 4 && ((jumpClk - state_->moira->getClock()) & 1)) {
                 ++jumpClk;
                 jumpTo = busOfClock(jumpClk);
             }
@@ -1340,16 +1411,16 @@ void Cpu68k::endTimeslice() {
 
 // --- Débogueur : breakpoints PC (délègue au conteneur Guards de Moira) ------------
 void Cpu68k::setBreakpoint(uint32_t addr) {
-    state_->moira->debugger.breakpoints.setAt(addr & 0xFFFFFFu);
+    state_->moira->debugger.breakpoints.setAt(addr & state_->bus->addressMask());
 }
 void Cpu68k::clearBreakpoint(uint32_t addr) {
-    state_->moira->debugger.breakpoints.removeAt(addr & 0xFFFFFFu);
+    state_->moira->debugger.breakpoints.removeAt(addr & state_->bus->addressMask());
 }
 void Cpu68k::clearAllBreakpoints() {
     state_->moira->debugger.breakpoints.removeAll();
 }
 bool Cpu68k::hasBreakpoint(uint32_t addr) const {
-    return state_->moira->debugger.breakpoints.isSetAt(addr & 0xFFFFFFu);
+    return state_->moira->debugger.breakpoints.isSetAt(addr & state_->bus->addressMask());
 }
 int Cpu68k::breakpointCount() const {
     return static_cast<int>(state_->moira->debugger.breakpoints.elements());
@@ -1357,7 +1428,7 @@ int Cpu68k::breakpointCount() const {
 bool Cpu68k::breakpointByIndex(int nr, uint32_t& outAddr) const {
     const auto a = state_->moira->debugger.breakpoints.guardAddr(nr);
     if (!a) return false;
-    outAddr = *a & 0xFFFFFFu;
+    outAddr = *a & state_->bus->addressMask();
     return true;
 }
 bool     Cpu68k::breakpointHit() const       { return state_->bpHit; }
@@ -1370,7 +1441,7 @@ void Cpu68k::clearBreakpointHit() {
     // et le pas-à-pas comme « Continue » passent ici — armer sur une adresse périmée
     // faisait sauter en silence le passage suivant par ce point d'arrêt.
     if (state_->bpHit && !state_->bpWatch
-        && (state_->moira->getPC() & 0xFFFFFFu) == state_->bpAddr)
+        && (state_->moira->getPC() & state_->bus->addressMask()) == state_->bpAddr)
         state_->bpSkipPc = state_->bpAddr;
     state_->bpHit = false; state_->bpWatch = false;
 }
@@ -1379,16 +1450,16 @@ void Cpu68k::clearBreakpointHit() {
 // Délègue au conteneur Guards de Moira (debugger.watchpoints) ; la couche dataflow de
 // Moira teste l'accès et appelle NeostMoira::didReachWatchpoint. setAt arme CHECK_WP.
 void Cpu68k::setWatchpoint(uint32_t addr) {
-    state_->moira->debugger.watchpoints.setAt(addr & 0xFFFFFFu);
+    state_->moira->debugger.watchpoints.setAt(addr & state_->bus->addressMask());
 }
 void Cpu68k::clearWatchpoint(uint32_t addr) {
-    state_->moira->debugger.watchpoints.removeAt(addr & 0xFFFFFFu);
+    state_->moira->debugger.watchpoints.removeAt(addr & state_->bus->addressMask());
 }
 void Cpu68k::clearAllWatchpoints() {
     state_->moira->debugger.watchpoints.removeAll();
 }
 bool Cpu68k::hasWatchpoint(uint32_t addr) const {
-    return state_->moira->debugger.watchpoints.isSetAt(addr & 0xFFFFFFu);
+    return state_->moira->debugger.watchpoints.isSetAt(addr & state_->bus->addressMask());
 }
 int Cpu68k::watchpointCount() const {
     return static_cast<int>(state_->moira->debugger.watchpoints.elements());
@@ -1396,12 +1467,17 @@ int Cpu68k::watchpointCount() const {
 bool Cpu68k::watchpointByIndex(int nr, uint32_t& outAddr) const {
     const auto a = state_->moira->debugger.watchpoints.guardAddr(nr);
     if (!a) return false;
-    outAddr = *a & 0xFFFFFFu;
+    outAddr = *a & state_->bus->addressMask();
     return true;
 }
 
 // Save-state : état du cœur Moira + timing du wrapper + vitesse Mega STE (g_cur->cpuMul).
 void Cpu68k::serialize(StateArchive& ar) {
+    // L'archive 68000 omet notamment VBR, CACR, MSP, MMU, caches et redémarrage 030.
+    if (state_->moira->getModel() == moira::CPUModel::M68030) {
+        ar.fail("Atari TT CPU save states are unsupported");
+        return;
+    }
     state_->moira->serializeState(ar);
     ar(state_->cpuMul);
     // state_->cpuMul ∈ {1 (8 MHz), 2 (16 MHz Mega STE)} : sélecteur de conversion horloge
@@ -1442,6 +1518,7 @@ int64_t Cpu68k::cyclesIntoInstr() const {
 // l'horloge bus CONTINUE au cycle courant (la bascule arrive en plein quantum,
 // pendant l'écriture $FF8E21) : busOfClock(c) garde la même valeur avant/après.
 void Cpu68k::setMegaSteSpeed(bool sixteenMhz) {
+    if (state_->bus->machine == MachineType::Tt) return;
     const int mul = sixteenMhz ? 2 : 1;
     if (mul == state_->cpuMul) return;
     const int64_t c = static_cast<int64_t>(state_->moira->getClock());
@@ -1460,6 +1537,10 @@ bool Cpu68k::supervisor() const {
     return (state_->moira->getSR() & 0x2000) != 0;
 }
 
+bool Cpu68k::supervisorBusCycle() const {
+    return (state_->moira->getFC() & 4) != 0;
+}
+
 bool Cpu68k::halted() const { return state_->moira->isHalted(); }
 
 // A42 — la dernière faute de groupe 0 (cf. Cpu68k.hpp § Fault). Le vecteur vient de
@@ -1468,7 +1549,7 @@ Cpu68k::Fault Cpu68k::lastFault() const {
     Fault f;
     f.valid  = state_->faultValid;
     f.addr   = state_->faultAddr;
-    f.pc     = state_->faultPc & 0x00FFFFFFu;
+    f.pc     = state_->faultPc & state_->bus->addressMask();
     f.write  = state_->faultWrite;
     f.vector = state_->grp0Vector;
     return f;

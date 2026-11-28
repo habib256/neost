@@ -147,6 +147,10 @@ public:
     void reset() {
         abortParked_();   // une instruction garée (blit HOG) est coupée par le reset
         desktopLineA_ = 0;
+        if (machineType_ == MachineType::Tt) {
+            bus.resetTtIo();
+            mfpTt.reset();
+        }
         psg.reset(); dmasnd.reset(/*cold=*/false); mfp.reset();
         shifter.reset();           // Video_Reset : scroll/linewidth/offset différé STE, glue
         fdc.reset(/*cold=*/false); // FDC_Reset : commande/DMA en vol annulés
@@ -178,6 +182,11 @@ public:
         abortParked_();
         desktopLineA_ = 0;
         bus.ram.assign(bus.ram.size(), 0);
+        if (machineType_ == MachineType::Tt) {
+            bus.ttRam.assign(bus.ttRam.size(), 0);
+            bus.resetTtIo();
+            mfpTt.reset();
+        }
         psg.reset(); dmasnd.reset(/*cold=*/true); mfp.reset();
         shifter.reset();           // cf. reset() : couverture Hatari reset.c
         fdc.reset(/*cold=*/true);
@@ -210,13 +219,22 @@ public:
     // change la taille de ST-RAM, le modèle matériel et le cœur 68000. Efface la
     // RAM (boot à froid). Les composants déjà câblés au bus sont conservés.
     // L'appelant recharge la ROM si besoin, repose le moniteur, puis reset().
+    bool setTtRamSize(std::size_t bytes);
     void reconfigure(std::size_t ramBytes, CpuCore cpuCore, MachineType machine) {
         abortParked_();
+        ramBytes = machineRamBytes(machine, ramBytes);
         bus.ram.assign(ramBytes, 0);
+        if (machineType_ == MachineType::Tt) mfpTt.reset(); // annule aussi ses échéances
+        bus.mfpTt = machine == MachineType::Tt ? &mfpTt : nullptr;
+        if (machine != MachineType::Tt) bus.ttRam.clear();
+        if (machine == MachineType::Tt) {
+            bus.ttRam.assign(bus.ttRam.size(), 0);
+            bus.resetTtIo();
+        }
         bus.machine     = machine;
         machineType_    = machine;
         mfp.setHasBlitter(machineHasBlitter(machine));   // GPIP3 : pull-up R4 sans blitter
-        bus.scc         = (machine == MachineType::MegaSte) ? &scc : nullptr;  // SCC (Mega STE)
+        bus.scc         = (machine == MachineType::MegaSte || machine == MachineType::Tt) ? &scc : nullptr;
         glue.memConfig_ = memConfigForBytes(ramBytes);
         bus.megaSteReset();                // $FF8E21 → 0 (8 MHz, cache invalidé)
         cpu.setMegaSteSpeed(false);
@@ -364,6 +382,7 @@ public:
     Blitter   blitter{bus};
     MmuGlue   glue;
     Mfp       mfp;
+    Mfp       mfpTt;
     Ikbd      ikbd{mfp};
     Fdc       fdc{bus, psg, mfp};
     Rtc       rtc;

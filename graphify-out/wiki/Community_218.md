@@ -22,8 +22,7 @@
 
 ## Relationships
 
-- [Community 152](Community_152.md) (8 shared connections)
-- [Community 36](Community_36.md) (8 shared connections)
+- [Community 152](Community_152.md) (16 shared connections)
 - [Community 17](Community_17.md) (3 shared connections)
 - [Community 211](Community_211.md) (3 shared connections)
 - [Community 24](Community_24.md) (3 shared connections)
@@ -34,6 +33,7 @@
 - [Community 102](Community_102.md) (1 shared connections)
 - [Community 359](Community_359.md) (1 shared connections)
 - [Community 352](Community_352.md) (1 shared connections)
+- [Community 106](Community_106.md) (1 shared connections)
 
 ## Source Files
 

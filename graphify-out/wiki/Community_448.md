@@ -1,29 +1,30 @@
 # Community 448
 
-> 6 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **Options** (7 connections) — `src/headless/Server.hpp`
-- **string** (1 connections)
-- **identityHead** (1 connections) — `src/headless/Server.hpp`
-- **identityTail** (1 connections) — `src/headless/Server.hpp`
-- **probes** (1 connections) — `src/headless/Server.hpp`
-- **slots** (1 connections) — `src/headless/Server.hpp`
+- **ParentDirTime** (7 connections) — `src/io/GemdosHd.cpp`
+- **.ParentDirTime()** (3 connections) — `src/io/GemdosHd.cpp`
+- **file_time_type** (1 connections)
+- **path** (1 connections)
+- **dir_** (1 connections) — `src/io/GemdosHd.cpp`
+- **ok_** (1 connections) — `src/io/GemdosHd.cpp`
+- **time_** (1 connections) — `src/io/GemdosHd.cpp`
 
 ## Relationships
 
-- [Community 58](Community_58.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 152](Community_152.md) (2 shared connections)
+- [Community 36](Community_36.md) (1 shared connections)
 
 ## Source Files
 
-- `src/headless/Server.hpp`
+- `src/io/GemdosHd.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 8 (89%)
+- INFERRED: 1 (11%)
 - AMBIGUOUS: 0 (0%)
 
 ---

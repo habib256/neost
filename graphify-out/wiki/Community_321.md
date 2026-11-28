@@ -1,29 +1,39 @@
 # Community 321
 
-> 5 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **12. CPU 68000 et intégration — `Cpu68k.cpp`, `extern/moira` ↔ `cpu/newcpu.c`, `gencpu.c`, `hatari-glue.c`** (6 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Verrous du cœur : verdicts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **StateArchive** (14 connections) — `src/core/StateArchive.hpp`
+- **.raw()** (5 connections) — `src/core/StateArchive.hpp`
+- **podVec()** (4 connections) — `src/core/StateArchive.hpp`
+- **.vec()** (3 connections) — `src/core/StateArchive.hpp`
+- **arr()** (2 connections) — `src/core/StateArchive.hpp`
+- **operator()()** (2 connections) — `src/core/StateArchive.hpp`
+- **.fail()** (2 connections) — `src/core/StateArchive.hpp`
+- **.loading()** (1 connections) — `src/core/StateArchive.hpp`
+- **.ok()** (1 connections) — `src/core/StateArchive.hpp`
+- **.saveSize()** (1 connections) — `src/core/StateArchive.hpp`
+- **in_** (1 connections) — `src/core/StateArchive.hpp`
+- **inEnd_** (1 connections) — `src/core/StateArchive.hpp`
+- **out_** (1 connections) — `src/core/StateArchive.hpp`
 
 ## Relationships
 
-- [Community 9](Community_9.md) (1 shared connections)
-- [Community 397](Community_397.md) (1 shared connections)
-- [Community 39](Community_39.md) (1 shared connections)
+- [Community 565](Community_565.md) (4 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 298](Community_298.md) (2 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
+- `src/core/StateArchive.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 6 (86%)
-- INFERRED: 1 (14%)
+- EXTRACTED: 23 (92%)
+- INFERRED: 2 (8%)
 - AMBIGUOUS: 0 (0%)
 
 ---

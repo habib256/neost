@@ -1,27 +1,28 @@
 # Community 549
 
-> 4 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **compileShader()** (4 connections) — `src/web/main_web.cpp`
-- **initGl()** (3 connections) — `src/web/main_web.cpp`
-- **GLenum** (1 connections)
-- **GLuint** (1 connections)
+- **9. SCC Z85C30 et SCU (Mega STE) — `Scc.cpp`, `Scu.hpp` ↔ `scc.c`, `scu_vme.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts ouverts** (2 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Refermés** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
-- [Community 68](Community_68.md) (2 shared connections)
-- [Community 434](Community_434.md) (1 shared connections)
+- [Community 397](Community_397.md) (1 shared connections)
+- [Community 27](Community_27.md) (1 shared connections)
 
 ## Source Files
 
-- `src/web/main_web.cpp`
+- `docs/HATARI_DIVERGENCES.md`
 
 ## Audit Trail
 
-- EXTRACTED: 6 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 5 (83%)
+- INFERRED: 1 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -93,6 +93,7 @@ public:
     // Bit S du SR : vrai si le CPU est en mode superviseur. Consulté par le Bus
     // pour la protection mémoire du GLUE ($0-$7FF et IO réservés superviseur).
     bool supervisor() const;
+    bool supervisorBusCycle() const;  // FC2 du cycle physique courant (TT)
 
     // Le 68000 a-t-il assuré /HALT (double faute de bus/adresse) ? Il ne redémarre
     // que sur un reset machine : plus une seule instruction n'est exécutée, l'écran

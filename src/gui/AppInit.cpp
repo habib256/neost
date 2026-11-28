@@ -11,6 +11,7 @@
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
+#include "core/TosChoice.hpp"
 #include "core/Pacing.hpp"
 #include "BuildInfo.hpp"       // commit + horodatage de build (--version, hello)
 #include "gui/GlHeaders.hpp"   // GLFW + GL, l'inclusion au même endroit pour tous
@@ -388,6 +389,17 @@ int appInit(App& A, int argc, char** argv) {
     }
     const std::string romLogical = !romArg.empty() ? romArg : defRom;
     const std::string tosPath  = resolveData(romLogical, exeDir);
+    if (!romArg.empty()) {
+        // Une ROM TT donnée sur la ligne de commande choisit le même profil
+        // que sur la page ROM. Un TOS ST explicite permet aussi de quitter le TT.
+        neost::TosInfo tos;
+        if (neost::readTosInfo(tosPath, tos)) {
+            const MachineType requested = parseMachine(cfg.machine);
+            const MachineType picked = neost::pickMachineForTos(requested, tos);
+            if (requested == MachineType::Tt || picked == MachineType::Tt)
+                cfg.machine = machineName(picked);
+        }
+    }
     const std::string defDisk  = cfg.disk.empty() ? std::string("disks/diskA.st") : cfg.disk;
     // Une archive (argument, ou disk= laissé par un profil) : sa première disquette.
     const std::string diskPath = mountableFloppy(A, resolveData(!floppyArg.empty() ? floppyArg
@@ -461,7 +473,7 @@ int appInit(App& A, int argc, char** argv) {
     // Forme CANONIQUE de mem= (alias « 2.5m » → « 2560k », valeur inconnue → celle
     // retenue) : la page Memory compare ui.pendMem aux identifiants de ses boutons
     // radio, et un alias n'en cochait aucun.
-    cfg.mem = ramLabel(parseRamBytes(cfg.mem));
+    cfg.mem = ramLabel(machineRamBytes(machType0, parseRamBytes(cfg.mem)));
     // Quartz maître (neost.cfg « quartz= ») posé AVANT la construction, comme le headless.
     {
         neost::pacing::Quartz q = neost::pacing::Quartz::Pal;

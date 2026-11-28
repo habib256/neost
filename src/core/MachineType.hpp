@@ -18,7 +18,7 @@
 #include <cstdio>
 #include <string>
 
-enum class MachineType { St, MegaSt, Ste, MegaSte };
+enum class MachineType { St, MegaSt, Ste, MegaSte, Tt };
 
 inline const char* machineName(MachineType t) {
     switch (t) {
@@ -26,6 +26,7 @@ inline const char* machineName(MachineType t) {
         case MachineType::MegaSt:  return "megast";
         case MachineType::Ste:     return "ste";
         case MachineType::MegaSte: return "megaste";
+        case MachineType::Tt:      return "tt";
     }
     return "ste";
 }
@@ -101,20 +102,18 @@ inline uint32_t tosImageBase(const uint8_t* img, std::size_t n, bool* fromHeader
     return n <= 192u * 1024u ? 0xFC0000u : 0xE00000u;
 }
 
-// Machine NON émulée visée par un TOS : "TT" (TOS 3.0x), "Falcon" (TOS 4.x et 2.07,
+// Machine requise par une ROM incompatible : "TT" (TOS 3.x), "Falcon" (TOS 4.x et 2.07,
 // le TOS du prototype « Sparrow » du Falcon), sinon nullptr.
 // [D] Hatari tos.c:857-879 @ f0736b24 — TOS_CheckSysConfig bascule ces versions en
 // TT / Falcon ; tos.c:103,487 @ f0736b24 — 2.07 = matériel « Sparrow » (Falcon).
-// Ces ROM sont du code 68030 qui touche des registres TT/Falcon (TOS 4.04 écrit
-// $FF8940, absent du ST) : sur un ST elles glissent en bus error, écran noir, sans
-// un mot. NeoST les refuse au chargement — le TT et le Falcon sont le cap suivant
-// (docs/HYPOTHESES_ST.md), rien n'en est émulé.
-// Exception, comme Hatari (tos.c:1054-1059 @ f0736b24) : EmuTOS ≥ 512 Ko sert toutes
-// les machines et n'est pas jugé sur sa version.
-inline const char* tosUnsupportedMachine(uint16_t ver, bool emuTos, std::size_t size) {
+// EmuTOS 512 Ko permet de viser le TT indépendamment du numéro de version.
+inline const char* tosUnsupportedMachine(uint16_t ver, bool emuTos, std::size_t size,
+                                         MachineType machine = MachineType::St) {
     if (emuTos && size >= 512u * 1024u) return nullptr;
-    if ((ver & 0x0F00u) == 0x0300u) return "TT";
+    if ((ver & 0x0F00u) == 0x0300u && !emuTos)
+        return machine == MachineType::Tt ? nullptr : "TT";
     if ((ver & 0x0F00u) == 0x0400u || ver == 0x0207u) return "Falcon";
+    if (machine == MachineType::Tt) return "ST family";
     return nullptr;
 }
 
@@ -122,10 +121,11 @@ inline MachineType parseMachine(const std::string& s) {
     if (s == "st")      return MachineType::St;
     if (s == "megast")  return MachineType::MegaSt;
     if (s == "megaste") return MachineType::MegaSte;
+    if (s == "tt")      return MachineType::Tt;
     // Valeur inconnue → défaut STE, mais EN LE DISANT : « mega-ste » ou « ST » (casse)
     // silencieusement remplacés faisaient diffier l'utilisateur contre le mauvais profil.
     if (s != "ste" && !s.empty())
-        neost::log::err("[config] unknown machine \"%s\" → ste (valid: st, megast, ste, megaste)\n", s.c_str());
+        neost::log::err("[config] unknown machine \"%s\" → ste (valid: st, megast, ste, megaste, tt)\n", s.c_str());
     return MachineType::Ste;                 // défaut : 1040 STE (son DMA, pas de blitter)
 }
 
@@ -186,8 +186,15 @@ inline uint8_t memConfigForBytes(std::size_t bytes) {
 }
 
 // Matériel optionnel présent selon le modèle.
+// [B] Atari TT030 Field Service Manual, §2.2.4 : 2 Mio de base et extension
+// ST-RAM de 2 Mio pour la configuration de 4 Mio modélisée ici.
+inline std::size_t machineRamBytes(MachineType machine, std::size_t requested) {
+    if (machine == MachineType::Tt && requested != 2u * 1024 * 1024)
+        return 4u * 1024 * 1024;
+    return requested;
+}
 inline bool machineHasDmaSound(MachineType t) {
-    return t == MachineType::Ste || t == MachineType::MegaSte;   // son numérique STE
+    return t == MachineType::Ste || t == MachineType::MegaSte || t == MachineType::Tt;
 }
 inline bool machineHasBlitter(MachineType t) {
     // Blitter présent sur Mega ST, STE et Mega STE ; absent du STF d'origine.

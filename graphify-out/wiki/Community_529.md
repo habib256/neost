@@ -1,26 +1,30 @@
 # Community 529
 
-> 4 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **5. Son (YM2149, DMA STE, Microwire/LMC1992) — `YM2149.cpp`, `DmaSound.cpp` ↔ `psg.c`, `sound.c`, `dmaSnd.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Av** (9 connections) — `extern/moira/Moira/StrWriter.h`
+- **Mode** (2 connections)
+- **ext1** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **I** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **M** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **S** (1 connections) — `extern/moira/Moira/StrWriter.h`
 
 ## Relationships
 
-- [Community 446](Community_446.md) (1 shared connections)
-- [Community 397](Community_397.md) (1 shared connections)
+- [Community 109](Community_109.md) (2 shared connections)
+- [Community 0](Community_0.md) (1 shared connections)
+- [Community 497](Community_497.md) (1 shared connections)
+- [Community 169](Community_169.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
+- `extern/moira/Moira/StrWriter.h`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 10 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

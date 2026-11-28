@@ -1,25 +1,31 @@
 # Community 572
 
-> 3 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **CacheLatch** (4 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **addr** (1 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **data** (1 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **5. Le mode serveur — `--server`** (5 connections) — `docs/OPENDST.md`
+- **Spécification du protocole (pour écrire un client)** (4 connections) — `docs/OPENDST.md`
+- **.ram()** (2 connections) — `tools/libretro_frontend.py`
+- **Paralléliser** (1 connections) — `docs/OPENDST.md`
 
 ## Relationships
 
 - [Community 391](Community_391.md) (2 shared connections)
+- [Community 200](Community_200.md) (1 shared connections)
+- [Community 364](Community_364.md) (1 shared connections)
+- [Community 406](Community_406.md) (1 shared connections)
+- [Community 486](Community_486.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/Cache/Cache.h`
+- `docs/OPENDST.md`
+- `tools/libretro_frontend.py`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 4 (44%)
+- INFERRED: 5 (56%)
 - AMBIGUOUS: 0 (0%)
 
 ---

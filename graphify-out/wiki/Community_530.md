@@ -1,31 +1,28 @@
 # Community 530
 
-> 4 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **5. Le mode serveur — `--server`** (5 connections) — `docs/OPENDST.md`
-- **Spécification du protocole (pour écrire un client)** (4 connections) — `docs/OPENDST.md`
-- **.ram()** (2 connections) — `tools/libretro_frontend.py`
-- **Paralléliser** (1 connections) — `docs/OPENDST.md`
+- **Pending** (6 connections) — `src/audio/MidiOutHost.hpp`
+- **time_point** (2 connections)
+- **b** (1 connections) — `src/audio/MidiOutHost.hpp`
+- **len** (1 connections) — `src/audio/MidiOutHost.hpp`
+- **msg** (1 connections) — `src/audio/MidiOutHost.hpp`
+- **when** (1 connections) — `src/audio/MidiOutHost.hpp`
 
 ## Relationships
 
-- [Community 391](Community_391.md) (2 shared connections)
-- [Community 200](Community_200.md) (1 shared connections)
-- [Community 364](Community_364.md) (1 shared connections)
-- [Community 406](Community_406.md) (1 shared connections)
-- [Community 611](Community_611.md) (1 shared connections)
+- [Community 42](Community_42.md) (2 shared connections)
 
 ## Source Files
 
-- `docs/OPENDST.md`
-- `tools/libretro_frontend.py`
+- `src/audio/MidiOutHost.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (44%)
-- INFERRED: 5 (56%)
+- EXTRACTED: 7 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

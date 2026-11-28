@@ -1,26 +1,27 @@
 # Community 595
 
-> 3 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **scc_sync_logic.cpp** (4 connections) — `tests/scc_sync_logic.cpp`
-- **testSccSync()** (3 connections) — `tests/scc_sync_logic.cpp`
-- **main()** (2 connections) — `tests/scc_sync_logic.cpp`
+- **RtcPhaseRig** (5 connections) — `tests/rtc_long_phase_logic.cpp`
+- **.RtcPhaseRig()** (1 connections) — `tests/rtc_long_phase_logic.cpp`
+- **Rtc** (1 connections)
+- **clock** (1 connections) — `tests/rtc_long_phase_logic.cpp`
+- **rtc** (1 connections) — `tests/rtc_long_phase_logic.cpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 48](Community_48.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/scc_sync_logic.cpp`
+- `tests/rtc_long_phase_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (83%)
-- INFERRED: 1 (17%)
+- EXTRACTED: 5 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,26 +1,32 @@
 # Community 545
 
-> 4 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **Precomp** (4 connections) — `src/util/HostPath.cpp`
-- **base** (1 connections) — `src/util/HostPath.cpp`
-- **comb** (1 connections) — `src/util/HostPath.cpp`
-- **pre** (1 connections) — `src/util/HostPath.cpp`
+- **drawStKiosk()** (8 connections) — `src/gui/StScreenView.cpp`
+- **crtApply()** (6 connections) — `src/gui/StScreenView.cpp`
+- **drawStScreen()** (5 connections) — `src/gui/StScreenView.cpp`
+- **App** (3 connections)
+- **GlScreen** (3 connections)
+- **GLuint** (1 connections)
 
 ## Relationships
 
-- [Community 75](Community_75.md) (1 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 214](Community_214.md) (2 shared connections)
+- [Community 329](Community_329.md) (1 shared connections)
+- [Community 68](Community_68.md) (1 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
 
 ## Source Files
 
-- `src/util/HostPath.cpp`
+- `src/gui/StScreenView.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 13 (76%)
+- INFERRED: 4 (24%)
 - AMBIGUOUS: 0 (0%)
 
 ---

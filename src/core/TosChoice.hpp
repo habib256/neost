@@ -38,7 +38,7 @@ bool readTosInfo(const std::string& path, TosInfo& out);
 
 // Ce TOS fait-il tourner `m` tel quel ? Mêmes bornes que Machine::adjustMachineForTos
 // (TOS ≤ 1.04 : ST seulement ; 1.06/1.62 : STE seulement ; Mega STE : ≥ 2.00) et que
-// CLAUDE.md (EmuTOS 256 Ko : STE/Mega STE), sans TOS du TT ni du Falcon.
+// CLAUDE.md (EmuTOS 256 Ko : STE/Mega STE), avec TOS 3.x pour le TT.
 bool tosRunsMachine(const TosInfo& t, MachineType m);
 
 // Meilleur candidat pour `m` : indice dans `cands`, ou -1 si aucun ne convient.
@@ -54,7 +54,7 @@ int pickTosForMachine(MachineType m, const TosInfo* cur, const std::vector<TosIn
 // L'inverse, pour la page ROM : le modèle à retenir quand on choisit le TOS `t` alors
 // que `cur` est en attente. `cur` s'il convient ; sinon le plus proche qui convient —
 // ST ↔ Mega ST, STE ↔ Mega STE d'abord, puis l'autre famille. Sans modèle possible
-// (TOS du TT/Falcon), `cur` reste (Bus::loadTos refusera la ROM, et le dira).
+// (TOS du Falcon), `cur` reste (Bus::loadTos refusera la ROM, et le dira).
 // Sans cela, choisir tos102uk alors que STE était coché faisait rétrograder la
 // machine à l'Apply (« TOS 1.02 only runs in ST mode — switching ste -> ST »).
 MachineType pickMachineForTos(MachineType cur, const TosInfo& t);

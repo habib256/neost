@@ -20,6 +20,7 @@ namespace neost {
 inline std::string machineSummary(const Machine& m, const std::string& romPath) {
     const char* model = "ST";
     switch (m.machineType()) {
+    case MachineType::Tt:      model = "TT030 (experimental)"; break;
     case MachineType::St:      model = "ST"; break;
     case MachineType::MegaSt:  model = "Mega ST"; break;
     case MachineType::Ste:     model = "STE"; break;

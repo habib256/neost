@@ -1,13 +1,12 @@
 # Community 101
 
-> 35 nodes
+> 32 nodes
 
 ## Key Concepts
 
 - **AppConfig.cpp** (36 connections) — `src/gui/AppConfig.cpp`
 - **parseConfigLine()** (22 connections) — `src/gui/AppConfig.cpp`
 - **string** (22 connections)
-- **testConfigParser()** (13 connections) — `tests/selftest_logic.cpp`
 - **writeConfigKeys()** (12 connections) — `src/gui/AppConfig.cpp`
 - **writeConfigAtomic()** (10 connections) — `src/gui/AppConfig.cpp`
 - **cfgPath()** (9 connections) — `src/gui/AppConfig.cpp`
@@ -16,7 +15,6 @@
 - **parseChannelMask()** (6 connections) — `src/gui/AppConfig.cpp`
 - **loadConfig()** (5 connections) — `src/gui/AppConfig.cpp`
 - **parseRtcConfig()** (5 connections) — `src/gui/AppConfig.cpp`
-- **persistableConfig()** (5 connections) — `src/gui/AppConfig.cpp`
 - **saveProfile()** (5 connections) — `src/gui/AppConfig.cpp`
 - **stateFilePath()** (5 connections) — `src/gui/AppConfig.cpp`
 - **trimConfigLine()** (5 connections) — `src/gui/AppConfig.cpp`
@@ -29,33 +27,34 @@
 - **profilesDir()** (4 connections) — `src/gui/AppConfig.cpp`
 - **crtF()** (3 connections) — `src/gui/AppConfig.cpp`
 - **deleteProfile()** (3 connections) — `src/gui/AppConfig.cpp`
-- *... and 10 more nodes in this community*
+- **escapeField()** (3 connections) — `src/gui/AppConfig.cpp`
+- **isPathKey()** (3 connections) — `src/gui/AppConfig.cpp`
+- *... and 7 more nodes in this community*
 
 ## Relationships
 
-- [Community 214](Community_214.md) (18 shared connections)
 - [Community 48](Community_48.md) (10 shared connections)
-- [Community 21](Community_21.md) (9 shared connections)
-- [Community 102](Community_102.md) (7 shared connections)
-- [Community 130](Community_130.md) (6 shared connections)
-- [Community 4](Community_4.md) (4 shared connections)
+- [Community 214](Community_214.md) (7 shared connections)
+- [Community 21](Community_21.md) (7 shared connections)
+- [Community 4](Community_4.md) (7 shared connections)
+- [Community 149](Community_149.md) (5 shared connections)
+- [Community 130](Community_130.md) (5 shared connections)
+- [Community 135](Community_135.md) (4 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
 - [Community 325](Community_325.md) (3 shared connections)
-- [Community 286](Community_286.md) (3 shared connections)
-- [Community 119](Community_119.md) (2 shared connections)
-- [Community 362](Community_362.md) (1 shared connections)
-- [Community 282](Community_282.md) (1 shared connections)
-- [Community 39](Community_39.md) (1 shared connections)
+- [Community 286](Community_286.md) (2 shared connections)
+- [Community 444](Community_444.md) (2 shared connections)
+- [Community 565](Community_565.md) (2 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
 - `src/gui/AppConfig.cpp`
-- `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 97 (64%)
-- INFERRED: 55 (36%)
+- EXTRACTED: 89 (64%)
+- INFERRED: 50 (36%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,28 +1,30 @@
 # Community 531
 
-> 4 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **TrackRev** (6 connections) — `src/io/IpfImage.hpp`
-- **bytes** (1 connections) — `src/io/IpfImage.hpp`
-- **cylinder** (1 connections) — `src/io/IpfImage.hpp`
-- **head** (1 connections) — `src/io/IpfImage.hpp`
+- **1. MFP 68901 — `Mfp.cpp` ↔ `mfp.c`, `rs232.c`** (6 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts voulus — ne pas réaligner** (3 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts voulus — USART (`Mfp.cpp` ↔ `rs232.c`, MAME `mc68901.cpp`)** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
-- [Community 143](Community_143.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 163](Community_163.md) (1 shared connections)
+- [Community 39](Community_39.md) (1 shared connections)
+- [Community 397](Community_397.md) (1 shared connections)
+- [Community 471](Community_471.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/IpfImage.hpp`
+- `docs/HATARI_DIVERGENCES.md`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (83%)
-- INFERRED: 1 (17%)
+- EXTRACTED: 6 (75%)
+- INFERRED: 2 (25%)
 - AMBIGUOUS: 0 (0%)
 
 ---

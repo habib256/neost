@@ -1,12 +1,13 @@
 # Community 286
 
-> 16 nodes
+> 17 nodes
 
 ## Key Concepts
 
 - **EnvOverrides** (11 connections) — `src/gui/AppConfig.hpp`
 - **MidiInDev** (11 connections) — `src/gui/AppConfig.hpp`
 - **MidiOutDev** (6 connections) — `src/gui/AppConfig.hpp`
+- **persistableConfig()** (5 connections) — `src/gui/AppConfig.cpp`
 - **string** (4 connections)
 - **acsi** (1 connections) — `src/gui/AppConfig.hpp`
 - **gemdos** (1 connections) — `src/gui/AppConfig.hpp`
@@ -23,24 +24,26 @@
 
 ## Relationships
 
-- [Community 101](Community_101.md) (3 shared connections)
-- [Community 21](Community_21.md) (3 shared connections)
+- [Community 21](Community_21.md) (4 shared connections)
+- [Community 48](Community_48.md) (3 shared connections)
 - [Community 11](Community_11.md) (2 shared connections)
+- [Community 101](Community_101.md) (2 shared connections)
 - [Community 1](Community_1.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
-- [Community 48](Community_48.md) (1 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
-- [Community 185](Community_185.md) (1 shared connections)
+- [Community 304](Community_304.md) (1 shared connections)
 - [Community 325](Community_325.md) (1 shared connections)
+- [Community 214](Community_214.md) (1 shared connections)
 
 ## Source Files
 
+- `src/gui/AppConfig.cpp`
 - `src/gui/AppConfig.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 25 (86%)
-- INFERRED: 4 (14%)
+- EXTRACTED: 27 (82%)
+- INFERRED: 6 (18%)
 - AMBIGUOUS: 0 (0%)
 
 ---

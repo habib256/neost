@@ -269,10 +269,13 @@ DCache::write(u32 addr, bool supervisor, u32 mask, u32 value, bool ci)
         auto &d = data[slot(addr)];
         d = (d & ~mask) | (value & mask);
 
-    } else if (writeAllocate && !frozen && !ci && full) {
+    } else if (writeAllocate && !frozen && !ci) {
 
-        // An aligned longword write creates an entry
-        insert(addr, supervisor, value);
+        // [B] MC68030UM §6.1.2.1 : en cas de tag miss, une écriture
+        // partielle invalide le mot long touché sans changer le tag.
+        // Un mot long entier peut, lui, être installé dans le cache.
+        if (full) insert(addr, supervisor, value);
+        else invalidate(addr);
     }
 }
 

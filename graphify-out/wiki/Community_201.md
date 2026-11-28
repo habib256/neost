@@ -1,6 +1,6 @@
 # Community 201
 
-> 34 nodes
+> 32 nodes
 
 ## Key Concepts
 
@@ -17,8 +17,6 @@
 - **Checks** (4 connections) — `tests/stx_absent_track_logic.cpp`
 - **.seek()** (4 connections) — `tests/stx_absent_track_logic.cpp`
 - **.seekVerify()** (4 connections) — `tests/stx_absent_track_logic.cpp`
-- **sectorIs()** (4 connections) — `tests/stx_absent_track_logic.cpp`
-- **.tracksCount()** (2 connections) — `src/io/StxImage.hpp`
 - **.equal()** (2 connections) — `tests/stx_absent_track_logic.cpp`
 - **main()** (2 connections) — `tests/stx_absent_track_logic.cpp`
 - **.irq()** (2 connections) — `tests/stx_absent_track_logic.cpp`
@@ -29,25 +27,27 @@
 - **failures** (1 connections) — `tests/stx_absent_track_logic.cpp`
 - **Bus** (1 connections)
 - **Fdc** (1 connections)
-- *... and 9 more nodes in this community*
+- **Mfp** (1 connections)
+- **Scheduler** (1 connections)
+- *... and 7 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (8 shared connections)
+- [Community 565](Community_565.md) (7 shared connections)
 - [Community 31](Community_31.md) (6 shared connections)
 - [Community 41](Community_41.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 - [Community 48](Community_48.md) (1 shared connections)
 - [Community 145](Community_145.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/StxImage.hpp`
 - `tests/stx_absent_track_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 76 (93%)
-- INFERRED: 6 (7%)
+- EXTRACTED: 73 (92%)
+- INFERRED: 6 (8%)
 - AMBIGUOUS: 0 (0%)
 
 ---

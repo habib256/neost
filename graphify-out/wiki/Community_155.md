@@ -1,6 +1,6 @@
 # Community 155
 
-> 35 nodes
+> 36 nodes
 
 ## Key Concepts
 
@@ -29,7 +29,7 @@
 - **Moira::execPFlusha()** (3 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
 - **Moira::mmuFC()** (3 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
 - **Moira::translate()** (3 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
-- *... and 10 more nodes in this community*
+- *... and 11 more nodes in this community*
 
 ## Relationships
 
@@ -38,10 +38,10 @@
 - [Community 16](Community_16.md) (2 shared connections)
 - [Community 287](Community_287.md) (1 shared connections)
 - [Community 169](Community_169.md) (1 shared connections)
-- [Community 472](Community_472.md) (1 shared connections)
 - [Community 197](Community_197.md) (1 shared connections)
 - [Community 33](Community_33.md) (1 shared connections)
 - [Community 64](Community_64.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
 
 ## Source Files
 
@@ -50,10 +50,11 @@
 - `extern/moira/Moira/MoiraDasmMMU_cpp.h`
 - `extern/moira/Moira/MoiraExecMMU_cpp.h`
 - `extern/moira/Moira/MoiraTypes.h`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 94 (85%)
+- EXTRACTED: 95 (85%)
 - INFERRED: 17 (15%)
 - AMBIGUOUS: 0 (0%)
 

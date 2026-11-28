@@ -135,9 +135,9 @@ bool fileExists(const std::string& p) {
     return std::filesystem::exists(p, ec) && !ec;
 }
 
-// Machine non émulée (« TT », « Falcon ») visée par le TOS de ce fichier, sinon
+// Modèle requis par un TOS incompatible avec le profil demandé, sinon
 // nullptr — même règle que Bus::loadTos (tosUnsupportedMachine, MachineType.hpp).
-const char* tosFileUnsupportedMachine(const std::string& p) {
+const char* tosFileUnsupportedMachine(const std::string& p, MachineType model) {
     std::error_code ec;
     const std::uintmax_t n = fs::file_size(p, ec);
     if (ec) return nullptr;
@@ -146,24 +146,27 @@ const char* tosFileUnsupportedMachine(const std::string& p) {
     if (!f) return nullptr;
     f.read(reinterpret_cast<char*>(h), sizeof h);
     const std::size_t got = static_cast<std::size_t>(f.gcount());
+    if (model == MachineType::Tt && (n != 512u * 1024u || got < 12 ||
+        h[8] != 0 || h[9] != 0xE0 || h[10] != 0 || h[11] != 0))
+        return "512 KB TT ROM at $E00000";
     return tosUnsupportedMachine(tosHeaderVersion(h, got), tosHeaderIsEmuTos(h, got),
-                                 static_cast<std::size_t>(n));
+                                 static_cast<std::size_t>(n), model);
 }
 
-// Mêmes bornes que Bus::loadTos (1 octet à 1 Mo, la fenêtre ROM à $E00000 ; TOS du
-// TT/Falcon refusé) : ce qui passe ici sera chargé, ce qui échoue ici aurait laissé
+// Mêmes bornes que Bus::loadTos (1 octet à 1 Mo, la fenêtre ROM à $E00000 ; compatibilité
+// avec le modèle demandé) : ce qui passe ici sera chargé, ce qui échoue ici aurait laissé
 // l'ancienne ROM en place. Rend "" si chargeable, sinon le message de la barre d'état.
-std::string romUnloadableReason(const std::string& p) {
+std::string romUnloadableReason(const std::string& p, MachineType model) {
     const std::string name = fs::path(p).filename().string();
     std::error_code ec;
     if (!fs::is_regular_file(p, ec) || ec) return "ROM not found: " + name;
     const std::uintmax_t n = fs::file_size(p, ec);
     if (ec || n == 0 || n > 1024u * 1024u) return "Not a TOS ROM (size): " + name;
-    if (const char* m = tosFileUnsupportedMachine(p))
-        return std::string("TT/Falcon TOS not supported (") + m + " ROM): " + name;
+    if (const char* m = tosFileUnsupportedMachine(p, model))
+        return std::string("Incompatible ROM for ") + machineName(model) + " (" + m + "): " + name;
     return "";
 }
-bool romLoadable(const std::string& p) { return romUnloadableReason(p).empty(); }
+bool romLoadable(const std::string& p, MachineType model) { return romUnloadableReason(p, model).empty(); }
 
 // [C] En-tête système du TOS — la règle vit dans util/RomProbe (testée par
 // neost-selftest), partagée avec l'argument positionnel du lancement.
@@ -717,7 +720,7 @@ void App::applyConfig() {
         std::fprintf(stderr, "[main] WARNING ROM not loadable: %s — keeping the previous "
                              "machine (%s, %s)\n", badRom.c_str(),
                      A.hwMachine.c_str(), A.hwRom.c_str());
-        A.stateMsg = romUnloadableReason(badRom);
+        A.stateMsg = romUnloadableReason(badRom, parseMachine(cfg.machine));
         if (A.stateMsg.empty()) A.stateMsg = "ROM not loadable: " + fs::path(badRom).filename().string();
         A.stateMsg += " - previous machine kept";
         A.stateMsgFrames = 300;
@@ -726,7 +729,7 @@ void App::applyConfig() {
         A.cfgUiResync = true;
     };
     std::string romP = resolveData(cfg.rom, exeDir);
-    if (!romLoadable(romP) && A.hwValid) {
+    if (!romLoadable(romP, parseMachine(cfg.machine)) && A.hwValid) {
         revertToApplied(romP);
         romP = resolveData(cfg.rom, exeDir);
     }
@@ -735,6 +738,7 @@ void App::applyConfig() {
     // Horloges AVANT la reconfiguration, qui est un boot à froid : la phase MFP reste celle
     // de la session (0 dans le GUI), le quartz suit la config.
     machine.setClocks(quartzFromConfig(cfg.quartz, machTypeR, romP), machine.mfp.clockPhase64());
+    cfg.mem = ramLabel(machineRamBytes(machTypeR, parseRamBytes(cfg.mem)));
     machine.reconfigure(parseRamBytes(cfg.mem), Cpu68k::parseCore(cfg.cpu), machTypeR);
     bool romOk = machine.loadTos(romP);
     if (!romOk && A.hwValid && resolveData(A.hwRom, exeDir) != romP) {

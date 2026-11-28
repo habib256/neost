@@ -1,41 +1,52 @@
 # Community 291
 
-> 15 nodes
+> 17 nodes
 
 ## Key Concepts
 
-- **fat12_volume()** (8 connections) — `tools/run_libretro.py`
-- **case_hard_disk_state()** (7 connections) — `tools/run_libretro.py`
-- **case_hard_disk()** (5 connections) — `tools/run_libretro.py`
-- **write_hard_disk()** (5 connections) — `tools/run_libretro.py`
-- **hd_writer_prg()** (3 connections) — `tools/run_libretro.py`
-- **alloc()** (2 connections) — `tools/run_libretro.py`
-- **fat()** (2 connections) — `tools/run_libretro.py`
-- **2026-11-25 — Libretro : disques durs, toucher, un invité rejoint l'hôte** (2 connections) — `CHANGELOG.md`
-- **disk_copy()** (1 connections) — `tools/run_libretro.py`
-- **entry()** (1 connections) — `tools/run_libretro.py`
-- **Disque dur ACSI : secteur racine Atari (taille du disque à $1C2, table de…** (1 connections) — `tools/run_libretro.py`
-- **Image de disque dur (.hd) : montée en ACSI 0, EmuTOS lit sa partition et lance…** (1 connections) — `tools/run_libretro.py`
-- **C:\\AUTO : Rwabs écrit le secteur logique 1000 de C: (libre), fond vert, puis…** (1 connections) — `tools/run_libretro.py`
-- **Disque dur dans l'état : les écritures vont au calque (la copie privée n'est…** (1 connections) — `tools/run_libretro.py`
-- **Volume FAT12 de 720 Ko (BPB d'une disquette 2 faces, 9 secteurs), NON…** (1 connections) — `tools/run_libretro.py`
+- **EmuFiber.cpp** (29 connections) — `src/core/EmuFiber.cpp`
+- **emuFiberEnter()** (6 connections) — `src/core/EmuFiber.cpp`
+- **.supported()** (5 connections) — `src/core/EmuFiber.hpp`
+- **windows** (5 connections)
+- **.runJobs()** (4 connections) — `src/core/EmuFiber.hpp`
+- **.switchToHost()** (4 connections) — `src/core/EmuFiber.hpp`
+- **.yield()** (3 connections) — `src/core/EmuFiber.hpp`
+- **.synchronous()** (3 connections) — `src/core/EmuFiber.hpp`
+- **.setHostCanSuspend()** (2 connections) — `src/core/EmuFiber.hpp`
+- **fiberEntry()** (2 connections) — `src/core/EmuFiber.cpp`
+- **fiberEntryWin()** (2 connections) — `src/core/EmuFiber.cpp`
+- **fiberThreadEntry()** (2 connections) — `src/core/EmuFiber.cpp`
+- **7zWindows.h** (2 connections) — `extern/lzma/7zWindows.h`
+- **emscripten** (2 connections)
+- **mman** (1 connections)
+- **pthread** (1 connections)
+- **ucontext** (1 connections)
 
 ## Relationships
 
-- [Community 247](Community_247.md) (7 shared connections)
-- [Community 221](Community_221.md) (2 shared connections)
-- [Community 442](Community_442.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
+- [Community 59](Community_59.md) (12 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
+- [Community 160](Community_160.md) (2 shared connections)
+- [Community 68](Community_68.md) (2 shared connections)
+- [Community 298](Community_298.md) (1 shared connections)
+- [Community 263](Community_263.md) (1 shared connections)
+- [Community 565](Community_565.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 301](Community_301.md) (1 shared connections)
+- [Community 186](Community_186.md) (1 shared connections)
+- [Community 604](Community_604.md) (1 shared connections)
+- [Community 300](Community_300.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `tools/run_libretro.py`
+- `extern/lzma/7zWindows.h`
+- `src/core/EmuFiber.cpp`
+- `src/core/EmuFiber.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 25 (96%)
-- INFERRED: 1 (4%)
+- EXTRACTED: 49 (94%)
+- INFERRED: 3 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

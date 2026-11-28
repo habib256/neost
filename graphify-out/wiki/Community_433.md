@@ -1,29 +1,42 @@
 # Community 433
 
-> 6 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **FrameGeometry** (7 connections) — `src/core/Shifter.hpp`
-- **ah** (1 connections) — `src/core/Shifter.hpp`
-- **h** (1 connections) — `src/core/Shifter.hpp`
-- **w** (1 connections) — `src/core/Shifter.hpp`
-- **x** (1 connections) — `src/core/Shifter.hpp`
-- **y** (1 connections) — `src/core/Shifter.hpp`
+- **Architecture** (8 connections) — `DEV.md`
+- **MmuGlue** (7 connections) — `src/core/MmuGlue.hpp`
+- **Framing** (5 connections) — `src/libretro/neost_libretro.cpp`
+- **.read8()** (1 connections) — `src/core/MmuGlue.hpp`
+- **.write8()** (1 connections) — `src/core/MmuGlue.hpp`
+- **memConfig_** (1 connections) — `src/core/MmuGlue.hpp`
+- **Active** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **Adaptive** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **Full** (1 connections) — `src/libretro/neost_libretro.cpp`
 
 ## Relationships
 
-- [Community 205](Community_205.md) (1 shared connections)
-- [Community 5](Community_5.md) (1 shared connections)
+- [Community 14](Community_14.md) (1 shared connections)
+- [Community 10](Community_10.md) (1 shared connections)
+- [Community 565](Community_565.md) (1 shared connections)
+- [Community 484](Community_484.md) (1 shared connections)
+- [Community 9](Community_9.md) (1 shared connections)
+- [Community 103](Community_103.md) (1 shared connections)
+- [Community 20](Community_20.md) (1 shared connections)
+- [Community 31](Community_31.md) (1 shared connections)
+- [Community 396](Community_396.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Shifter.hpp`
+- `DEV.md`
+- `src/core/MmuGlue.hpp`
+- `src/libretro/neost_libretro.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 11 (61%)
+- INFERRED: 7 (39%)
 - AMBIGUOUS: 0 (0%)
 
 ---

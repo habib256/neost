@@ -386,6 +386,7 @@ Moira::getFC() const
         case 0: return u8((reg.sr.s ? 4 : 0) | fcl);
         case 1: return reg.sfc;
         case 2: return reg.dfc;
+        case FC_SOURCE_TABLE_SEARCH: return FC::SUPERVISOR_DATA;
 
         default:
             fatalError;

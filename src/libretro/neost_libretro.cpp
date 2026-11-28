@@ -680,6 +680,7 @@ bool chooseTos(const std::string& contentPath, std::string& tosPath, MachineType
 
 const char* machineLabel(MachineType t) {
     switch (t) {
+    case MachineType::Tt: return "Atari TT030";
     case MachineType::St: return "Atari ST";
     case MachineType::MegaSt: return "Mega ST";
     case MachineType::Ste: return "Atari STE";

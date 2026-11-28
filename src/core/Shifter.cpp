@@ -160,6 +160,7 @@ Shifter::Shifter(Bus& bus) : bus_(bus) {
 // ⚠ Video_Reset ne touche PAS la palette : les registres couleur survivent au
 // reset (vérifié : aucun accès à HBLPalettes/IoMem $FF8240 dans Video_Reset).
 void Shifter::reset() {
+    ttFrame_.clear();
     videoBase = 0;                       // VideoBase = 0L
     glue_.lateHiOn = false;
     // Video_Reset_Glue : freq et résolution à 0 (le RESET 68000 remet la Glue à
@@ -455,7 +456,7 @@ void Shifter::beginFrame() {
 // Décode les index de palette (ou bit mono) d'UNE scanline dans `idx`, selon la
 // résolution VERROUILLÉE de la trame. Renvoie le décalage scroll fin STE.
 int Shifter::decodeLineIndices(int y, uint8_t* idx) const {
-    const int  W      = activeWidth() + ((steBorderFlag_ && bordered()) ? 16 : 0);
+    const int  W      = rasterWidth() + ((steBorderFlag_ && bordered()) ? 16 : 0);
     const bool hi     = (frameMode_ == Mode::High);
     const int  planes = hi ? 1 : (frameMode_ == Mode::Medium ? 2 : 4);  // plans entrelacés
     const int  bpl    = hi ? 80 : 160;                  // octets/ligne AFFICHÉE
@@ -568,7 +569,7 @@ void Shifter::renderLine(int y) {
     // (spec512/renderFrame) n'avance jamais le compteur (y ≤ vc_.lineY).
     while (vc_.lineY < y) endVideoLine();
     const int lead = (steBorderFlag_ && bordered()) ? 16 : 0;
-    const int  W   = activeWidth() + lead;
+    const int  W   = rasterWidth() + lead;
     const bool hi  = (frameMode_ == Mode::High);
 
     uint8_t idx[660];                                   // max (640/16 + 1) * 16 = 656
@@ -619,10 +620,61 @@ void Shifter::renderLine(int y) {
         const uint32_t bgRight = stColorToArgb(palette[0]);        // courant
         uint32_t* row = frame_.data() + static_cast<std::size_t>(activeY_ + y) * curW_;
         for (int x = 0; x < activeX_ - lead; ++x) row[x] = bgLeft;
-        for (int x = activeX_ + activeWidth(); x < curW_; ++x) row[x] = bgRight;
+        for (int x = activeX_ + rasterWidth(); x < curW_; ++x) row[x] = bgRight;
         leftBorderPal0_ = palette[0];   // pour le bord gauche de la ligne suivante
     }
 
+}
+
+void Shifter::updateTtFrame() {
+    // [B] Atari TT030 Hardware Reference Manual, juin 1990, § V :
+    // mode 4 à $FF8262, 640×480 à quatre plans et palette 0RGB.
+    if (bus_.machine != MachineType::Tt || ((bus_.ttVideoMode() >> 8) & 7u) != 4u) {
+        ttFrame_.clear();
+        return;
+    }
+
+    constexpr int wordsPerGroup = 4;
+    constexpr int pixelsPerGroup = 16;
+    constexpr int bytesPerGroup = wordsPerGroup * 2;
+    constexpr int groupsPerLine = kTtMediumWidth / pixelsPerGroup;
+    constexpr int imageBytes = groupsPerLine * kTtMediumHeight * bytesPerGroup;
+    const uint32_t base = videoBase;
+    ttFrame_.resize(kTtMediumWidth * kTtMediumHeight);
+    if (base > bus_.ram.size() || imageBytes > bus_.ram.size() - base) {
+        std::fill(ttFrame_.begin(), ttFrame_.end(), 0xFF000000u);
+        return;
+    }
+
+    // [D] Hatari video.c, Video_GetTTPaletteWords @ 36a8acf0 :
+    // le groupe sélectionné en $FF8263 s’applique aussi au TT-medium.
+    const unsigned bank = bus_.ttVideoMode() & 15u;
+    std::array<uint32_t, 16> colors;
+    for (unsigned i = 0; i < colors.size(); ++i) {
+        const uint16_t rgb = bus_.ttVideoPalette(static_cast<uint8_t>(bank * colors.size() + i));
+        const uint32_t red = ((rgb >> 8) & 15) * 17u;
+        const uint32_t green = ((rgb >> 4) & 15) * 17u;
+        const uint32_t blue = (rgb & 15) * 17u;
+        colors[i] = 0xFF000000u | (red << 16) | (green << 8) | blue;
+    }
+
+    // [D] Hatari video.c, Video_RenderTTScreen @ 36a8acf0 :
+    // groupes successifs de quatre mots BE entrelacés, bit fort à gauche.
+    const uint8_t* src = bus_.ram.data() + base;
+    uint32_t* dst = ttFrame_.data();
+    for (int group = 0; group < groupsPerLine * kTtMediumHeight; ++group) {
+        uint16_t planes[wordsPerGroup];
+        for (auto& plane : planes) {
+            plane = (uint16_t(src[0]) << 8) | src[1];
+            src += 2;
+        }
+        for (int bit = pixelsPerGroup - 1; bit >= 0; --bit) {
+            unsigned color = 0;
+            for (int plane = 0; plane < wordsPerGroup; ++plane)
+                color |= ((planes[plane] >> bit) & 1u) << plane;
+            *dst++ = colors[color];
+        }
+    }
 }
 
 // Fin de trame : re-rendu spec512 (palette intra-ligne) si détecté. Port du
@@ -632,6 +684,7 @@ void Shifter::renderLine(int y) {
 // palette qu'une fois tous les 4 cycles (bus 16 bits), donc au plus ~1 changement
 // tous les 4 pixels en basse résolution → jusqu'à 512 couleurs à l'écran.
 void Shifter::finishFrame() {
+    updateTtFrame();
     // Commit de la DERNIÈRE ligne active : le commit paresseux de renderLine(y) ne
     // pousse dans endVideoLine que les lignes < y — la ligne curAH_−1 n'était donc
     // JAMAIS committée (pas de capture lineSnap_ pour elle → l'artefact « sprite en
@@ -1401,7 +1454,7 @@ bool Shifter::spec512SelfTest() {
     videoBase = 0x20000;                 // dans la RAM (≥ 256k) ; hors vecteurs/système
     beginFrame();                        // verrouille la géométrie + dimensionne le buffer
     const Geometry g = geometry();
-    const int W   = activeWidth();       // 320
+    const int W   = rasterWidth();       // 320
     const int cpl = g.cyclesPerLine;     // 512
     const int lst = g.lineStartCycle;    // 56
     const int ds  = g.dispStartLine;     // 63
@@ -1518,6 +1571,8 @@ bool Shifter::spec512SelfTest() {
 
 // Décode toute la trame d'un coup (repli / appel direct hors ordonnanceur).
 void Shifter::renderFrame() {
+    updateTtFrame();
+    if (hasTtFrame()) return;
     beginFrame();
     for (int y = 0; y < curAH_; ++y) renderLine(y);   // lignes ACTIVES (bordures déjà posées)
 }
@@ -1544,7 +1599,9 @@ uint8_t Shifter::read8(uint32_t addr) {
     // Octet bas de la base vidéo $FF820D : STE seulement. Sur ST/MegaST le registre
     // n'existe pas : zone VOID → 0xFF ([D] ioMemTabST.c:53 @ f0736b24, IoMem_VoidRead — l'ancien 0
     // suivait Video_BaseLow_ReadByte, qui n'est PAS mappé sur la table ST).
-    if (addr == 0xFF820D) return machineIsSte(bus_.machine) ? static_cast<uint8_t>(videoBase) : 0xFF;
+    if (addr == 0xFF820D)
+        return (machineIsSte(bus_.machine) || bus_.machine == MachineType::Tt)
+            ? static_cast<uint8_t>(videoBase) : 0xFF;
     // Une écriture du compteur pendant le DE est en attente (vc_.delayedOffset) : la
     // relecture doit déjà la refléter (port Video_ScreenCounter_ReadByte qui ajoute
     // VideoCounterDelayedOffset & ~1 à l'adresse calculée).
@@ -1644,22 +1701,25 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
     // Adresse de base vidéo : octets haut ($FF8201) et milieu ($FF8203). Le bit
     // bas est fixé à 0 (le ST aligne le framebuffer sur 256 octets).
     const bool ste = machineIsSte(bus_.machine);
+    const bool tt = bus_.machine == MachineType::Tt;
     switch (addr) {
         case 0xFF8201:
             // Octet haut masqué comme le compteur $FF8205 (port Hatari [D] video.c:5117 @ f0736b24
             // DMA_MaskAddressHigh) : sans lui, une base $FFxxxx ferait fetcher la
             // MMIO par le rendu (lectures à effets de bord — UDR MFP, STR FDC… —
             // voire bus error déclenchée HORS exécution CPU).
-            v &= 0x3F;
+            // [B] Atari TT030 Hardware Reference Manual § V : le TT dispose
+            // des huit bits de l’octet haut. Le scanout vérifie la ST-RAM.
+            if (!tt) v &= 0x3F;
             videoBase = (videoBase & 0x00FF00) | (uint32_t(v) << 16);
             // STE/TT : écrire l'octet haut/milieu remet à 0 l'octet bas $FF820D
             // (cf. Hatari Video_ScreenBase_WriteByte).
-            if (ste) videoBase &= 0xFFFF00;
+            if (ste || tt) videoBase &= 0xFFFF00;
             vc_.baseWritten(videoBase);
             return;
         case 0xFF8203:
             videoBase = (videoBase & 0xFF0000) | (uint32_t(v) << 8);
-            if (ste) videoBase &= 0xFFFF00;
+            if (ste || tt) videoBase &= 0xFFFF00;
             vc_.baseWritten(videoBase);
             // DIAG beam-sync (gated NEOST_BASE_TRACE) : ligne/cycle/valeur des écritures de
             // base vidéo. Une base jittery trame à trame (joueur immobile) = la boucle de
@@ -1682,10 +1742,12 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
         case 0xFF8205: case 0xFF8207: case 0xFF8209:
             if (ste) writeVideoCounterByte(addr, v);
             return;
-        // Octet bas de la base vidéo $FF820D (STE) : bit0 ignoré (aligné pair).
+        // [B] Atari TT030 Hardware Reference Manual § V : les trois bits bas
+        // de $FF820D sont nuls sur TT. Le STE impose un alignement pair.
         case 0xFF820D:
-            if (ste) {
-                videoBase = (videoBase & 0xFFFF00) | (uint32_t(v) & ~1u);
+            if (ste || tt) {
+                const uint32_t mask = tt ? 0xF8u : 0xFEu;
+                videoBase = (videoBase & 0xFFFF00) | (uint32_t(v) & mask);
                 vc_.baseWritten(videoBase);
             }
             return;

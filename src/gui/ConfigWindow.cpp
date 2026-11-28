@@ -62,6 +62,7 @@ bool romIsNtsc(const std::string& filename) {
 
 const char* machineLabel(MachineType t) {
     switch (t) {
+        case MachineType::Tt:      return "TT030 (experimental)";
         case MachineType::St:      return "ST";
         case MachineType::MegaSt:  return "Mega ST";
         case MachineType::Ste:     return "STE";
@@ -74,7 +75,8 @@ bool machineForcedByTos(const std::string& requested, MachineType real,
                         std::string& why, std::string& advice) {
     // Lecture SILENCIEUSE de cfg.machine : parseMachine journalise une valeur inconnue,
     // et ceci est appelé à chaque trame par la barre d'état. Même défaut (STE).
-    const MachineType req = requested == "st"      ? MachineType::St
+    const MachineType req = requested == "tt" ? MachineType::Tt
+                          : requested == "st"      ? MachineType::St
                           : requested == "megast"  ? MachineType::MegaSt
                           : requested == "megaste" ? MachineType::MegaSte : MachineType::Ste;
     if (req == real) return false;
@@ -158,11 +160,9 @@ static void pickMachineForRom(ConfigUi& ui) {
     const MachineType cur = parseMachine(ui.pendMachine);
     const MachineType m = neost::pickMachineForTos(cur, t);
     if (m == cur) return;
-    static const char* ids[]    = { "st", "megast", "ste", "megaste" };
-    static const char* labels[] = { "ST", "Mega ST", "STE", "Mega STE" };
-    const int i = m == MachineType::St ? 0 : m == MachineType::MegaSt ? 1 : m == MachineType::Ste ? 2 : 3;
-    ui.pendMachine = ids[i];
-    ui.romAutoNote = std::string("Model switched to ") + labels[i] + " to match this TOS.";
+    ui.pendMachine = machineName(m);
+    if (m == MachineType::Tt && ui.pendMem != "2m") ui.pendMem = "4m";
+    ui.romAutoNote = std::string("Model switched to ") + machineLabel(m) + " to match this TOS.";
 }
 
 void drawConfigWindow(App& A, ConfigUi& ui) {
@@ -264,13 +264,14 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
             ImGui::Separator();
         }
         ImGui::TextDisabled("Machine model");
-        static const char* labels[] = { "ST", "Mega ST", "STE", "Mega STE" };
-        static const char* ids[]    = { "st", "megast", "ste", "megaste" };
-        for (int i = 0; i < 4; ++i)
+        static const char* labels[] = { "ST", "Mega ST", "STE", "Mega STE", "TT030 (experimental)" };
+        static const char* ids[]    = { "st", "megast", "ste", "megaste", "tt" };
+        for (size_t i = 0; i < IM_ARRAYSIZE(ids); ++i)
             if (ImGui::RadioButton(labels[i], ui.pendMachine == ids[i])) {
                 // Re-cliquer le modèle déjà coché le recale aussi : une config enregistrée
                 // « ste » + tos102uk (qui tourne en ST) se répare d'un clic.
                 ui.pendMachine = ids[i];
+                if (ui.pendMachine == "tt" && ui.pendMem != "2m") ui.pendMem = "4m";
                 pickRomForMachine(ui, ui.pendMachine);
             }
         if (!ui.romAutoNote.empty())
@@ -313,7 +314,7 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
                                          "2176 KB (2 MB + 128 KB)", "2.5 MB (2 MB + 512 KB)", "4 MB" };
         static const char* mids[]    = { "256k", "512k", "1m", "2m", "2176k", "2560k", "4m" };
         for (int i = 0; i < 7; ++i)
-            if (ImGui::RadioButton(mlabels[i], ui.pendMem == mids[i])) ui.pendMem = mids[i];
+            if ((ui.pendMachine != "tt" || i == 3 || i == 6) && ImGui::RadioButton(mlabels[i], ui.pendMem == mids[i])) ui.pendMem = mids[i];
         ImGui::Separator();
         ImGui::TextWrapped("512 KB = the 1985 machine. Many games from 1989 on, and most "
                            "cracks/depackers, require 1 MB: with 512 KB they give no "
@@ -353,7 +354,7 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
                     pickMachineForRom(ui);
                 }
                 ImGui::SameLine();
-                // TOS du TT/Falcon : listé, mais Bus::loadTos le refusera (Apply le dit).
+                // Montrer le modèle demandé par la ROM avant le changement de profil.
                 uint8_t h[0x30] = {};
                 std::ifstream rf(p, std::ios::binary);
                 rf.read(reinterpret_cast<char*>(h), sizeof h);
@@ -362,8 +363,8 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
                 const std::uintmax_t fsz = fs::file_size(p, ecs);
                 if (const char* tgt = tosUnsupportedMachine(tosHeaderVersion(h, got),
                                                             tosHeaderIsEmuTos(h, got),
-                                                            ecs ? 0 : std::size_t(fsz)))
-                    ImGui::TextColored(ImVec4(1.f, .35f, .3f, 1.f), "%s TOS - not supported", tgt);
+                                                            ecs ? 0 : std::size_t(fsz), parseMachine(ui.pendMachine)))
+                    ImGui::TextColored(ImVec4(1.f, .35f, .3f, 1.f), "Requires %s hardware", tgt);
                 else if (romIsNtsc(name)) ImGui::TextColored(ImVec4(1.f, .6f, .2f, 1.f), "60 Hz NTSC");
                 else                      ImGui::TextDisabled("50 Hz PAL");
             }

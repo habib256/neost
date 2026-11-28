@@ -30,7 +30,8 @@
 #include <cstdlib>
 #include <fstream>
 
-Bus::Bus(std::size_t ramBytes) {
+Bus::Bus(std::size_t ramBytes, MachineType profile) : machine(profile) {
+    ramBytes = machineRamBytes(profile, ramBytes);
     ram.assign(ramBytes, 0);
 }
 
@@ -137,6 +138,7 @@ void Bus::peripheralReset() {
     if (dmasnd && machine == MachineType::Ste) dmasnd->resbReset();
     if (psg)     psg->reset();             // PSG_Reset
     if (mfp)     mfp->resetChip();         // MFP_Reset_All
+    if (mfpTt)   mfpTt->resetChip();
     if (fdc)     fdc->reset(/*cold=*/false);   // FDC_Reset(false)
 }
 
@@ -157,24 +159,28 @@ bool Bus::loadTos(const std::string& path) {
     }
     f.seekg(0);
     std::vector<uint8_t> img(static_cast<std::size_t>(n));
-    f.read(reinterpret_cast<char*>(img.data()), n);
+    if (!f.read(reinterpret_cast<char*>(img.data()), n)) {
+        neost::log::err("[Bus] cannot read complete TOS: %s\n", path.c_str());
+        return false;
+    }
 
-    // TOS du TT ou du Falcon : refusé AVANT de toucher à la ROM en place (cf.
-    // tosUnsupportedMachine) — le frontal garde l'ancienne ROM ou sort en erreur.
     const uint16_t ver = tosHeaderVersion(img.data(), img.size());
     if (const char* target = tosUnsupportedMachine(ver, tosHeaderIsEmuTos(img.data(), img.size()),
-                                                   img.size())) {
-        neost::log::err("[Bus] TOS %X.%02X is for the Atari %s: TT/Falcon TOS not supported "
-                                "(NeoST emulates ST, Mega ST, STE and Mega STE): %s\n",
-                        ver >> 8, ver & 0xFF, target, path.c_str());
+                                                   img.size(), machine)) {
+        neost::log::err("[Bus] TOS %X.%02X requires %s hardware, current profile is %s: %s\n",
+                        ver >> 8, ver & 0xFF, target, machineName(machine), path.c_str());
+        return false;
+    }
+
+    bool baseFromHeader = false;
+    const uint32_t base = tosImageBase(img.data(), img.size(), &baseFromHeader);
+    if (machine == MachineType::Tt &&
+        (!baseFromHeader || base != stmap::ROM_E00000 || img.size() != 512u * 1024u)) {
+        neost::log::err("[Bus] TT requires a 512 KB TOS image linked at $E00000: %s\n", path.c_str());
         return false;
     }
     rom = std::move(img);
-
-    // Implantation : l'en-tête (os_base, offset 8) fait foi, la taille en repli
-    // (cf. tosImageBase, MachineType.hpp).
-    bool baseFromHeader = false;
-    romBase = tosImageBase(rom.data(), rom.size(), &baseFromHeader);
+    romBase = base;
     if (!baseFromHeader)
         neost::log::err("[Bus] TOS header gives no valid os_base: placed by size at $%06X\n",
                         romBase);
@@ -330,6 +336,7 @@ namespace {
 // la banque visée n'est pas peuplée (→ zone « void » : on relit le dernier mot du
 // bus de données [cpuDb], l'écriture est perdue — cf. Hatari VoidMem_*).
 int64_t Bus::mmuTranslate(uint32_t addr) const {
+    if (machine == MachineType::Tt) return addr < ram.size() ? static_cast<int64_t>(addr) : -1;
     const uint8_t conf = glue ? glue->memConfig_ : memConfigForBytes(ram.size());
     const uint32_t mmuB0 = mmuBank0Size(conf, machine);
     // STMemory_MMU_ConfToBank (Hatari) : seuls le ST/Mega ST (Config_IsMachineST,
@@ -441,9 +448,13 @@ void Bus::rebuildMmuCache(uint8_t conf) const {
 // tampons normaux d'un programme. Tout le reste (banque vide, repli MMU, hors RAM)
 // renvoie nullptr → l'appelant retombe sur un accès octet par octet / une erreur.
 uint8_t* Bus::hostRamPtr(uint32_t addr, uint32_t len) {
-    addr &= stmap::ADDR_MASK;
+    addr = normalizeAddress(addr);
     if (len == 0) len = 1;
-    if (addr >= 0x400000 || addr + len > 0x400000) return nullptr;
+    if (machine == MachineType::Tt && addr >= kTtRamBase) {
+        const uint32_t off = addr - kTtRamBase;
+        return off < ttRam.size() && len <= ttRam.size() - off ? ttRam.data() + off : nullptr;
+    }
+    if (addr >= 0x400000 || len > 0x400000 - addr) return nullptr;
     const int64_t p0 = mmuTranslate(addr);
     const int64_t p1 = mmuTranslate(addr + len - 1);
     if (p0 < 0 || p1 < 0) return nullptr;
@@ -459,7 +470,11 @@ uint8_t* Bus::hostRamPtr(uint32_t addr, uint32_t len) {
 // par Bus::read8 dans l'en-tête ; on arrive ici pour tout le reste — et aussi pour
 // la RAM quand la config MMU n'est pas en traduction identité.
 uint8_t Bus::read8Slow(uint32_t addr) {
-    addr &= stmap::ADDR_MASK;
+    addr = normalizeAddress(addr);
+    if (machine == MachineType::Tt && addr >= kTtRamBase) {
+        const uint32_t off = addr - kTtRamBase;
+        return off < ttRam.size() ? ttRam[off] : 0xFF;
+    }
 
     // Vecteurs reset $0-$7 : la GLUE sélectionne la ROM pour TOUTE lecture CPU de
     // ces 8 octets, pas seulement le temps du reset ; la RAM n'y est jamais choisie.
@@ -565,7 +580,12 @@ uint8_t Bus::read8Slow(uint32_t addr) {
 }
 
 void Bus::write8Slow(uint32_t addr, uint8_t v) {
-    addr &= stmap::ADDR_MASK;
+    addr = normalizeAddress(addr);
+    if (machine == MachineType::Tt && addr >= kTtRamBase) {
+        const uint32_t off = addr - kTtRamBase;
+        if (off < ttRam.size()) ttRam[off] = v;
+        return;
+    }
 
     // Espace RAM ($0-$3FFFFF) : décodé par le MMU (banques + aliasing). Une banque
     // déclarée mais sans puce absorbe l'écriture dans le vide.
@@ -640,12 +660,33 @@ void Bus::buildIoFault() const {
                 ioFault_[addr - stmap::MMIO_BASE] = 0;
         }
     };
-    const bool ste = machineIsSte(machine);
-    if (ste) for (const auto& s : STE_OK) clear(s.addr, s.span);
-    else     for (const auto& s : ST_OK)  clear(s.addr, s.span);
+    if (machine == MachineType::Tt) {
+        // [B] Atari TT030 Hardware Reference Manual, juin 1990, §V, « ST/TT I/O map ».
+        // [D] Hatari ioMemTabTT.c @ 36a8acf0 pour les voies d'octets des puces.
+        clear(0xFF8000, 2);
+        clear(0xFF8200, 16);
+        clear(0xFF8240, 36);
+        clear(0xFF8400, 512);
+        clear(0xFF8604, 12);
+        clear(0xFF8700, 22);
+        clear(0xFF8780, 16);
+        clear(0xFF8961, 1); clear(0xFF8963, 1);
+        clear(0xFF8C00, 22);
+        clear(0xFF8C80, 8);
+        for (uint32_t a = 0xFF8E01; a <= 0xFF8E0F; a += 2) clear(a, 1);
+        clear(0xFF9200, 2);
+        for (uint32_t a = 0xFFFA81; a <= 0xFFFABF; a += 2) clear(a, 1);
+        clear(0xFF8800, 4);
+        clear(0xFF8900, 0x20); clear(0xFF8920, 6);
+        clear(0xFFFC00, 8);
+    } else if (machineIsSte(machine)) {
+        for (const auto& s : STE_OK) clear(s.addr, s.span);
+    } else {
+        for (const auto& s : ST_OK) clear(s.addr, s.span);
+    }
 
     // Son DMA STE ($FF8900-$FF893F) : présent uniquement STE / Mega STE.
-    if (machineHasDmaSound(machine)) clear(0xFF8900, 0x40);
+    if (machineHasDmaSound(machine) && machine != MachineType::Tt) clear(0xFF8900, 0x40);
 
     // Blitter ($FF8A00-$FF8A3F) : présent sur Mega ST / STE / Mega STE → ses
     // registres répondent (pas de bus error). Sur STF d'origine, la zone reste
@@ -657,10 +698,11 @@ void Bus::buildIoFault() const {
     for (uint32_t a = 0xFFFA01; a <= 0xFFFA3F; a += 2) clear(a, 1);
 
     // ACIA clavier/MIDI + RTC + zone void contiguë : $FFFC00-$FFFDFF non fautif.
-    clear(0xFFFC00, 0x200);
-
-    // PSG : miroir matériel des 4 registres sur tout $FF8800-$FF88FF (Hatari).
-    clear(0xFF8800, 0x100);
+    if (machine != MachineType::Tt) {
+        clear(0xFFFC00, 0x200);
+        // PSG : miroir matériel des 4 registres sur tout $FF8800-$FF88FF (Hatari).
+        clear(0xFF8800, 0x100);
+    }
 
     // Différences de chipset selon le modèle (Hatari IoMem_FixVoidAccess*).
     if (machine == MachineType::St) {            // chipset Ricoh : 2 octets « void »
@@ -688,10 +730,14 @@ void Bus::buildIoFault() const {
 }
 
 bool Bus::busFault(uint32_t addr) const {
-    addr &= stmap::ADDR_MASK;
+    addr = normalizeAddress(addr);
+    if (machine == MachineType::Tt && addr >= kTtRamBase) {
+        const uint32_t off = addr - kTtRamBase;
+        return off >= ttRam.size();
+    }
 
     // RAM ($0-$3FFFFF) : décodée par le MMU ; jamais de bus error (banque vide → 0).
-    if (addr < 0x400000) return false;
+    if (addr < 0x400000) return machine == MachineType::Tt && addr >= ram.size();
 
     // ROM TOS : jamais de bus error sur TOUTE la fenêtre décodée (1 Mo à $E00000,
     // 192 Ko à $FC0000 — cf. romWindowSize), pas seulement la taille du fichier.
@@ -784,7 +830,10 @@ bool Bus::busSelfTest() {
 }
 
 bool Bus::busFaultNSlow(uint32_t addr, unsigned n, bool write) const {
-    addr &= stmap::ADDR_MASK;
+    const uint32_t last = normalizeAddress(addr + n - 1);
+    addr = normalizeAddress(addr);
+    const bool tt = machine == MachineType::Tt;
+    if (tt && (last < addr || last - addr != n - 1)) return true;
 
     // 1) Écritures TOUJOURS fautives, même en superviseur (cf. Bus.hpp) : la ROM
     //    TOS et le port cartouche sont physiquement en lecture seule (Hatari
@@ -802,8 +851,10 @@ bool Bus::busFaultNSlow(uint32_t addr, unsigned n, bool write) const {
     //    l'espace IO ($FF8000-$FFFFFF) fautent — port de SysMem_*get/put (memory.c)
     //    et du test is_super_access d'ioMem.c. Le bit S n'est consulté QUE si
     //    l'adresse est concernée (l'immense majorité des accès l'évite).
-    if (addr < 0x800 || addr >= stmap::MMIO_BASE) {
-        if (cpu && !cpu->supervisor()) return true;
+    if (addr < 0x800 || (addr >= stmap::MMIO_BASE && addr <= stmap::ADDR_MASK)) {
+        // Sur TT, FC2 décrit le cycle physique, y compris les recherches
+        // PMMU et les transferts MOVES dont le FC diffère du bit S.
+        if (cpu && !(tt ? cpu->supervisorBusCycle() : cpu->supervisor())) return true;
     }
 
     // 3) Banque sélectionnée par l'adresse de DÉPART (Hatari cpu/memory.c : le
@@ -811,7 +862,9 @@ bool Bus::busFaultNSlow(uint32_t addr, unsigned n, bool write) const {
     //    démarre HORS de l'espace IO ne consulte jamais la whitelist ioMem, même
     //    s'il déborde dedans : `move.l $FF7FFE` faute inconditionnellement
     //    (BusErrMem_bank), il ne « sauve » pas ses octets $FF8000-01.
-    if (addr < stmap::MMIO_BASE) return busFault(addr);
+    if (addr < stmap::MMIO_BASE || (tt && addr >= kTtRamBase))
+        return busFault(addr) || (tt && busFault(last));
+    if (tt && last > stmap::ADDR_MASK) return true;
 
     // 4) Espace IO : carte par octet (whitelist ioMem) — un word/long ne faute
     //    que si TOUS ses octets fautent.
@@ -973,7 +1026,11 @@ uint16_t Bus::ramCycleRead16Slow(uint32_t addr) {
 // Lecture débogueur : même plan mémoire que read8 mais SANS effet de bord (pas
 // de dispatch MMIO, pas de wait state, pas de bus error). Cf. Bus.hpp.
 uint8_t Bus::peek8(uint32_t addr) const {
-    addr &= stmap::ADDR_MASK;
+    addr = normalizeAddress(addr);
+    if (machine == MachineType::Tt && addr >= kTtRamBase) {
+        const uint32_t off = addr - kTtRamBase;
+        return off < ttRam.size() ? ttRam[off] : 0xFF;
+    }
     if (addr < 8 && addr < rom.size()) return rom[addr];   // vecteurs reset : ROM (cf. read8Slow)
     if (addr < 0x400000) {
         const int64_t phys = mmuTranslate(addr);
@@ -992,7 +1049,13 @@ uint8_t Bus::peek8(uint32_t addr) const {
 }
 
 bool Bus::peekMapped8(uint32_t addr, uint8_t& v) const {
-    addr &= stmap::ADDR_MASK;
+    addr = normalizeAddress(addr);
+    if (machine == MachineType::Tt && addr >= kTtRamBase) {
+        const uint32_t off = addr - kTtRamBase;
+        if (off >= ttRam.size()) return false;
+        v = ttRam[off];
+        return true;
+    }
     if (addr < 0x400000) {
         const int64_t phys = mmuTranslate(addr);
         if (phys < 0) return false;
@@ -1046,7 +1109,7 @@ uint32_t Bus::read32(uint32_t addr) {
 }
 void Bus::write16(uint32_t addr, uint16_t v) {
     // Le décodage 24 bits précède aussi le raccourci atomique du blitter.
-    addr &= stmap::ADDR_MASK;
+    if (machine != MachineType::Tt) addr &= stmap::ADDR_MASK;
     const uint8_t saved = ioAccessWidth_;
     ioAccessWidth_ = 2;
     // Blitter ($FF8A00-$FF8A3F) : écriture MOT atomique — le registre contrôle
@@ -1063,7 +1126,7 @@ void Bus::write16(uint32_t addr, uint16_t v) {
     ioAccessWidth_ = saved;
 }
 void Bus::write32(uint32_t addr, uint32_t v) {
-    addr &= stmap::ADDR_MASK;
+    if (machine != MachineType::Tt) addr &= stmap::ADDR_MASK;
     const uint8_t saved = ioAccessWidth_;
     ioAccessWidth_ = 4;
     if (addr >= 0xFF8A00 && addr + 3 <= 0xFF8A3F && blitter && machineHasBlitter(machine)) {
@@ -1088,7 +1151,30 @@ void Bus::write32(uint32_t addr, uint32_t v) {
 //  « void », même ordre d'effets. Le seul changement est QUI les appelle.
 // =============================================================================
 uint8_t Bus::rdShifter(uint32_t a) { return shifter->read8(a); }
-void    Bus::wrShifter(uint32_t a, uint8_t v) { shifter->write8(a, v); }
+void Bus::wrShifter(uint32_t a, uint8_t v) {
+    if (machine == MachineType::Tt && a >= 0xFF8240u && a < 0xFF8260u) {
+        // [B] Atari TT030 Hardware Reference Manual, §V : format ST Rrrr,
+        // format TT rrrR et sélection de banque ST sur $FF8263.
+        // [C] EmuTOS bios/screen.c @ 05285e51, setcolor : les écritures ST
+        // mettent à jour les couleurs TT correspondantes.
+        // [D] Hatari video.c @ 36a8acf0, Video_TTColorRegs_STRegWrite :
+        // seules les écritures mot/long commandent la palette ST sur TT.
+        if (ioAccessWidth_ < 2) return;
+        const unsigned index = (a - 0xFF8240u) / 2;
+        const unsigned bank = ttVideoMode() & 15;
+        const unsigned off = (bank * 16 + index) * 2;
+        const uint16_t previous = shifter->palette[index];
+        shifter->write8(a, v);
+        const uint16_t st = ((a & 1) ? (previous & 0xFF00) | v
+                                     : (previous & 0x00FF) | (uint16_t(v) << 8)) & 0x0FFF;
+        shifter->palette[index] = st;
+        const uint16_t tt = uint16_t(((st & 0x777) << 1) | ((st & 0x888) >> 3));
+        ttPalette_[off] = uint8_t(tt >> 8);
+        ttPalette_[off + 1] = uint8_t(tt);
+        return;
+    }
+    shifter->write8(a, v);
+}
 
 // Le YM2149 (2 registres : sélecteur $FF8800, donnée $FF8802) est MIROIRÉ sur tout
 // $FF8800-$FF88FF (le matériel ne décode que A1, cf. Hatari IoMem_Init shadow PSG) :
@@ -1114,11 +1200,11 @@ void Bus::wrPsg(uint32_t a, uint8_t v) {
 uint8_t Bus::rdFdc(uint32_t a) {
     // Le registre de densité est câblé seulement sur Mega STE (ioMem.c).
     // Ailleurs, les octets autorisés par la carte des bus errors sont void.
-    if (a >= 0xFF860E && machine != MachineType::MegaSte) return 0xFF;
+    if (a >= 0xFF860E && machine != MachineType::MegaSte && machine != MachineType::Tt) return 0xFF;
     return fdc->read8(a);
 }
 void    Bus::wrFdc(uint32_t a, uint8_t v) {
-    if (a >= 0xFF860E && machine != MachineType::MegaSte) return;
+    if (a >= 0xFF860E && machine != MachineType::MegaSte && machine != MachineType::Tt) return;
     fdc->write8(a, v);
     if (cpu) cpu->updateIpl();            // l'INTRQ FDC (GPIP5) a pu changer
 }
@@ -1150,7 +1236,8 @@ uint8_t Bus::rdMfp(uint32_t a) {
     //     Tranché par : une mesure d'un blit vers $FFFA01 sur un vrai STE.
     if (blitterMasterAccess) NEOST_F("bus.blitter_mfp_dtack_a");
     if (cpu && !blitterMasterAccess) cpu->addMfpWaitCycles();
-    const uint8_t v = mfp->read8(a);
+    Mfp* chip = a >= 0xFFFA80u ? mfpTt : mfp;
+    const uint8_t v = chip->read8(a);
     if (cpu) cpu->updateIpl();            // l'état d'IRQ a pu changer
     return v;
 }
@@ -1161,7 +1248,8 @@ void Bus::wrMfp(uint32_t a, uint8_t v) {
     if (!(a & 1) || (a & 0x3F) >= 0x31) return;
     if (blitterMasterAccess) NEOST_F("bus.blitter_mfp_dtack_b");
     if (cpu && !blitterMasterAccess) cpu->addMfpWaitCycles();   // cf. rdMfp
-    mfp->write8(a, v);
+    Mfp* chip = a >= 0xFFFA80u ? mfpTt : mfp;
+    chip->write8(a, v);
     if (cpu) cpu->updateIpl();            // (dé)masquage, fin d'interruption...
 }
 
@@ -1355,6 +1443,7 @@ const Bus::MmioSlot* Bus::mmioTable(std::size_t& count) {
         { 0xFF8E21,            0xFF8E21,                    &Bus::claimsMsteCtrl, &Bus::rdMsteCtl, &Bus::wrMsteCtl, "mste-cache"},
         { 0xFF9200,            0xFF9223,                    &Bus::claimsStePads,  &Bus::rdStePads, &Bus::wrStePads, "stepads"   },
         { stmap::MFP_BASE,     stmap::MFP_BASE + 0x3F,      &Bus::claimsMfp,      &Bus::rdMfp,     &Bus::wrMfp,     "mfp"       },
+        { 0xFFFA80u,          0xFFFABFu,                  &Bus::claimsMfpTt,    &Bus::rdMfp,     &Bus::wrMfp,     "tt-mfp"    },
         { Fpu::BASE,           Fpu::END - 1,                &Bus::claimsFpu,      &Bus::rdFpu,     &Bus::wrFpu,     "fpu"       },
         { stmap::ACIA_BASE,    stmap::ACIA_BASE + 3,        &Bus::claimsIkbd,     &Bus::rdIkbd,    &Bus::wrIkbd,    "acia-ikbd" },
         { 0xFFFC04,            0xFFFC07,                    &Bus::claimsMidi,     &Bus::rdMidi,    &Bus::wrMidi,    "acia-midi" },
@@ -1399,7 +1488,35 @@ void Bus::steVpaVoidWait(uint32_t addr) {
     cpu->addAciaWaitCycles();
 }
 
+void Bus::resetTtIo() {
+    ttIo_.fill(0);
+    ttPalette_.fill(0);
+}
+
+void Bus::syncTtPaletteToSt(unsigned index) {
+    if (!shifter) return;
+    const unsigned bank = ttVideoMode() & 15;
+    const uint16_t tt = ttVideoPalette(static_cast<uint8_t>(bank * 16 + index));
+    shifter->palette[index] = uint16_t(((tt & 0xEEE) >> 1) | ((tt & 0x111) << 3));
+}
+
+int Bus::ttIoLatch(uint32_t addr) {
+    if (addr >= 0xFF8262u && addr <= 0xFF8263u) return addr - 0xFF8262u;
+    if (addr >= 0xFF8700u && addr <= 0xFF8715u) return 2 + addr - 0xFF8700u;
+    if (addr >= 0xFF8C00u && addr <= 0xFF8C15u) return 24 + addr - 0xFF8C00u;
+    if (addr >= 0xFF8780u && addr <= 0xFF878Fu) return 46 + addr - 0xFF8780u;
+    if (addr == 0xFF8961u) return 62;
+    if (addr == 0xFF8963u) return 63;
+    return -1;
+}
+
 uint8_t Bus::mmioRead8(uint32_t addr) {
+    if (machine == MachineType::Tt) {
+        if (addr >= 0xFF8400u && addr < 0xFF8600u) return ttPalette_[addr - 0xFF8400u];
+        if (const int i = ttIoLatch(addr); i >= 0) return ttIo_[i];
+        if (addr == 0xFF9200u) return 0xBF;
+        if (addr == 0xFF9201u) return 0;
+    }
     if (const MmioSlot* s = mmioSlotFor(addr)) return (this->*(s->read))(addr);
     steVpaVoidWait(addr);
     if (machine == MachineType::Ste) {
@@ -1415,6 +1532,23 @@ uint8_t Bus::mmioRead8(uint32_t addr) {
 }
 
 void Bus::mmioWrite8(uint32_t addr, uint8_t v) {
+    if (machine == MachineType::Tt) {
+        if (addr >= 0xFF8400u && addr < 0xFF8600u) {
+            ttPalette_[addr - 0xFF8400u] = v;
+            const unsigned index = (addr - 0xFF8400u) / 2;
+            if (index / 16 == (ttVideoMode() & 15u))
+                syncTtPaletteToSt(index % 16);
+            return;
+        }
+        if (const int i = ttIoLatch(addr); i >= 0) {
+            const bool bankChanged = addr == 0xFF8263u && ((ttIo_[i] ^ v) & 15u);
+            ttIo_[i] = v;
+            if (bankChanged)
+                for (unsigned index = 0; index < 16; ++index) syncTtPaletteToSt(index);
+            return;
+        }
+        if (addr == 0xFF9200u || addr == 0xFF9201u) return;
+    }
     if (const MmioSlot* s = mmioSlotFor(addr)) { (this->*(s->write))(addr, v); return; }
     steVpaVoidWait(addr);
     if (addr == 0xFF9000 && machine == MachineType::Ste) { gameCart = v & 1; return; }

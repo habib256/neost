@@ -1,30 +1,46 @@
 # Community 332
 
-> 7 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **ParentDirTime** (7 connections) — `src/io/GemdosHd.cpp`
-- **.ParentDirTime()** (3 connections) — `src/io/GemdosHd.cpp`
-- **file_time_type** (1 connections)
-- **path** (1 connections)
-- **dir_** (1 connections) — `src/io/GemdosHd.cpp`
-- **ok_** (1 connections) — `src/io/GemdosHd.cpp`
-- **time_** (1 connections) — `src/io/GemdosHd.cpp`
+- **IpfImage.cpp** (23 connections) — `src/io/IpfImage.cpp`
+- **toStx()** (10 connections) — `src/io/IpfImage.cpp`
+- **TrackRev** (6 connections) — `src/io/IpfImage.hpp`
+- **size_t** (6 connections)
+- **crc16Ccitt()** (4 connections) — `src/io/IpfImage.cpp`
+- **put16le()** (4 connections) — `src/io/IpfImage.cpp`
+- **put32le()** (4 connections) — `src/io/IpfImage.cpp`
+- **set32le()** (4 connections) — `src/io/IpfImage.cpp`
+- **crc32()** (3 connections) — `src/io/IpfImage.cpp`
+- **isIpf()** (3 connections) — `src/io/IpfImage.cpp`
+- **bytes** (1 connections) — `src/io/IpfImage.hpp`
+- **cylinder** (1 connections) — `src/io/IpfImage.hpp`
+- **head** (1 connections) — `src/io/IpfImage.hpp`
 
 ## Relationships
 
-- [Community 36](Community_36.md) (2 shared connections)
-- [Community 152](Community_152.md) (1 shared connections)
+- [Community 143](Community_143.md) (8 shared connections)
+- [Community 4](Community_4.md) (6 shared connections)
+- [Community 217](Community_217.md) (5 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 583](Community_583.md) (2 shared connections)
+- [Community 361](Community_361.md) (2 shared connections)
+- [Community 163](Community_163.md) (1 shared connections)
+- [Community 546](Community_546.md) (1 shared connections)
+- [Community 565](Community_565.md) (1 shared connections)
+- [Community 503](Community_503.md) (1 shared connections)
+- [Community 459](Community_459.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/GemdosHd.cpp`
+- `src/io/IpfImage.cpp`
+- `src/io/IpfImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 8 (89%)
-- INFERRED: 1 (11%)
+- EXTRACTED: 50 (98%)
+- INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

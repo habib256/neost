@@ -1,51 +1,46 @@
 # Community 288
 
-> 16 nodes
+> 18 nodes
 
 ## Key Concepts
 
-- **StKeys.hpp** (12 connections) — `src/gui/StKeys.hpp`
-- **InputCallbacks.cpp** (11 connections) — `src/gui/InputCallbacks.cpp`
-- **StKeysSymbolic.cpp** (7 connections) — `src/gui/StKeysSymbolic.cpp`
-- **scancodeFor()** (5 connections) — `src/gui/StKeys.cpp`
-- **symbolicForCountry()** (4 connections) — `src/gui/StKeysSymbolic.cpp`
-- **StKeys.cpp** (4 connections) — `src/gui/StKeys.cpp`
-- **mouseReachesSt()** (3 connections) — `src/gui/InputCallbacks.cpp`
-- **onMouseButton()** (3 connections) — `src/gui/InputCallbacks.cpp`
-- **setCountryFromTos()** (3 connections) — `src/gui/StKeysSymbolic.cpp`
-- **utf8First()** (3 connections) — `src/gui/StKeysSymbolic.cpp`
-- **onKey()** (2 connections) — `src/gui/InputCallbacks.cpp`
-- **positionalScancode()** (2 connections) — `src/gui/StKeys.cpp`
-- **symbolicDefault()** (2 connections) — `src/gui/StKeysSymbolic.cpp`
-- **GLFWwindow** (2 connections)
-- **Web : la première touche tuait l'émulateur (2026-10-27)** (2 connections) — `CHANGELOG.md`
-- **onGlfwError()** (1 connections) — `src/gui/InputCallbacks.cpp`
+- **run_glue_sweep.py** (18 connections) — `tools/run_glue_sweep.py`
+- **main()** (8 connections) — `tools/run_glue_sweep.py`
+- **probe_vroom_intro_glue.py** (8 connections) — `tools/probe_vroom_intro_glue.py`
+- **main()** (7 connections) — `tools/probe_vroom_intro_glue.py`
+- **run_neost()** (5 connections) — `tools/run_glue_sweep.py`
+- **run_rtl()** (5 connections) — `tools/run_glue_sweep.py`
+- **one()** (4 connections) — `tools/run_glue_sweep.py`
+- **writes_of()** (4 connections) — `tools/run_glue_sweep.py`
+- **as_writes()** (3 connections) — `tools/probe_vroom_intro_glue.py`
+- **logical_writes()** (3 connections) — `tools/probe_vroom_intro_glue.py`
+- **line_pieces()** (3 connections) — `tools/run_glue_sweep.py`
+- **compare()** (2 connections) — `tools/run_glue_sweep.py`
+- **experiments()** (2 connections) — `tools/run_glue_sweep.py`
+- **rtl_plan_line()** (2 connections) — `tools/run_glue_sweep.py`
+- **Path** (1 connections)
+- **Sonde des deux séquences horizontales de l'intro Elite : NeoST et GSTMCU. Les…** (1 connections) — `tools/probe_vroom_intro_glue.py`
+- **Écritures en coordonnées de la GLUE : ligne, cycle, résolution ?, valeur.** (1 connections) — `tools/run_glue_sweep.py`
+- **Morceaux de DE (début, fin, octets) des deux lignes qui suivent, en cycles…** (1 connections) — `tools/run_glue_sweep.py`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (5 shared connections)
-- [Community 214](Community_214.md) (4 shared connections)
-- [Community 48](Community_48.md) (4 shared connections)
-- [Community 4](Community_4.md) (4 shared connections)
-- [Community 91](Community_91.md) (2 shared connections)
-- [Community 325](Community_325.md) (1 shared connections)
-- [Community 470](Community_470.md) (1 shared connections)
-- [Community 228](Community_228.md) (1 shared connections)
-- [Community 68](Community_68.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
+- [Community 207](Community_207.md) (8 shared connections)
+- [Community 582](Community_582.md) (3 shared connections)
+- [Community 26](Community_26.md) (2 shared connections)
+- [Community 100](Community_100.md) (2 shared connections)
+- [Community 173](Community_173.md) (2 shared connections)
+- [Community 151](Community_151.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/gui/InputCallbacks.cpp`
-- `src/gui/StKeys.cpp`
-- `src/gui/StKeys.hpp`
-- `src/gui/StKeysSymbolic.cpp`
+- `tools/probe_vroom_intro_glue.py`
+- `tools/run_glue_sweep.py`
 
 ## Audit Trail
 
-- EXTRACTED: 38 (84%)
-- INFERRED: 7 (16%)
+- EXTRACTED: 47 (98%)
+- INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

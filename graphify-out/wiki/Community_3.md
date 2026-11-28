@@ -1,11 +1,10 @@
 # Community 3
 
-> 159 nodes
+> 145 nodes
 
 ## Key Concepts
 
 - **struct** (158 connections)
-- **run_gstmcu_bench.py** (19 connections) — `tools/run_gstmcu_bench.py`
 - **make_cycle_bench.py** (10 connections) — `tools/make_cycle_bench.py`
 - **fix_short_reloc.py** (9 connections) — `tools/fix_short_reloc.py`
 - **make_freqswitch_test.py** (9 connections) — `tools/make_freqswitch_test.py`
@@ -28,23 +27,24 @@
 - **names_of()** (6 connections) — `tools/appimage_ls.py`
 - **scan()** (6 connections) — `tools/fix_short_reloc.py`
 - **build_cart()** (6 connections) — `tools/make_cycle_bench.py`
-- **main()** (6 connections) — `tools/run_gstmcu_bench.py`
-- *... and 134 more nodes in this community*
+- **metadata()** (5 connections) — `tools/appimage_ls.py`
+- **superblock()** (4 connections) — `tools/appimage_ls.py`
+- *... and 120 more nodes in this community*
 
 ## Relationships
 
-- [Community 582](Community_582.md) (23 shared connections)
-- [Community 8](Community_8.md) (20 shared connections)
+- [Community 582](Community_582.md) (21 shared connections)
+- [Community 8](Community_8.md) (15 shared connections)
+- [Community 207](Community_207.md) (14 shared connections)
 - [Community 146](Community_146.md) (13 shared connections)
-- [Community 207](Community_207.md) (8 shared connections)
-- [Community 100](Community_100.md) (6 shared connections)
-- [Community 173](Community_173.md) (5 shared connections)
+- [Community 18](Community_18.md) (7 shared connections)
 - [Community 30](Community_30.md) (5 shared connections)
-- [Community 412](Community_412.md) (5 shared connections)
 - [Community 141](Community_141.md) (5 shared connections)
-- [Community 18](Community_18.md) (4 shared connections)
+- [Community 173](Community_173.md) (4 shared connections)
+- [Community 100](Community_100.md) (4 shared connections)
 - [Community 133](Community_133.md) (4 shared connections)
 - [Community 108](Community_108.md) (3 shared connections)
+- [Community 399](Community_399.md) (2 shared connections)
 
 ## Source Files
 
@@ -67,11 +67,10 @@
 - `tools/make_spec512_test.py`
 - `tools/make_spec512_view.py`
 - `tools/make_trace_odd_test.py`
-- `tools/run_gstmcu_bench.py`
 
 ## Audit Trail
 
-- EXTRACTED: 371 (100%)
+- EXTRACTED: 340 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

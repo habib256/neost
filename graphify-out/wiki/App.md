@@ -10,6 +10,7 @@
 - App.hpp `EXTRACTED`
 
 ### defines
+- rewindAt `EXTRACTED`
 - rewind `EXTRACTED`
 - stateMsg `EXTRACTED`
 - stateMsgFrames `EXTRACTED`
@@ -29,7 +30,6 @@
 - kioskInjectHold `EXTRACTED`
 - kioskRomDirs `EXTRACTED`
 - romDirSel `EXTRACTED`
-- browseDir `EXTRACTED`
 - *…and 121 more `defines` connection(s) not listed (lowest-degree first to go)*
 
 ### method

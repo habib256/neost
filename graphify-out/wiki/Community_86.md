@@ -1,6 +1,6 @@
 # Community 86
 
-> 29 nodes
+> 31 nodes
 
 ## Key Concepts
 
@@ -9,6 +9,7 @@
 - **.data()** (5 connections) — `tests/fdc_sector_size_switch_logic.cpp`
 - **.read()** (5 connections) — `tests/fdc_sector_size_switch_logic.cpp`
 - **.reg()** (5 connections) — `tests/fdc_sector_size_switch_logic.cpp`
+- **saveImage()** (5 connections) — `tests/fdc_sector_size_switch_logic.cpp`
 - **Checks** (4 connections) — `tests/fdc_sector_size_switch_logic.cpp`
 - **.mode()** (4 connections) — `tests/fdc_sector_size_switch_logic.cpp`
 - **.finish()** (3 connections) — `tests/fdc_sector_size_switch_logic.cpp`
@@ -25,15 +26,15 @@
 - **Bus** (1 connections)
 - **Fdc** (1 connections)
 - **Mfp** (1 connections)
+- **path** (1 connections)
 - **Scheduler** (1 connections)
 - **YM2149** (1 connections)
-- **bus** (1 connections) — `tests/fdc_sector_size_switch_logic.cpp`
-- **fdc** (1 connections) — `tests/fdc_sector_size_switch_logic.cpp`
-- *... and 4 more nodes in this community*
+- *... and 6 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (6 shared connections)
+- [Community 565](Community_565.md) (5 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 - [Community 145](Community_145.md) (1 shared connections)
 - [Community 48](Community_48.md) (1 shared connections)
 
@@ -43,7 +44,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 48 (98%)
+- EXTRACTED: 51 (98%)
 - INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 

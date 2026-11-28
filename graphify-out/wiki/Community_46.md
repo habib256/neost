@@ -1,41 +1,53 @@
 # Community 46
 
-> 18 nodes
+> 43 nodes
 
 ## Key Concepts
 
 - **Rig** (26 connections) — `tests/fdc_media_change_logic.cpp`
+- **testFdcMediaChange()** (15 connections) — `tests/fdc_media_change_logic.cpp`
+- **Rig** (8 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
+- **testMachineFdcMediaVbl()** (7 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
+- **.reg()** (6 connections) — `tests/fdc_media_change_logic.cpp`
+- **.read()** (5 connections) — `tests/fdc_media_change_logic.cpp`
+- **Checks** (4 connections) — `tests/fdc_media_change_logic.cpp`
+- **.data()** (4 connections) — `tests/fdc_media_change_logic.cpp`
+- **.mode()** (4 connections) — `tests/fdc_media_change_logic.cpp`
+- **.video()** (4 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
 - **.advance()** (3 connections) — `tests/fdc_media_change_logic.cpp`
+- **.armIndex()** (3 connections) — `tests/fdc_media_change_logic.cpp`
+- **.finish()** (3 connections) — `tests/fdc_media_change_logic.cpp`
+- **.irq()** (3 connections) — `tests/fdc_media_change_logic.cpp`
+- **.select()** (3 connections) — `tests/fdc_media_change_logic.cpp`
+- **.wprt()** (3 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
+- **.equal()** (2 connections) — `tests/fdc_media_change_logic.cpp`
+- **main()** (2 connections) — `tests/fdc_media_change_logic.cpp`
 - **.next()** (2 connections) — `tests/fdc_media_change_logic.cpp`
+- **main()** (2 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
+- **.Rig()** (2 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
+- **.vbl()** (2 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
+- **5. Rattrapage — si la borne ne démarre plus** (2 connections) — `packaging/raspberry/README.md`
 - **.address()** (1 connections) — `tests/fdc_media_change_logic.cpp`
 - **.pending()** (1 connections) — `tests/fdc_media_change_logic.cpp`
-- **.Rig()** (1 connections) — `tests/fdc_media_change_logic.cpp`
-- **Bus** (1 connections)
-- **Fdc** (1 connections)
-- **Mfp** (1 connections)
-- **Scheduler** (1 connections)
-- **YM2149** (1 connections)
-- **bus** (1 connections) — `tests/fdc_media_change_logic.cpp`
-- **fdc** (1 connections) — `tests/fdc_media_change_logic.cpp`
-- **live** (1 connections) — `tests/fdc_media_change_logic.cpp`
-- **mfp** (1 connections) — `tests/fdc_media_change_logic.cpp`
-- **psg** (1 connections) — `tests/fdc_media_change_logic.cpp`
-- **pulses** (1 connections) — `tests/fdc_media_change_logic.cpp`
-- **sched** (1 connections) — `tests/fdc_media_change_logic.cpp`
+- *... and 18 more nodes in this community*
 
 ## Relationships
 
-- [Community 415](Community_415.md) (9 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 565](Community_565.md) (7 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
+- [Community 48](Community_48.md) (2 shared connections)
+- [Community 362](Community_362.md) (1 shared connections)
 
 ## Source Files
 
+- `packaging/raspberry/README.md`
 - `tests/fdc_media_change_logic.cpp`
+- `tests/machine_fdc_media_vbl_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 28 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 69 (93%)
+- INFERRED: 5 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

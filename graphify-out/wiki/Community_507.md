@@ -4,16 +4,17 @@
 
 ## Key Concepts
 
-- **9. SCC Z85C30 et SCU (Mega STE) — `Scc.cpp`, `Scu.hpp` ↔ `scc.c`, `scu_vme.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (2 connections) — `docs/HATARI_DIVERGENCES.md`
+- **12. CPU 68000 et intégration — `Cpu68k.cpp`, `extern/moira` ↔ `cpu/newcpu.c`, `gencpu.c`, `hatari-glue.c`** (6 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts voulus — ne pas réaligner** (2 connections) — `docs/HATARI_DIVERGENCES.md`
 - **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Refermés** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Verrous du cœur : verdicts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
+- [Community 9](Community_9.md) (1 shared connections)
 - [Community 397](Community_397.md) (1 shared connections)
-- [Community 27](Community_27.md) (1 shared connections)
+- [Community 39](Community_39.md) (1 shared connections)
 
 ## Source Files
 
@@ -21,8 +22,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 5 (83%)
-- INFERRED: 1 (17%)
+- EXTRACTED: 6 (86%)
+- INFERRED: 1 (14%)
 - AMBIGUOUS: 0 (0%)
 
 ---

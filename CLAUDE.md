@@ -17,9 +17,14 @@ les puces) et **`neost_core` ne dépend pas du GUI**.
 **Version publiée : 0.6.5** (tag du 13 novembre 2026, `b3ced823`).
 La **0.7.0** porte le cœur officiel de Dirk W. Hoffmann (Moira 6.0b1, `c6fbb4ea`).
 Les quatre machines ST utilisent son interpréteur 68000. La migration et ses
-critères d'acceptation sont dans `docs/MIGRATION_MOIRA_070.md`. Les cartes mères
-TT et Falcon constituent le chantier suivant. Les résultats de mesure passent
-avant la mise à jour des références.
+critères d’acceptation sont dans `docs/MIGRATION_MOIRA_070.md`. Le profil TT
+expérimental utilise le 68030. TOS 3.06 UK et DE atteignent le bureau GEM
+sans disque. La ROM UK détecte la TT-RAM et affiche le test mémoire en
+TT-medium. Une disquette avec `NEWDESK.INF` configure aussi le bureau UK en
+TT-medium.
+Le guide `docs/TT_BRINGUP.md` donne la recette et les limites du jalon.
+La carte mère Falcon reste à porter. Les résultats de mesure passent avant
+la mise à jour des références.
 
 ## Où trouver quoi
 

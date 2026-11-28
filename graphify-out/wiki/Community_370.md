@@ -15,11 +15,11 @@
 
 ## Relationships
 
-- [Community 171](Community_171.md) (9 shared connections)
+- [Community 483](Community_483.md) (8 shared connections)
 - [Community 7](Community_7.md) (8 shared connections)
-- [Community 47](Community_47.md) (4 shared connections)
-- [Community 292](Community_292.md) (2 shared connections)
-- [Community 135](Community_135.md) (1 shared connections)
+- [Community 47](Community_47.md) (5 shared connections)
+- [Community 171](Community_171.md) (2 shared connections)
+- [Community 42](Community_42.md) (1 shared connections)
 
 ## Source Files
 

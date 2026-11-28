@@ -4,38 +4,38 @@
 
 ## Key Concepts
 
-- **.sendAutoInput()** (14 connections) — `src/io/Ikbd.hpp`
-- **.rxFree()** (14 connections) — `src/io/Ikbd.hpp`
-- **.onLineIdle()** (11 connections) — `src/io/Ikbd.hpp`
-- **.sendRelMousePacket()** (8 connections) — `src/io/Ikbd.hpp`
-- **.sendCursorKeys()** (7 connections) — `src/io/Ikbd.hpp`
-- **.lineFree()** (6 connections) — `src/io/Ikbd.hpp`
-- **.emitButtonKeys()** (6 connections) — `src/io/Ikbd.hpp`
-- **.sendAbsMousePos()** (6 connections) — `src/io/Ikbd.hpp`
-- **.sendAutoJoysticks()** (5 connections) — `src/io/Ikbd.hpp`
-- **.mouseEvent()** (5 connections) — `src/io/Ikbd.hpp`
-- **.sendOnMouseAction()** (5 connections) — `src/io/Ikbd.hpp`
-- **.sendAutoJoysticksMonitoring()** (4 connections) — `src/io/Ikbd.hpp`
-- **.effectiveButtons()** (4 connections) — `src/io/Ikbd.hpp`
-- **.onAutoSend()** (3 connections) — `src/io/Ikbd.hpp`
-- **.updateInternalAbsPos()** (3 connections) — `src/io/Ikbd.hpp`
+- **fat12_volume()** (8 connections) — `tools/run_libretro.py`
+- **case_hard_disk_state()** (7 connections) — `tools/run_libretro.py`
+- **case_hard_disk()** (5 connections) — `tools/run_libretro.py`
+- **write_hard_disk()** (5 connections) — `tools/run_libretro.py`
+- **hd_writer_prg()** (3 connections) — `tools/run_libretro.py`
+- **alloc()** (2 connections) — `tools/run_libretro.py`
+- **fat()** (2 connections) — `tools/run_libretro.py`
+- **2026-11-25 — Libretro : disques durs, toucher, un invité rejoint l'hôte** (2 connections) — `CHANGELOG.md`
+- **disk_copy()** (1 connections) — `tools/run_libretro.py`
+- **entry()** (1 connections) — `tools/run_libretro.py`
+- **Disque dur ACSI : secteur racine Atari (taille du disque à $1C2, table de…** (1 connections) — `tools/run_libretro.py`
+- **Image de disque dur (.hd) : montée en ACSI 0, EmuTOS lit sa partition et lance…** (1 connections) — `tools/run_libretro.py`
+- **C:\\AUTO : Rwabs écrit le secteur logique 1000 de C: (libre), fond vert, puis…** (1 connections) — `tools/run_libretro.py`
+- **Disque dur dans l'état : les écritures vont au calque (la copie privée n'est…** (1 connections) — `tools/run_libretro.py`
+- **Volume FAT12 de 720 Ko (BPB d'une disquette 2 faces, 9 secteurs), NON…** (1 connections) — `tools/run_libretro.py`
 
 ## Relationships
 
-- [Community 171](Community_171.md) (18 shared connections)
-- [Community 7](Community_7.md) (15 shared connections)
-- [Community 47](Community_47.md) (11 shared connections)
-- [Community 370](Community_370.md) (2 shared connections)
-- [Community 508](Community_508.md) (1 shared connections)
+- [Community 247](Community_247.md) (7 shared connections)
+- [Community 124](Community_124.md) (2 shared connections)
+- [Community 393](Community_393.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Ikbd.hpp`
+- `CHANGELOG.md`
+- `tools/run_libretro.py`
 
 ## Audit Trail
 
-- EXTRACTED: 31 (42%)
-- INFERRED: 43 (58%)
+- EXTRACTED: 25 (96%)
+- INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

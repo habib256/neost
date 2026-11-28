@@ -1,57 +1,49 @@
 # Community 131
 
-> 40 nodes
+> 21 nodes
 
 ## Key Concepts
 
-- **StrWriter_cpp.h** (15 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **StatusRegister** (14 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **DasmNumberFormat** (12 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **sprintx()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **sprintx_signed()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **u64** (6 connections)
-- **decDigits()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **hexDigits()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **sprint()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **sprint_signed()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **sprintd()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **sprintd_signed()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **binDigits()** (4 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **u8** (4 connections)
-- **uaeHex()** (3 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **uaeHexSigned()** (3 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **i64** (3 connections)
-- **.log10()** (2 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
-- **.log2()** (2 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
-- **Moira::disassembleSR()** (2 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **uaeDigits()** (2 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **uaeHexExt()** (2 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **i32** (2 connections)
-- **.validate()** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **plainZero** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- *... and 15 more nodes in this community*
+- **DriveSound** (18 connections) — `src/audio/DriveSound.hpp`
+- **DriveSound.cpp** (11 connections) — `src/audio/DriveSound.cpp`
+- **.shutdown()** (6 connections) — `src/audio/DriveSound.hpp`
+- **.init()** (4 connections) — `src/audio/DriveSound.hpp`
+- **.motorStop()** (4 connections) — `src/audio/DriveSound.hpp`
+- **.onEvent()** (4 connections) — `src/audio/DriveSound.hpp`
+- **.setEnabled()** (3 connections) — `src/audio/DriveSound.hpp`
+- **.mix()** (2 connections) — `src/audio/DriveSound.hpp`
+- **.~DriveSound()** (2 connections) — `src/audio/DriveSound.hpp`
+- **miniaudio** (2 connections)
+- **.enabled()** (1 connections) — `src/audio/DriveSound.hpp`
+- **.ok()** (1 connections) — `src/audio/DriveSound.hpp`
+- **string** (1 connections)
+- **clickPath_** (1 connections) — `src/audio/DriveSound.hpp`
+- **engine_** (1 connections) — `src/audio/DriveSound.hpp`
+- **motor_** (1 connections) — `src/audio/DriveSound.hpp`
+- **motorPlaying_** (1 connections) — `src/audio/DriveSound.hpp`
+- **seekPath_** (1 connections) — `src/audio/DriveSound.hpp`
+- **startupPath_** (1 connections) — `src/audio/DriveSound.hpp`
+- **tick_** (1 connections) — `src/audio/DriveSound.hpp`
+- **string** (1 connections)
 
 ## Relationships
 
-- [Community 57](Community_57.md) (3 shared connections)
-- [Community 64](Community_64.md) (2 shared connections)
-- [Community 197](Community_197.md) (2 shared connections)
-- [Community 2](Community_2.md) (1 shared connections)
-- [Community 166](Community_166.md) (1 shared connections)
-- [Community 16](Community_16.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
+- [Community 186](Community_186.md) (1 shared connections)
+- [Community 175](Community_175.md) (1 shared connections)
+- [Community 113](Community_113.md) (1 shared connections)
+- [Community 565](Community_565.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/FPU/FpuEnv.h`
-- `extern/moira/Moira/MoiraDasm_cpp.h`
-- `extern/moira/Moira/MoiraTypes.h`
-- `extern/moira/Moira/StrWriter_cpp.h`
+- `src/audio/DriveSound.cpp`
+- `src/audio/DriveSound.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 71 (97%)
-- INFERRED: 2 (3%)
+- EXTRACTED: 33 (87%)
+- INFERRED: 5 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

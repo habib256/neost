@@ -38,7 +38,7 @@ struct ProbeSpec {
 };
 
 inline uint8_t read8(Machine& m, uint32_t addr) {
-    return m.bus.peek8(addr & 0xFFFFFFu);
+    return m.bus.peek8(addr);
 }
 
 inline uint32_t probeValue(Machine& m, const ProbeSpec& p) {

@@ -464,6 +464,16 @@ MMU030::walk(u32 addr, u8 fc, bool write, MmuContext &c)
 u32
 MMU030::walk(u32 addr, u8 fc, bool write, MmuContext &c, bool ptest, u32 level)
 {
+    // [B] MC68030UM §9.5.2 : le parcours et les écritures U/M sont des accès physiques.
+    // [D] Hatari cpummu030.c @ 36a8acf0 : le parcours est superviseur pour la
+    // protection externe. Le paramètre fc conserve le code logique.
+    struct RestoreFc {
+        u8 &source;
+        u8 previous;
+        ~RestoreFc() { source = previous; }
+    } restoreFc{moira.fcSource, moira.fcSource};
+    moira.fcSource = Moira::FC_SOURCE_TABLE_SEARCH;
+
     bool fcl = tc & (1 << 24);
 
     c = MmuContext {

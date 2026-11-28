@@ -1,15 +1,15 @@
 # Community 245
 
-> 38 nodes
+> 45 nodes
 
 ## Key Concepts
 
 - **Precomp.h** (18 connections) — `extern/lzma/Precomp.h`
 - **7zTypes.h** (15 connections) — `extern/lzma/7zTypes.h`
 - **CpuArch.h** (11 connections) — `extern/lzma/CpuArch.h`
+- **Z7_C_IFACE_DECL()** (8 connections) — `extern/lzma/7zTypes.h`
 - **Bra.c** (8 connections) — `extern/lzma/Bra.c`
 - **Z7_BRANCH_FUNC_MAIN()** (7 connections) — `extern/lzma/Bra.c`
-- **7zCrc.h** (5 connections) — `extern/lzma/7zCrc.h`
 - **Delta.c** (5 connections) — `extern/lzma/Delta.c`
 - **7z.h** (4 connections) — `extern/lzma/7z.h`
 - **Bcj2.c** (4 connections) — `extern/lzma/Bcj2.c`
@@ -29,27 +29,26 @@
 - **Delta_Init()** (2 connections) — `extern/lzma/Delta.c`
 - **SizeT** (2 connections)
 - **RotateDefs.h** (2 connections) — `extern/lzma/RotateDefs.h`
-- *... and 13 more nodes in this community*
+- *... and 20 more nodes in this community*
 
 ## Relationships
 
-- [Community 353](Community_353.md) (9 shared connections)
+- [Community 353](Community_353.md) (8 shared connections)
 - [Community 153](Community_153.md) (5 shared connections)
-- [Community 285](Community_285.md) (4 shared connections)
+- [Community 285](Community_285.md) (3 shared connections)
 - [Community 467](Community_467.md) (3 shared connections)
-- [Community 213](Community_213.md) (2 shared connections)
 - [Community 502](Community_502.md) (2 shared connections)
 - [Community 350](Community_350.md) (2 shared connections)
 - [Community 263](Community_263.md) (2 shared connections)
 - [Community 357](Community_357.md) (2 shared connections)
 - [Community 83](Community_83.md) (2 shared connections)
-- [Community 447](Community_447.md) (1 shared connections)
+- [Community 213](Community_213.md) (1 shared connections)
 - [Community 409](Community_409.md) (1 shared connections)
+- [Community 349](Community_349.md) (1 shared connections)
 
 ## Source Files
 
 - `extern/lzma/7z.h`
-- `extern/lzma/7zCrc.h`
 - `extern/lzma/7zCrcOpt.c`
 - `extern/lzma/7zTypes.h`
 - `extern/lzma/Bcj2.c`
@@ -67,7 +66,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 86 (99%)
+- EXTRACTED: 89 (99%)
 - INFERRED: 1 (1%)
 - AMBIGUOUS: 0 (0%)
 
