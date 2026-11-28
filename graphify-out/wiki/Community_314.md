@@ -1,62 +1,56 @@
 # Community 314
 
-> 40 nodes
+> 32 nodes
 
 ## Key Concepts
 
-- **Moira.cpp** (58 connections) — `extern/moira/Moira/Moira.cpp`
-- **u32** (11 connections)
-- **.isAvailable()** (10 connections) — `extern/moira/Moira/Moira.h`
-- **.availabilityMask()** (9 connections) — `extern/moira/Moira/Moira.h`
-- **u16** (8 connections)
-- **.availabilityString()** (7 connections) — `extern/moira/Moira/Moira.h`
-- **.setCACR()** (6 connections) — `extern/moira/Moira/Moira.h`
-- **.readFC()** (6 connections) — `extern/moira/Moira/Moira.h`
-- **.getIrqVector()** (6 connections) — `extern/moira/Moira/Moira.h`
-- **u8** (6 connections)
-- **.cacrMask()** (5 connections) — `extern/moira/Moira/Moira.h`
-- **.setCAAR()** (5 connections) — `extern/moira/Moira/Moira.h`
-- **.setModel()** (5 connections) — `extern/moira/Moira/Moira.h`
-- **Moira::createJumpTable()** (5 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
-- **.getCCR()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **.setCCR()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **.createJumpTable()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **readIrqUserVector()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **Mode** (4 connections)
-- **.hasCPI()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **.hasFPU()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **.addrMask()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **parse()** (3 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
-- **Size** (3 connections)
-- **MoiraInit_cpp.h** (3 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
-- *... and 15 more nodes in this community*
+- **CPUModel** (36 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **MoiraInit_cpp.h** (16 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
+- **parse()** (14 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
+- **Moira::createJumpTable()** (3 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
+- **Moira::createJumpTable1()** (3 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
+- **Moira::createJumpTable10()** (3 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
+- **Moira::createJumpTable11()** (3 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
+- **Moira::createJumpTable12()** (3 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
+- **Moira::createJumpTable2()** (3 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
+- **Moira::createJumpTable3()** (3 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
+- **Moira::createJumpTable4()** (3 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
+- **Moira::createJumpTable5()** (3 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
+- **Moira::createJumpTable6()** (3 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
+- **Moira::createJumpTable7()** (3 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
+- **Moira::createJumpTable8()** (3 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
+- **Moira::createJumpTable9()** (3 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
+- **.core()** (3 connections) — `src/core/Cpu68k.hpp`
+- **.getDasmModel()** (2 connections) — `extern/moira/Moira/Moira.h`
+- **.getModel()** (2 connections) — `extern/moira/Moira/Moira.h`
+- **hasCPI()** (2 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **hasFPU()** (2 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **hasMMU()** (2 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **u16** (1 connections)
+- **M68000** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68010** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- *... and 7 more nodes in this community*
 
 ## Relationships
 
-- [Community 16](Community_16.md) (19 shared connections)
-- [Community 141](Community_141.md) (12 shared connections)
-- [Community 166](Community_166.md) (8 shared connections)
-- [Community 64](Community_64.md) (8 shared connections)
-- [Community 326](Community_326.md) (4 shared connections)
-- [Community 0](Community_0.md) (3 shared connections)
-- [Community 2](Community_2.md) (3 shared connections)
-- [Community 131](Community_131.md) (3 shared connections)
-- [Community 299](Community_299.md) (3 shared connections)
+- [Community 16](Community_16.md) (8 shared connections)
+- [Community 57](Community_57.md) (4 shared connections)
+- [Community 33](Community_33.md) (2 shared connections)
 - [Community 27](Community_27.md) (2 shared connections)
-- [Community 460](Community_460.md) (2 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
+- [Community 448](Community_448.md) (1 shared connections)
+- [Community 451](Community_451.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/Moira.cpp`
 - `extern/moira/Moira/Moira.h`
 - `extern/moira/Moira/MoiraInit_cpp.h`
-- `extern/moira/Moira/MoiraMacros.h`
+- `extern/moira/Moira/MoiraTypes.h`
+- `src/core/Cpu68k.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 123 (84%)
-- INFERRED: 23 (16%)
+- EXTRACTED: 72 (99%)
+- INFERRED: 1 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

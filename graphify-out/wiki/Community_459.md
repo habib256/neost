@@ -1,28 +1,35 @@
 # Community 459
 
-> 6 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **Fault** (7 connections) — `src/core/Cpu68k.hpp`
-- **.lastFault()** (3 connections) — `src/core/Cpu68k.hpp`
-- **addr** (1 connections) — `src/core/Cpu68k.hpp`
-- **pc** (1 connections) — `src/core/Cpu68k.hpp`
-- **valid** (1 connections) — `src/core/Cpu68k.hpp`
-- **write** (1 connections) — `src/core/Cpu68k.hpp`
+- **TrackInfo** (17 connections) — `src/io/IpfImage.cpp`
+- **blockCount** (1 connections) — `src/io/IpfImage.cpp`
+- **cylinder** (1 connections) — `src/io/IpfImage.cpp`
+- **data** (1 connections) — `src/io/IpfImage.cpp`
+- **dataSize** (1 connections) — `src/io/IpfImage.cpp`
+- **hasData** (1 connections) — `src/io/IpfImage.cpp`
+- **head** (1 connections) — `src/io/IpfImage.cpp`
+- **indexCells** (1 connections) — `src/io/IpfImage.cpp`
+- **infoSet** (1 connections) — `src/io/IpfImage.cpp`
+- **process** (1 connections) — `src/io/IpfImage.cpp`
+- **sigtype** (1 connections) — `src/io/IpfImage.cpp`
+- **sizeCells** (1 connections) — `src/io/IpfImage.cpp`
+- **type** (1 connections) — `src/io/IpfImage.cpp`
 
 ## Relationships
 
-- [Community 27](Community_27.md) (3 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
+- [Community 217](Community_217.md) (4 shared connections)
+- [Community 143](Community_143.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Cpu68k.hpp`
+- `src/io/IpfImage.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (100%)
+- EXTRACTED: 17 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

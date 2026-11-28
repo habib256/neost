@@ -1,42 +1,59 @@
 # Community 83
 
-> 12 nodes
+> 109 nodes
 
 ## Key Concepts
 
-- **midi_ring_logic.cpp** (11 connections) — `tests/midi_ring_logic.cpp`
-- **.parseSpec()** (5 connections) — `src/net/MidiRing.hpp`
-- **.encode()** (5 connections) — `src/net/MidiRing.hpp`
-- **.ingest()** (5 connections) — `src/net/MidiRing.hpp`
-- **ingestChecks()** (4 connections) — `tests/midi_ring_logic.cpp`
-- **.midiRingApply()** (3 connections) — `src/gui/App.hpp`
-- **rtrace()** (3 connections) — `src/net/MidiRing.cpp`
-- **main()** (3 connections) — `tests/midi_ring_logic.cpp`
-- **specChecks()** (3 connections) — `tests/midi_ring_logic.cpp`
-- **string** (3 connections)
-- **be32()** (2 connections) — `src/net/MidiRing.cpp`
-- **putBe32()** (2 connections) — `src/net/MidiRing.cpp`
+- **libretro.h** (122 connections) — `src/libretro/libretro.h`
+- **retro_power_state** (6 connections) — `src/libretro/libretro.h`
+- **retro_execution_phase** (5 connections) — `src/libretro/libretro.h`
+- **retro_frame_time_callback** (5 connections) — `src/libretro/libretro.h`
+- **retro_calendar_time** (4 connections) — `src/libretro/libretro.h`
+- **retro_rumble_effect** (4 connections) — `src/libretro/libretro.h`
+- **retro_vfs_volume** (4 connections) — `src/libretro/libretro.h`
+- **retro_vr_eye** (4 connections) — `src/libretro/libretro.h`
+- **retro_audio_buffer_status_callback** (3 connections) — `src/libretro/libretro.h`
+- **retro_audio_sample_float_callback** (3 connections) — `src/libretro/libretro.h`
+- **retro_calendar_zone** (3 connections) — `src/libretro/libretro.h`
+- **retro_controller_description** (3 connections) — `src/libretro/libretro.h`
+- **retro_controller_info** (3 connections) — `src/libretro/libretro.h`
+- **retro_core_option_value** (3 connections) — `src/libretro/libretro.h`
+- **retro_core_options_intl** (3 connections) — `src/libretro/libretro.h`
+- **retro_core_options_v2** (3 connections) — `src/libretro/libretro.h`
+- **retro_hw_render_context_negotiation_interface** (3 connections) — `src/libretro/libretro.h`
+- **retro_hw_render_interface** (3 connections) — `src/libretro/libretro.h`
+- **retro_hw_render_upscaler_interface** (3 connections) — `src/libretro/libretro.h`
+- **retro_log_callback** (3 connections) — `src/libretro/libretro.h`
+- **retro_memory_map** (3 connections) — `src/libretro/libretro.h`
+- **retro_message** (3 connections) — `src/libretro/libretro.h`
+- **retro_system_timing** (3 connections) — `src/libretro/libretro.h`
+- **retro_variable** (3 connections) — `src/libretro/libretro.h`
+- **retro_vfs_authorized_locations** (3 connections) — `src/libretro/libretro.h`
+- *... and 84 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (11 shared connections)
-- [Community 460](Community_460.md) (4 shared connections)
-- [Community 136](Community_136.md) (3 shared connections)
-- [Community 1](Community_1.md) (1 shared connections)
-- [Community 220](Community_220.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 245](Community_245.md) (2 shared connections)
+- [Community 326](Community_326.md) (2 shared connections)
+- [Community 248](Community_248.md) (1 shared connections)
+- [Community 619](Community_619.md) (1 shared connections)
+- [Community 443](Community_443.md) (1 shared connections)
+- [Community 523](Community_523.md) (1 shared connections)
+- [Community 513](Community_513.md) (1 shared connections)
+- [Community 536](Community_536.md) (1 shared connections)
+- [Community 581](Community_581.md) (1 shared connections)
+- [Community 519](Community_519.md) (1 shared connections)
+- [Community 527](Community_527.md) (1 shared connections)
+- [Community 580](Community_580.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/App.hpp`
-- `src/net/MidiRing.cpp`
-- `src/net/MidiRing.hpp`
-- `tests/midi_ring_logic.cpp`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 34 (97%)
-- INFERRED: 1 (3%)
+- EXTRACTED: 192 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,63 +1,62 @@
 # Community 153
 
-> 29 nodes
+> 22 nodes
 
 ## Key Concepts
 
-- **Cpu68k.hpp** (32 connections) — `src/core/Cpu68k.hpp`
-- **gemdos_directory_entries_logic.cpp** (12 connections) — `tests/gemdos_directory_entries_logic.cpp`
-- **gemdos_drive_mapping_logic.cpp** (11 connections) — `tests/gemdos_drive_mapping_logic.cpp`
-- **blitter_share_gap_logic.cpp** (10 connections) — `tests/blitter_share_gap_logic.cpp`
-- **psg_odd_write_logic.cpp** (8 connections) — `tests/psg_odd_write_logic.cpp`
-- **Slice** (5 connections) — `tests/blitter_share_gap_logic.cpp`
-- **testGemdosDirectoryEntries()** (5 connections) — `tests/gemdos_directory_entries_logic.cpp`
-- **testGemdosDriveMapping()** (5 connections) — `tests/gemdos_drive_mapping_logic.cpp`
-- **Checks** (4 connections) — `tests/gemdos_directory_entries_logic.cpp`
-- **Checks** (4 connections) — `tests/gemdos_drive_mapping_logic.cpp`
-- **run()** (4 connections) — `tests/blitter_share_gap_logic.cpp`
-- **testPsgOddWrite()** (4 connections) — `tests/psg_odd_write_logic.cpp`
-- **testBlitterShareGap()** (3 connections) — `tests/blitter_share_gap_logic.cpp`
-- **.equal()** (2 connections) — `tests/gemdos_directory_entries_logic.cpp`
-- **main()** (2 connections) — `tests/gemdos_directory_entries_logic.cpp`
-- **.equal()** (2 connections) — `tests/gemdos_drive_mapping_logic.cpp`
-- **main()** (2 connections) — `tests/gemdos_drive_mapping_logic.cpp`
-- **main()** (2 connections) — `tests/psg_odd_write_logic.cpp`
-- **count** (2 connections) — `tests/gemdos_directory_entries_logic.cpp`
-- **Bus** (1 connections) — `src/core/Cpu68k.hpp`
-- **Scheduler** (1 connections) — `src/core/Cpu68k.hpp`
-- **StateArchive** (1 connections) — `src/core/Cpu68k.hpp`
-- **Tracer** (1 connections) — `src/core/Cpu68k.hpp`
-- **accesses** (1 connections) — `tests/blitter_share_gap_logic.cpp`
-- **last** (1 connections) — `tests/blitter_share_gap_logic.cpp`
-- *... and 4 more nodes in this community*
+- **appInit()** (23 connections) — `src/gui/AppInit.cpp`
+- **A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30)** (19 connections) — `CHANGELOG.md`
+- **joyResolveRoles()** (9 connections) — `src/gui/JoyMap.cpp`
+- **parseCommandLine()** (8 connections) — `src/gui/AppInit.cpp`
+- **kioskPageJoy()** (7 connections) — `src/gui/AppLoop.cpp`
+- **JoyMap.cpp** (7 connections) — `src/gui/JoyMap.cpp`
+- **Mega ST / Mega STE — RTC, SCU, cache, SCC** (7 connections) — `docs/IMPLEMENTED.md`
+- **joymapSerialize()** (6 connections) — `src/gui/JoyMap.cpp`
+- **loadRtcFromConfig()** (5 connections) — `src/gui/App.cpp`
+- **snapshotRtc()** (5 connections) — `src/gui/App.cpp`
+- **joyGuid()** (5 connections) — `src/gui/JoyMap.cpp`
+- **joymapParse()** (5 connections) — `src/gui/JoyMap.cpp`
+- **.resolvePath()** (4 connections) — `src/gui/App.hpp`
+- **Machine** (4 connections)
+- **.usatanApply()** (3 connections) — `src/gui/App.hpp`
+- **.etherApply()** (3 connections) — `src/gui/App.hpp`
+- **App** (3 connections)
+- **string** (3 connections)
+- **.gatedLevel()** (2 connections) — `src/io/Scu.hpp`
+- **App** (2 connections)
+- **string** (1 connections)
+- **Et une affirmation fausse trouvée en corrigeant ces renvois** (1 connections) — `CHANGELOG.md`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (20 shared connections)
-- [Community 4](Community_4.md) (9 shared connections)
-- [Community 460](Community_460.md) (7 shared connections)
-- [Community 252](Community_252.md) (5 shared connections)
+- [Community 214](Community_214.md) (11 shared connections)
+- [Community 4](Community_4.md) (10 shared connections)
+- [Community 138](Community_138.md) (7 shared connections)
+- [Community 449](Community_449.md) (4 shared connections)
+- [Community 204](Community_204.md) (4 shared connections)
+- [Community 223](Community_223.md) (4 shared connections)
+- [Community 1](Community_1.md) (3 shared connections)
+- [Community 101](Community_101.md) (3 shared connections)
 - [Community 27](Community_27.md) (3 shared connections)
-- [Community 177](Community_177.md) (2 shared connections)
-- [Community 132](Community_132.md) (1 shared connections)
-- [Community 393](Community_393.md) (1 shared connections)
-- [Community 14](Community_14.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
-- [Community 128](Community_128.md) (1 shared connections)
-- [Community 205](Community_205.md) (1 shared connections)
+- [Community 21](Community_21.md) (2 shared connections)
+- [Community 288](Community_288.md) (2 shared connections)
+- [Community 325](Community_325.md) (2 shared connections)
 
 ## Source Files
 
-- `src/core/Cpu68k.hpp`
-- `tests/blitter_share_gap_logic.cpp`
-- `tests/gemdos_directory_entries_logic.cpp`
-- `tests/gemdos_drive_mapping_logic.cpp`
-- `tests/psg_odd_write_logic.cpp`
+- `CHANGELOG.md`
+- `docs/IMPLEMENTED.md`
+- `src/gui/App.cpp`
+- `src/gui/App.hpp`
+- `src/gui/AppInit.cpp`
+- `src/gui/AppLoop.cpp`
+- `src/gui/JoyMap.cpp`
+- `src/io/Scu.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 88 (95%)
-- INFERRED: 5 (5%)
+- EXTRACTED: 50 (49%)
+- INFERRED: 52 (51%)
 - AMBIGUOUS: 0 (0%)
 
 ---

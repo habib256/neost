@@ -1,29 +1,41 @@
 # Community 301
 
-> 6 nodes
+> 16 nodes
 
 ## Key Concepts
 
-- **SysExJob** (7 connections) — `src/audio/MidiOutHost.cpp`
-- **HMIDIOUT** (1 connections)
-- **MIDIHDR** (1 connections)
-- **buf** (1 connections) — `src/audio/MidiOutHost.cpp`
-- **h** (1 connections) — `src/audio/MidiOutHost.cpp`
-- **hdr** (1 connections) — `src/audio/MidiOutHost.cpp`
+- **run_spec512_truth.py** (16 connections) — `tools/run_spec512_truth.py`
+- **main()** (13 connections) — `tools/run_spec512_truth.py`
+- **Fat** (6 connections) — `tools/run_spec512_truth.py`
+- **finish_results()** (5 connections) — `tools/run_spec512_truth.py`
+- **screen_area()** (4 connections) — `tools/run_spec512_truth.py`
+- **decode_spc()** (3 connections) — `tools/run_spec512_truth.py`
+- **decode_spu()** (3 connections) — `tools/run_spec512_truth.py`
+- **.read()** (3 connections) — `tools/run_spec512_truth.py`
+- **.walk()** (3 connections) — `tools/run_spec512_truth.py`
+- **read_ppm()** (3 connections) — `tools/run_spec512_truth.py`
+- **render()** (3 connections) — `tools/run_spec512_truth.py`
+- **Path** (2 connections)
+- **.__init__()** (1 connections) — `tools/run_spec512_truth.py`
+- **Couleur RVB 3 bits par pixel (une valeur par composante), décalée de `shift`…** (1 connections) — `tools/run_spec512_truth.py`
+- **Comparer uniquement les machines exécutées, sans masquer leurs régressions.** (1 connections) — `tools/run_spec512_truth.py`
+- **FAT12 d'une disquette .ST, en lecture.** (1 connections) — `tools/run_spec512_truth.py`
 
 ## Relationships
 
-- [Community 460](Community_460.md) (1 shared connections)
-- [Community 42](Community_42.md) (1 shared connections)
+- [Community 173](Community_173.md) (6 shared connections)
+- [Community 100](Community_100.md) (5 shared connections)
+- [Community 3](Community_3.md) (3 shared connections)
+- [Community 26](Community_26.md) (2 shared connections)
 
 ## Source Files
 
-- `src/audio/MidiOutHost.cpp`
+- `tools/run_spec512_truth.py`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 40 (95%)
+- INFERRED: 2 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

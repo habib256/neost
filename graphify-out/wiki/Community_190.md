@@ -1,6 +1,6 @@
 # Community 190
 
-> 12 nodes
+> 13 nodes
 
 ## Key Concepts
 
@@ -11,6 +11,7 @@
 - **Bus** (1 connections)
 - **Cpu68k** (1 connections)
 - **GemdosHd** (1 connections)
+- **map** (1 connections)
 - **string** (1 connections)
 - **bus** (1 connections) — `tests/gemdos_directory_entries_logic.cpp`
 - **cpu** (1 connections) — `tests/gemdos_directory_entries_logic.cpp`
@@ -19,8 +20,7 @@
 
 ## Relationships
 
-- [Community 153](Community_153.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 586](Community_586.md) (1 shared connections)
 
 ## Source Files
 

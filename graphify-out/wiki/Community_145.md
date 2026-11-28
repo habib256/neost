@@ -1,40 +1,57 @@
 # Community 145
 
-> 17 nodes
+> 24 nodes
 
 ## Key Concepts
 
-- **MoiraExecFPU_cpp.h** (14 connections) — `extern/moira/Moira/MoiraExecFPU_cpp.h`
-- **u16** (13 connections)
-- **Moira::isValidExtFPU()** (5 connections) — `extern/moira/Moira/MoiraExecFPU_cpp.h`
-- **Moira::execFBcc()** (2 connections) — `extern/moira/Moira/MoiraExecFPU_cpp.h`
-- **Moira::execFDbcc()** (2 connections) — `extern/moira/Moira/MoiraExecFPU_cpp.h`
-- **Moira::execFGen()** (2 connections) — `extern/moira/Moira/MoiraExecFPU_cpp.h`
-- **Moira::execFGeneric()** (2 connections) — `extern/moira/Moira/MoiraExecFPU_cpp.h`
-- **Moira::execFMove()** (2 connections) — `extern/moira/Moira/MoiraExecFPU_cpp.h`
-- **Moira::execFMovecr()** (2 connections) — `extern/moira/Moira/MoiraExecFPU_cpp.h`
-- **Moira::execFMovem()** (2 connections) — `extern/moira/Moira/MoiraExecFPU_cpp.h`
-- **Moira::execFNop()** (2 connections) — `extern/moira/Moira/MoiraExecFPU_cpp.h`
-- **Moira::execFRestore()** (2 connections) — `extern/moira/Moira/MoiraExecFPU_cpp.h`
-- **Moira::execFSave()** (2 connections) — `extern/moira/Moira/MoiraExecFPU_cpp.h`
-- **Moira::execFScc()** (2 connections) — `extern/moira/Moira/MoiraExecFPU_cpp.h`
-- **Moira::execFTrapcc()** (2 connections) — `extern/moira/Moira/MoiraExecFPU_cpp.h`
-- **Mode** (1 connections)
-- **u32** (1 connections)
+- **fuzz_state.cpp** (26 connections) — `tests/fuzz_state.cpp`
+- **fuzzMedia()** (15 connections) — `tests/fuzz_state.cpp`
+- **le32()** (15 connections) — `tests/fuzz_state.cpp`
+- **fuzzBody()** (10 connections) — `tests/fuzz_state.cpp`
+- **Rng** (7 connections) — `tests/fuzz_state.cpp`
+- **makeMachine()** (6 connections) — `tests/fuzz_state.cpp`
+- **withDriveAPath()** (6 connections) — `tests/fuzz_state.cpp`
+- **fixMediaCrc()** (5 connections) — `tests/fuzz_state.cpp`
+- **fail()** (4 connections) — `tests/fuzz_state.cpp`
+- **readAll()** (4 connections) — `tests/fuzz_state.cpp`
+- **set32()** (4 connections) — `tests/fuzz_state.cpp`
+- **writeAll()** (4 connections) — `tests/fuzz_state.cpp`
+- **path** (4 connections)
+- **blankSt()** (3 connections) — `tests/fuzz_state.cpp`
+- **main()** (3 connections) — `tests/fuzz_state.cpp`
+- **onlyExpected()** (3 connections) — `tests/fuzz_state.cpp`
+- **.below()** (3 connections) — `tests/fuzz_state.cpp`
+- **size_t** (3 connections)
+- **.next()** (1 connections) — `tests/fuzz_state.cpp`
+- **.Rng()** (1 connections) — `tests/fuzz_state.cpp`
+- **Machine** (1 connections)
+- **string** (1 connections)
+- **unique_ptr** (1 connections)
+- **s** (1 connections) — `tests/fuzz_state.cpp`
 
 ## Relationships
 
-- [Community 0](Community_0.md) (1 shared connections)
-- [Community 33](Community_33.md) (1 shared connections)
+- [Community 102](Community_102.md) (12 shared connections)
+- [Community 4](Community_4.md) (8 shared connections)
+- [Community 449](Community_449.md) (2 shared connections)
+- [Community 299](Community_299.md) (1 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
+- [Community 172](Community_172.md) (1 shared connections)
+- [Community 201](Community_201.md) (1 shared connections)
+- [Community 174](Community_174.md) (1 shared connections)
+- [Community 69](Community_69.md) (1 shared connections)
+- [Community 71](Community_71.md) (1 shared connections)
+- [Community 72](Community_72.md) (1 shared connections)
+- [Community 82](Community_82.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraExecFPU_cpp.h`
+- `tests/fuzz_state.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 30 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 69 (85%)
+- INFERRED: 12 (15%)
 - AMBIGUOUS: 0 (0%)
 
 ---

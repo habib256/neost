@@ -1,60 +1,59 @@
 # Community 2
 
-> 131 nodes
+> 144 nodes
 
 ## Key Concepts
 
-- **StrWriter** (157 connections) — `extern/moira/Moira/StrWriter.h`
-- **MoiraDasm_cpp.h** (139 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **u32** (134 connections)
+- **StrWriter** (158 connections) — `extern/moira/Moira/StrWriter.h`
+- **MoiraDasm_cpp.h** (140 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **u32** (136 connections)
+- **Size** (131 connections)
+- **Mode** (129 connections)
 - **u16** (129 connections)
-- **Moira::dasmChk()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmMovemRgEa()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmMoves()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAbcdEa()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAbcdRg()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAdda()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAddEaRg()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAddiEa()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAddiRg()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAddqAn()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAddqDn()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAddqEa()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAddRgEa()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAddxEa()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAddxRg()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAndEaRg()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAndiccr()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAndiEa()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAndiRg()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAndisr()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAndRgEa()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- *... and 106 more nodes in this community*
+- **Moira::dasmBcc()** (8 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmBitFieldDn()** (8 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmCas()** (8 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmCas2()** (8 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmChk()** (8 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmChkCmp2()** (8 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmCpBcc()** (8 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmDivl()** (8 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmMoves()** (8 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmMull()** (8 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **.isValidExt()** (7 connections) — `extern/moira/Moira/Moira.h`
+- **Moira::dasmAbcdEa()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmAbcdRg()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmAdda()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmAddEaRg()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmAddiEa()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmAddiRg()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmAddqAn()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmAddqDn()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- *... and 119 more nodes in this community*
 
 ## Relationships
 
-- [Community 326](Community_326.md) (24 shared connections)
+- [Community 0](Community_0.md) (128 shared connections)
 - [Community 167](Community_167.md) (15 shared connections)
-- [Community 263](Community_263.md) (9 shared connections)
-- [Community 377](Community_377.md) (7 shared connections)
-- [Community 314](Community_314.md) (3 shared connections)
-- [Community 109](Community_109.md) (3 shared connections)
-- [Community 131](Community_131.md) (2 shared connections)
-- [Community 450](Community_450.md) (1 shared connections)
+- [Community 155](Community_155.md) (9 shared connections)
+- [Community 539](Community_539.md) (8 shared connections)
+- [Community 16](Community_16.md) (5 shared connections)
+- [Community 112](Community_112.md) (2 shared connections)
+- [Community 109](Community_109.md) (2 shared connections)
+- [Community 32](Community_32.md) (2 shared connections)
 - [Community 414](Community_414.md) (1 shared connections)
-- [Community 76](Community_76.md) (1 shared connections)
-- [Community 57](Community_57.md) (1 shared connections)
-- [Community 104](Community_104.md) (1 shared connections)
+- [Community 548](Community_548.md) (1 shared connections)
 
 ## Source Files
 
+- `extern/moira/Moira/Moira.h`
 - `extern/moira/Moira/MoiraDasm_cpp.h`
 - `extern/moira/Moira/StrWriter.h`
 
 ## Audit Trail
 
-- EXTRACTED: 559 (99%)
-- INFERRED: 3 (1%)
+- EXTRACTED: 954 (99%)
+- INFERRED: 10 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

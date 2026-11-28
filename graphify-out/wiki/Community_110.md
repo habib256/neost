@@ -1,11 +1,11 @@
 # Community 110
 
-> 48 nodes
+> 50 nodes
 
 ## Key Concepts
 
-- **check_web_jspi.mjs** (30 connections) — `tools/check_web_jspi.mjs`
-- **main()** (25 connections) — `tools/check_web_jspi.mjs`
+- **check_web_jspi.mjs** (32 connections) — `tools/check_web_jspi.mjs`
+- **main()** (26 connections) — `tools/check_web_jspi.mjs`
 - **.ev()** (11 connections) — `tools/check_web_jspi.mjs`
 - **Bidi** (9 connections) — `tools/check_web_jspi.mjs`
 - **Cdp** (9 connections) — `tools/check_web_jspi.mjs`
@@ -29,7 +29,7 @@
 - **mount()** (3 connections) — `tools/check_web_jspi.mjs`
 - **argValue()** (2 connections) — `tools/check_web_jspi.mjs`
 - **.version()** (2 connections) — `tools/check_web_jspi.mjs`
-- *... and 23 more nodes in this community*
+- *... and 25 more nodes in this community*
 
 ## Relationships
 
@@ -41,7 +41,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 105 (100%)
+- EXTRACTED: 108 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

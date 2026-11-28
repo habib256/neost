@@ -1,78 +1,78 @@
 # Community 41
 
-> 96 nodes
+> 197 nodes
 
 ## Key Concepts
 
-- **.saver()** (104 connections) — `src/core/StateArchive.hpp`
-- **.loader()** (101 connections) — `src/core/StateArchive.hpp`
-- **testMfpInternalLoopback()** (7 connections) — `tests/mfp_internal_loopback_logic.cpp`
-- **testMfpClock()** (6 connections) — `tests/mfp_clock_logic.cpp`
-- **testMfpTurnaround()** (6 connections) — `tests/mfp_turnaround_logic.cpp`
-- **testMmuMapping()** (6 connections) — `tests/mmu_logic.cpp`
-- **testRtcLongPhase()** (6 connections) — `tests/rtc_long_phase_logic.cpp`
-- **testDmaSoundMicrowireByte()** (5 connections) — `tests/dmasound_microwire_byte_logic.cpp`
-- **testDmaSoundMmioState()** (5 connections) — `tests/dmasound_mmio_state_logic.cpp`
-- **testIkbdTxControl()** (5 connections) — `tests/ikbd_tx_control_logic.cpp`
-- **testIkbdTxPhase()** (5 connections) — `tests/ikbd_tx_phase_logic.cpp`
-- **testMfpAsyncBreak()** (5 connections) — `tests/mfp_async_break_logic.cpp`
-- **testMfpBreak()** (5 connections) — `tests/mfp_break_logic.cpp`
-- **testMfpGpipLines()** (5 connections) — `tests/mfp_gpip_lines_logic.cpp`
-- **testMfpRxEnable()** (5 connections) — `tests/mfp_rx_enable_logic.cpp`
-- **testMfpRxFormat()** (5 connections) — `tests/mfp_rx_format_logic.cpp`
-- **testMfpRxTiming()** (5 connections) — `tests/mfp_rx_timing_logic.cpp`
-- **testMfpTx()** (5 connections) — `tests/mfp_tx_logic.cpp`
-- **testMfpUnderrunClear()** (5 connections) — `tests/mfp_underrun_clear_logic.cpp`
-- **testMfpUnderrun()** (5 connections) — `tests/mfp_underrun_logic.cpp`
-- **testMfpVectorRegister()** (5 connections) — `tests/mfp_vector_register_logic.cpp`
-- **testMidiBreak()** (5 connections) — `tests/midi_break_logic.cpp`
-- **testMidiTxControl()** (5 connections) — `tests/midi_tx_control_logic.cpp`
-- **testMidiTxPhase()** (5 connections) — `tests/midi_tx_phase_logic.cpp`
-- **testMidiTxReclock()** (5 connections) — `tests/midi_tx_reclock_logic.cpp`
-- *... and 71 more nodes in this community*
+- **main()** (194 connections) — `tests/selftest_logic.cpp`
+- **selftest_logic.cpp** (109 connections) — `tests/selftest_logic.cpp`
+- **.saver()** (106 connections) — `src/core/StateArchive.hpp`
+- **.loader()** (103 connections) — `src/core/StateArchive.hpp`
+- **.eq()** (44 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **checkBool()** (41 connections) — `tests/selftest_logic.cpp`
+- **checkStr()** (20 connections) — `tests/selftest_logic.cpp`
+- **testCartridgeKey()** (19 connections) — `tests/selftest_logic.cpp`
+- **checkInt()** (17 connections) — `tests/selftest_logic.cpp`
+- **checkHex()** (15 connections) — `tests/selftest_logic.cpp`
+- **BitmapLayout** (12 connections) — `src/core/BitmapView.hpp`
+- **testBlitterRmw()** (10 connections) — `tests/blitter_rmw_logic.cpp`
+- **testPortDevices()** (10 connections) — `tests/selftest_logic.cpp`
+- **testTosImageLoad()** (10 connections) — `tests/selftest_logic.cpp`
+- **mmioNeedsBetterMachine()** (9 connections) — `src/core/MachineType.hpp`
+- **testGemdosDtaReuse()** (9 connections) — `tests/gemdos_dta_reuse_logic.cpp`
+- **testAndroidRoms()** (9 connections) — `tests/selftest_logic.cpp`
+- **testArchives()** (9 connections) — `tests/selftest_logic.cpp`
+- **testFdcTruthTable()** (9 connections) — `tests/selftest_logic.cpp`
+- **testMidiZones()** (9 connections) — `tests/selftest_logic.cpp`
+- **testYmDacContinuity()** (9 connections) — `tests/selftest_logic.cpp`
+- **testIkbdAutoSend()** (8 connections) — `tests/ikbd_autosend_logic.cpp`
+- **testDmaSoundTruthTable()** (8 connections) — `tests/selftest_logic.cpp`
+- **testIkbdProtocol()** (8 connections) — `tests/selftest_logic.cpp`
+- **testMfpClock()** (7 connections) — `tests/mfp_clock_logic.cpp`
+- *... and 172 more nodes in this community*
 
 ## Relationships
 
-- [Community 460](Community_460.md) (60 shared connections)
-- [Community 252](Community_252.md) (57 shared connections)
-- [Community 102](Community_102.md) (26 shared connections)
-- [Community 160](Community_160.md) (4 shared connections)
-- [Community 38](Community_38.md) (4 shared connections)
-- [Community 164](Community_164.md) (4 shared connections)
-- [Community 132](Community_132.md) (3 shared connections)
-- [Community 116](Community_116.md) (3 shared connections)
-- [Community 376](Community_376.md) (3 shared connections)
-- [Community 88](Community_88.md) (2 shared connections)
-- [Community 419](Community_419.md) (2 shared connections)
-- [Community 97](Community_97.md) (2 shared connections)
+- [Community 102](Community_102.md) (130 shared connections)
+- [Community 4](Community_4.md) (43 shared connections)
+- [Community 219](Community_219.md) (17 shared connections)
+- [Community 299](Community_299.md) (15 shared connections)
+- [Community 150](Community_150.md) (13 shared connections)
+- [Community 101](Community_101.md) (12 shared connections)
+- [Community 197](Community_197.md) (5 shared connections)
+- [Community 116](Community_116.md) (5 shared connections)
+- [Community 376](Community_376.md) (5 shared connections)
+- [Community 46](Community_46.md) (5 shared connections)
+- [Community 303](Community_303.md) (5 shared connections)
+- [Community 449](Community_449.md) (5 shared connections)
 
 ## Source Files
 
+- `extern/moira/Moira/FPU/FpuEnv.h`
+- `extern/moira/Moira/StrWriter.h`
+- `src/audio/MidiZones.hpp`
+- `src/core/BitmapView.hpp`
+- `src/core/MachineType.hpp`
+- `src/core/Pacing.hpp`
 - `src/core/StateArchive.hpp`
+- `src/io/CartridgeKey.hpp`
+- `tests/acia_odd_byte_logic.cpp`
+- `tests/blitter_rmw_logic.cpp`
 - `tests/dmasound_microwire_byte_logic.cpp`
 - `tests/dmasound_mmio_state_logic.cpp`
+- `tests/gemdos_dta_reuse_logic.cpp`
+- `tests/ikbd_autosend_logic.cpp`
 - `tests/ikbd_tx_control_logic.cpp`
 - `tests/ikbd_tx_phase_logic.cpp`
+- `tests/machine_mfp_tx_logic.cpp`
+- `tests/machine_midi_logic.cpp`
 - `tests/mfp_async_break_logic.cpp`
 - `tests/mfp_break_logic.cpp`
-- `tests/mfp_break_rx_logic.cpp`
-- `tests/mfp_clock_logic.cpp`
-- `tests/mfp_gpip_lines_logic.cpp`
-- `tests/mfp_internal_loopback_logic.cpp`
-- `tests/mfp_rx_enable_logic.cpp`
-- `tests/mfp_rx_format_logic.cpp`
-- `tests/mfp_rx_timing_logic.cpp`
-- `tests/mfp_state_forgery_logic.cpp`
-- `tests/mfp_turnaround_logic.cpp`
-- `tests/mfp_tx_logic.cpp`
-- `tests/mfp_underrun_clear_logic.cpp`
-- `tests/mfp_underrun_logic.cpp`
-- `tests/mfp_vector_register_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 349 (87%)
-- INFERRED: 50 (13%)
+- EXTRACTED: 739 (74%)
+- INFERRED: 265 (26%)
 - AMBIGUOUS: 0 (0%)
 
 ---

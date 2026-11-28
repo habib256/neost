@@ -1,26 +1,42 @@
 # Community 492
 
-> 4 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/stx_absent_track_logic.cpp`
-- **.equal()** (2 connections) — `tests/stx_absent_track_logic.cpp`
-- **count** (1 connections) — `tests/stx_absent_track_logic.cpp`
-- **failures** (1 connections) — `tests/stx_absent_track_logic.cpp`
+- **MoiraDebugger.h** (14 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **SoftwareTraps** (8 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **SoftwareTrap** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.create()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **u16** (4 connections)
+- **unordered_map** (4 connections)
+- **.resolve()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.isLineAInstr()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.isLineFInstr()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **u16** (2 connections)
+- **instruction** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **traps** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **ostream** (1 connections)
 
 ## Relationships
 
+- [Community 134](Community_134.md) (7 shared connections)
+- [Community 121](Community_121.md) (2 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
+- [Community 109](Community_109.md) (1 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
-- [Community 201](Community_201.md) (1 shared connections)
+- [Community 593](Community_593.md) (1 shared connections)
+- [Community 152](Community_152.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/stx_absent_track_logic.cpp`
+- `extern/moira/Moira/MoiraDebugger.h`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 34 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

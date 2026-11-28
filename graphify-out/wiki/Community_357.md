@@ -1,25 +1,34 @@
 # Community 357
 
-> 4 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **KioskKey** (4 connections) — `src/gui/KioskMenu.hpp`
-- **kind** (1 connections) — `src/gui/KioskMenu.hpp`
-- **label** (1 connections) — `src/gui/KioskMenu.hpp`
-- **scancode** (1 connections) — `src/gui/KioskMenu.hpp`
+- **Atc040Entry** (13 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.atcTouch()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.atc()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **u32** (3 connections)
+- **.pageMask()** (2 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **history** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **logical** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **physical** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **status** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **super** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **valid** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **u8** (1 connections)
 
 ## Relationships
 
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 229](Community_229.md) (8 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/KioskMenu.hpp`
+- `extern/moira/Moira/MMU/MMU040.h`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
+- EXTRACTED: 20 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

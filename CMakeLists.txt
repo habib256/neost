@@ -15,7 +15,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(NeoST
-    VERSION 0.6.5
+    VERSION 0.7.0
     DESCRIPTION "Emulateur Atari ST orienté transparence matérielle"
     LANGUAGES C CXX)
 
@@ -338,47 +338,25 @@ endif()
 set(MOIRA_SRC_DIR "${CMAKE_SOURCE_DIR}/extern/moira/Moira")
 set(MOIRA_BUILD_DIR "${CMAKE_BINARY_DIR}/generated/moira/Moira")
 if(EXISTS "${MOIRA_SRC_DIR}/Moira.cpp")
-    file(MAKE_DIRECTORY "${MOIRA_BUILD_DIR}")
-    file(GLOB _moira_files CONFIGURE_DEPENDS "${MOIRA_SRC_DIR}/*")
-    foreach(_moira_file IN LISTS _moira_files)
-        if(NOT IS_DIRECTORY "${_moira_file}")
-            get_filename_component(_moira_name "${_moira_file}" NAME)
-            configure_file("${_moira_file}" "${MOIRA_BUILD_DIR}/${_moira_name}" COPYONLY)
+    # Garder dans l'archive neost_core tous les objets du cœur, y compris les
+    # sous-dossiers Cache/FPU/MMU. Les outils de diagnostic consultent cette copie.
+    file(GLOB_RECURSE _moira_files CONFIGURE_DEPENDS RELATIVE "${MOIRA_SRC_DIR}"
+        "${MOIRA_SRC_DIR}/*.h" "${MOIRA_SRC_DIR}/*.cpp")
+    set(_moira_sources)
+    foreach(_file IN LISTS _moira_files)
+        configure_file("${MOIRA_SRC_DIR}/${_file}" "${MOIRA_BUILD_DIR}/${_file}" COPYONLY)
+        if(_file MATCHES "[.]cpp$")
+            list(APPEND _moira_sources "${MOIRA_BUILD_DIR}/${_file}")
         endif()
     endforeach()
-
-    # NeoST EXIGE Moira en mode cycle-exact : PRECISE_TIMING=true (IPL échantillonné
-    # à la frontière de cycle, sync avant chaque accès) + MIMIC_MUSASHI=false (priorité
-    # à la précision plutôt qu'à la compat avec l'ancien Musashi). Ces réglages vivent
-    # dans MoiraConfig.h ;
-    # on les applique sur la COPIE générée pour garder le sous-module upstream propre.
-    set(_moira_cfg "${MOIRA_BUILD_DIR}/MoiraConfig.h")
-    file(READ "${_moira_cfg}" _moira_cfg_txt)
-    string(REGEX REPLACE "#define[ \t]+MOIRA_PRECISE_TIMING[ \t]+(true|false)"
-        "#define MOIRA_PRECISE_TIMING true" _moira_cfg_new "${_moira_cfg_txt}")
-    string(REGEX REPLACE "#define[ \t]+MOIRA_MIMIC_MUSASHI[ \t]+(true|false)"
-        "#define MOIRA_MIMIC_MUSASHI false" _moira_cfg_new "${_moira_cfg_new}")
-    # ERREUR D'ADRESSE 68000 (exception 3, accès word/long impair) : indispensable —
-    # des protections/cracktros s'en servent délibérément (TDA Rick Dangerous installe
-    # son handler et provoque des accès impairs). Hatari l'émule (exception3_*).
-    string(REGEX REPLACE "#define[ \t]+MOIRA_EMULATE_ADDRESS_ERROR[ \t]+(true|false)"
-        "#define MOIRA_EMULATE_ADDRESS_ERROR true" _moira_cfg_new "${_moira_cfg_new}")
-    # Tracer les instructions réellement exécutées, avant leur exécution :
-    # un execute() Moira peut ne traiter qu'une IRQ ou une attente STOP.
-    string(REGEX REPLACE "#define[ \t]+MOIRA_WILL_EXECUTE[^\r\n]*"
-        "#define MOIRA_WILL_EXECUTE true" _moira_cfg_new "${_moira_cfg_new}")
-    if(NOT _moira_cfg_new STREQUAL _moira_cfg_txt)
-        file(WRITE "${_moira_cfg}" "${_moira_cfg_new}")
-        message(STATUS "Moira : MoiraConfig.h configuré dans ${MOIRA_BUILD_DIR}.")
-    endif()
-
-    target_sources(neost_core PRIVATE
-        "${MOIRA_BUILD_DIR}/Moira.cpp"
-        "${MOIRA_BUILD_DIR}/MoiraDebugger.cpp")
+    target_sources(neost_core PRIVATE ${_moira_sources})
     target_include_directories(neost_core PUBLIC "${MOIRA_BUILD_DIR}")
-    target_compile_definitions(neost_core PUBLIC NEOST_HAS_MOIRA=1)
-    set_source_files_properties("${MOIRA_BUILD_DIR}/Moira.cpp" "${MOIRA_BUILD_DIR}/MoiraDebugger.cpp"
-        PROPERTIES COMPILE_OPTIONS "-std=c++20")
+    # Les délégués de bus et d'instruction ainsi que la classe dérivée doivent
+    # voir les mêmes options que les trois unités de décodage. DEFAULT est le
+    # profil de compatibilité natif du Moira officiel.
+    target_compile_definitions(neost_core PUBLIC NEOST_HAS_MOIRA=1
+        MOIRA_PRECISE_TIMING=true MOIRA_EMULATE_ADDRESS_ERROR=true MOIRA_WILL_EXECUTE=true)
+    set_source_files_properties(${_moira_sources} PROPERTIES COMPILE_OPTIONS "-std=c++20")
     # Cpu68k.cpp inclut Moira.h (en-tête tiers) → C++20, sans -Wpedantic strict.
     set_source_files_properties(src/core/Cpu68k.cpp
         PROPERTIES COMPILE_OPTIONS "-std=c++20")

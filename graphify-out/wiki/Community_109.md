@@ -1,55 +1,59 @@
 # Community 109
 
-> 24 nodes
+> 33 nodes
 
 ## Key Concepts
 
-- **Ea** (26 connections) — `extern/moira/Moira/StrWriter.h`
-- **M** (15 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **S** (15 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **Pd** (7 connections) — `extern/moira/Moira/StrWriter.h`
-- **Moira::Op()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Ai** (4 connections) — `extern/moira/Moira/StrWriter.h`
-- **Al** (4 connections) — `extern/moira/Moira/StrWriter.h`
-- **Aw** (4 connections) — `extern/moira/Moira/StrWriter.h`
-- **Di** (4 connections) — `extern/moira/Moira/StrWriter.h`
-- **DiPc** (4 connections) — `extern/moira/Moira/StrWriter.h`
-- **Im** (4 connections) — `extern/moira/Moira/StrWriter.h`
-- **Ip** (4 connections) — `extern/moira/Moira/StrWriter.h`
-- **Ix** (4 connections) — `extern/moira/Moira/StrWriter.h`
-- **IxMit** (4 connections) — `extern/moira/Moira/StrWriter.h`
-- **IxMot** (4 connections) — `extern/moira/Moira/StrWriter.h`
-- **IxMus** (4 connections) — `extern/moira/Moira/StrWriter.h`
-- **Pi** (4 connections) — `extern/moira/Moira/StrWriter.h`
+- **StrWriter.h** (58 connections) — `extern/moira/Moira/StrWriter.h`
+- **Ea** (31 connections) — `extern/moira/Moira/StrWriter.h`
+- **Ai** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **Al** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **Aw** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **Di** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **DiPc** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **Im** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **Ip** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **Ix** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **IxMit** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **IxMot** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **IxMus** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **IxUae** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **Pi** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **Ccr** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **Dfc** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **Finish** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **Pc** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **Sep** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **Sfc** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **Sr** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **Usp** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **Zpc** (1 connections) — `extern/moira/Moira/StrWriter.h`
 - **dw** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **ext1** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **ext2** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **ext3** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **ow** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **pc** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **reg** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- *... and 8 more nodes in this community*
 
 ## Relationships
 
-- [Community 76](Community_76.md) (14 shared connections)
-- [Community 252](Community_252.md) (3 shared connections)
-- [Community 2](Community_2.md) (3 shared connections)
-- [Community 57](Community_57.md) (3 shared connections)
-- [Community 327](Community_327.md) (1 shared connections)
-- [Community 222](Community_222.md) (1 shared connections)
-- [Community 169](Community_169.md) (1 shared connections)
-- [Community 385](Community_385.md) (1 shared connections)
+- [Community 222](Community_222.md) (6 shared connections)
+- [Community 169](Community_169.md) (6 shared connections)
+- [Community 497](Community_497.md) (4 shared connections)
+- [Community 327](Community_327.md) (3 shared connections)
+- [Community 400](Community_400.md) (3 shared connections)
+- [Community 530](Community_530.md) (2 shared connections)
+- [Community 385](Community_385.md) (2 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 2](Community_2.md) (2 shared connections)
+- [Community 492](Community_492.md) (1 shared connections)
+- [Community 263](Community_263.md) (1 shared connections)
+- [Community 0](Community_0.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraDasm_cpp.h`
-- `extern/moira/Moira/MoiraTypes.h`
 - `extern/moira/Moira/StrWriter.h`
 
 ## Audit Trail
 
-- EXTRACTED: 73 (96%)
-- INFERRED: 3 (4%)
+- EXTRACTED: 88 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

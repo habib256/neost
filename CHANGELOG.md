@@ -769,10 +769,26 @@ sur la page actuelle : leur diff partait de la 0.6.1 et ne s'appliquait plus.
 - Test modem : le temps de garde de +++ est vérifié aux trames 49 et 50, indépendamment de la vitesse hôte. L’ancien délai mural de deux secondes ne laissait passer que 38 polls ici, faux échec reproduit.
 
 (c) 2026 VERHILLE Arnaud. **La chronologie** : releases, puis les chantiers datés dans
-l'ordre inverse. Version courante : **0.6.5**.
+l'ordre inverse. Version courante : **0.7.0** (en préparation).
 
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
+
+## 0.7.0 — migration du cœur 68000 (en préparation)
+
+Le binaire de développement utilise le Moira officiel de Dirk W. Hoffmann
+6.0b1 (`bf98107f`) avec les adaptations de bus et d'interruptions de NeoST.
+Les modèles ST, Mega ST, STE et Mega STE exécutent le 68000. La nouvelle
+représentation de la file de prélecture et des registres porte le format
+d'état à **v69**. Pour reprendre un état v68, utiliser le binaire qui l'a créé.
+
+Sur le banc RTL fx68k épinglé, 37 des 48 variantes concordent cycle à cycle
+(34 avant le portage). Les trois gains concernent des doubles fautes. La
+variante de bus error présente les mêmes valeurs sur ses 611 accès ; un cycle
+de TAS la sépare encore du RTL. [Mesures et incertitudes](docs/FX68K_BENCH.md).
+
+La référence publiée reste le tag **0.6.5**. Le protocole d'acceptation de
+la migration figure dans [le plan 0.7.0](docs/MIGRATION_MOIRA_070.md).
 
 ## 0.6.5 — la dernière sur le Moira de NeoST (2026-11-13)
 

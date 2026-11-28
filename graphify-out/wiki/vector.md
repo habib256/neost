@@ -1,8 +1,8 @@
 # vector
 
-> God node · 368 connections · `src/core/Cpu68k.hpp`
+> God node · 429 connections · `src/core/Cpu68k.hpp`
 
-**Community:** [Community 460](Community_460.md)
+**Community:** [Community 102](Community_102.md)
 
 ## Connections by Relation
 
@@ -10,50 +10,50 @@
 - Fault `EXTRACTED`
 
 ### imports
-- AppLoop.cpp `EXTRACTED`
 - selftest_logic.cpp `EXTRACTED`
+- AppLoop.cpp `EXTRACTED`
+- neost_libretro.cpp `EXTRACTED`
 - main_web.cpp `EXTRACTED`
 - Bus.hpp `EXTRACTED`
 - AppInit.cpp `EXTRACTED`
-- Moira.cpp `EXTRACTED`
 - Machine.hpp `EXTRACTED`
-- main_headless.cpp `EXTRACTED`
 - App.cpp `EXTRACTED`
+- main_headless.cpp `EXTRACTED`
 - main_android.cpp `EXTRACTED`
 - Fdc.hpp `EXTRACTED`
-- App.hpp `EXTRACTED`
+- Moira.cpp `EXTRACTED`
 - YM2149.hpp `EXTRACTED`
+- App.hpp `EXTRACTED`
 - StateArchive.hpp `EXTRACTED`
 - fuzz_diskimage.cpp `EXTRACTED`
 - fdc_mount_guard_logic.cpp `EXTRACTED`
-- ipf_image_logic.cpp `EXTRACTED`
-- stx_raw_track_wrap_logic.cpp `EXTRACTED`
+- FpuFormats.cpp `EXTRACTED`
 - YM2149.cpp `EXTRACTED`
-- DebugWindows.cpp `EXTRACTED`
-- *…and 143 more `imports` connection(s) not listed (lowest-degree first to go)*
+- fuzz_state.cpp `EXTRACTED`
+- *…and 155 more `imports` connection(s) not listed (lowest-degree first to go)*
 
 ### references
 - [Fdc](Fdc.md) `EXTRACTED`
-- [App](App.md) `EXTRACTED`
 - [Bus](Bus.md) `EXTRACTED`
-- [GemdosHd](GemdosHd.md) `EXTRACTED`
+- [App](App.md) `EXTRACTED`
+- GemdosHd `EXTRACTED`
+- Machine `EXTRACTED`
 - Shifter `EXTRACTED`
 - DmaSound `EXTRACTED`
 - ConfigUi `EXTRACTED`
 - Config `EXTRACTED`
 - .saver() `EXTRACTED`
 - YM2149 `EXTRACTED`
+- Acsi `EXTRACTED`
 - Ne2000 `EXTRACTED`
 - MidiOutHost `EXTRACTED`
 - Isp1160 `EXTRACTED`
-- Acsi `EXTRACTED`
 - VideoGlue `EXTRACTED`
+- Session `EXTRACTED`
 - UsbDevice `EXTRACTED`
 - Audio `EXTRACTED`
 - MidiInHost `EXTRACTED`
-- Track `EXTRACTED`
-- FloppyDisk `EXTRACTED`
-- *…and 184 more `references` connection(s) not listed (lowest-degree first to go)*
+- *…and 233 more `references` connection(s) not listed (lowest-degree first to go)*
 
 ---
 

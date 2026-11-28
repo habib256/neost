@@ -5,7 +5,7 @@
 ## Key Concepts
 
 - **Rig** (26 connections) — `tests/stx_written_track_logic.cpp`
-- **testStxWrittenTrack()** (13 connections) — `tests/stx_written_track_logic.cpp`
+- **testStxWrittenTrack()** (12 connections) — `tests/stx_written_track_logic.cpp`
 - **.reg()** (6 connections) — `tests/stx_written_track_logic.cpp`
 - **.read()** (5 connections) — `tests/stx_written_track_logic.cpp`
 - **Checks** (4 connections) — `tests/stx_written_track_logic.cpp`
@@ -34,8 +34,8 @@
 ## Relationships
 
 - [Community 102](Community_102.md) (4 shared connections)
-- [Community 172](Community_172.md) (2 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 145](Community_145.md) (1 shared connections)
 
 ## Source Files
 
@@ -43,8 +43,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 50 (94%)
-- INFERRED: 3 (6%)
+- EXTRACTED: 50 (96%)
+- INFERRED: 2 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

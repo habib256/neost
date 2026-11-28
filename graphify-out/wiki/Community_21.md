@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **Config** (108 connections) — `src/gui/AppConfig.hpp`
+- **Config** (107 connections) — `src/gui/AppConfig.hpp`
 - **acsi** (1 connections) — `src/gui/AppConfig.hpp`
 - **audioLatencyMs** (1 connections) — `src/gui/AppConfig.hpp`
 - **autoDongle** (1 connections) — `src/gui/AppConfig.hpp`
@@ -34,16 +34,17 @@
 ## Relationships
 
 - [Community 101](Community_101.md) (8 shared connections)
-- [Community 252](Community_252.md) (8 shared connections)
-- [Community 286](Community_286.md) (4 shared connections)
-- [Community 214](Community_214.md) (3 shared connections)
+- [Community 41](Community_41.md) (5 shared connections)
+- [Community 286](Community_286.md) (3 shared connections)
+- [Community 153](Community_153.md) (2 shared connections)
+- [Community 325](Community_325.md) (2 shared connections)
 - [Community 1](Community_1.md) (1 shared connections)
 - [Community 129](Community_129.md) (1 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 - [Community 11](Community_11.md) (1 shared connections)
 - [Community 51](Community_51.md) (1 shared connections)
+- [Community 214](Community_214.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
-- [Community 223](Community_223.md) (1 shared connections)
 
 ## Source Files
 
@@ -51,8 +52,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 97 (90%)
-- INFERRED: 11 (10%)
+- EXTRACTED: 97 (91%)
+- INFERRED: 10 (9%)
 - AMBIGUOUS: 0 (0%)
 
 ---

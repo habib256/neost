@@ -1,24 +1,37 @@
 # Community 443
 
-> 3 nodes
+> 16 nodes
 
 ## Key Concepts
 
-- **dataCallback()** (3 connections) — `src/audio/Audio.cpp`
-- **ma_device** (1 connections)
-- **ma_uint32** (1 connections)
+- **retro_hdr_metadata** (16 connections) — `src/libretro/libretro.h`
+- **color_primaries** (1 connections) — `src/libretro/libretro.h`
+- **expand_gamut** (1 connections) — `src/libretro/libretro.h`
+- **max_cll** (1 connections) — `src/libretro/libretro.h`
+- **max_fall** (1 connections) — `src/libretro/libretro.h`
+- **max_nits** (1 connections) — `src/libretro/libretro.h`
+- **min_nits** (1 connections) — `src/libretro/libretro.h`
+- **output_mode** (1 connections) — `src/libretro/libretro.h`
+- **paper_white_nits** (1 connections) — `src/libretro/libretro.h`
+- **passthrough** (1 connections) — `src/libretro/libretro.h`
+- **reserved** (1 connections) — `src/libretro/libretro.h`
+- **size** (1 connections) — `src/libretro/libretro.h`
+- **source_formats** (1 connections) — `src/libretro/libretro.h`
+- **tonemap_operator** (1 connections) — `src/libretro/libretro.h`
+- **transfer_function** (1 connections) — `src/libretro/libretro.h`
+- **version** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/Audio.cpp`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
+- EXTRACTED: 16 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

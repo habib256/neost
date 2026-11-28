@@ -1,44 +1,57 @@
 # Community 247
 
-> 11 nodes
+> 112 nodes
 
 ## Key Concepts
 
-- **neostUpdateIpl()** (14 connections) — `src/core/Cpu68k.cpp`
-- **.updateIpl()** (8 connections) — `src/core/Cpu68k.hpp`
-- **.raiseHbl()** (8 connections) — `src/core/Cpu68k.hpp`
-- **.raiseVbl()** (7 connections) — `src/core/Cpu68k.hpp`
-- **recomputePinNextDue()** (6 connections) — `src/core/Cpu68k.cpp`
-- **.armHblPinAt()** (5 connections) — `src/core/Cpu68k.hpp`
-- **.stoppedState()** (5 connections) — `src/core/Cpu68k.cpp`
-- **pinsAtCycle()** (5 connections) — `src/core/Cpu68k.cpp`
-- **raiseWindowDefers()** (5 connections) — `src/core/Cpu68k.cpp`
-- **.updateIplNow()** (4 connections) — `src/core/Cpu68k.hpp`
-- **.armVblPinAt()** (4 connections) — `src/core/Cpu68k.hpp`
+- **run_libretro.py** (57 connections) — `tools/run_libretro.py`
+- **core()** (40 connections) — `tools/run_libretro.py`
+- **write_prg()** (18 connections) — `tools/run_libretro.py`
+- **libretro_corpus.py** (15 connections) — `tools/libretro_corpus.py`
+- **libretro_netplay.py** (14 connections) — `tools/libretro_netplay.py`
+- **run_one()** (10 connections) — `tools/libretro_corpus.py`
+- **main()** (8 connections) — `tools/libretro_netplay.py`
+- **fat12_volume()** (8 connections) — `tools/run_libretro.py`
+- **main()** (7 connections) — `tools/libretro_corpus.py`
+- **case_hard_disk_state()** (7 connections) — `tools/run_libretro.py`
+- **default_module()** (6 connections) — `tools/run_libretro.py`
+- **write_floppy()** (6 connections) — `tools/run_libretro.py`
+- **play()** (5 connections) — `tools/libretro_netplay.py`
+- **case_autorun()** (5 connections) — `tools/run_libretro.py`
+- **case_hard_disk()** (5 connections) — `tools/run_libretro.py`
+- **case_midi_hidden()** (5 connections) — `tools/run_libretro.py`
+- **case_midi_out()** (5 connections) — `tools/run_libretro.py`
+- **case_netplay_keyboard()** (5 connections) — `tools/run_libretro.py`
+- **case_tos_fallback()** (5 connections) — `tools/run_libretro.py`
+- **write_hard_disk()** (5 connections) — `tools/run_libretro.py`
+- **bconout_midi()** (4 connections) — `tools/run_libretro.py`
+- **case_blitter_megast_fallback()** (4 connections) — `tools/run_libretro.py`
+- **case_blitter_ste()** (4 connections) — `tools/run_libretro.py`
+- **case_fast_floppy_idle()** (4 connections) — `tools/run_libretro.py`
+- **case_midi_in()** (4 connections) — `tools/run_libretro.py`
+- *... and 87 more nodes in this community*
 
 ## Relationships
 
-- [Community 27](Community_27.md) (16 shared connections)
-- [Community 9](Community_9.md) (6 shared connections)
-- [Community 470](Community_470.md) (2 shared connections)
-- [Community 392](Community_392.md) (2 shared connections)
-- [Community 378](Community_378.md) (2 shared connections)
-- [Community 299](Community_299.md) (2 shared connections)
-- [Community 397](Community_397.md) (1 shared connections)
-- [Community 14](Community_14.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
-- [Community 226](Community_226.md) (1 shared connections)
-- [Community 457](Community_457.md) (1 shared connections)
+- [Community 26](Community_26.md) (10 shared connections)
+- [Community 100](Community_100.md) (10 shared connections)
+- [Community 173](Community_173.md) (9 shared connections)
+- [Community 200](Community_200.md) (7 shared connections)
+- [Community 207](Community_207.md) (3 shared connections)
+- [Community 417](Community_417.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Cpu68k.cpp`
-- `src/core/Cpu68k.hpp`
+- `CHANGELOG.md`
+- `tools/libretro_corpus.py`
+- `tools/libretro_netplay.py`
+- `tools/run_libretro.py`
 
 ## Audit Trail
 
-- EXTRACTED: 41 (77%)
-- INFERRED: 12 (23%)
+- EXTRACTED: 221 (97%)
+- INFERRED: 7 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

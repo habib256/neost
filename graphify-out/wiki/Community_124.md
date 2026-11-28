@@ -1,64 +1,52 @@
 # Community 124
 
-> 27 nodes
+> 32 nodes
 
 ## Key Concepts
 
-- **** (32 connections) — `src/io/JoystickInput.hpp`
-- **Frontend & outillage** (21 connections) — `docs/IMPLEMENTED.md`
-- **compose()** (5 connections) — `src/io/JoystickInput.hpp`
-- **debug()** (5 connections) — `src/io/JoystickInput.hpp`
-- **resolveAssign()** (5 connections) — `src/io/JoystickInput.hpp`
-- **composeAux()** (4 connections) — `src/io/JoystickInput.hpp`
-- **readStick()** (4 connections) — `src/io/JoystickInput.hpp`
-- **Terminal sobre ; la page ROM choisit le modèle (2026-11-13)** (4 connections) — `CHANGELOG.md`
-- **.activeHeight()** (3 connections) — `src/core/Shifter.hpp`
-- **readAux()** (3 connections) — `src/io/JoystickInput.hpp`
-- **readStickRaw()** (3 connections) — `src/io/JoystickInput.hpp`
-- **fadeStereo()** (2 connections) — `src/core/Pacing.hpp`
-- **.activeTop()** (2 connections) — `src/core/Shifter.hpp`
-- **GLFWwindow** (2 connections)
-- **Signature** (2 connections) — `packaging/android/README.md`
-- **kbdBit()** (1 connections) — `src/io/JoystickInput.hpp`
-- **AUX_RETURN** (1 connections) — `src/io/JoystickInput.hpp`
-- **AUX_SPACE** (1 connections) — `src/io/JoystickInput.hpp`
-- **DOWN** (1 connections) — `src/io/JoystickInput.hpp`
-- **FIRE** (1 connections) — `src/io/JoystickInput.hpp`
-- **LEFT** (1 connections) — `src/io/JoystickInput.hpp`
-- **RIGHT** (1 connections) — `src/io/JoystickInput.hpp`
-- **ROLE_AUTO** (1 connections) — `src/io/JoystickInput.hpp`
-- **ROLE_OFF** (1 connections) — `src/io/JoystickInput.hpp`
-- **ROLE_PORT0** (1 connections) — `src/io/JoystickInput.hpp`
-- *... and 2 more nodes in this community*
+- **Frame** (58 connections) — `src/gui/AppLoop.cpp`
+- **string** (2 connections)
+- **ConfigUi** (1 connections)
+- **cfgUi** (1 connections) — `src/gui/AppLoop.cpp`
+- **cH** (1 connections) — `src/gui/AppLoop.cpp`
+- **color** (1 connections) — `src/gui/AppLoop.cpp`
+- **cTop** (1 connections) — `src/gui/AppLoop.cpp`
+- **cW** (1 connections) — `src/gui/AppLoop.cpp`
+- **fbh** (1 connections) — `src/gui/AppLoop.cpp`
+- **fbw** (1 connections) — `src/gui/AppLoop.cpp`
+- **kH** (1 connections) — `src/gui/AppLoop.cpp`
+- **kTop** (1 connections) — `src/gui/AppLoop.cpp`
+- **kW** (1 connections) — `src/gui/AppLoop.cpp`
+- **menuH** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqEject** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqEjectAcsi** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqEjectB** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqEjectCart** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqEjectGemdos** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqHardReset** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqMonitor** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqMount** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqMountAcsi** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqMountB** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqMountCart** (1 connections) — `src/gui/AppLoop.cpp`
+- *... and 7 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (7 shared connections)
-- [Community 119](Community_119.md) (3 shared connections)
-- [Community 68](Community_68.md) (2 shared connections)
-- [Community 5](Community_5.md) (2 shared connections)
-- [Community 88](Community_88.md) (2 shared connections)
-- [Community 160](Community_160.md) (2 shared connections)
-- [Community 101](Community_101.md) (2 shared connections)
-- [Community 214](Community_214.md) (1 shared connections)
-- [Community 223](Community_223.md) (1 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
+- [Community 214](Community_214.md) (20 shared connections)
+- [Community 325](Community_325.md) (3 shared connections)
+- [Community 138](Community_138.md) (2 shared connections)
+- [Community 223](Community_223.md) (2 shared connections)
+- [Community 204](Community_204.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/IMPLEMENTED.md`
-- `packaging/android/README.md`
-- `src/core/Pacing.hpp`
-- `src/core/Shifter.hpp`
-- `src/io/JoystickInput.hpp`
+- `src/gui/AppLoop.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 46 (64%)
-- INFERRED: 26 (36%)
+- EXTRACTED: 59 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

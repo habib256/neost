@@ -1,40 +1,36 @@
 # Community 421
 
-> 15 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **.sendAutoInput()** (14 connections) — `src/io/Ikbd.hpp`
-- **.rxFree()** (14 connections) — `src/io/Ikbd.hpp`
-- **.onLineIdle()** (11 connections) — `src/io/Ikbd.hpp`
-- **.sendRelMousePacket()** (8 connections) — `src/io/Ikbd.hpp`
-- **.sendCursorKeys()** (7 connections) — `src/io/Ikbd.hpp`
-- **.lineFree()** (6 connections) — `src/io/Ikbd.hpp`
-- **.emitButtonKeys()** (6 connections) — `src/io/Ikbd.hpp`
-- **.sendAbsMousePos()** (6 connections) — `src/io/Ikbd.hpp`
-- **.mouseEvent()** (5 connections) — `src/io/Ikbd.hpp`
-- **.sendOnMouseAction()** (5 connections) — `src/io/Ikbd.hpp`
-- **.sendAutoJoysticks()** (5 connections) — `src/io/Ikbd.hpp`
-- **.sendAutoJoysticksMonitoring()** (4 connections) — `src/io/Ikbd.hpp`
-- **.effectiveButtons()** (4 connections) — `src/io/Ikbd.hpp`
-- **.onAutoSend()** (3 connections) — `src/io/Ikbd.hpp`
-- **.updateInternalAbsPos()** (3 connections) — `src/io/Ikbd.hpp`
+- **FramingLatch** (14 connections) — `src/core/Framing.hpp`
+- **stContentRegion()** (3 connections) — `src/core/Framing.cpp`
+- **.reset()** (1 connections) — `src/core/Framing.hpp`
+- **Shifter** (1 connections)
+- **latchBot** (1 connections) — `src/core/Framing.hpp`
+- **latchTop** (1 connections) — `src/core/Framing.hpp`
+- **latchWide** (1 connections) — `src/core/Framing.hpp`
+- **openStreak** (1 connections) — `src/core/Framing.hpp`
+- **overscanLatch** (1 connections) — `src/core/Framing.hpp`
 
 ## Relationships
 
-- [Community 171](Community_171.md) (19 shared connections)
-- [Community 7](Community_7.md) (15 shared connections)
-- [Community 47](Community_47.md) (7 shared connections)
-- [Community 370](Community_370.md) (6 shared connections)
+- [Community 377](Community_377.md) (3 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 239](Community_239.md) (1 shared connections)
+- [Community 23](Community_23.md) (1 shared connections)
+- [Community 283](Community_283.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Ikbd.hpp`
+- `src/core/Framing.cpp`
+- `src/core/Framing.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 31 (42%)
-- INFERRED: 43 (58%)
+- EXTRACTED: 11 (69%)
+- INFERRED: 5 (31%)
 - AMBIGUOUS: 0 (0%)
 
 ---

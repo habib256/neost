@@ -1,72 +1,69 @@
 # Community 449
 
-> 48 nodes
+> 44 nodes
 
 ## Key Concepts
 
-- **MachineType.hpp** (28 connections) — `src/core/MachineType.hpp`
-- **appInit()** (23 connections) — `src/gui/AppInit.cpp`
+- **MachineType** (46 connections) — `src/core/MachineType.hpp`
+- **machineIsSte()** (23 connections) — `src/core/MachineType.hpp`
 - **.adjustMachineForTos()** (22 connections) — `src/core/Machine.hpp`
-- **.applyConfig()** (16 connections) — `src/gui/App.hpp`
+- **.reconfigure()** (15 connections) — `src/core/Machine.hpp`
 - **machineHasDmaSound()** (11 connections) — `src/core/MachineType.hpp`
-- **parseRamBytes()** (11 connections) — `src/core/MachineType.hpp`
-- **main()** (11 connections) — `src/web/main_web.cpp`
-- **parseMachine()** (10 connections) — `src/core/MachineType.hpp`
+- **.resolveQuartz()** (9 connections) — `src/core/Machine.hpp`
 - **machineName()** (9 connections) — `src/core/MachineType.hpp`
-- **Hypothèses ST dans le code — ce que le TT et le Falcon remettent en cause** (9 connections) — `docs/HYPOTHESES_ST.md`
-- **.loadTos()** (8 connections) — `src/core/Bus.hpp`
-- **tosUnsupportedMachine()** (8 connections) — `src/core/MachineType.hpp`
-- **parseCommandLine()** (8 connections) — `src/gui/AppInit.cpp`
-- **size_t** (8 connections)
-- **Audit Hatari, 10ᵉ passe : le banc Super Hang-On, la chaîne son STE et sa chasse, en détail (2026-08-06/07)** (8 connections) — `CHANGELOG.md`
-- **.coreName()** (7 connections) — `src/core/Cpu68k.hpp`
-- **mmioNeedsBetterMachine()** (7 connections) — `src/core/MachineType.hpp`
-- **ramLabel()** (7 connections) — `src/core/MachineType.hpp`
-- **tosHeaderIsEmuTos()** (7 connections) — `src/core/MachineType.hpp`
-- **tosHeaderVersion()** (7 connections) — `src/core/MachineType.hpp`
-- **MissingHw** (6 connections) — `src/core/MachineType.hpp`
-- **testRamDisplay()** (6 connections) — `tests/selftest_logic.cpp`
+- **Audit Hatari, 10ᵉ passe : le banc Super Hang-On, la chaîne son STE et sa chasse, en détail (2026-08-06/07)** (7 connections) — `CHANGELOG.md`
+- **CLAUDE.md** (7 connections) — `CLAUDE.md`
+- **string** (6 connections)
 - **3. Types de machine** (6 connections) — `docs/HYPOTHESES_ST.md`
-- **ramDisplayName()** (5 connections) — `src/core/MachineType.hpp`
-- **readTosInfo()** (5 connections) — `src/core/TosChoice.cpp`
-- *... and 23 more nodes in this community*
+- **AndroidRom** (5 connections) — `src/android/AndroidRoms.hpp`
+- **.loadStateFile()** (5 connections) — `src/core/Machine.hpp`
+- **.resetGlue()** (4 connections) — `src/core/Shifter.hpp`
+- **machineIsMega()** (4 connections) — `src/core/MachineType.hpp`
+- **.setHpfBypass()** (4 connections) — `src/core/YM2149.hpp`
+- **IACK MFP +4 cyc (raster Super Hang-On verrouillé à l'oracle) + chaîne son STE fidèle (2026-08-06/07)** (4 connections) — `CHANGELOG.md`
+- **.claimsRtc()** (3 connections) — `src/core/Bus.hpp`
+- **.wireDmaFetchWindow()** (3 connections) — `src/core/Machine.hpp`
+- **.claimsDmaSnd()** (2 connections) — `src/core/Bus.hpp`
+- **.claimsStePads()** (2 connections) — `src/core/Bus.hpp`
+- **.machineType()** (2 connections) — `src/core/Machine.hpp`
+- **VideoGlue::updateGlueState()** (2 connections) — `src/core/VideoGlue.cpp`
+- **size_t** (2 connections)
+- **Chasse round 4 : le tactile Android est REPRIS D'UN BLOC, et le web public démarrait le STE sur une ROM ST (2026-09-01)** (2 connections) — `CHANGELOG.md`
+- *... and 19 more nodes in this community*
 
 ## Relationships
 
-- [Community 394](Community_394.md) (15 shared connections)
-- [Community 4](Community_4.md) (12 shared connections)
-- [Community 203](Community_203.md) (10 shared connections)
-- [Community 252](Community_252.md) (9 shared connections)
-- [Community 138](Community_138.md) (8 shared connections)
-- [Community 14](Community_14.md) (7 shared connections)
-- [Community 419](Community_419.md) (7 shared connections)
-- [Community 27](Community_27.md) (6 shared connections)
-- [Community 160](Community_160.md) (6 shared connections)
-- [Community 214](Community_214.md) (6 shared connections)
-- [Community 325](Community_325.md) (6 shared connections)
-- [Community 101](Community_101.md) (5 shared connections)
+- [Community 160](Community_160.md) (15 shared connections)
+- [Community 10](Community_10.md) (9 shared connections)
+- [Community 4](Community_4.md) (7 shared connections)
+- [Community 130](Community_130.md) (7 shared connections)
+- [Community 41](Community_41.md) (5 shared connections)
+- [Community 14](Community_14.md) (4 shared connections)
+- [Community 377](Community_377.md) (4 shared connections)
+- [Community 607](Community_607.md) (4 shared connections)
+- [Community 394](Community_394.md) (4 shared connections)
+- [Community 138](Community_138.md) (4 shared connections)
+- [Community 248](Community_248.md) (4 shared connections)
+- [Community 153](Community_153.md) (4 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
-- `docs/HATARI_MAPPING.md`
+- `CLAUDE.md`
 - `docs/HYPOTHESES_ST.md`
+- `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
+- `src/android/AndroidRoms.hpp`
 - `src/core/Bus.hpp`
-- `src/core/Cpu68k.hpp`
 - `src/core/Machine.hpp`
 - `src/core/MachineType.hpp`
-- `src/core/TosChoice.cpp`
-- `src/gui/App.hpp`
-- `src/gui/AppConfig.hpp`
-- `src/gui/AppInit.cpp`
-- `src/gui/MachineSummary.hpp`
-- `src/web/main_web.cpp`
-- `tests/selftest_logic.cpp`
+- `src/core/Shifter.hpp`
+- `src/core/VideoGlue.cpp`
+- `src/core/YM2149.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 118 (52%)
-- INFERRED: 108 (48%)
+- EXTRACTED: 103 (58%)
+- INFERRED: 75 (42%)
 - AMBIGUOUS: 0 (0%)
 
 ---

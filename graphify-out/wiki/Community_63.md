@@ -1,57 +1,61 @@
 # Community 63
 
-> 24 nodes
+> 123 nodes
 
 ## Key Concepts
 
-- **StxImage.cpp** (25 connections) — `src/io/StxImage.cpp`
-- **main()** (15 connections) — `tests/stx_writetrack_test.cpp`
-- **.parse()** (12 connections) — `src/io/StxImage.hpp`
-- **.loadWd1772()** (11 connections) — `src/io/StxImage.hpp`
-- **.findTrack()** (10 connections) — `src/io/StxImage.hpp`
-- **.saveWd1772()** (8 connections) — `src/io/StxImage.hpp`
-- **.addTrack()** (6 connections) — `src/io/StxImage.hpp`
-- **.findSectorByPosition()** (6 connections) — `src/io/StxImage.hpp`
-- **.reinterpretSaveTrack()** (6 connections) — `src/io/StxImage.hpp`
-- **.buildSectorsSimple()** (6 connections) — `src/io/StxImage.hpp`
-- **.sides()** (3 connections) — `src/io/StxImage.hpp`
-- **.tracksPerSide()** (3 connections) — `src/io/StxImage.hpp`
-- **crc16()** (3 connections) — `src/io/StxImage.cpp`
-- **originalTrackBytes()** (3 connections) — `src/io/StxImage.cpp`
-- **wr16be()** (3 connections) — `src/io/StxImage.cpp`
-- **wr32be()** (3 connections) — `src/io/StxImage.cpp`
-- **rd16be()** (2 connections) — `src/io/StxImage.cpp`
-- **rd16le()** (2 connections) — `src/io/StxImage.cpp`
-- **rd32be()** (2 connections) — `src/io/StxImage.cpp`
-- **rd32le()** (2 connections) — `src/io/StxImage.cpp`
-- **string** (2 connections)
-- **added** (2 connections) — `src/io/StxImage.hpp`
-- **initializer_list** (1 connections)
-- **Sector** (1 connections)
+- **MFloat80** (174 connections) — `extern/moira/Moira/FPU/MFloat80.h`
+- **FPU** (90 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **FPU.cpp** (65 connections) — `extern/moira/Moira/FPU/FPU.cpp`
+- **.resolveNan()** (46 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **.fromBits()** (22 connections) — `extern/moira/Moira/FPU/MFloat80.h`
+- **.setExcStatusBit()** (9 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **zeroRemainder()** (9 connections) — `extern/moira/Moira/FPU/FPU.cpp`
+- **.biasedExponent()** (9 connections) — `extern/moira/Moira/FPU/MFloat80.h`
+- **u32** (9 connections)
+- **.fmod()** (8 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **.frem()** (8 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **.fcmp()** (8 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **.fsglmul()** (7 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **remainder()** (7 connections) — `extern/moira/Moira/FPU/FPU.cpp`
+- **.fgetexp()** (6 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **.fgetman()** (6 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **.readCR()** (6 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **singleOverflow()** (6 connections) — `extern/moira/Moira/FPU/FPU.cpp`
+- **.setConditionCodes()** (5 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **.setQuotientByte()** (5 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **.moveOutExtended()** (5 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **.ftst()** (5 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **.fscal()** (5 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **.fsgldiv()** (5 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **.fromLongDouble()** (5 connections) — `extern/moira/Moira/FPU/MFloat80.h`
+- *... and 98 more nodes in this community*
 
 ## Relationships
 
-- [Community 489](Community_489.md) (10 shared connections)
-- [Community 31](Community_31.md) (8 shared connections)
-- [Community 172](Community_172.md) (5 shared connections)
-- [Community 460](Community_460.md) (5 shared connections)
-- [Community 201](Community_201.md) (4 shared connections)
-- [Community 369](Community_369.md) (4 shared connections)
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 163](Community_163.md) (2 shared connections)
-- [Community 121](Community_121.md) (2 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 197](Community_197.md) (48 shared connections)
+- [Community 202](Community_202.md) (45 shared connections)
+- [Community 183](Community_183.md) (22 shared connections)
+- [Community 264](Community_264.md) (9 shared connections)
+- [Community 496](Community_496.md) (8 shared connections)
+- [Community 34](Community_34.md) (4 shared connections)
+- [Community 485](Community_485.md) (3 shared connections)
+- [Community 16](Community_16.md) (2 shared connections)
+- [Community 287](Community_287.md) (2 shared connections)
+- [Community 0](Community_0.md) (2 shared connections)
+- [Community 57](Community_57.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/StxImage.cpp`
-- `src/io/StxImage.hpp`
-- `tests/stx_writetrack_test.cpp`
+- `extern/moira/Moira/FPU/FPU.cpp`
+- `extern/moira/Moira/FPU/FPU.h`
+- `extern/moira/Moira/FPU/MFloat80.h`
 
 ## Audit Trail
 
-- EXTRACTED: 61 (67%)
-- INFERRED: 30 (33%)
+- EXTRACTED: 411 (87%)
+- INFERRED: 60 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -13,9 +13,10 @@ cycle-exact, accès bus par accès bus.** Posé le 2026-11-03. Instrument : `too
 ## Pourquoi
 
 Le 68000 porte tout le reste : chaque datation vidéo, MFP ou blitter de NeoST est posée sur
-l'horloge de Moira. Jusqu'ici Moira n'était confronté qu'à Hatari (grade D, autre
-émulateur, `run_timing_oracle.py`) et aux totaux de cycles de la table de Musashi
-(`run_moira_runner.sh`). fx68k (Jorge Cwik, épingle `0602ee46`) est un RTL dérivé du microcode,
+l'horloge de Moira. `run_timing_oracle.py` compare les programmes à Hatari (grade D).
+`run_moira_runner.sh` rejoue les suites officielles, dont le corpus d'instructions
+individuelles du 68000 enregistré sous MAME. fx68k (Jorge Cwik, épingle `0602ee46`)
+est un RTL dérivé du microcode,
 « cycle exact » selon son auteur, bloc **fort** de l'échelon `rtl`. Le simuler sous Verilator
 donne, pour la première fois, la **position** de chaque cycle bus, la prise d'IPL et les
 séquences d'exception, sur le même programme que Moira.
@@ -158,6 +159,117 @@ indépendant de fx68k : deux témoins de grade D qui s'accordent contre Moira p�
 dépend de ces cas ; ce sont des **questions à requalifier sur POM68K**, que le banc rejouera
 telles quelles. Un titre qui récupère d'une bus error en relisant An ou le PC empilé (protection,
 sondage de mémoire) serait le premier à les révéler.
+
+## Migration vers Moira 6 : fautes de groupe 0
+
+Comparaison de l'ancien cœur NeoST et de Moira officiel `bf98107f` avec le même banc
+fx68k `0602ee46`. Le banc passe de 34 à 37 accords sur 48 variantes. L'API officielle expose avec `getPC()` le PC interne moins deux
+octets. Les accès mémoire du cœur lèvent désormais une faute par son adresse et
+Moira termine la trame avec le contexte de l'instruction. La voie hors accès
+mémoire du cœur conserve une trame complète, avec le PC interne.
+
+| Variante | Arbitrage |
+|---|---|
+| `exceptions` | L'amont déplaçait deux cycles du départ vers le vecteur au début de l'empilement. Le report après la trame conserve les dates des sept écritures observées par fx68k. Reste un début de lecture sans strobe dans le RTL. |
+| `berr` | L'entrée de trame de l'amont prend 14 cycles depuis l'accès fautif, puis quatre du dernier mot empilé au vecteur. Le microcode transcrit `state_bus_error` enchaîne la dernière écriture `trap5` et la lecture `trap6`. Les trames contextuelles corrigent notamment les PC de `MOVEM` dans les deux sens. |
+| `double_fault` et `double_fault_vec` | L'arrêt, les mots écrits et les intervalles d'accès concordent avec fx68k. Le manuel Motorola Rev. 8 § 5.4.4 et § 6.3.9.1 impose l'arrêt à la seconde faute, y compris au premier préfetch du gestionnaire. Les dates de la broche HALT restent à mesurer. |
+| `double_fault_trap` | Après une faute sur la première écriture du TRAP, l'amont remet SP à sa valeur initiale. Le deuxième empilement recommence à la même adresse, comme dans fx68k. Hatari garde le SP décrémenté. Aucun relevé sur machine réelle ne distingue ici ces deux chemins. |
+| `double_fault_addr` | L'amont arrête le processeur sur SP impair sans écrire la trame arrondie de l'ancien cœur. Le manuel Motorola Rev. 8 § 6.3.10 confirme l'arrêt sur la seconde faute. Hatari arrive à la même issue. fx68k présente deux cycles amorcés sans strobe, absents de Moira. L'amont court-circuite également le premier empilement, donc la date de HALT et la notification de la première faute restent à vérifier. |
+
+Pour `TAS` absolu long, le manuel Motorola Rev. 8 § 5.1.3 et § 6.3.9.1 distingue
+les phases lecture et écriture du RMW. La faute de lecture préserve le bit R/W de la
+lecture et le SR antérieur. La transcription de `4af9` par Kervella place le
+transfert de l'incrément du PC après `abll3`, la lecture de l'opérande. Le réglage
+NeoST conserve le PC vu par fx68k, avec une avance d'un cycle sur l'entrée de
+trame. Hatari `cpuemu_13.c:44116-44121` et `newcpu.c:9077-9083` @ `36a8acf0`
+empile un PC avancé. Le banc actuel ne date pas un `TAS` fautif sur le silicium.
+
+### Démarrage TOS : prédécrément et PC sur BERR
+
+Dans la comparaison `4bccff0f` → Moira 6, la première différence des cinq scénarios
+ci-dessous arrive dans la sonde des 4 Mo. Le TOS écrit `MOVE.W D2,-(A1)` à
+`$41FFFE` et prend le vecteur 2. La trace (`NEOST_TRACE_CYC=1`, `--trace`,
+`--regs --irq`) donne la même date d'entrée du gestionnaire avec les deux cœurs.
+L'ancien A1 reste à `$420000`. Moira 6 conserve `$41FFFE`.
+
+| Scénario | PC de l'écriture | Entrée du gestionnaire | Cycle bus |
+|---|---|---|---:|
+| `boot_tos205fr` | `$E0019A` | `$E001B6` | 145484 |
+| `boot_tos206uk` | `$E0019C` | `$E001B8` | 398852 |
+| `boot_tos104uk_megast`, `whatifgame` | `$FC0170` | `$FC018C` | 399708 |
+| `replay/rainbow_islands_4mb` | `$FC0182` | `$FC019E` | 399732 |
+
+À `$FC018C`, un arrêt `--break FC018C` sur Mega ST 4 Mo donne la trame de groupe
+0 à `$7FF2`. Ses sept mots concordent sauf le PC, `$FC0172` sur le parent et
+`$FC0174` sur le candidat. [B] M68000UM Rev. 8 § 6.3.9.1 situe le PC empilé
+de 2 à 10 octets après l'opcode et décrit le contenu de la trame. [D] Le cas
+`berr` avec l'opcode `$3500` (`MOVE.W D0,-(A2)`) donne exactement sur fx68k
+et Moira 6 un PC à opcode + 4 et un A2 décrémenté. Hatari @ `36a8acf0`
+(`cpuemu_13.c:115698-115738`, `op_3100_14_ff`) fait de même sur 68000. Le
+microcode transcrit `3100` (`rmmw1`, `mmmw2`) situe la mise à jour d'An au
+cycle d'écriture. Le cas précis reste à mesurer sur le 68000 réel lors d'un BERR
+externe.
+
+### Démonstrations STE démarrées sur ST : PC empilé sur BERR
+
+Le corpus collection lance les deux disquettes sur ST/TOS 1.04. Just Musix 2
+(disque 1) tente `MOVE.W #2,$FF8A20` à `$1C16` (blitter). E605 tente
+`MOVEP.L D0,1(A0)` à `$4482` avec `A0=$FFFF8900` et faute à `$FF8901`
+(son DMA). Ces registres ne répondent pas sur le ST émulé. Les deux démonstrations
+finissent dans une suite de trames de groupe 0 provoquées par
+`MOVEM.L D0/A3-A5,$68(A6)` à `$FC92FC`, en écriture vers la ROM `$FC0B72`.
+Les traces horodatées des instructions et des registres autour du premier
+écart concordent à l'octet.
+
+- **Just Musix 2**, trame 140. Douze PC de trame en RAM ont le mot bas
+  `$9302` sur le parent et `$9304` sur le candidat. Deux copies du
+  même mot subsistent dans l'historique du bus vidéo. La pile descend jusque
+  dans la table des vecteurs. À la trame 148 (échantillon 150 dans la porte),
+  `TRAP #1` à `$02FC0B50` lit le vecteur GEMDOS à `$84`, écrasé par le mot
+  bas du PC de la faute puis par le début de la trame suivante. Les deux cœurs
+  reprennent au même cycle 23550504, respectivement à `$930209FC` et
+  `$930409FC`. Les états à la trame 151 confirment le vecteur corrompu. À ce
+  point, le parent est en double faute et le candidat exécute encore des
+  `ORI.B #0,D0`. À 180 les deux sont arrêtés, le parent avec
+  `PC=$92830, SSP=$FFFFFFFA` et le candidat avec
+  `PC=$9282C, SSP=$FFFFFFF8`. L'écart durable d'empreinte CPU suit donc
+  l'usage par l'invité du PC empilé sur la faute MOVEM.
+- **E605**, premier écart à la trame 1118, relevé à 1120. La RAM conserve
+  52 mots bas de PC de trame `$9302` → `$9304` et le PC du premier
+  BERR sur MOVEP à `$5F2` (`$4486` → `$4484`). L'historique du bus vidéo
+  conserve le mot `$9302` → `$9304` et les sept écritures d'une trame à
+  +4 cycles chacune. Cette datation correspond au début de trame BERR
+  de Moira 6 observé au banc.
+
+[B] M68000UM Rev. 8 § 6.3.9.1 donne la plage du PC empilé en cas de BERR.
+[D] Deux sondes nues dans la fenêtre BERR `$E00000`–`$EFFFFF` exécutent les
+opcodes exacts `$48EE` et `$01C8` à `$101C`. fx68k @ `0602ee46`
+empile respectivement `$1024` (MOVEM) et `$101E` (MOVEP), comme Moira 6.
+Le parent empilait `$1022` et `$1020`. Hatari @ `36a8acf0`
+(`cpuemu_13.c:128663-128727`, `op_48e8_14_ff` et `cpuemu_13.c:91477-91531`,
+`op_01c8_14_ff`) donne les mêmes PC que le candidat. Aucun relevé sur un
+vrai ST ne fixe ces deux valeurs ou les sous-intervalles des écritures.
+
+### Epic, disque 2 seul : retour sur une adresse impaire
+
+Dans la collection automatisée, le disque 2 d'Epic lancé seul prend un BERR
+à `$520761` en exécutant `MOVE.B -(A3),(A2)+` à `$392`. Le gestionnaire à
+`$140` exécute un RTE direct. Ce RTE lit les six premiers octets de la trame
+de groupe 0 comme SR et PC, et prend donc l'adresse fautive impaire pour PC.
+Le vecteur 3 revient lui aussi à `$140`. Les valeurs des registres concordent à
+l'entrée de chaque boucle, mais celle-ci prend 72 cycles sur le parent et
+76 sur le candidat. La première empreinte différente arrive à la trame 768
+en ST et à 701 en Mega STE.
+
+[B] M68000UM Rev. 8 § 6.3.9.1 demande au gestionnaire de nettoyer la pile et
+§ 6.3.10 décrit l'erreur d'adresse sur un fetch impair. Une sonde nue place
+SR `$2415` et PC `$00520761` sur la pile, puis exécute RTE. [D] Entre la
+lecture du dernier mot de pile et celle du vecteur 3, fx68k @ `0602ee46`
+compte 44 cycles, l'ancien Moira 42 et le candidat 44. La date de la première
+écriture de trame reste distincte (respectivement 16, 12 et 14 cycles après
+la lecture du dernier mot de pile). fx68k présente aussi un cycle de lecture
+amorcé sans strobe sur la cible impaire. Le gain de timing global du cœur nu
+laisse les sous-intervalles et la date sur une machine réelle à vérifier.
 
 ## Bus prêté à un DMA, BR/BG (2026-11-11)
 

@@ -1,52 +1,54 @@
 # Community 200
 
-> 17 nodes
+> 22 nodes
 
 ## Key Concepts
 
-- **A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30)** (19 connections) — `CHANGELOG.md`
-- **Dest** (11 connections) — `src/audio/MidiOutHost.hpp`
-- **.midiOutApply()** (6 connections) — `src/gui/App.hpp`
-- **.midiLearnUids()** (6 connections) — `src/gui/App.hpp`
-- **.switchKioskMode()** (6 connections) — `src/gui/App.hpp`
-- **.neBackend()** (5 connections) — `src/gui/App.hpp`
-- **.midiInApply()** (4 connections) — `src/gui/App.hpp`
-- **.usatanApply()** (3 connections) — `src/gui/App.hpp`
-- **.etherApply()** (3 connections) — `src/gui/App.hpp`
-- **.toggleFullscreen()** (3 connections) — `src/gui/App.hpp`
-- **Slirp : le « dernier pas » est clos — 5/5, le coupable était Little Snitch (2026-08-27)** (2 connections) — `CHANGELOG.md`
-- **channels** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **name** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **uid** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **NetBackend** (1 connections)
-- **Et les trois avertissements que personne ne voyait plus** (1 connections) — `CHANGELOG.md`
-- **Et une affirmation fausse trouvée en corrigeant ces renvois** (1 connections) — `CHANGELOG.md`
+- **Core** (26 connections) — `tools/libretro_frontend.py`
+- **.touch()** (6 connections) — `tools/libretro_frontend.py`
+- **.key()** (5 connections) — `tools/libretro_frontend.py`
+- **.run()** (4 connections) — `tools/libretro_frontend.py`
+- **2026-11-18 — Web : commandes tactiles et plein écran sur iPhone** (4 connections) — `CHANGELOG.md`
+- **.tap()** (3 connections) — `tools/libretro_frontend.py`
+- **A12 — la première cible de livraison est validée sur du vrai matériel, et le paquet macOS n'enregistrait rien (2026-09-01)** (3 connections) — `CHANGELOG.md`
+- **.write_ppm()** (2 connections) — `tools/libretro_frontend.py`
+- **Et les trois avertissements que personne ne voyait plus** (2 connections) — `CHANGELOG.md`
+- **._audio()** (1 connections) — `tools/libretro_frontend.py`
+- **.close()** (1 connections) — `tools/libretro_frontend.py`
+- **._env()** (1 connections) — `tools/libretro_frontend.py`
+- **.frame_hash()** (1 connections) — `tools/libretro_frontend.py`
+- **._input()** (1 connections) — `tools/libretro_frontend.py`
+- **.lit_fraction()** (1 connections) — `tools/libretro_frontend.py`
+- **.load_state()** (1 connections) — `tools/libretro_frontend.py`
+- **.save_state()** (1 connections) — `tools/libretro_frontend.py`
+- **._set_led()** (1 connections) — `tools/libretro_frontend.py`
+- **.set_option()** (1 connections) — `tools/libretro_frontend.py`
+- **.set_port()** (1 connections) — `tools/libretro_frontend.py`
+- **._video()** (1 connections) — `tools/libretro_frontend.py`
+- **Toucher bref à (fx, fy), fractions 0..1 de l'image montrée.** (1 connections) — `tools/libretro_frontend.py`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (8 shared connections)
-- [Community 1](Community_1.md) (8 shared connections)
-- [Community 42](Community_42.md) (4 shared connections)
-- [Community 214](Community_214.md) (3 shared connections)
-- [Community 449](Community_449.md) (3 shared connections)
-- [Community 366](Community_366.md) (2 shared connections)
-- [Community 138](Community_138.md) (2 shared connections)
+- [Community 247](Community_247.md) (7 shared connections)
+- [Community 417](Community_417.md) (4 shared connections)
 - [Community 130](Community_130.md) (2 shared connections)
-- [Community 333](Community_333.md) (1 shared connections)
-- [Community 11](Community_11.md) (1 shared connections)
-- [Community 204](Community_204.md) (1 shared connections)
-- [Community 30](Community_30.md) (1 shared connections)
+- [Community 568](Community_568.md) (1 shared connections)
+- [Community 213](Community_213.md) (1 shared connections)
+- [Community 377](Community_377.md) (1 shared connections)
+- [Community 114](Community_114.md) (1 shared connections)
+- [Community 68](Community_68.md) (1 shared connections)
+- [Community 101](Community_101.md) (1 shared connections)
+- [Community 153](Community_153.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
-- `src/audio/MidiOutHost.hpp`
-- `src/gui/App.hpp`
+- `tools/libretro_frontend.py`
 
 ## Audit Trail
 
-- EXTRACTED: 32 (57%)
-- INFERRED: 24 (43%)
+- EXTRACTED: 33 (75%)
+- INFERRED: 11 (25%)
 - AMBIGUOUS: 0 (0%)
 
 ---

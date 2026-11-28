@@ -1,40 +1,37 @@
 # Community 368
 
-> 13 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **StateArchive** (14 connections) — `src/core/StateArchive.hpp`
-- **.raw()** (5 connections) — `src/core/StateArchive.hpp`
-- **podVec()** (4 connections) — `src/core/StateArchive.hpp`
-- **.vec()** (3 connections) — `src/core/StateArchive.hpp`
-- **arr()** (2 connections) — `src/core/StateArchive.hpp`
-- **operator()()** (2 connections) — `src/core/StateArchive.hpp`
-- **.fail()** (2 connections) — `src/core/StateArchive.hpp`
-- **.loading()** (1 connections) — `src/core/StateArchive.hpp`
-- **.ok()** (1 connections) — `src/core/StateArchive.hpp`
-- **.saveSize()** (1 connections) — `src/core/StateArchive.hpp`
-- **in_** (1 connections) — `src/core/StateArchive.hpp`
-- **inEnd_** (1 connections) — `src/core/StateArchive.hpp`
-- **out_** (1 connections) — `src/core/StateArchive.hpp`
+- **isize** (13 connections)
+- **.guardNr()** (9 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.dumpLogBuffer()** (7 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.disassembleRange()** (7 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.isDisabled()** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.disassembleRecorded()** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.isEnabled()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.ignore()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.loggedInstructions()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **string** (4 connections)
+- **ostream** (2 connections)
+- **pair** (1 connections)
 
 ## Relationships
 
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 460](Community_460.md) (3 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 419](Community_419.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
-- [Community 298](Community_298.md) (1 shared connections)
+- [Community 121](Community_121.md) (13 shared connections)
+- [Community 152](Community_152.md) (8 shared connections)
+- [Community 134](Community_134.md) (5 shared connections)
+- [Community 593](Community_593.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/StateArchive.hpp`
+- `extern/moira/Moira/MoiraDebugger.h`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (92%)
-- INFERRED: 2 (8%)
+- EXTRACTED: 40 (87%)
+- INFERRED: 6 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

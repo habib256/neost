@@ -5,7 +5,7 @@
 ## Key Concepts
 
 - **Rig** (16 connections) — `tests/ikbd_sci_framing_logic.cpp`
-- **testIkbdSciFraming()** (10 connections) — `tests/ikbd_sci_framing_logic.cpp`
+- **testIkbdSciFraming()** (11 connections) — `tests/ikbd_sci_framing_logic.cpp`
 - **index()** (3 connections) — `tests/ikbd_sci_framing_logic.cpp`
 - **.cr()** (3 connections) — `tests/ikbd_sci_framing_logic.cpp`
 - **tick()** (3 connections) — `tests/ikbd_sci_framing_logic.cpp`
@@ -25,10 +25,8 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 41](Community_41.md) (3 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 41](Community_41.md) (5 shared connections)
 
 ## Source Files
 
@@ -36,8 +34,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 28 (93%)
-- INFERRED: 2 (7%)
+- EXTRACTED: 28 (90%)
+- INFERRED: 3 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

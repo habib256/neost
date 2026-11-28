@@ -8,10 +8,10 @@
 - **.printDebug()** (2 connections) — `src/audio/Mt32Synth.cpp`
 - **.showLCDMessage()** (1 connections) — `src/audio/Mt32Synth.cpp`
 - **ReportHandler** (1 connections)
+- **va_list** (1 connections)
 - **foreignSysexSeen_** (1 connections) — `src/audio/Mt32Synth.cpp`
 - **last_** (1 connections) — `src/audio/Mt32Synth.cpp`
 - **repeats_** (1 connections) — `src/audio/Mt32Synth.cpp`
-- **va_list** (1 connections)
 
 ## Relationships
 

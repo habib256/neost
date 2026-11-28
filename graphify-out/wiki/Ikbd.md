@@ -1,6 +1,6 @@
 # Ikbd
 
-> God node · 211 connections · `src/io/Ikbd.hpp`
+> God node · 212 connections · `src/io/Ikbd.hpp`
 
 **Community:** [Community 7](Community_7.md)
 
@@ -26,6 +26,7 @@
 - responseDelayBits_ `EXTRACTED`
 - rxWaitingDelay_ `EXTRACTED`
 - rxOverrun_ `EXTRACTED`
+- rdrReadClock_ `EXTRACTED`
 - ovrn_ `EXTRACTED`
 - srRead_ `EXTRACTED`
 - aciaClockInitialized_ `EXTRACTED`
@@ -33,8 +34,7 @@
 - txEnableInt_ `EXTRACTED`
 - tdre_ `EXTRACTED`
 - txData_ `EXTRACTED`
-- txShiftData_ `EXTRACTED`
-- *…and 95 more `defines` connection(s) not listed (lowest-degree first to go)*
+- *…and 96 more `defines` connection(s) not listed (lowest-degree first to go)*
 
 ### method
 - .dispatchCommand() `EXTRACTED`

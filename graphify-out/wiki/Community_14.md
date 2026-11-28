@@ -1,63 +1,59 @@
 # Community 14
 
-> 161 nodes
+> 99 nodes
 
 ## Key Concepts
 
-- **Bus** (186 connections) — `src/core/Bus.hpp`
-- **Bus.cpp** (98 connections) — `src/core/Bus.cpp`
-- **.aciaOddByteIsChipCycle()** (7 connections) — `src/core/Bus.hpp`
-- **.mmioTable()** (7 connections) — `src/core/Bus.hpp`
-- **.mmioWrite8()** (7 connections) — `src/core/Bus.hpp`
-- **A31 — le dispatch MMIO devient une table, et sa cohérence est PROUVÉE (2026-08-28)** (7 connections) — `CHANGELOG.md`
-- **MmioSlot** (6 connections) — `src/core/Bus.hpp`
-- **.mmioSlotFor()** (6 connections) — `src/core/Bus.hpp`
-- **.mmioRead8()** (6 connections) — `src/core/Bus.hpp`
-- **.write8Slow()** (6 connections) — `src/core/Bus.hpp`
-- **.ramSpaceRead8()** (6 connections) — `src/core/Bus.hpp`
-- **.mmioTableSize()** (5 connections) — `src/core/Bus.hpp`
-- **.steVpaVoidWait()** (5 connections) — `src/core/Bus.hpp`
+- **Bus** (196 connections) — `src/core/Bus.hpp`
 - **.megaSteCacheFlush()** (5 connections) — `src/core/Bus.hpp`
-- **.megaSteCacheable()** (5 connections) — `src/core/Bus.hpp`
-- **.wrMfp()** (4 connections) — `src/core/Bus.hpp`
-- **.rdStePads()** (4 connections) — `src/core/Bus.hpp`
-- **.mmioTableDisjoint()** (4 connections) — `src/core/Bus.hpp`
-- **.dmaRead8()** (4 connections) — `src/core/Bus.hpp`
-- **.dmaWrite8()** (4 connections) — `src/core/Bus.hpp`
-- **.videoRead16At()** (4 connections) — `src/core/Bus.hpp`
-- **.ramCycleRead16Slow()** (4 connections) — `src/core/Bus.hpp`
-- **.ioAccessWidth()** (4 connections) — `src/core/Bus.hpp`
-- **size_t** (4 connections)
-- **IoSpan** (3 connections) — `src/core/Bus.cpp`
-- *... and 136 more nodes in this community*
+- **.read16Slow()** (3 connections) — `src/core/Bus.hpp`
+- **.wrMsteCtl()** (3 connections) — `src/core/Bus.hpp`
+- **.lastMissingIoFault()** (3 connections) — `src/core/Bus.hpp`
+- **.megaSteCacheFlushIfEnabled()** (3 connections) — `src/core/Bus.hpp`
+- **Blitter** (2 connections) — `src/core/Bus.hpp`
+- **Cpu68k** (2 connections) — `src/core/Bus.hpp`
+- **DmaSound** (2 connections) — `src/core/Bus.hpp`
+- **Fdc** (2 connections) — `src/core/Bus.hpp`
+- **GemdosHd** (2 connections) — `src/core/Bus.hpp`
+- **Ikbd** (2 connections) — `src/core/Bus.hpp`
+- **Isp1160** (2 connections) — `src/core/Bus.hpp`
+- **Mfp** (2 connections) — `src/core/Bus.hpp`
+- **MidiAcia** (2 connections) — `src/core/Bus.hpp`
+- **Ne2000** (2 connections) — `src/core/Bus.hpp`
+- **Rtc** (2 connections) — `src/core/Bus.hpp`
+- **Scc** (2 connections) — `src/core/Bus.hpp`
+- **Shifter** (2 connections) — `src/core/Bus.hpp`
+- **YM2149** (2 connections) — `src/core/Bus.hpp`
+- **.lastMissingIoPc()** (2 connections) — `src/core/Bus.hpp`
+- **.lastMissingIoVector()** (2 connections) — `src/core/Bus.hpp`
+- **.lastVoidWritePc()** (2 connections) — `src/core/Bus.hpp`
+- **.megaSteCacheEnabled()** (2 connections) — `src/core/Bus.hpp`
+- **.megaSteReset()** (2 connections) — `src/core/Bus.hpp`
+- *... and 74 more nodes in this community*
 
 ## Relationships
 
-- [Community 203](Community_203.md) (43 shared connections)
-- [Community 102](Community_102.md) (30 shared connections)
-- [Community 394](Community_394.md) (7 shared connections)
-- [Community 449](Community_449.md) (7 shared connections)
-- [Community 4](Community_4.md) (5 shared connections)
-- [Community 460](Community_460.md) (4 shared connections)
+- [Community 607](Community_607.md) (40 shared connections)
+- [Community 102](Community_102.md) (17 shared connections)
+- [Community 203](Community_203.md) (13 shared connections)
+- [Community 429](Community_429.md) (8 shared connections)
+- [Community 319](Community_319.md) (7 shared connections)
+- [Community 594](Community_594.md) (6 shared connections)
+- [Community 288](Community_288.md) (5 shared connections)
+- [Community 149](Community_149.md) (5 shared connections)
+- [Community 449](Community_449.md) (4 shared connections)
 - [Community 244](Community_244.md) (4 shared connections)
-- [Community 470](Community_470.md) (2 shared connections)
-- [Community 444](Community_444.md) (2 shared connections)
-- [Community 252](Community_252.md) (2 shared connections)
-- [Community 441](Community_441.md) (2 shared connections)
-- [Community 20](Community_20.md) (1 shared connections)
+- [Community 480](Community_480.md) (4 shared connections)
+- [Community 522](Community_522.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `DEV.md`
-- `docs/MAME_DIVERGENCES.md`
-- `src/core/Bus.cpp`
 - `src/core/Bus.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 326 (88%)
-- INFERRED: 43 (12%)
+- EXTRACTED: 217 (96%)
+- INFERRED: 8 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

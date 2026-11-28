@@ -1,36 +1,51 @@
 # Community 211
 
-> 12 nodes
+> 71 nodes
 
 ## Key Concepts
 
-- **opendst_memdiff.py** (9 connections) — `tools/opendst_memdiff.py`
-- **main()** (7 connections) — `tools/opendst_memdiff.py`
-- **Server** (6 connections) — `tools/opendst_memdiff.py`
-- **runs()** (3 connections) — `tools/opendst_memdiff.py`
-- **.cmd()** (3 connections) — `tools/opendst_memdiff.py`
-- **.dump()** (3 connections) — `tools/opendst_memdiff.py`
-- **parse_hex()** (2 connections) — `tools/opendst_memdiff.py`
-- **read_word()** (2 connections) — `tools/opendst_memdiff.py`
-- **.close()** (2 connections) — `tools/opendst_memdiff.py`
-- **.__init__()** (1 connections) — `tools/opendst_memdiff.py`
-- **Image mémoire [start, start+length) par tranches de 4 Ko.** (1 connections) — `tools/opendst_memdiff.py`
-- **Adresses triées → plages contiguës [(début, fin)].** (1 connections) — `tools/opendst_memdiff.py`
+- **retro_vfs_interface** (75 connections) — `src/libretro/libretro.h`
+- **truncate** (2 connections) — `src/libretro/libretro.h`
+- **retro_vfs_close_t** (1 connections)
+- **retro_vfs_closedir_t** (1 connections)
+- **retro_vfs_copy_begin_t** (1 connections)
+- **retro_vfs_copy_close_t** (1 connections)
+- **retro_vfs_copy_step_t** (1 connections)
+- **retro_vfs_dirent_get_name_t** (1 connections)
+- **retro_vfs_dirent_is_dir_t** (1 connections)
+- **retro_vfs_dirent_stat_t** (1 connections)
+- **retro_vfs_flush_t** (1 connections)
+- **retro_vfs_get_mtime_t** (1 connections)
+- **retro_vfs_get_path_t** (1 connections)
+- **retro_vfs_identity_t** (1 connections)
+- **retro_vfs_map_t** (1 connections)
+- **retro_vfs_mkdir_t** (1 connections)
+- **retro_vfs_open_t** (1 connections)
+- **retro_vfs_opendir_t** (1 connections)
+- **retro_vfs_read_at_t** (1 connections)
+- **retro_vfs_read_t** (1 connections)
+- **retro_vfs_readdir_t** (1 connections)
+- **retro_vfs_remove_t** (1 connections)
+- **retro_vfs_rename_t** (1 connections)
+- **retro_vfs_seek_t** (1 connections)
+- **retro_vfs_set_mtime_t** (1 connections)
+- *... and 46 more nodes in this community*
 
 ## Relationships
 
-- [Community 26](Community_26.md) (2 shared connections)
-- [Community 227](Community_227.md) (2 shared connections)
-- [Community 18](Community_18.md) (2 shared connections)
+- [Community 218](Community_218.md) (3 shared connections)
+- [Community 444](Community_444.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
+- [Community 63](Community_63.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/opendst_memdiff.py`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 75 (99%)
+- INFERRED: 1 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

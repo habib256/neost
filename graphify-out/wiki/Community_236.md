@@ -1,12 +1,10 @@
 # Community 236
 
-> 10 nodes
+> 8 nodes
 
 ## Key Concepts
 
 - **Rig** (9 connections) — `tests/mfp_pulse_logic.cpp`
-- **testMfpPulse()** (3 connections) — `tests/mfp_pulse_logic.cpp`
-- **.advance()** (2 connections) — `tests/mfp_pulse_logic.cpp`
 - **.Rig()** (1 connections) — `tests/mfp_pulse_logic.cpp`
 - **Mfp** (1 connections)
 - **Scheduler** (1 connections)
@@ -17,8 +15,8 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
@@ -26,8 +24,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 11 (92%)
-- INFERRED: 1 (8%)
+- EXTRACTED: 9 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

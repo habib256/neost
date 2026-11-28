@@ -1,50 +1,46 @@
 # Community 470
 
-> 14 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **DEV.md — Guide développeur NeoST** (12 connections) — `DEV.md`
-- **MmuGlue** (7 connections) — `src/core/MmuGlue.hpp`
-- **Architecture** (7 connections) — `DEV.md`
-- **Modèle d'horloge (`Machine::runFrame`)** (5 connections) — `DEV.md`
-- **Le CPU (Moira, cycle-exact)** (4 connections) — `DEV.md`
-- **busHzExact()** (3 connections) — `src/core/Pacing.hpp`
-- **Pièges matériels (vérifiés en debug)** (3 connections) — `DEV.md`
-- **.lastRunFrames()** (2 connections) — `src/core/Machine.hpp`
-- **Ajouter / modifier un composant** (2 connections) — `DEV.md`
-- **.read8()** (1 connections) — `src/core/MmuGlue.hpp`
-- **.write8()** (1 connections) — `src/core/MmuGlue.hpp`
-- **memConfig_** (1 connections) — `src/core/MmuGlue.hpp`
-- **Builds spécialisés** (1 connections) — `DEV.md`
-- **Chaîne d'interruption (subtile)** (1 connections) — `DEV.md`
+- **Frontend & outillage** (20 connections) — `docs/IMPLEMENTED.md`
+- **Ce qui est implémenté — par sous-système** (18 connections) — `docs/IMPLEMENTED.md`
+- **resolveAssign()** (5 connections) — `src/io/JoystickInput.hpp`
+- **composeAux()** (4 connections) — `src/io/JoystickInput.hpp`
+- **.activeHeight()** (3 connections) — `src/core/Shifter.hpp`
+- **readAux()** (3 connections) — `src/io/JoystickInput.hpp`
+- **Bus, bus error & cartouches de diagnostic** (3 connections) — `docs/IMPLEMENTED.md`
+- **FPU MC68881** (3 connections) — `docs/IMPLEMENTED.md`
+- **Ports, cartouches et clés** (3 connections) — `docs/IMPLEMENTED.md`
+- **.activeTop()** (2 connections) — `src/core/Shifter.hpp`
+- **Réseau — extensions NeoST (INACTIVES par défaut, cf. `docs/EXTENSIONS.md`)** (1 connections) — `docs/IMPLEMENTED.md`
 
 ## Relationships
 
-- [Community 14](Community_14.md) (2 shared connections)
-- [Community 10](Community_10.md) (2 shared connections)
+- [Community 91](Community_91.md) (4 shared connections)
+- [Community 88](Community_88.md) (3 shared connections)
+- [Community 119](Community_119.md) (3 shared connections)
+- [Community 5](Community_5.md) (2 shared connections)
 - [Community 160](Community_160.md) (2 shared connections)
-- [Community 247](Community_247.md) (2 shared connections)
-- [Community 67](Community_67.md) (2 shared connections)
-- [Community 203](Community_203.md) (2 shared connections)
-- [Community 9](Community_9.md) (2 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 103](Community_103.md) (1 shared connections)
-- [Community 20](Community_20.md) (1 shared connections)
-- [Community 489](Community_489.md) (1 shared connections)
+- [Community 101](Community_101.md) (2 shared connections)
+- [Community 394](Community_394.md) (1 shared connections)
+- [Community 64](Community_64.md) (1 shared connections)
+- [Community 203](Community_203.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
+- [Community 149](Community_149.md) (1 shared connections)
+- [Community 218](Community_218.md) (1 shared connections)
 
 ## Source Files
 
-- `DEV.md`
-- `src/core/Machine.hpp`
-- `src/core/MmuGlue.hpp`
-- `src/core/Pacing.hpp`
+- `docs/IMPLEMENTED.md`
+- `src/core/Shifter.hpp`
+- `src/io/JoystickInput.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 20 (54%)
-- INFERRED: 17 (46%)
+- EXTRACTED: 26 (49%)
+- INFERRED: 27 (51%)
 - AMBIGUOUS: 0 (0%)
 
 ---

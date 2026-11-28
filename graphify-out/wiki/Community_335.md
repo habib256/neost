@@ -1,16 +1,18 @@
 # Community 335
 
-> 13 nodes
+> 15 nodes
 
 ## Key Concepts
 
 - **NeoST** (10 connections) — `README.md`
+- **👉 **[habib256.github.io/neost](https://habib256.github.io/neost/)**** (4 connections) — `README.md`
 - **Get it** (2 connections) — `README.md`
-- **👉 **[habib256.github.io/neost](https://habib256.github.io/neost/)**** (2 connections) — `README.md`
 - **Try it right now — nothing to install** (2 connections) — `README.md`
+- **A course link, without writing code** (1 connections) — `README.md`
 - **Build from source** (1 connections) — `README.md`
 - **Documentation** (1 connections) — `README.md`
 - **GEMDOS drives for pages embedding NeoST** (1 connections) — `README.md`
+- **Hard disks in the browser (C:, D:)** (1 connections) — `README.md`
 - **Licence** (1 connections) — `README.md`
 - **Real hardware is the reference** (1 connections) — `README.md`
 - **ROMs** (1 connections) — `README.md`
@@ -28,7 +30,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 13 (100%)
+- EXTRACTED: 15 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

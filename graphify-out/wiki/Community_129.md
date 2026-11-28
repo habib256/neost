@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **CrtParams** (21 connections) — `src/gui/CrtParams.h`
+- **CrtParams** (22 connections) — `src/gui/CrtParams.h`
 - **ShadowMask** (5 connections) — `src/gui/CrtParams.h`
 - **.setParams()** (2 connections) — `src/gui/CrtEffectStack.h`
 - **barrel** (1 connections) — `src/gui/CrtParams.h`
@@ -30,9 +30,10 @@
 - [Community 43](Community_43.md) (2 shared connections)
 - [Community 1](Community_1.md) (1 shared connections)
 - [Community 21](Community_21.md) (1 shared connections)
-- [Community 325](Community_325.md) (1 shared connections)
+- [Community 204](Community_204.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
-- [Community 124](Community_124.md) (1 shared connections)
+- [Community 470](Community_470.md) (1 shared connections)
+- [Community 283](Community_283.md) (1 shared connections)
 
 ## Source Files
 
@@ -41,8 +42,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 25 (96%)
-- INFERRED: 1 (4%)
+- EXTRACTED: 25 (93%)
+- INFERRED: 2 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

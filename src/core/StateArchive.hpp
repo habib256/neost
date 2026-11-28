@@ -73,13 +73,11 @@ public:
     // 2026-09-01 en faisant énumérer les instanciations PAR LE COMPILATEUR (un
     // `static_assert(!std::is_class_v<T>)` temporaire) — et non au grep, qui avait
     // laissé passer le plus gros :
-    //   · moira::Registers      → 9 bool dans `sr`   → fixBools (Cpu68k.cpp)
     //   · Scc::Chn              → 3 bool             → fixBools (Scc.hpp)
     //   · Fpu                   → 2 bool             → fixBools (Fpu.hpp)
     //   · StePads               → 3 bool             → fixBools (StePads.hpp)
     //   · Bus::MegaSteCache     → aucun bool         → rien à faire
     //   · Scu                   → aucun bool         → rien à faire
-    //   · moira::PrefetchQueue  → aucun bool         → rien à faire
     // Tout le reste est un `std::array` de scalaires. ⚠ Un agrégat AJOUTÉ plus tard
     // ne sera signalé par rien : refaire l'énumération au compilateur le jour où l'on
     // sérialise une nouvelle struct.

@@ -279,11 +279,16 @@ the Falcon, which NeoST does not. NeoST exists to be opened up.
 
 ## Where it stands
 
-**0.6.5.** EmuTOS and TOS 1.02/1.06/1.62/2.06 boot; all three Field Service diagnostic
+**Latest release: 0.6.5.** EmuTOS and TOS 1.02/1.06/1.62/2.06 boot; all three Field Service diagnostic
 cartridges pass their internal tests, the Mega STE's Q suite 12/12. Demanding games and
 demos run: Enchanted Land, Super Hang-On, Lethal Xcess, The Cuddly Demos, No Cooper,
 Closure. The whole thing is validated by a tiered regression suite ending in a
 pixel-exact comparison against the Hatari oracle (`tools/run_all.py --tier full`).
+
+**Development version 0.7.0** uses Dirk W. Hoffmann’s Moira 6.0b1. The four
+existing Atari machines still run a 68000. This build writes v69 save states.
+To resume a v68 state, open it with the build that created it.
+[Migration and verification results](docs/MIGRATION_MOIRA_070.md)
 
 The long game is **cycle accuracy** — borders and the fine timing of games and demos.
 What is left, honestly listed: [`TODO.md`](TODO.md) and

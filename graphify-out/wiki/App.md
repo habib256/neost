@@ -58,9 +58,10 @@
 - DesktopPointer `EXTRACTED`
 - Rewind `EXTRACTED`
 - CrtParams `EXTRACTED`
-- map `EXTRACTED`
+- Model `EXTRACTED`
 - CompDiskCatalog `EXTRACTED`
 - SymbolTable `EXTRACTED`
+- map `EXTRACTED`
 - EnvOverrides `EXTRACTED`
 - [Ikbd](Ikbd.md) `EXTRACTED`
 - GLFWwindow `EXTRACTED`
@@ -71,7 +72,6 @@
 - NatBackend `EXTRACTED`
 - MidiOutHost `EXTRACTED`
 - MidiInHost `EXTRACTED`
-- Mt32Synth `EXTRACTED`
 - *…and 10 more `references` connection(s) not listed (lowest-degree first to go)*
 
 ---

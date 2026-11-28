@@ -1,27 +1,48 @@
 # Community 391
 
-> 5 nodes
+> 24 nodes
 
 ## Key Concepts
 
-- **15. E/S : imprimante, joypads, joysticks — `Machine.cpp`, `StePads.hpp`, `JoystickInput.hpp` ↔ `psg.c`, `printer.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Refermés** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Cache** (35 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **.validCount()** (7 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **.numLongs()** (7 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **u32** (7 connections)
+- **.invalidateLine()** (6 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **.first()** (6 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **.longword()** (5 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **.tag()** (4 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **.Cache()** (2 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **.numLines()** (2 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **.refresh()** (2 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **.setEmulated()** (2 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **.burstEnabled()** (1 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **.caarDidChange()** (1 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **.cacrDidChange()** (1 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **active** (1 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **capacity** (1 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **data** (1 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **emulated** (1 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **frozen** (1 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **layout** (1 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **tags** (1 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **valid** (1 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **Moira** (1 connections)
 
 ## Relationships
 
-- [Community 397](Community_397.md) (1 shared connections)
+- [Community 141](Community_141.md) (23 shared connections)
+- [Community 448](Community_448.md) (3 shared connections)
+- [Community 622](Community_622.md) (3 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
+- `extern/moira/Moira/Cache/Cache.h`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 53 (84%)
+- INFERRED: 10 (16%)
 - AMBIGUOUS: 0 (0%)
 
 ---

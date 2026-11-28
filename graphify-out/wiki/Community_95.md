@@ -1,6 +1,6 @@
 # Community 95
 
-> 27 nodes
+> 30 nodes
 
 ## Key Concepts
 
@@ -16,29 +16,29 @@
 - **.setMotorOn()** (13 connections) — `src/io/Fdc.hpp`
 - **.cmdComplete()** (13 connections) — `src/io/Fdc.hpp`
 - **.spinWaitDelay()** (12 connections) — `src/io/Fdc.hpp`
-- **.bufferAdd()** (11 connections) — `src/io/Fdc.hpp`
 - **.updateRestore()** (11 connections) — `src/io/Fdc.hpp`
 - **.updateSeek()** (11 connections) — `src/io/Fdc.hpp`
 - **.updateStep()** (11 connections) — `src/io/Fdc.hpp`
 - **.updateFloppyDensity()** (10 connections) — `src/io/Fdc.hpp`
+- **.fifoPush()** (10 connections) — `src/io/Fdc.hpp`
 - **.bufferSize()** (9 connections) — `src/io/Fdc.hpp`
 - **.nextIndexCycles()** (7 connections) — `src/io/Fdc.hpp`
+- **.fifoPull()** (7 connections) — `src/io/Fdc.hpp`
 - **.bufferReset()** (7 connections) — `src/io/Fdc.hpp`
+- **.emitSound()** (7 connections) — `src/io/Fdc.hpp`
 - **.verifyTrack()** (6 connections) — `src/io/Fdc.hpp`
 - **.updateMotorStop()** (6 connections) — `src/io/Fdc.hpp`
 - **.canHandleDensity()** (5 connections) — `src/io/Fdc.hpp`
-- **.bufferReadByte()** (4 connections) — `src/io/Fdc.hpp`
-- **.bufferReadTiming()** (4 connections) — `src/io/Fdc.hpp`
-- *... and 2 more nodes in this community*
+- *... and 5 more nodes in this community*
 
 ## Relationships
 
-- [Community 149](Community_149.md) (28 shared connections)
-- [Community 12](Community_12.md) (26 shared connections)
-- [Community 24](Community_24.md) (16 shared connections)
-- [Community 121](Community_121.md) (16 shared connections)
-- [Community 170](Community_170.md) (6 shared connections)
-- [Community 412](Community_412.md) (5 shared connections)
+- [Community 149](Community_149.md) (50 shared connections)
+- [Community 12](Community_12.md) (31 shared connections)
+- [Community 24](Community_24.md) (19 shared connections)
+- [Community 406](Community_406.md) (2 shared connections)
+- [Community 78](Community_78.md) (1 shared connections)
+- [Community 138](Community_138.md) (1 shared connections)
 
 ## Source Files
 
@@ -46,8 +46,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 48 (25%)
-- INFERRED: 141 (75%)
+- EXTRACTED: 58 (29%)
+- INFERRED: 144 (71%)
 - AMBIGUOUS: 0 (0%)
 
 ---

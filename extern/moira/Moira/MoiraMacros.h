@@ -22,7 +22,7 @@
 
 #define CYCLES_68000(c) { }
 #define CYCLES_68010(c) { }
-#define CYCLES_68020(c) { if constexpr (C == Core::C68020) sync((c) + cp); }
+#define CYCLES_68020(c) { if constexpr (C == Core::C68020) syncCyclePenalty((c) + budget.penalty); }
 
 #else
 
@@ -32,7 +32,7 @@
 
 #define CYCLES_68000(c) { if constexpr (C == Core::C68000) sync(c); }
 #define CYCLES_68010(c) { if constexpr (C == Core::C68010) sync(c); }
-#define CYCLES_68020(c) { if constexpr (C == Core::C68020) sync((c) + cp); }
+#define CYCLES_68020(c) { if constexpr (C == Core::C68020) syncCyclePenalty((c) + budget.penalty); }
 
 #endif
 
@@ -61,9 +61,6 @@
 #define CYCLES_IM(b0,b1,b2,w0,w1,w2,l0,l1,l2)     CYCLES_MBWL(Mode::IM,   b0,b1,b2,w0,w1,w2,l0,l1,l2)
 #define CYCLES_IP(b0,b1,b2,w0,w1,w2,l0,l1,l2)     CYCLES_MBWL(Mode::IP,   b0,b1,b2,w0,w1,w2,l0,l1,l2)
 
-// NEOST_IPLFETCH : reconnaissance IPL différée (port fidèle WinUAE ipl_fetch_next).
-// pollIpl() ≡ reg.ipl = ipl quand la feature est OFF (iplDelay4 == 0, défaut).
-// Edit dans le sous-module → cf. docs/MOIRA_WINUAE_CONVERGENCE.md (clobbérable).
 #define POLL_IPL pollIpl()
 
 #define REVERSE_8(x) (u8)(((x) * 0x0202020202ULL & 0x010884422010ULL) % 1023)

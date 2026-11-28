@@ -1,16 +1,14 @@
 # Community 122
 
-> 25 nodes
+> 22 nodes
 
 ## Key Concepts
 
 - **testAcsiCapacityLimit()** (14 connections) — `tests/acsi_capacity_limit_logic.cpp`
-- **testAcsiLargeBounds()** (11 connections) — `tests/acsi_large_bounds_logic.cpp`
-- **.mount()** (7 connections) — `src/io/Acsi.hpp`
+- **testAcsiLargeBounds()** (12 connections) — `tests/acsi_large_bounds_logic.cpp`
 - **.selectTarget()** (6 connections) — `src/io/Acsi.hpp`
 - **send()** (6 connections) — `tests/acsi_capacity_limit_logic.cpp`
 - **sense()** (6 connections) — `tests/acsi_large_bounds_logic.cpp`
-- **.writeToDisk()** (5 connections) — `src/io/Acsi.hpp`
 - **command()** (5 connections) — `tests/acsi_large_bounds_logic.cpp`
 - **Checks** (4 connections) — `tests/acsi_capacity_limit_logic.cpp`
 - **Checks** (4 connections) — `tests/acsi_large_bounds_logic.cpp`
@@ -23,7 +21,6 @@
 - **read32()** (2 connections) — `tests/acsi_capacity_limit_logic.cpp`
 - **.equal()** (2 connections) — `tests/acsi_large_bounds_logic.cpp`
 - **main()** (2 connections) — `tests/acsi_large_bounds_logic.cpp`
-- **string** (1 connections)
 - **count** (1 connections) — `tests/acsi_capacity_limit_logic.cpp`
 - **failures** (1 connections) — `tests/acsi_capacity_limit_logic.cpp`
 - **initializer_list** (1 connections)
@@ -32,11 +29,12 @@
 
 ## Relationships
 
-- [Community 103](Community_103.md) (20 shared connections)
-- [Community 460](Community_460.md) (10 shared connections)
-- [Community 212](Community_212.md) (2 shared connections)
-- [Community 252](Community_252.md) (2 shared connections)
-- [Community 175](Community_175.md) (1 shared connections)
+- [Community 102](Community_102.md) (10 shared connections)
+- [Community 103](Community_103.md) (9 shared connections)
+- [Community 369](Community_369.md) (6 shared connections)
+- [Community 212](Community_212.md) (3 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 444](Community_444.md) (1 shared connections)
 
 ## Source Files
 
@@ -46,8 +44,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 40 (61%)
-- INFERRED: 26 (39%)
+- EXTRACTED: 35 (60%)
+- INFERRED: 23 (40%)
 - AMBIGUOUS: 0 (0%)
 
 ---

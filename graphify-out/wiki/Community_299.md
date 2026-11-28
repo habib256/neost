@@ -1,61 +1,60 @@
 # Community 299
 
-> 21 nodes
+> 28 nodes
 
 ## Key Concepts
 
-- **.setIPL()** (8 connections) — `extern/moira/Moira/Moira.h`
-- **.setMegaSteSpeed()** (7 connections) — `src/core/Cpu68k.hpp`
-- **Ce que NeoST attend du cœur** (6 connections) — `docs/CPU_SWAP_GATE.md`
-- **.pollIpl()** (5 connections) — `extern/moira/Moira/Moira.h`
-- **.serialize()** (5 connections) — `src/core/Cpu68k.hpp`
-- **.setIplDelay()** (5 connections) — `extern/moira/Moira/Moira.h`
-- **Membres internes touchés** (5 connections) — `docs/CPU_SWAP_GATE.md`
-- **2. Carte des divergences (source-grounded, 3 agents — file:line des DEUX côtés)** (5 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **Patch local : `NEOST_IPLFETCH` (reconnaissance IPL différée)** (5 connections) — `extern/moira/NEOST_VENDOR.md`
-- **.applyIplFetchConfig()** (4 connections) — `src/core/Cpu68k.cpp`
-- **.commitIpl()** (4 connections) — `src/core/Cpu68k.cpp`
-- **.serializeState()** (4 connections) — `src/core/Cpu68k.cpp`
-- **4. Le 68000, hors du cœur** (4 connections) — `docs/HYPOTHESES_ST.md`
-- **.megaSte16Mhz()** (3 connections) — `src/core/Cpu68k.hpp`
-- **.irqDeliverable()** (3 connections) — `src/core/Cpu68k.cpp`
-- **Autostart `--auto`, EMail 1.56, chasse aux bugs (2026-10-24)** (3 connections) — `CHANGELOG.md`
-- **StateArchive** (2 connections)
-- **Instruction garée (coroutine de `runFrame`)** (2 connections) — `docs/CPU_SWAP_GATE.md`
-- **Mots du bus CPU pour la vidéo** (2 connections) — `docs/CPU_SWAP_GATE.md`
-- **Méthodes surchargées** (1 connections) — `docs/CPU_SWAP_GATE.md`
-- **Patches de NeoST, à retrouver dans POM68K** (1 connections) — `docs/CPU_SWAP_GATE.md`
+- **FatImage** (18 connections) — `tests/selftest_logic.cpp`
+- **AudioPacer** (17 connections) — `src/core/Pacing.hpp`
+- **testPacing()** (14 connections) — `tests/selftest_logic.cpp`
+- **testFloppyCatalog()** (9 connections) — `tests/selftest_logic.cpp`
+- **cpuHz()** (6 connections) — `src/core/Pacing.hpp`
+- **.folder()** (5 connections) — `tests/selftest_logic.cpp`
+- **.pick()** (5 connections) — `tests/selftest_logic.cpp`
+- **.entry()** (4 connections) — `tests/selftest_logic.cpp`
+- **.fat()** (4 connections) — `tests/selftest_logic.cpp`
+- **.file()** (4 connections) — `tests/selftest_logic.cpp`
+- **.samplesForFrame()** (3 connections) — `src/core/Pacing.hpp`
+- **frameNanos()** (3 connections) — `src/core/Pacing.hpp`
+- **.autoFolder()** (3 connections) — `tests/selftest_logic.cpp`
+- **.FatImage()** (3 connections) — `tests/selftest_logic.cpp`
+- **.applyMasterVolume()** (2 connections) — `src/core/Pacing.hpp`
+- **.clampStereo()** (2 connections) — `src/core/Pacing.hpp`
+- **.reset()** (2 connections) — `src/core/Pacing.hpp`
+- **.volumeSmoothed()** (2 connections) — `src/core/Pacing.hpp`
+- **.bootable()** (2 connections) — `tests/selftest_logic.cpp`
+- **.carry()** (1 connections) — `src/core/Pacing.hpp`
+- **kMaxAdjust** (1 connections) — `src/core/Pacing.hpp`
+- **kServoDivisor** (1 connections) — `src/core/Pacing.hpp`
+- **volSmooth_** (1 connections) — `src/core/Pacing.hpp`
+- **img** (1 connections) — `tests/selftest_logic.cpp`
+- **kData** (1 connections) — `tests/selftest_logic.cpp`
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
-- [Community 9](Community_9.md) (9 shared connections)
-- [Community 27](Community_27.md) (8 shared connections)
-- [Community 16](Community_16.md) (4 shared connections)
-- [Community 314](Community_314.md) (3 shared connections)
-- [Community 247](Community_247.md) (2 shared connections)
-- [Community 205](Community_205.md) (2 shared connections)
-- [Community 54](Community_54.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 271](Community_271.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
-- [Community 15](Community_15.md) (1 shared connections)
+- [Community 41](Community_41.md) (15 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 430](Community_430.md) (2 shared connections)
+- [Community 61](Community_61.md) (1 shared connections)
+- [Community 239](Community_239.md) (1 shared connections)
+- [Community 228](Community_228.md) (1 shared connections)
+- [Community 282](Community_282.md) (1 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
+- [Community 406](Community_406.md) (1 shared connections)
+- [Community 197](Community_197.md) (1 shared connections)
+- [Community 117](Community_117.md) (1 shared connections)
+- [Community 145](Community_145.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/CPU_SWAP_GATE.md`
-- `docs/HYPOTHESES_ST.md`
-- `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- `extern/moira/Moira/Moira.h`
-- `extern/moira/NEOST_VENDOR.md`
-- `src/core/Cpu68k.cpp`
-- `src/core/Cpu68k.hpp`
+- `src/core/Pacing.hpp`
+- `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 36 (59%)
-- INFERRED: 25 (41%)
+- EXTRACTED: 54 (72%)
+- INFERRED: 21 (28%)
 - AMBIGUOUS: 0 (0%)
 
 ---

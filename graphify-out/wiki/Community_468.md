@@ -1,35 +1,37 @@
 # Community 468
 
-> 7 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **1. MFP 68901 — `Mfp.cpp` ↔ `mfp.c`, `rs232.c`** (6 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Refermés** (4 connections) — `docs/HATARI_DIVERGENCES.md`
-- **.firingDue()** (3 connections) — `src/core/Scheduler.hpp`
-- **Écarts voulus — ne pas réaligner** (3 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — USART (`Mfp.cpp` ↔ `rs232.c`, MAME `mc68901.cpp`)** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **StateArchive** (14 connections) — `src/core/StateArchive.hpp`
+- **.raw()** (5 connections) — `src/core/StateArchive.hpp`
+- **.vec()** (3 connections) — `src/core/StateArchive.hpp`
+- **arr()** (2 connections) — `src/core/StateArchive.hpp`
+- **operator()()** (2 connections) — `src/core/StateArchive.hpp`
+- **.fail()** (2 connections) — `src/core/StateArchive.hpp`
+- **.loading()** (1 connections) — `src/core/StateArchive.hpp`
+- **.ok()** (1 connections) — `src/core/StateArchive.hpp`
+- **.saveSize()** (1 connections) — `src/core/StateArchive.hpp`
+- **in_** (1 connections) — `src/core/StateArchive.hpp`
+- **inEnd_** (1 connections) — `src/core/StateArchive.hpp`
+- **out_** (1 connections) — `src/core/StateArchive.hpp`
 
 ## Relationships
 
-- [Community 39](Community_39.md) (2 shared connections)
-- [Community 392](Community_392.md) (1 shared connections)
-- [Community 397](Community_397.md) (1 shared connections)
-- [Community 58](Community_58.md) (1 shared connections)
-- [Community 394](Community_394.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 102](Community_102.md) (6 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 386](Community_386.md) (1 shared connections)
+- [Community 298](Community_298.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
-- `src/core/Scheduler.hpp`
+- `src/core/StateArchive.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (54%)
-- INFERRED: 6 (46%)
+- EXTRACTED: 21 (95%)
+- INFERRED: 1 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

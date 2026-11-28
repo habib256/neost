@@ -14,19 +14,11 @@
 
 ## Le cap
 
-**Le meilleur émulateur d'Atari ST, STE et Mega STE — puis le TT et le Falcon.** Le prochain
-jalon est l'échange du cœur 68000 par le Moira de POM68K. Ce fichier est rangé par rapport
-à lui, en trois temps :
-
-1. **Avant l'échange** (§ 1 à 8) — tout ce que le cœur actuel n'empêche pas de fermer :
-   les puces autres que le CPU, la logithèque, le harnais, la livraison, **un cœur
-   libretro** (§ 7, frontière préparée, carte dans [`docs/LIBRETRO.md`](docs/LIBRETRO.md)). Et d'abord **le
-   filet** (§ 2) : plus NeoST est mesuré finement avant l'échange, plus l'échange se juge
-   vite et sans débat.
-2. **L'échange** (§ 9) — ce qui touche l'intérieur du cœur est **gelé** : un patch de plus
-   dans `extern/moira` est un patch de plus à retrouver dans POM68K.
-3. **Le TT et le Falcon** (§ 10) — rien ne s'intègre avant que l'auteur déclare le cœur
-   prêt ; d'ici là, de la préparation seulement.
+**Le meilleur émulateur d'Atari ST, STE et Mega STE — puis le TT et le Falcon.** La branche
+0.7.0 intègre le Moira officiel de Dirk W. Hoffmann en mode 68000. Les §§ 1 à 8 couvrent
+les validations du port et le travail par sous-système, dont le filet (§ 2) et le cœur
+libretro (§ 7). Le § 9 suit les questions ouvertes du 68000. Le § 10 prépare les machines
+TT et Falcon.
 
 Quatre exigences ne changent pas d'un temps à l'autre : **le silicium pour référence**
 (chaque affirmation porte son grade, [`CLAUDE.md`](CLAUDE.md) ; Hatari et MAME sont des
@@ -35,11 +27,14 @@ dont chaque verdict dit son échelon**, **des paquets livrables sans surprise**.
 
 **État au 2026-11-10** : contrat logiciel Mega STE tenu et gardé (suite Q du diagnostic Field
 Service 12/12, grade C) ; les écarts que les fiches MFP, WD1772, ACIA et SCC suffisaient à
-trancher sont corrigés ; **banc fx68k : 34 variantes sur 48 en accord** cycle à cycle, bus errors et double faute comprises (§ 9) ;
-blitter, GLUE et lecture du faisceau confrontés aux RTL sur STE (§ 5) ; 27 parcours de jeu
-contre Hatari, et la collection entière inchangée en A/B après les corrections du jour.
+trancher sont corrigés ; blitter, GLUE et lecture du faisceau confrontés aux RTL sur STE
+(§ 5) ; 27 parcours de jeu contre Hatari et la collection entière inchangée en A/B
+après les corrections du jour. Le banc fx68k donnait 34 accords sur 48 variantes.
 **Pas d'accès à un vrai ST** : les ⏸ matériel passent par les relevés de tiers, les
 documents primaires, les ROM et le RTL épinglé.
+
+**Port 0.7.0** : **banc fx68k : 37 variantes sur 48 en accord** cycle à cycle, bus errors
+et doubles fautes comprises (§ 9).
 
 ### Règles de tenue de ce fichier
 
@@ -67,45 +62,40 @@ documents primaires, les ROM et le RTL épinglé.
 
 ---
 
-## 1. 🎯 Plan avant l'échange
+## 1. 🎯 Plan de travail
 
-Cinq lots, dans l'ordre. Un lot n'attend pas la fin du précédent, mais c'est l'ordre des
-arbitrages : le filet passe avant la fidélité, parce qu'il sert aussi à juger chaque
-correction de fidélité.
+Le filet de validation sert à juger le port et les prochaines corrections de fidélité.
 
 | Lot | But | Items (titre → §) | Prio |
 |-----|-----|-------------------|------|
-| **0. Jalons de version** | Trois versions sur le cœur actuel, auxquelles tout se compare ensuite | **0.6.3** publiée le 2026-11-10 (`355b6c0`) ; **0.6.4** publiée le 2026-11-11 (`bf5d61f`) ; **0.6.5** juste avant l'intégration du cœur POM68K → § 7 | P1 |
-| **1. Filet** | Que l'échange se juge en une commande, sur plus que 57 étalons | Porte élargie, Mega STE 16 MHz, banc fx68k étendu et sort des `.state` (refus explicite) : faits → § 2 | P1 |
+| **0. Jalons de version** | Conserver les versions de référence de l’ancien cœur | **0.6.3** publiée le 2026-11-10 (`355b6c0`) ; **0.6.4** publiée le 2026-11-11 (`bf5d61f`) ; **0.6.5** publiée le 2026-11-13 (`b3ced823`) → § 7 | P1 |
+| **1. Filet** | Comparer la base et le candidat avec le même corpus | Porte élargie, Mega STE 16 MHz, banc fx68k étendu et sort des `.state` (refus explicite) : faits → § 2 | P1 |
 | **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | restes MFP de la fiche et WS3 en attente de source, DMA disque relevé et reporté au § 9 → § 3 ; étalons `rtl` en cours de ligne, relevés de tiers, documents primaires → § 5 | P2 |
 | **3. Logithèque** | Plus aucun plantage que le vrai matériel n'aurait pas | TOS 2.06 UK jugé (course réelle de la ROM), parcours étendus (son, STE, parties longues) → § 4 | P2 |
 | **4. Livrable** | Ce qui sert l'utilisateur sans toucher à l'émulation | Pilotes EtherNEC, EWeb par le NAT → § 6-7 | P2 |
 | **5. Terrain du TT/Falcon** | Préparer sans rien intégrer | Oracle et fiches TT/Falcon → § 10 ; A32 et inventaire faits (`docs/HYPOTHESES_ST.md`) | P2 |
-| **6. Cœur libretro** *(proposé)* | Qu'un cœur libretro soit un adaptateur mince, pas une cinquième copie des frontends | Frontière préparée le 2026-11-24 (états rapides et autonomes, recettes partagées, cœur PIC) ; reste l'adaptateur lui-même → § 7, carte : [`docs/LIBRETRO.md`](docs/LIBRETRO.md) | P2 |
-
-**À ne pas entreprendre avant l'échange** : tout ce qui est au § 9 (prise d'IPL, IACK,
-amont Moira, `g_cur`, points chauds du cœur). Le reste est P3, ou attend une ressource
-externe (⏸).
+| **6. Cœur libretro** | Valider l’adaptateur et les usages du frontend | Contrôles du module, du netplay et de la reprise d’état → § 7, carte : [`docs/LIBRETRO.md`](docs/LIBRETRO.md) | P2 |
 
 ---
 
 ## 2. 🥅 Le filet de l'échange
 
-Ce qui doit exister **avant** le commit de l'échange pour qu'il se juge sur pièces.
-Procédure et contrat → [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md). La porte rejoue
-**57 étalons, 29 parcours (28 de compatibilité et le diagnostic Magic Pockets), la collection en ST, STE et Mega STE, et 42 sondes Mega STE**
-(8, 16 et 16 MHz + cache : blitter/IRQ, bus/cache, DMA disquette, blit sur ses propres registres).
+Procédure et contrat → [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md). La référence
+enregistrée sur le parent du portage (`4bccff0f`) couvre **68 étalons, 29 parcours**
+(28 de compatibilité et le diagnostic Magic Pockets), **294 scénarios de collection**
+en ST, STE et Mega STE et **42 sondes Mega STE** (8, 16 et 16 MHz + cache).
 
-- **Enregistrer la référence** · P1 ⏸ cœur — `cpu_swap_gate.py --record` sur le commit de la
-  **0.6.5**, dernier avant l'échange, palier `full` vert. La référence ne se versionne pas.
+Le [bilan du port](docs/MIGRATION_MOIRA_070.md) donne le détail des 353 scénarios
+strictement identiques et des 80 écarts attribués. La référence historique du tag
+0.6.5 couvre 422 scénarios. Les questions de mesure sur matériel restent au § 9.
 
 ---
 
 ## 3. 🔬 Fidélité au silicium, hors cœur — par puce
 
-Sources citées à leurs épingles : `tools/setup_silicon_refs.sh`. Une fiche ou un schéma se lit
-avant le RTL, et un `rtl` ne tranche qu'à titre provisoire (règles →
-[`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)). Les écarts de sévérité basse déjà
+Sources citées à leurs épingles : `tools/setup_silicon_refs.sh`. Le matériel tranche là où
+il est mesuré. Les documents primaires et le RTL épinglé aident à expliquer les écarts
+selon leur provenance ([`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)). Les écarts de sévérité basse déjà
 consignés face à Hatari restent dans [`docs/HATARI_DIVERGENCES.md`](docs/HATARI_DIVERGENCES.md) ;
 ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même → § 9.
 
@@ -523,8 +513,8 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 - **Passe d'usage interactif du GUI** · P2 ⏸ session humaine — le GUI n'est couvert que par une
   capture au boot et trois assertions d'arguments. Même famille qu'A12.
 - **Notarisation macOS** · P2 ⏸ décision (99 $/an) — `.app` scellé ad hoc ; manque Developer ID.
-  Signature du `.zip` Windows écartée (token HSM, SmartScreen = un clic). ⚠ Le JIT de POM68K
-  touchera au hardened runtime (`allow-jit`). → `docs/RELEASE.md`
+  Signature du `.zip` Windows écartée (token HSM, SmartScreen = un clic). Une future
+  intégration JIT nécessitera de revoir le hardened runtime (`allow-jit`). → `docs/RELEASE.md`
 
 ### Cœur libretro
 
@@ -601,7 +591,7 @@ Rien ici ne touche l'intérieur du cœur 68000 : faisable avant l'échange.
 ## 8. 🧱 Dette d'architecture et de documentation
 
 Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANGELOG.md`.
-Ce qui touche `src/core/Cpu68k.cpp` attend l'échange → § 9.
+Le suivi de `src/core/Cpu68k.cpp` figure au § 9.
 
 - **A38 — tenue du registre** · P3 ⭘ — `tools/fast_guards.json` inscrit les étapes du palier
   `fast` ; consigner chaque vrai déclenchement dans le commit qui corrige le défaut.
@@ -628,39 +618,28 @@ Ce qui touche `src/core/Cpu68k.cpp` attend l'échange → § 9.
 
 ---
 
-## 9. 🔁 L'échange du cœur — gelé jusque-là
+## 9. 🔁 Validation du port et questions du 68000
 
-Le Moira de POM68K (68000/030/040, JIT déterministe, FPU et MMU intégrés, cycle-exact en
-68000) remplace `extern/moira`. **Rien ne s'intègre avant que l'auteur le déclare prêt.**
-Tout ce qui suit touche l'intérieur du cœur ou son enveloppe `NeostMoira` : y travailler
-maintenant, c'est travailler deux fois. Exception : un défaut qui casse un titre se corrige,
-et **sa ligne s'ajoute à la table des patches** de `docs/CPU_SWAP_GATE.md`.
+La migration vers le Moira officiel est engagée depuis le 28 novembre 2026.
+Le pin, le contrat et les contrôles sont dans le [plan](docs/MIGRATION_MOIRA_070.md).
+Pour chaque import, comparer les adaptations à `extern/moira/NEOST_VENDOR.md` et
+rejouer la porte (§ 2), le palier `full`, le banc Moira, les parcours et le déterminisme.
+Remesurer le budget temps réel (`run_perfbench.py --budget`) et les points chauds.
 
-### Le jour de l'échange
+### Questions du 68000
 
-1. Filet du § 2 en place, **0.6.5 publiée**, référence enregistrée sur son commit.
-2. `diff` de `extern/moira/Moira` contre le cœur POM68K en mode 68000 : chaque patch de
-   `extern/moira/NEOST_VENDOR.md` s'y retrouve, ou son absence est expliquée.
-3. `cpu_swap_gate.py --check`, palier `full`, `run_moira_runner.sh`, parcours de jeu,
-   `run_determinism.py`. Un écart se localise par trace et se tranche au banc fx68k : plus
-   proche de fx68k, c'est un progrès consigné ; sinon une régression du cœur.
-4. Remesurer : budget temps réel par cible (`run_perfbench.py --budget`), profil callgrind.
+Sur les 48 variantes du cœur nu, 11 restent en écart avec fx68k @ `0602ee46`. Les
+captures RTL localisent les accès et leur date. Les mesures sur matériel et les
+documents primaires gouvernent la décision. Le microcode transcrit et fx68k
+partagent leurs sources. La chaîne MFP→IPL de NeoST ajoute ses propres délais.
+→ [Banc fx68k](docs/FX68K_BENCH.md)
 
-### Questions du 68000, à requalifier sur le nouveau cœur
-
-Écarts du **cœur Moira nu** contre fx68k @ `0602ee46`, avec Hatari et le microcode pour autres
-témoins : tous grade D, Moira non modifié. La chaîne MFP→IPL de NeoST ajoute ses propres délais :
-requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs/FX68K_BENCH.md`](docs/FX68K_BENCH.md).
-
-- **Les 14 variantes hors accord au banc fx68k** · P1 ⏸ cœur — à rejouer telles quelles sur POM68K :
-  le verdict de chacune dit si l'échange est un progrès.
-- **Bus error : état laissé par la faute** · P2 ⏸ cœur · [D] ×2 — fx68k et Hatari s'accordent contre
-  Moira : An incrémenté ou décrémenté par `(An)+`/`-(An)` fautifs, PC empilé de 2 plus loin sur
-  ces modes, PC proche du JMP (et non sa cible) quand le préfetch faute. L'entrée de l'exception
-  dure 2 cycles de moins chez Moira (fx68k seul). → `docs/FX68K_BENCH.md` § *Bus error et double faute*
-- **Pile impaire à l'empilement d'un TRAP** · P2 ⏸ cœur · [B] + [D] ×2 — Moira écrit la trame à
-  l'adresse arrondie et poursuit ; fx68k, Hatari et la fiche (§ 6.3.9) lèvent l'erreur d'adresse
-  puis s'arrêtent en double faute. Aucun titre connu n'en dépend ; à vérifier d'abord sur POM68K.
+- **Bus error sur TAS : date d'entrée de trame** · P2 ⏸ matériel · [D] — le banc
+  concorde sur la trame empilée. Du cycle fautif à la première écriture, fx68k
+  compte 15 cycles et NeoST 14. À relever sur un 68000 réel.
+- **Double faute sur pile impaire : date de HALT** · P2 ⏸ matériel · [D] — NeoST
+  s'arrête désormais sans écrire de trame arrondie. Restent à mesurer les cycles
+  amorcés, la notification de la première faute et la date de HALT.
 - **Prise d'IPL sur ST et Mega STE** · P2 ⏸ source · [F] — le STE suit fx68k + GSTMCU pour la HBL et pour la VBL pendant un STOP, depuis le 2026-11-04 (`docs/STCPU_BENCH.md`). Hors STOP, sa VBL se prend au dispatch, car l'intro de Vroom `[cr Elite]` se fige sinon ; ST et Mega STE gardent le commit
   d'Hatari, faute de modèle du GLUE. Le 68000 est le même : à trancher par un modèle du GLUE ST, ou un relevé de tiers.
 - **Latence IACK MFP** · P1 ⏸ matériel · [D] 12 cycles — capturer CLK CPU/MFP, IACK et les
@@ -674,27 +653,20 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
 - **FPU MC68881 : silicium, et qui calcule** · P3 ⏸ cœur · [D] — bit à bit avec Hatari, transcendantes
   FPSP comprises, mais le 68881 réel calcule en CORDIC : dernier bit non garanti, « zéro »
   non normalisé après underflow à vérifier. `k` dynamique fixé à 17 (le dialogue
-  périphérique ne transmet pas Dn). POM68K apporte son FPU : décider si `src/io/Fpu.cpp`
-  garde son arithmétique pour le 68881 en périphérique du Mega STE, ou la lui délègue.
+  périphérique ne transmet pas Dn). Moira officiel intègre une FPU de coprocesseur. Évaluer la délégation en conservant
+  le dialogue du 68881 en périphérique du Mega STE (`src/io/Fpu.cpp`).
 
 - **DMA disque : le CPU ne cède que le bus** · P3 ⏸ cœur · [D] — relevé sur fx68k le 2026-11-11
   (`Vfx68k_bench --br`) : BR → BG en 2 cycles, puis le 68000 ne bloque qu'à son prochain accès ; un
   prêt de 32 cycles pendant un MULU ne le retarde pas du tout. NeoST facture 32 cycles par rafale
-  sans condition (`Fdc::billDmaCycles`). À porter avec l'arbitrage de bus du nouveau cœur, comme
-  le recouvrement du blitter. → `docs/FX68K_BENCH.md` § *Bus prêté à un DMA*
+  sans condition (`Fdc::billDmaCycles`). À éprouver dans l'arbitrage du bus de NeoST. → `docs/FX68K_BENCH.md` § *Bus prêté à un DMA*
 
-### Dette qui attend le nouveau cœur
+### Dette de l'adaptateur CPU
 
-- **Suivre l'amont Moira** · P3 ⏸ cœur — 10 commits non portés depuis le pin (68020/68030, vAmiga,
-  empreinte mémoire) ; rien pour le 68000 hormis DIVU/DIVS, porté. Sans objet si POM68K les
-  a déjà : à vérifier au `diff`. Rejouer `tools/run_moira_runner.sh` et le banc fx68k à
-  chaque patch du cœur.
-- **A33 — vrai parallélisme CPU** · P3 ⏸ cœur — retirer les accès à `g_cur` (≈ 215 dans
-  `src/core/Cpu68k.cpp`). Rien ne le réclame, sauf l'anneau MIDI en un seul processus. À
-  faire dans la réécriture de l'enveloppe, pas avant.
-- **Points chauds du cœur** · P3 ⏸ cœur — `NeostMoira::sync`, le dispatch de l'ordonnanceur et
-  les lectures bus pèsent 39 % du profil ; le JIT change la donne. Refaire le profil après
-  l'échange avant d'y toucher. → `docs/PERFORMANCE.md` § 6
+- **A33 — vrai parallélisme CPU** · P3 ⭘ — retirer les accès à `g_cur`
+  dans `src/core/Cpu68k.cpp` pour l'anneau MIDI en un seul processus.
+- **Points chauds du cœur** · P3 ⭘ — remesurer `NeostMoira::sync`, le dispatch
+  de l'ordonnanceur et les lectures bus avec le cœur officiel. → `docs/PERFORMANCE.md` § 6
 
 ---
 

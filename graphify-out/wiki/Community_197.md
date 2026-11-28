@@ -1,38 +1,62 @@
 # Community 197
 
-> 13 nodes
+> 74 nodes
 
 ## Key Concepts
 
-- **InterruptRig** (10 connections) — `tests/scc_mie_ius_logic.cpp`
-- **testSccMieIus()** (10 connections) — `tests/scc_mie_ius_logic.cpp`
-- **scc_mie_ius_logic.cpp** (6 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.master()** (5 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.write()** (5 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.control()** (4 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.receive()** (4 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.InterruptRig()** (3 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.pop()** (3 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.read()** (3 connections) — `tests/scc_mie_ius_logic.cpp`
-- **main()** (2 connections) — `tests/scc_mie_ius_logic.cpp`
-- **Scc** (1 connections)
-- **scc** (1 connections) — `tests/scc_mie_ius_logic.cpp`
+- **FpuEnv** (96 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **FpuEnv.cpp** (37 connections) — `extern/moira/Moira/FPU/FpuEnv.cpp`
+- **.zero()** (21 connections) — `extern/moira/Moira/FPU/MFloat80.h`
+- **.roundPack()** (17 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **.addSub()** (15 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **.raiseFlags()** (15 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **Num** (14 connections) — `extern/moira/Moira/FPU/FpuEnv.cpp`
+- **.scale()** (13 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **.infinity()** (13 connections) — `extern/moira/Moira/FPU/MFloat80.h`
+- **.mul()** (12 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **.toIeee()** (12 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **.propagateNaN()** (11 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **.div()** (11 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **.sqrt()** (11 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **.roundToInt()** (11 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **.isZero()** (10 connections) — `extern/moira/Moira/FPU/FpuEnv.cpp`
+- **.invalidOperation()** (9 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **.toInteger()** (9 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **.isInf()** (9 connections) — `extern/moira/Moira/FPU/FpuEnv.cpp`
+- **.le()** (7 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **.fromFloat()** (7 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **.fromDouble()** (7 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **compare()** (7 connections) — `extern/moira/Moira/FPU/FpuEnv.cpp`
+- **pack()** (7 connections) — `extern/moira/Moira/FPU/FpuEnv.cpp`
+- **.lt()** (6 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- *... and 49 more nodes in this community*
 
 ## Relationships
 
-- [Community 460](Community_460.md) (3 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 182](Community_182.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 63](Community_63.md) (48 shared connections)
+- [Community 202](Community_202.md) (28 shared connections)
+- [Community 183](Community_183.md) (17 shared connections)
+- [Community 34](Community_34.md) (10 shared connections)
+- [Community 264](Community_264.md) (9 shared connections)
+- [Community 41](Community_41.md) (5 shared connections)
+- [Community 131](Community_131.md) (2 shared connections)
+- [Community 155](Community_155.md) (1 shared connections)
+- [Community 555](Community_555.md) (1 shared connections)
+- [Community 299](Community_299.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 383](Community_383.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/scc_mie_ius_logic.cpp`
+- `extern/moira/Moira/FPU/FpuEnv.cpp`
+- `extern/moira/Moira/FPU/FpuEnv.h`
+- `extern/moira/Moira/FPU/MFloat80.h`
+- `extern/moira/Moira/FPU/Wide.h`
 
 ## Audit Trail
 
-- EXTRACTED: 30 (94%)
-- INFERRED: 2 (6%)
+- EXTRACTED: 265 (84%)
+- INFERRED: 50 (16%)
 - AMBIGUOUS: 0 (0%)
 
 ---

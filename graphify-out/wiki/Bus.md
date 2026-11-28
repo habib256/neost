@@ -1,6 +1,6 @@
 # Bus
 
-> God node · 186 connections · `src/core/Bus.hpp`
+> God node · 196 connections · `src/core/Bus.hpp`
 
 **Community:** [Community 14](Community_14.md)
 
@@ -32,7 +32,7 @@
 - watchBase_ `EXTRACTED`
 - gemdos `EXTRACTED`
 - scc `EXTRACTED`
-- *…and 30 more `defines` connection(s) not listed (lowest-degree first to go)*
+- *…and 33 more `defines` connection(s) not listed (lowest-degree first to go)*
 
 ### method
 - .mmuTranslate() `EXTRACTED`
@@ -41,10 +41,10 @@
 - .busFaultN() `EXTRACTED`
 - .busFault() `EXTRACTED`
 - .romWindowSize() `EXTRACTED`
+- .busFaultNSlow() `EXTRACTED`
 - .loadTos() `EXTRACTED`
 - .steCartWindow() `EXTRACTED`
 - .buildIoFault() `EXTRACTED`
-- .busFaultNSlow() `EXTRACTED`
 - .mmioWrite8() `EXTRACTED`
 - .mmioTable() `EXTRACTED`
 - .aciaOddByteIsChipCycle() `EXTRACTED`
@@ -55,7 +55,7 @@
 - .mmioRead8() `EXTRACTED`
 - .mmioSlotFor() `EXTRACTED`
 - .peekMapped8() `EXTRACTED`
-- *…and 88 more `method` connection(s) not listed (lowest-degree first to go)*
+- *…and 95 more `method` connection(s) not listed (lowest-degree first to go)*
 
 ### references
 - [vector](vector.md) `EXTRACTED`
@@ -76,7 +76,7 @@
 - Rtc `EXTRACTED`
 - MidiAcia `EXTRACTED`
 - Cpu68k `EXTRACTED`
-- [GemdosHd](GemdosHd.md) `EXTRACTED`
+- GemdosHd `EXTRACTED`
 - Scc `EXTRACTED`
 - *…and 5 more `references` connection(s) not listed (lowest-degree first to go)*
 

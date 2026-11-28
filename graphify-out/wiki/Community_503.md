@@ -1,0 +1,36 @@
+# Community 503
+
+> 10 nodes
+
+## Key Concepts
+
+- **FoundSector** (14 connections) — `src/io/IpfImage.cpp`
+- **bitPos** (1 connections) — `src/io/IpfImage.cpp`
+- **fuzzy** (1 connections) — `src/io/IpfImage.cpp`
+- **hasFuzzy** (1 connections) — `src/io/IpfImage.cpp`
+- **hasTiming** (1 connections) — `src/io/IpfImage.cpp`
+- **id** (1 connections) — `src/io/IpfImage.cpp`
+- **idCrc** (1 connections) — `src/io/IpfImage.cpp`
+- **readTimeUs** (1 connections) — `src/io/IpfImage.cpp`
+- **status** (1 connections) — `src/io/IpfImage.cpp`
+- **timing** (1 connections) — `src/io/IpfImage.cpp`
+
+## Relationships
+
+- [Community 143](Community_143.md) (3 shared connections)
+- [Community 217](Community_217.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+
+## Source Files
+
+- `src/io/IpfImage.cpp`
+
+## Audit Trail
+
+- EXTRACTED: 14 (100%)
+- INFERRED: 0 (0%)
+- AMBIGUOUS: 0 (0%)
+
+---
+
+*Part of the graphify knowledge wiki. See [index](index.md) to navigate.*

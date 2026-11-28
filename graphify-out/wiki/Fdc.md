@@ -1,6 +1,6 @@
 # Fdc
 
-> God node · 191 connections · `src/io/Fdc.hpp`
+> God node · 210 connections · `src/io/Fdc.hpp`
 
 **Community:** [Community 12](Community_12.md)
 
@@ -12,6 +12,9 @@
 
 ### defines
 - soundSink_ `EXTRACTED`
+- mediaResolver_ `EXTRACTED`
+- recreateFilter_ `EXTRACTED`
+- kForeignGen `EXTRACTED`
 - acsi_ `EXTRACTED`
 - dmaFixture_ `EXTRACTED`
 - dmaFixtureBuf_ `EXTRACTED`
@@ -28,10 +31,7 @@
 - stepDir_ `EXTRACTED`
 - side_ `EXTRACTED`
 - driveSel_ `EXTRACTED`
-- irqSignal_ `EXTRACTED`
-- command_ `EXTRACTED`
-- commandState_ `EXTRACTED`
-- *…and 30 more `defines` connection(s) not listed (lowest-degree first to go)*
+- *…and 34 more `defines` connection(s) not listed (lowest-degree first to go)*
 
 ### method
 - .loadImage() `EXTRACTED`
@@ -40,6 +40,7 @@
 - .updateReadSectors() `EXTRACTED`
 - .updateReadAddress() `EXTRACTED`
 - .updateWriteTrack() `EXTRACTED`
+- .restoreMedia() `EXTRACTED`
 - .nextSectorID() `EXTRACTED`
 - .updateStr() `EXTRACTED`
 - .updateWriteSectors() `EXTRACTED`
@@ -49,20 +50,20 @@
 - .setMotorOn() `EXTRACTED`
 - .cmdComplete() `EXTRACTED`
 - .writeBack() `EXTRACTED`
-- .mediaSelfTest() `EXTRACTED`
+- .nowCyc() `EXTRACTED`
+- .read8() `EXTRACTED`
+- .write8() `EXTRACTED`
 - .spinWaitDelay() `EXTRACTED`
-- .readTrackST() `EXTRACTED`
-- .writeTrackBuffer() `EXTRACTED`
-- .acsiDmaTransfer() `EXTRACTED`
-- *…and 112 more `method` connection(s) not listed (lowest-degree first to go)*
+- *…and 126 more `method` connection(s) not listed (lowest-degree first to go)*
 
 ### references
 - [vector](vector.md) `EXTRACTED`
 - Acsi `EXTRACTED`
+- function `EXTRACTED`
+- string `EXTRACTED`
 - [Bus](Bus.md) `EXTRACTED`
 - YM2149 `EXTRACTED`
 - [Mfp](Mfp.md) `EXTRACTED`
-- function `EXTRACTED`
 - Scheduler `EXTRACTED`
 
 ---

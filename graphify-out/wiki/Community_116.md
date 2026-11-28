@@ -5,7 +5,7 @@
 ## Key Concepts
 
 - **Rig** (19 connections) — `tests/ikbd_output_capacity_logic.cpp`
-- **testIkbdOutputCapacity()** (14 connections) — `tests/ikbd_output_capacity_logic.cpp`
+- **testIkbdOutputCapacity()** (15 connections) — `tests/ikbd_output_capacity_logic.cpp`
 - **.advance()** (4 connections) — `tests/ikbd_output_capacity_logic.cpp`
 - **.data()** (4 connections) — `tests/ikbd_output_capacity_logic.cpp`
 - **.due()** (4 connections) — `tests/ikbd_output_capacity_logic.cpp`
@@ -29,9 +29,8 @@
 
 ## Relationships
 
+- [Community 41](Community_41.md) (5 shared connections)
 - [Community 102](Community_102.md) (4 shared connections)
-- [Community 41](Community_41.md) (3 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
@@ -39,8 +38,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 42 (98%)
-- INFERRED: 1 (2%)
+- EXTRACTED: 42 (95%)
+- INFERRED: 2 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

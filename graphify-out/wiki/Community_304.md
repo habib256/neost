@@ -1,32 +1,48 @@
 # Community 304
 
-> 9 nodes
+> 22 nodes
 
 ## Key Concepts
 
-- **StxStats** (12 connections) — `src/io/IpfImage.hpp`
-- **dataCrcErrors** (1 connections) — `src/io/IpfImage.hpp`
-- **deleted** (1 connections) — `src/io/IpfImage.hpp`
-- **fuzzySectors** (1 connections) — `src/io/IpfImage.hpp`
-- **idCrcErrors** (1 connections) — `src/io/IpfImage.hpp`
-- **noData** (1 connections) — `src/io/IpfImage.hpp`
-- **sectors** (1 connections) — `src/io/IpfImage.hpp`
-- **timedSectors** (1 connections) — `src/io/IpfImage.hpp`
-- **tracks** (1 connections) — `src/io/IpfImage.hpp`
+- **Stream** (11 connections) — `tests/ipf_image_logic.cpp`
+- **sectorStream()** (11 connections) — `tests/ipf_image_logic.cpp`
+- **Kind** (9 connections) — `tests/ipf_image_logic.cpp`
+- **buildIpf()** (9 connections) — `tests/ipf_image_logic.cpp`
+- **be32()** (7 connections) — `tests/ipf_image_logic.cpp`
+- **record()** (7 connections) — `tests/ipf_image_logic.cpp`
+- **.elem()** (6 connections) — `tests/ipf_image_logic.cpp`
+- **.end()** (6 connections) — `tests/ipf_image_logic.cpp`
+- **setBe32()** (4 connections) — `tests/ipf_image_logic.cpp`
+- **.bytes()** (4 connections) — `tests/ipf_image_logic.cpp`
+- **.sync3()** (3 connections) — `tests/ipf_image_logic.cpp`
+- **.weak()** (3 connections) — `tests/ipf_image_logic.cpp`
+- **.fill()** (2 connections) — `tests/ipf_image_logic.cpp`
+- **size_t** (1 connections)
+- **BAD_DATA_CRC** (1 connections) — `tests/ipf_image_logic.cpp`
+- **BAD_ID_CRC** (1 connections) — `tests/ipf_image_logic.cpp`
+- **DELETED** (1 connections) — `tests/ipf_image_logic.cpp`
+- **NO_DAM** (1 connections) — `tests/ipf_image_logic.cpp`
+- **NORMAL** (1 connections) — `tests/ipf_image_logic.cpp`
+- **WEAK** (1 connections) — `tests/ipf_image_logic.cpp`
+- **cells** (1 connections) — `tests/ipf_image_logic.cpp`
+- **d** (1 connections) — `tests/ipf_image_logic.cpp`
 
 ## Relationships
 
-- [Community 143](Community_143.md) (3 shared connections)
+- [Community 102](Community_102.md) (13 shared connections)
+- [Community 163](Community_163.md) (7 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 201](Community_201.md) (1 shared connections)
 - [Community 172](Community_172.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/IpfImage.hpp`
+- `tests/ipf_image_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 12 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 54 (95%)
+- INFERRED: 3 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

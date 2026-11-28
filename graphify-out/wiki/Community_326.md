@@ -1,33 +1,48 @@
 # Community 326
 
-> 7 nodes
+> 29 nodes
 
 ## Key Concepts
 
-- **.isValidExt()** (12 connections) — `extern/moira/Moira/Moira.h`
-- **Moira::dasmBitFieldDn()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmCas()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmCas2()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmChkCmp2()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmDivl()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmMull()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **retro_disk_control_ext_callback** (21 connections) — `src/libretro/libretro.h`
+- **retro_disk_control_callback** (15 connections) — `src/libretro/libretro.h`
+- **retro_add_image_index_t** (2 connections)
+- **retro_get_eject_state_t** (2 connections)
+- **retro_get_image_index_t** (2 connections)
+- **retro_get_num_images_t** (2 connections)
+- **retro_replace_image_index_t** (2 connections)
+- **retro_set_eject_state_t** (2 connections)
+- **retro_set_image_index_t** (2 connections)
+- **retro_get_image_label_t** (1 connections)
+- **retro_get_image_path_t** (1 connections)
+- **retro_set_initial_image_t** (1 connections)
+- **add_image_index** (1 connections) — `src/libretro/libretro.h`
+- **get_eject_state** (1 connections) — `src/libretro/libretro.h`
+- **get_image_index** (1 connections) — `src/libretro/libretro.h`
+- **get_num_images** (1 connections) — `src/libretro/libretro.h`
+- **replace_image_index** (1 connections) — `src/libretro/libretro.h`
+- **set_eject_state** (1 connections) — `src/libretro/libretro.h`
+- **set_image_index** (1 connections) — `src/libretro/libretro.h`
+- **add_image_index** (1 connections) — `src/libretro/libretro.h`
+- **get_eject_state** (1 connections) — `src/libretro/libretro.h`
+- **get_image_index** (1 connections) — `src/libretro/libretro.h`
+- **get_image_label** (1 connections) — `src/libretro/libretro.h`
+- **get_image_path** (1 connections) — `src/libretro/libretro.h`
+- **get_num_images** (1 connections) — `src/libretro/libretro.h`
+- *... and 4 more nodes in this community*
 
 ## Relationships
 
-- [Community 2](Community_2.md) (24 shared connections)
-- [Community 314](Community_314.md) (4 shared connections)
-- [Community 0](Community_0.md) (1 shared connections)
-- [Community 16](Community_16.md) (1 shared connections)
+- [Community 83](Community_83.md) (2 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/Moira.h`
-- `extern/moira/Moira/MoiraDasm_cpp.h`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 30 (83%)
-- INFERRED: 6 (17%)
+- EXTRACTED: 36 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

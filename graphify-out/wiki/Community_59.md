@@ -1,11 +1,11 @@
 # Community 59
 
-> 54 nodes
+> 55 nodes
 
 ## Key Concepts
 
 - **EmuFiber** (30 connections) — `src/core/EmuFiber.hpp`
-- **EmuFiber.cpp** (28 connections) — `src/core/EmuFiber.cpp`
+- **EmuFiber.cpp** (29 connections) — `src/core/EmuFiber.cpp`
 - **impl_** (16 connections) — `src/core/EmuFiber.hpp`
 - **emuFiberEnter()** (6 connections) — `src/core/EmuFiber.cpp`
 - **.abort()** (5 connections) — `src/core/EmuFiber.hpp`
@@ -29,18 +29,18 @@
 - **.parked()** (1 connections) — `src/core/EmuFiber.hpp`
 - **.takeAborted()** (1 connections) — `src/core/EmuFiber.hpp`
 - **exception_ptr** (1 connections)
-- *... and 29 more nodes in this community*
+- *... and 30 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (8 shared connections)
+- [Community 4](Community_4.md) (7 shared connections)
 - [Community 160](Community_160.md) (2 shared connections)
+- [Community 68](Community_68.md) (2 shared connections)
 - [Community 10](Community_10.md) (1 shared connections)
-- [Community 419](Community_419.md) (1 shared connections)
-- [Community 449](Community_449.md) (1 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
+- [Community 386](Community_386.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 - [Community 126](Community_126.md) (1 shared connections)
-- [Community 68](Community_68.md) (1 shared connections)
+- [Community 186](Community_186.md) (1 shared connections)
 
 ## Source Files
 
@@ -49,7 +49,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 84 (92%)
+- EXTRACTED: 85 (92%)
 - INFERRED: 7 (8%)
 - AMBIGUOUS: 0 (0%)
 

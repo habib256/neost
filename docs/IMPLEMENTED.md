@@ -2057,7 +2057,7 @@ fidèles à Hatari, pas des bugs.
   fin TX. FIFO RX matérielle de trois octets : ordre, erreurs associées,
   débordement du dernier emplacement, modes premier/tous/spécial et Error Reset.
   Restent FIFO SDLC, DPLL et série hôte réelle.
-- **SCC No-Vector → vecteur spurious 24** (`Cpu68k::readIrqUserVector`) : sur IACK niveau 5 avec
+- **SCC No-Vector → vecteur spurious 24** (`NeostMoira::readIrqVector`) : sur IACK niveau 5 avec
   WR9 NV armé (`Scc::processIack()` = -1), le wrapper renvoie désormais le vecteur **spurious 24**
   ($60) — comme la branche MFP et `iack_cycle` d'Hatari (`vector<0 → 24`) — au lieu de
   l'auto-vecteur 29 ($74) erroné. Boots ST/STE/MegaSTE inchangés.

@@ -1,10 +1,9 @@
 # Community 378
 
-> 5 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **L'élection de l'exception MFP : la règle chronologique existait mais ne pouvait jamais s'appliquer (2026-09-02)** (6 connections) — `CHANGELOG.md`
 - **.checkPendingInterrupts()** (5 connections) — `src/io/Mfp.hpp`
 - **.updateIrq()** (4 connections) — `src/io/Mfp.hpp`
 - **.earliestEligible()** (4 connections) — `src/io/Mfp.hpp`
@@ -12,21 +11,18 @@
 
 ## Relationships
 
-- [Community 215](Community_215.md) (5 shared connections)
+- [Community 215](Community_215.md) (4 shared connections)
 - [Community 6](Community_6.md) (4 shared connections)
-- [Community 247](Community_247.md) (2 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 392](Community_392.md) (1 shared connections)
+- [Community 27](Community_27.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
 - `src/io/Mfp.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (50%)
-- INFERRED: 9 (50%)
+- EXTRACTED: 8 (62%)
+- INFERRED: 5 (38%)
 - AMBIGUOUS: 0 (0%)
 
 ---

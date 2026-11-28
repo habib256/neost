@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **Isp1160.cpp** (23 connections) — `src/io/Isp1160.cpp`
+- **Isp1160.cpp** (24 connections) — `src/io/Isp1160.cpp`
 - **.dataPortRead()** (5 connections) — `src/io/Isp1160.hpp`
 - **.dataPortWrite()** (5 connections) — `src/io/Isp1160.hpp`
 - **.attach()** (5 connections) — `src/io/Isp1160.hpp`
@@ -30,10 +30,9 @@
 ## Relationships
 
 - [Community 45](Community_45.md) (18 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
 - [Community 102](Community_102.md) (3 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 121](Community_121.md) (1 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
+- [Community 149](Community_149.md) (1 shared connections)
 
 ## Source Files
 
@@ -42,7 +41,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 44 (79%)
+- EXTRACTED: 45 (79%)
 - INFERRED: 12 (21%)
 - AMBIGUOUS: 0 (0%)
 

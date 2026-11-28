@@ -1,64 +1,62 @@
 # Community 288
 
-> 44 nodes
+> 24 nodes
 
 ## Key Concepts
 
-- **VideoGlue.cpp** (35 connections) — `src/core/VideoGlue.cpp`
-- **lineLenAttrEnv()** (12 connections) — `src/core/ShifterInternal.hpp`
-- **.updateGlueState()** (10 connections) — `src/core/Shifter.hpp`
-- **liveFrameClock_** (9 connections) — `src/core/Shifter.hpp`
-- **GlueProbe** (7 connections) — `src/core/Shifter.hpp`
-- **.startHBL()** (7 connections) — `src/core/Shifter.hpp`
-- **VideoGlue::replayGlue()** (7 connections) — `src/core/VideoGlue.cpp`
-- **.updateGlueRes()** (6 connections) — `src/core/Shifter.hpp`
-- **VideoGlue::liveGlueCatchUp()** (6 connections) — `src/core/VideoGlue.cpp`
-- **2. Vidéo / Shifter / Glue (video.c, spec512.c, conv_st.c)** (5 connections) — `docs/HATARI_MAPPING.md`
-- **.realLinePos()** (4 connections) — `src/core/Shifter.hpp`
-- **glueLineLenFor()** (4 connections) — `src/core/VideoGlue.cpp`
-- **Shifter::fetchWindowFrom()** (4 connections) — `src/core/VideoGlue.cpp`
-- **Shifter::recordSyncWrite()** (4 connections) — `src/core/VideoGlue.cpp`
-- **Shifter::timerBFrameCycleForLine()** (4 connections) — `src/core/VideoGlue.cpp`
-- **.datedResWriteCycle()** (3 connections) — `src/core/Shifter.hpp`
-- **Shifter::glueBenchLine()** (3 connections) — `src/core/VideoGlue.cpp`
-- **Shifter::lineStoppedOver()** (3 connections) — `src/core/VideoGlue.cpp`
-- **Shifter::outsideHorizontalDe()** (3 connections) — `src/core/VideoGlue.cpp`
-- **Shifter::realLinePos()** (3 connections) — `src/core/VideoGlue.cpp`
-- **Shifter::writeShifterRes()** (3 connections) — `src/core/VideoGlue.cpp`
-- **VideoGlue::updateGlueRes()** (3 connections) — `src/core/VideoGlue.cpp`
-- **VideoGlue::updateGlueState()** (3 connections) — `src/core/VideoGlue.cpp`
-- **VideoGlue::vblankAtLine()** (3 connections) — `src/core/VideoGlue.cpp`
-- **timing** (3 connections) — `src/io/IpfImage.cpp`
-- *... and 19 more nodes in this community*
+- **2. Plan mémoire figé** (18 connections) — `docs/HYPOTHESES_ST.md`
+- **parseRamBytes()** (11 connections) — `src/core/MachineType.hpp`
+- **memConfigForBytes()** (10 connections) — `src/core/MachineType.hpp`
+- **.loadTos()** (8 connections) — `src/core/Bus.hpp`
+- **tosUnsupportedMachine()** (8 connections) — `src/core/MachineType.hpp`
+- **size_t** (8 connections)
+- **ramLabel()** (7 connections) — `src/core/MachineType.hpp`
+- **tosHeaderIsEmuTos()** (7 connections) — `src/core/MachineType.hpp`
+- **tosHeaderVersion()** (7 connections) — `src/core/MachineType.hpp`
+- **ramDisplayName()** (5 connections) — `src/core/MachineType.hpp`
+- **readTosInfo()** (5 connections) — `src/core/TosChoice.cpp`
+- **machineSummary()** (5 connections) — `src/gui/MachineSummary.hpp`
+- **.seedResetVectors()** (4 connections) — `src/core/Bus.hpp`
+- **mmuFastLimit_** (4 connections) — `src/core/Bus.hpp`
+- **tosImageBase()** (4 connections) — `src/core/MachineType.hpp`
+- **.loadCart()** (3 connections) — `src/core/Bus.hpp`
+- **.mmuConfNow()** (3 connections) — `src/core/Bus.hpp`
+- **parseMachine()** (3 connections) — `src/core/MachineType.hpp`
+- **string** (3 connections)
+- **1. Bus & mémoire (ioMem.c, cpu/memory.c, stMemory.c)** (3 connections) — `docs/HATARI_MAPPING.md`
+- **string** (2 connections)
+- **string** (1 connections)
+- **Machine** (1 connections)
+- **string** (1 connections)
 
 ## Relationships
 
-- [Community 88](Community_88.md) (16 shared connections)
-- [Community 396](Community_396.md) (10 shared connections)
-- [Community 205](Community_205.md) (10 shared connections)
-- [Community 5](Community_5.md) (6 shared connections)
-- [Community 4](Community_4.md) (5 shared connections)
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 392](Community_392.md) (2 shared connections)
-- [Community 160](Community_160.md) (2 shared connections)
-- [Community 155](Community_155.md) (1 shared connections)
-- [Community 47](Community_47.md) (1 shared connections)
-- [Community 317](Community_317.md) (1 shared connections)
-- [Community 54](Community_54.md) (1 shared connections)
+- [Community 4](Community_4.md) (10 shared connections)
+- [Community 319](Community_319.md) (7 shared connections)
+- [Community 14](Community_14.md) (5 shared connections)
+- [Community 203](Community_203.md) (5 shared connections)
+- [Community 607](Community_607.md) (4 shared connections)
+- [Community 138](Community_138.md) (4 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
+- [Community 325](Community_325.md) (4 shared connections)
+- [Community 449](Community_449.md) (3 shared connections)
+- [Community 394](Community_394.md) (3 shared connections)
+- [Community 153](Community_153.md) (2 shared connections)
+- [Community 386](Community_386.md) (2 shared connections)
 
 ## Source Files
 
 - `docs/HATARI_MAPPING.md`
-- `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- `src/core/Shifter.hpp`
-- `src/core/ShifterInternal.hpp`
-- `src/core/VideoGlue.cpp`
-- `src/io/IpfImage.cpp`
+- `docs/HYPOTHESES_ST.md`
+- `src/core/Bus.hpp`
+- `src/core/MachineType.hpp`
+- `src/core/TosChoice.cpp`
+- `src/gui/MachineSummary.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 60 (49%)
-- INFERRED: 62 (51%)
+- EXTRACTED: 41 (43%)
+- INFERRED: 55 (57%)
 - AMBIGUOUS: 0 (0%)
 
 ---

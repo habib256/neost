@@ -1,12 +1,13 @@
 # Community 137
 
-> 19 nodes
+> 20 nodes
 
 ## Key Concepts
 
 - **Rig** (10 connections) — `tests/mfp_rx_overrun_logic.cpp`
 - **testMfpRxOverrun()** (8 connections) — `tests/mfp_rx_overrun_logic.cpp`
 - **mfp_rx_overrun_logic.cpp** (6 connections) — `tests/mfp_rx_overrun_logic.cpp`
+- **mfp_serial_logic.cpp** (5 connections) — `tests/mfp_serial_logic.cpp`
 - **Checks** (4 connections) — `tests/mfp_rx_overrun_logic.cpp`
 - **testMfpSerial()** (4 connections) — `tests/mfp_serial_logic.cpp`
 - **.deliver()** (3 connections) — `tests/mfp_rx_overrun_logic.cpp`
@@ -26,10 +27,8 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 252](Community_252.md) (2 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
 
 ## Source Files
 
@@ -38,8 +37,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 27 (90%)
-- INFERRED: 3 (10%)
+- EXTRACTED: 30 (91%)
+- INFERRED: 3 (9%)
 - AMBIGUOUS: 0 (0%)
 
 ---

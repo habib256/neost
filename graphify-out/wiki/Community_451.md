@@ -1,27 +1,42 @@
 # Community 451
 
-> 3 nodes
+> 15 nodes
 
 ## Key Concepts
 
-- **bus_mmio_mirror_logic.cpp** (5 connections) — `tests/bus_mmio_mirror_logic.cpp`
-- **testBusMmioMirror()** (3 connections) — `tests/bus_mmio_mirror_logic.cpp`
-- **main()** (2 connections) — `tests/bus_mmio_mirror_logic.cpp`
+- **MoiraInfo_cpp.h** (11 connections) — `extern/moira/Moira/MoiraInfo_cpp.h`
+- **Moira::availabilityMask()** (7 connections) — `extern/moira/Moira/MoiraInfo_cpp.h`
+- **Moira::isAvailable()** (7 connections) — `extern/moira/Moira/MoiraInfo_cpp.h`
+- **Moira::isValidExt()** (5 connections) — `extern/moira/Moira/MoiraInfo_cpp.h`
+- **.availabilityMask()** (3 connections) — `extern/moira/Moira/Moira.h`
+- **Mode** (3 connections)
+- **u16** (3 connections)
+- **u32** (3 connections)
+- **Moira::getAddrMask()** (2 connections) — `extern/moira/Moira/MoiraInfo_cpp.h`
+- **Moira::getCacrMask()** (2 connections) — `extern/moira/Moira/MoiraInfo_cpp.h`
+- **Size** (2 connections)
+- **Moira::hasCPI()** (1 connections) — `extern/moira/Moira/MoiraInfo_cpp.h`
+- **Moira::hasExternalFPU()** (1 connections) — `extern/moira/Moira/MoiraInfo_cpp.h`
+- **Moira::hasInternalFPU()** (1 connections) — `extern/moira/Moira/MoiraInfo_cpp.h`
+- **Moira::hasMMU()** (1 connections) — `extern/moira/Moira/MoiraInfo_cpp.h`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
+- [Community 0](Community_0.md) (3 shared connections)
+- [Community 16](Community_16.md) (2 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
+- [Community 314](Community_314.md) (1 shared connections)
+- [Community 33](Community_33.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/bus_mmio_mirror_logic.cpp`
+- `extern/moira/Moira/Moira.h`
+- `extern/moira/Moira/MoiraInfo_cpp.h`
 
 ## Audit Trail
 
-- EXTRACTED: 6 (86%)
-- INFERRED: 1 (14%)
+- EXTRACTED: 27 (90%)
+- INFERRED: 3 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

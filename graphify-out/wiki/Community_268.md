@@ -1,10 +1,12 @@
 # Community 268
 
-> 9 nodes
+> 11 nodes
 
 ## Key Concepts
 
 - **Échelle des références** (10 connections) — `docs/REFERENCE_LADDER.md`
+- **.vblankAtLine()** (3 connections) — `src/core/Shifter.hpp`
+- **Ce que le modèle confirme déjà** (2 connections) — `docs/REFERENCE_LADDER.md`
 - **L'échelon `rtl`** (1 connections) — `docs/REFERENCE_LADDER.md`
 - **Les documents primaires** (1 connections) — `docs/REFERENCE_LADDER.md`
 - **Les règles d'arbitrage** (1 connections) — `docs/REFERENCE_LADDER.md`
@@ -16,17 +18,19 @@
 
 ## Relationships
 
-- [Community 431](Community_431.md) (1 shared connections)
 - [Community 396](Community_396.md) (1 shared connections)
+- [Community 258](Community_258.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
 
 ## Source Files
 
 - `docs/REFERENCE_LADDER.md`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 10 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 11 (85%)
+- INFERRED: 2 (15%)
 - AMBIGUOUS: 0 (0%)
 
 ---

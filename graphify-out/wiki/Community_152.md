@@ -1,42 +1,34 @@
 # Community 152
 
-> 35 nodes
+> 16 nodes
 
 ## Key Concepts
 
-- **Guards** (40 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **Guard** (9 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.guardNr()** (8 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.guardAt()** (8 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.setEnableAt()** (7 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.setEnable()** (6 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.isDisabledAt()** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.isSetAt()** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **u32** (5 connections)
-- **.replace()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.isEnabledAt()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.isDisabled()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **Guards** (41 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **isize** (8 connections)
+- **.setEnable()** (7 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **.setEnableAll()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.setAt()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.toggleAt()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.isEnabled()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.ignore()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.disableAt()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.enableAt()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.toggle()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.disable()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.toggle()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.disable()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.enable()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.isSet()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **.disableAll()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.enable()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.elements()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **.enableAll()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.isSet()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- *... and 10 more nodes in this community*
+- **.removeAll()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.setNeedsCheck()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **capacity** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **count** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **hit** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
 
 ## Relationships
 
-- [Community 134](Community_134.md) (24 shared connections)
-- [Community 282](Community_282.md) (5 shared connections)
-- [Community 57](Community_57.md) (1 shared connections)
-- [Community 124](Community_124.md) (1 shared connections)
+- [Community 121](Community_121.md) (10 shared connections)
+- [Community 593](Community_593.md) (9 shared connections)
+- [Community 368](Community_368.md) (8 shared connections)
+- [Community 134](Community_134.md) (5 shared connections)
+- [Community 492](Community_492.md) (1 shared connections)
+- [Community 470](Community_470.md) (1 shared connections)
 
 ## Source Files
 
@@ -44,8 +36,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 83 (89%)
-- INFERRED: 10 (11%)
+- EXTRACTED: 58 (97%)
+- INFERRED: 2 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -4,46 +4,46 @@
 
 ## Key Concepts
 
-- **Ikbd.cpp** (89 connections) — `src/io/Ikbd.cpp`
-- **.customWriteDispatch()** (8 connections) — `src/io/Ikbd.hpp`
+- **Ikbd.cpp** (91 connections) — `src/io/Ikbd.cpp`
+- **.sendAutoInput()** (14 connections) — `src/io/Ikbd.hpp`
+- **.rxFree()** (14 connections) — `src/io/Ikbd.hpp`
+- **.onLineIdle()** (11 connections) — `src/io/Ikbd.hpp`
+- **.armRx()** (10 connections) — `src/io/Ikbd.hpp`
+- **.sendRelMousePacket()** (8 connections) — `src/io/Ikbd.hpp`
+- **.pushRxDelayed()** (8 connections) — `src/io/Ikbd.hpp`
+- **.sendCursorKeys()** (7 connections) — `src/io/Ikbd.hpp`
 - **.customReadDispatch()** (7 connections) — `src/io/Ikbd.hpp`
-- **.exitExeMode()** (6 connections) — `src/io/Ikbd.hpp`
-- **.customCodeCrcForTest()** (6 connections) — `src/io/Ikbd.hpp`
-- **** (5 connections) — `src/io/Ikbd.cpp`
-- **.loadMemoryByte()** (5 connections) — `src/io/Ikbd.hpp`
-- **.froggiesWrite()** (5 connections) — `src/io/Ikbd.hpp`
-- **.audioSculptureRead()** (5 connections) — `src/io/Ikbd.hpp`
-- **crc32AddByte()** (5 connections) — `src/io/Ikbd.cpp`
-- **crc32Reset()** (5 connections) — `src/io/Ikbd.cpp`
-- **.trace()** (4 connections) — `src/io/Ikbd.hpp`
+- **.lineFree()** (6 connections) — `src/io/Ikbd.hpp`
+- **.emitButtonKeys()** (6 connections) — `src/io/Ikbd.hpp`
+- **.sendAbsMousePos()** (6 connections) — `src/io/Ikbd.hpp`
+- **.liftPause()** (6 connections) — `src/io/Ikbd.hpp`
+- **.sendAutoJoysticks()** (5 connections) — `src/io/Ikbd.hpp`
+- **.mouseEvent()** (5 connections) — `src/io/Ikbd.hpp`
+- **.sendOnMouseAction()** (5 connections) — `src/io/Ikbd.hpp`
+- **.onRxDeliver()** (5 connections) — `src/io/Ikbd.hpp`
+- **.statusReply()** (5 connections) — `src/io/Ikbd.hpp`
+- **.sendAutoJoysticksMonitoring()** (4 connections) — `src/io/Ikbd.hpp`
 - **.onVbl()** (4 connections) — `src/io/Ikbd.hpp`
 - **.keyEvent()** (4 connections) — `src/io/Ikbd.hpp`
+- **.effectiveButtons()** (4 connections) — `src/io/Ikbd.hpp`
 - **.updateClock()** (4 connections) — `src/io/Ikbd.hpp`
-- **.commonBoot()** (4 connections) — `src/io/Ikbd.hpp`
-- **.chaosWrite()** (4 connections) — `src/io/Ikbd.hpp`
-- **.initClockFromHostTime()** (3 connections) — `src/io/Ikbd.hpp`
-- **.checkPressedKey()** (3 connections) — `src/io/Ikbd.hpp`
-- **.transbeauce2Read()** (3 connections) — `src/io/Ikbd.hpp`
-- **.dragonnelsWrite()** (3 connections) — `src/io/Ikbd.hpp`
-- **.chaosRead()** (3 connections) — `src/io/Ikbd.hpp`
-- **.audioSculptureWrite()** (3 connections) — `src/io/Ikbd.hpp`
-- **.armCommonBootForTest()** (3 connections) — `src/io/Ikbd.hpp`
-- **Ikbd::Ikbd()** (3 connections) — `src/io/Ikbd.cpp`
+- **.initClockFromHostTime()** (4 connections) — `src/io/Ikbd.hpp`
+- **.outputBlocked()** (4 connections) — `src/io/Ikbd.hpp`
 - *... and 13 more nodes in this community*
 
 ## Relationships
 
-- [Community 7](Community_7.md) (25 shared connections)
-- [Community 370](Community_370.md) (19 shared connections)
-- [Community 421](Community_421.md) (19 shared connections)
-- [Community 47](Community_47.md) (14 shared connections)
-- [Community 331](Community_331.md) (9 shared connections)
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 38](Community_38.md) (1 shared connections)
-- [Community 352](Community_352.md) (1 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
-- [Community 117](Community_117.md) (1 shared connections)
+- [Community 7](Community_7.md) (34 shared connections)
+- [Community 47](Community_47.md) (26 shared connections)
+- [Community 370](Community_370.md) (11 shared connections)
+- [Community 559](Community_559.md) (10 shared connections)
+- [Community 545](Community_545.md) (10 shared connections)
+- [Community 508](Community_508.md) (7 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
+- [Community 183](Community_183.md) (1 shared connections)
+- [Community 506](Community_506.md) (1 shared connections)
+- [Community 560](Community_560.md) (1 shared connections)
 
 ## Source Files
 
@@ -52,8 +52,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 132 (85%)
-- INFERRED: 24 (15%)
+- EXTRACTED: 128 (66%)
+- INFERRED: 66 (34%)
 - AMBIGUOUS: 0 (0%)
 
 ---

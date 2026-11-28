@@ -1,25 +1,35 @@
 # Community 374
 
-> 4 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **NetUSBee : Ethernet et périphériques USB** (4 connections) — `docs/NETUSBEE.md`
-- **Modèle et limites** (1 connections) — `docs/NETUSBEE.md`
-- **Preuves et reproduction** (1 connections) — `docs/NETUSBEE.md`
-- **Utilisation** (1 connections) — `docs/NETUSBEE.md`
+- **SaveSector** (14 connections) — `src/io/StxImage.hpp`
+- **bitPos** (1 connections) — `src/io/StxImage.hpp`
+- **data** (1 connections) — `src/io/StxImage.hpp`
+- **dataMark** (1 connections) — `src/io/StxImage.hpp`
+- **idCrc** (1 connections) — `src/io/StxImage.hpp`
+- **idHead** (1 connections) — `src/io/StxImage.hpp`
+- **idSector** (1 connections) — `src/io/StxImage.hpp`
+- **idSize** (1 connections) — `src/io/StxImage.hpp`
+- **idTrack** (1 connections) — `src/io/StxImage.hpp`
+- **side** (1 connections) — `src/io/StxImage.hpp`
+- **track** (1 connections) — `src/io/StxImage.hpp`
+- **used** (1 connections) — `src/io/StxImage.hpp`
 
 ## Relationships
 
-- [Community 232](Community_232.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 149](Community_149.md) (1 shared connections)
+- [Community 31](Community_31.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/NETUSBEE.md`
+- `src/io/StxImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
+- EXTRACTED: 14 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

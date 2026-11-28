@@ -28,10 +28,12 @@
 
 ## Relationships
 
-- [Community 460](Community_460.md) (6 shared connections)
 - [Community 220](Community_220.md) (5 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
 - [Community 44](Community_44.md) (1 shared connections)
-- [Community 419](Community_419.md) (1 shared connections)
+- [Community 386](Community_386.md) (1 shared connections)
 - [Community 286](Community_286.md) (1 shared connections)
 
 ## Source Files

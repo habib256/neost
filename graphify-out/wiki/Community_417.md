@@ -1,28 +1,42 @@
 # Community 417
 
-> 5 nodes
+> 17 nodes
 
 ## Key Concepts
 
-- **4. ACSI — `Acsi.cpp`, `Fdc.cpp` ↔ `hdc.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Refermés** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **libretro_frontend.py** (13 connections) — `tools/libretro_frontend.py`
+- **.__init__()** (5 connections) — `tools/libretro_frontend.py`
+- **.load()** (4 connections) — `tools/libretro_frontend.py`
+- **AvInfo** (2 connections) — `tools/libretro_frontend.py`
+- **Game** (2 connections) — `tools/libretro_frontend.py`
+- **MidiInterface** (2 connections) — `tools/libretro_frontend.py`
+- **SystemInfo** (2 connections) — `tools/libretro_frontend.py`
+- **.info()** (2 connections) — `tools/libretro_frontend.py`
+- **DiskControlExt** (1 connections) — `tools/libretro_frontend.py`
+- **Geometry** (1 connections) — `tools/libretro_frontend.py`
+- **Timing** (1 connections) — `tools/libretro_frontend.py`
+- **Variable** (1 connections) — `tools/libretro_frontend.py`
+- **midi_flush()** (1 connections) — `tools/libretro_frontend.py`
+- **midi_read()** (1 connections) — `tools/libretro_frontend.py`
+- **midi_write()** (1 connections) — `tools/libretro_frontend.py`
+- **Frontend libretro minimal, sans fenêtre, pour éprouver neost_libretro. Charge…** (1 connections) — `tools/libretro_frontend.py`
+- **ctypes** (1 connections)
 
 ## Relationships
 
-- [Community 397](Community_397.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
+- [Community 200](Community_200.md) (4 shared connections)
+- [Community 247](Community_247.md) (1 shared connections)
+- [Community 207](Community_207.md) (1 shared connections)
+- [Community 100](Community_100.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
+- `tools/libretro_frontend.py`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (83%)
-- INFERRED: 1 (17%)
+- EXTRACTED: 20 (83%)
+- INFERRED: 4 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

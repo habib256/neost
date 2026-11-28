@@ -1,36 +1,48 @@
 # Community 249
 
-> 9 nodes
+> 40 nodes
 
 ## Key Concepts
 
-- **StKeysSymbolic.cpp** (7 connections) — `src/gui/StKeysSymbolic.cpp`
-- **scancodeFor()** (5 connections) — `src/gui/StKeys.cpp`
-- **symbolicForCountry()** (4 connections) — `src/gui/StKeysSymbolic.cpp`
-- **StKeys.cpp** (4 connections) — `src/gui/StKeys.cpp`
-- **setCountryFromTos()** (3 connections) — `src/gui/StKeysSymbolic.cpp`
-- **utf8First()** (3 connections) — `src/gui/StKeysSymbolic.cpp`
-- **positionalScancode()** (2 connections) — `src/gui/StKeys.cpp`
-- **symbolicDefault()** (2 connections) — `src/gui/StKeysSymbolic.cpp`
-- **Web : la première touche tuait l'émulateur (2026-10-27)** (2 connections) — `CHANGELOG.md`
+- **retro_language** (40 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_ARABIC** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_ASTURIAN** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_BELARUSIAN** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_BRITISH_ENGLISH** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_CATALAN** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_CATALAN_VALENCIA** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_CHINESE_SIMPLIFIED** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_CHINESE_TRADITIONAL** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_CZECH** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_DUMMY** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_DUTCH** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_ENGLISH** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_ESPERANTO** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_FINNISH** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_FRENCH** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_GALICIAN** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_GERMAN** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_GREEK** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_HEBREW** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_HUNGARIAN** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_INDONESIAN** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_IRISH** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_ITALIAN** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_LANGUAGE_JAPANESE** (1 connections) — `src/libretro/libretro.h`
+- *... and 15 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (4 shared connections)
-- [Community 252](Community_252.md) (3 shared connections)
-- [Community 460](Community_460.md) (2 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/gui/StKeys.cpp`
-- `src/gui/StKeysSymbolic.cpp`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (71%)
-- INFERRED: 6 (29%)
+- EXTRACTED: 40 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

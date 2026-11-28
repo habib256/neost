@@ -1,24 +1,31 @@
 # Community 437
 
-> 3 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **Cpcc** (3 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Cpcc()** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **Rig** (9 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **.finish()** (3 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **.Rig()** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **Mfp** (1 connections)
+- **Scheduler** (1 connections)
+- **mfp** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **scheduler** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **sent** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
 
 ## Relationships
 
-- [Community 76](Community_76.md) (1 shared connections)
+- [Community 456](Community_456.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 77](Community_77.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/StrWriter.h`
+- `tests/mfp_internal_loopback_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
+- EXTRACTED: 11 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,10 +1,12 @@
 # Community 0
 
-> 295 nodes
+> 298 nodes
 
 ## Key Concepts
 
-- **Instr** (306 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **Instr** (459 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **Ins** (4 connections) — `extern/moira/Moira/StrWriter.h`
+- **.Ins()** (2 connections) — `extern/moira/Moira/StrWriter.h`
 - **ABCD** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **ABCD_LOOP** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **ADD** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
@@ -27,27 +29,29 @@
 - **BCC** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **BCHG** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **BCLR** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **BCS** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **BEQ** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- *... and 270 more nodes in this community*
+- *... and 273 more nodes in this community*
 
 ## Relationships
 
-- [Community 314](Community_314.md) (3 shared connections)
+- [Community 2](Community_2.md) (128 shared connections)
+- [Community 167](Community_167.md) (14 shared connections)
+- [Community 155](Community_155.md) (9 shared connections)
+- [Community 64](Community_64.md) (3 shared connections)
+- [Community 451](Community_451.md) (3 shared connections)
 - [Community 57](Community_57.md) (2 shared connections)
-- [Community 64](Community_64.md) (2 shared connections)
-- [Community 9](Community_9.md) (2 shared connections)
-- [Community 326](Community_326.md) (1 shared connections)
-- [Community 145](Community_145.md) (1 shared connections)
-- [Community 155](Community_155.md) (1 shared connections)
+- [Community 63](Community_63.md) (2 shared connections)
+- [Community 530](Community_530.md) (1 shared connections)
+- [Community 33](Community_33.md) (1 shared connections)
+- [Community 109](Community_109.md) (1 shared connections)
 
 ## Source Files
 
 - `extern/moira/Moira/MoiraTypes.h`
+- `extern/moira/Moira/StrWriter.h`
 
 ## Audit Trail
 
-- EXTRACTED: 306 (100%)
+- EXTRACTED: 462 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
