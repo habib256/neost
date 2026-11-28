@@ -14,15 +14,12 @@ n'a **jamais tourné sur un appareil réel** (validé sous QEMU arm64 seulement)
 Architecture en deux mots : **le `Bus` *est* le plan mémoire** (route read8/write8 vers
 les puces) et **`neost_core` ne dépend pas du GUI**.
 
-**Cap suivant : le TT et le Falcon**, sur le Moira de POM68K (68000/030/040, JIT
-déterministe, FPU et MMU), qui remplacera aussi le cœur du ST. **Rien ne s'intègre avant
-que l'auteur le déclare prêt** ; la porte d'échange est posée (`docs/CPU_SWAP_GATE.md`).
-Jalons : **0.6.4**, puis **0.6.5** juste avant l'intégration du cœur POM68K — la dernière
-sur le Moira de NeoST.
-D'ici là, `TODO.md` range le travail en trois temps : **avant l'échange** (le filet, puis
-tout ce qui ne dépend pas du cœur), **l'échange** (§ 9 — l'intérieur du cœur est **gelé** :
-pas de patch dans `extern/moira` ni de refactor de `src/core/Cpu68k.cpp`, sauf défaut qui
-casse un titre), **le TT et le Falcon** (§ 10).
+**Version publiée : 0.6.5** (tag du 13 novembre 2026, `b3ced823`).
+La **0.7.0** porte le cœur officiel de Dirk W. Hoffmann (Moira 6.0b1, `bf98107f`).
+Les quatre machines ST utilisent son interpréteur 68000. La migration et ses
+critères d'acceptation sont dans `docs/MIGRATION_MOIRA_070.md`. Les cartes mères
+TT et Falcon constituent le chantier suivant. Les résultats de mesure passent
+avant la mise à jour des références.
 
 ## Où trouver quoi
 
@@ -88,7 +85,7 @@ clos et ne fait plus foi va dans `docs/archive/` (hors contrôle d'ancres).
 | [`docs/LIBRETRO.md`](docs/LIBRETRO.md) | **Frontière d'un cœur libretro** : ce que l'API demande face à ce que `neost_core` offre, point par point, règles de l'adaptateur (chargement, trame, états autonomes, journaux), coût mesuré des états. Items ouverts : `TODO.md` § 7. |
 | [`packaging/android/README.md`](packaging/android/README.md) | **Paquet Android** : build, pièges (jlink, Gradle/JDK), validation ARM64 sous QEMU. |
 | [`docs/HYPOTHESES_ST.md`](docs/HYPOTHESES_ST.md) | **Ce que le TT et le Falcon remettent en cause** : masques 24 bits, plan mémoire, `MachineType`, 68000 hors du cœur, vidéo — `fichier:ligne` et effort, relevé sans rien changer. |
-| [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md) | **Échange du cœur 68000** (Moira POM68K) : porte d'empreintes indépendante du cœur, procédure, contrat attendu du cœur (surcharges, internes, patches). **Tout patch de `extern/moira` y ajoute sa ligne.** |
+| [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md) | **Échange du cœur 68000** (Moira officiel) : porte d'empreintes indépendante du cœur, procédure, contrat attendu du cœur (surcharges, internes, patches). **Tout patch de `extern/moira` y ajoute sa ligne.** |
 
 ## Build & run
 
@@ -106,7 +103,7 @@ cmake -B build-libretro -DCMAKE_BUILD_TYPE=Release -DNEOST_PIC=ON -DNEOST_BUILD_
 Sous-modules : `extern/imgui`, `extern/miniaudio`. `extern/moira` est **vendorisé**
 (NeoST patche son code — cf. `extern/moira/NEOST_VENDOR.md`) ; il se compile tel quel en
 C++20, sans générateur de code (CMake n'en recopie qu'une version sous
-`build/generated/moira`, avec `MoiraConfig.h` réglé en cycle-exact). Le cœur Musashi a été retiré.
+`build/generated/moira`, avec les options de compilation cycle-exactes). Le cœur Musashi a été retiré.
 
 ⚠ Ne PAS faire `rm -rf build` (casse le shell si l'utilisateur y est `cd`) ;
 `cmake -B build` reconfigure. Sous macOS, pas de `timeout`.

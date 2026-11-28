@@ -159,6 +159,30 @@ dépend de ces cas ; ce sont des **questions à requalifier sur POM68K**, que le
 telles quelles. Un titre qui récupère d'une bus error en relisant An ou le PC empilé (protection,
 sondage de mémoire) serait le premier à les révéler.
 
+## Migration vers Moira 6 : fautes de groupe 0
+
+Comparaison de l'ancien cœur NeoST et de Moira officiel `bf98107f` avec le même banc
+fx68k `0602ee46`. Le banc passe de 34 à 37 accords sur 48 variantes. L'API officielle expose avec `getPC()` le PC interne moins deux
+octets. Les accès mémoire du cœur lèvent désormais une faute par son adresse et
+Moira termine la trame avec le contexte de l'instruction. La voie hors accès
+mémoire du cœur conserve une trame complète, avec le PC interne.
+
+| Variante | Arbitrage |
+|---|---|
+| `exceptions` | L'amont déplaçait deux cycles du départ vers le vecteur au début de l'empilement. Le report après la trame conserve les dates des sept écritures observées par fx68k. Reste un début de lecture sans strobe dans le RTL. |
+| `berr` | L'entrée de trame de l'amont prend 14 cycles depuis l'accès fautif, puis quatre du dernier mot empilé au vecteur. Le microcode transcrit `state_bus_error` enchaîne la dernière écriture `trap5` et la lecture `trap6`. Les trames contextuelles corrigent notamment les PC de `MOVEM` dans les deux sens. |
+| `double_fault` et `double_fault_vec` | L'arrêt, les mots écrits et les intervalles d'accès concordent avec fx68k. Le manuel Motorola Rev. 8 § 5.4.4 et § 6.3.9.1 impose l'arrêt à la seconde faute, y compris au premier préfetch du gestionnaire. Les dates de la broche HALT restent à mesurer. |
+| `double_fault_trap` | Après une faute sur la première écriture du TRAP, l'amont remet SP à sa valeur initiale. Le deuxième empilement recommence à la même adresse, comme dans fx68k. Hatari garde le SP décrémenté. Aucun relevé sur machine réelle ne distingue ici ces deux chemins. |
+| `double_fault_addr` | L'amont arrête le processeur sur SP impair sans écrire la trame arrondie de l'ancien cœur. Le manuel Motorola Rev. 8 § 6.3.10 confirme l'arrêt sur la seconde faute. Hatari arrive à la même issue. fx68k présente deux cycles amorcés sans strobe, absents de Moira. L'amont court-circuite également le premier empilement, donc la date de HALT et la notification de la première faute restent à vérifier. |
+
+Pour `TAS` absolu long, le manuel Motorola Rev. 8 § 5.1.3 et § 6.3.9.1 distingue
+les phases lecture et écriture du RMW. La faute de lecture préserve le bit R/W de la
+lecture et le SR antérieur. La transcription de `4af9` par Kervella place le
+transfert de l'incrément du PC après `abll3`, la lecture de l'opérande. Le réglage
+NeoST conserve le PC vu par fx68k, avec une avance d'un cycle sur l'entrée de
+trame. Hatari `cpuemu_13.c:44116-44121` et `newcpu.c:9077-9083` @ `36a8acf0`
+empile un PC avancé. Le banc actuel ne date pas un `TAS` fautif sur le silicium.
+
 ## Bus prêté à un DMA, BR/BG (2026-11-11)
 
 `Vfx68k_bench --br T:N` : un maître pose BR au cycle T (origine des `--irq`), prend le bus en trois fils

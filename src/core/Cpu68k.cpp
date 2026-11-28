@@ -1,7 +1,7 @@
 // =============================================================================
 //  Cpu68k.cpp — Liaison Moira <-> Bus NeoST.
 //
-//  Moira (cœur 68000 cycle-exact, MIT) est intégré en sous-module. Cette façade
+//  Moira (cœur 68000 cycle-exact, MIT) est vendorisé. Cette façade
 //  route ses accès mémoire vers un Bus unique pointé par g_cur->bus et reproduit le
 //  vectoring ST (MFP vectorisé niveau 6, VBL/HBL auto-vectorisés). C'est le seul
 //  couplage « global » du projet (les callbacks CPU n'ont qu'un Bus actif).
@@ -120,7 +120,7 @@ CpuState* g_cur = nullptr;
     // et effacé par didExecute(M68kException…) : si l'exception se termine
     // normalement il retombe à 0 ; si elle lève DoubleFault (SSP impair, ou
     // nouvelle faute pendant l'empilement) il vaut ENCORE le vecteur fautif quand
-    // cpuDidHalt() est notifié — c'est ce qui permet de NOMMER la cause du halt.
+    // didHaltCPU() est notifié — c'est ce qui permet de NOMMER la cause du halt.
     // Pendant cpu.reset() (lecture SSP/PC) le cœur consomme ~40 cyc via sync(). On NE
     // dispatche PAS l'ordonnanceur alors : sinon sched.now() serait traîné à 40 et la 1ʳᵉ
     // trame s'ancrerait là (frameStart_=40) au lieu de 0 → grille faisceau décalée de 40 cyc
@@ -287,10 +287,11 @@ CpuState* g_cur = nullptr;
 class NeostMoira : public moira::Moira {
 public:
     NeostMoira() {
-        setModel(moira::Model::M68000);
-        irqMode = moira::IrqMode::USER;
+        setModel(moira::CPUModel::M68000);
         // Syntaxe Musashi : conserve le format de trace historique (comparaison MAME).
-        setDasmSyntax(moira::Syntax::MUSASHI);
+        auto style = getDasmStyle();
+        style.syntax = moira::Syntax::MUSASHI;
+        setDasmStyle(style);
         // Délai de reconnaissance IPL fidèle WinUAE (opt-in). Seuils en cycles CPU : le
         // 68000 échantillonne IPL sur SA propre horloge, pas sur celle du bus — même
         // valeur à 16 MHz.
@@ -358,7 +359,7 @@ public:
     // Moira notifie ces deux délégués À L'ENTRÉE (MoiraExceptions_cpp.h:268 et :305)
     // et À LA SORTIE (:296 et :333) de execAddressError/execBusError. On s'en sert
     // uniquement pour retenir le vecteur en cours de prise : c'est la seule donnée
-    // FIABLE dont dispose cpuDidHalt() (cf. plus bas — reg.pc0 a déjà été avancé par
+    // FIABLE dont dispose didHaltCPU() (cf. plus bas — reg.pc0 a déjà été avancé par
     // le prefetch de l'instruction fautive, il ne désigne PAS la faute).
     void willExecute(moira::M68kException exc, moira::u16 vector) override {
         if (exc == moira::M68kException::TRAP && g_cur->trapObserver) g_cur->trapObserver(vector);
@@ -392,7 +393,7 @@ public:
     // ayant lieu AVANT le test d'alignement (MoiraExec_cpp.h:2874-2886). Hatari
     // n'en affiche pas non plus dans son message. Le vecteur et le SSP, eux, sont
     // exacts au moment de la faute.
-    void cpuDidHalt() override {
+    void didHaltCPU() override {
         if (g_cur->inReset) {
             neost::log::err(
                 "[cpu] 68000 halted: reset vector fetch failed (SSP/PC unreadable).\n");
@@ -422,7 +423,7 @@ public:
                 g_cur->grp0Vector, static_cast<unsigned>(getSP()));
     }
 
-    [[noreturn]] void raiseBusError(moira::u32 addr, bool write) const {
+    [[noreturn]] void raiseBusError(moira::u32 addr, bool write, bool external) const {
         // A42 : on RETIENT la faute (adresse, PC, sens) — c'est tout ce qui manquait
         // pour nommer un halt. Port de l'esprit d'Hatari, qui garde ses
         // `last_fault_for_exception_3` / `last_writeaccess_for_exception_3` et les
@@ -443,15 +444,20 @@ public:
                             write ? "writing" : "reading",
                             static_cast<unsigned>(addr),
                             static_cast<unsigned>(getPC0() & 0xFFFFFFu));
+        // Le chemin mémoire de Moira complète la trame en fonction du mode
+        // d'adressage et du mot fautif. Un appel extérieur (GEMDOS) saute ce chemin.
+        if (!external) throw moira::BusError(addr);
         moira::StackFrame f{};
         const moira::u16 ird = getIRD();
         // code = IR(15..5) | function-code(2..0) | bit4 R/W (1 = lecture sur 68000).
-        f.code = (ird & 0xFFE0) | readFC() | (write ? 0 : 0x10);
+        f.code = (ird & 0xFFE0) | getFC() | (write ? 0 : 0x10);
         f.addr = addr;
         f.ird  = ird;
         f.sr   = getSR();
-        f.pc   = getPC();
-        f.fc   = readFC();
+        // [D] fx68k @ 0602ee46, double_fault_vec : pour MOVE.W absolu long,
+        // le PC empilé désigne la suite du flux (IRC), ici $103C.
+        f.pc   = reg.pc;
+        f.fc   = getFC();
         f.ssw  = f.fc;
         throw moira::BusError(f);
     }
@@ -467,9 +473,9 @@ public:
     // vecteur et préfetchait — soit 3 accès bus APRÈS la faute, là où le vrai 68000
     // assère /HALT au deuxième échec et ne fait plus un seul cycle. Le throw remonte
     // jusqu'au catch(DoubleFault) de Moira::processException, qui appelle le vrai
-    // halt() — lequel restaure aussi reg.pc = reg.pc0 et notifie cpuDidHalt(), deux
+    // halt() — lequel restaure aussi reg.pc = reg.pc0 et notifie didHaltCPU(), deux
     // choses que le drapeau posé à la main sautait.
-    bool faultOrHalt(moira::u32 a, bool write) const {
+    bool faultOrHalt(moira::u32 a, bool write, bool external = false) const {
         if (g_cur->inBusError) {
             g_cur->faultAddr = a;
             g_cur->faultPc = getPC0();
@@ -489,7 +495,7 @@ public:
         // attente non comptée. Hatari ne compte aucune attente.
         if (g_cur->bus->machine != MachineType::MegaSte)
             const_cast<NeostMoira*>(this)->sync(kBerrTimeoutWait);
-        raiseBusError(a, write);            // [[noreturn]] : lève moira::BusError
+        raiseBusError(a, write, external);            // [[noreturn]] : lève moira::BusError
         return true;                        // inatteignable
     }
 
@@ -599,21 +605,20 @@ public:
         g_cur->bpHit = true; g_cur->bpAddr = addr & 0xFFFFFFu; g_cur->bpWatch = true; g_cur->endSlice = true;
     }
 
-    // Save-state : tout l'état d'exécution du cœur (les membres protégés de Moira sont
-    // accessibles ici). reg/queue/StatusRegister sont des PODs → transférés en bloc.
+    // Format v69. Le PC interne désigne le mot IRC. EDB et NMI font partie de
+    // l'état de reprise. Les champs sont transférés sans le padding des types amont.
     void serializeState(StateArchive& ar) {
-        ar(clock); ar(reg); ar(queue); ar(ipl); ar(iplPrev);
-        // `reg` est copié EN BLOC, donc les NEUF booléens de son registre d'état
-        // (moira::StatusRegister : t1 t0 s m x n z c v) échappent à la normalisation
-        // de StateArchive::operator(), qui ne voit que le type de l'agrégat. Un octet
-        // valant autre chose que 0 ou 1 dans un bool est un COMPORTEMENT INDÉFINI —
-        // et `s` est le bit SUPERVISEUR : les deux branches d'un `if (sr.s)` peuvent
-        // être prises. C'est le plus lourd des sites de cette famille, et il avait été
-        // manqué le 2026-09-01 parce que seuls les trois sites NOMMÉS avaient été
-        // corrigés au lieu d'auditer. Liste complète établie depuis : cf. le bandeau
-        // de fixBools() dans StateArchive.hpp.
-        ar.fixBools(reg.sr.t1, reg.sr.t0, reg.sr.s, reg.sr.m,
-                    reg.sr.x, reg.sr.n, reg.sr.z, reg.sr.v, reg.sr.c);
+        ar(clock); ar(reg.pc); ar(reg.pc0); ar(reg.prev_pc0);
+        ar(reg.r); ar(reg.usp); ar(reg.isp); ar(reg.msp);
+        ar(reg.sr.t1); ar(reg.sr.t0); ar(reg.sr.s); ar(reg.sr.m);
+        ar(reg.sr.x); ar(reg.sr.n); ar(reg.sr.z); ar(reg.sr.v); ar(reg.sr.c);
+        ar(reg.sr.ipl); ar(reg.ipl);
+        ar(reg.vbr); ar(reg.sfc); ar(reg.dfc); ar(reg.cacr); ar(reg.caar);
+        ar(queue.edb); ar(queue.irc); ar(queue.ird);
+        ar(ipl); ar(iplPrev); ar(nmiTaken); ar(fcSource); ar(writeBuffer);
+        ar.check(ipl <= 7 && iplPrev <= 7 && reg.ipl <= 7 && reg.sr.ipl <= 7,
+                 "Moira::IPL hors [0,7]");
+        ar.check(fcSource == 0, "Moira::fcSource incompatible avec le 68000");
         ar(iplChangeClock); ar(iplChangeClockPrev);
         // Seuils NEOST_IPLFETCH4/2 : CONFIGURATION DE PROCESSUS (variables d'env, cf.
         // tools/env_locks.json), pas état machine. Le format v50 les contient toujours
@@ -632,7 +637,7 @@ public:
         ar.check(iplDeferred >= -1 && iplDeferred <= 7, "Moira::iplDeferred hors [-1,7]");
         // v55 : retenue d'IRQ après STOP (fenêtre de 4 cycles, cf. Moira.h).
         { moira::i64 g = stopGraceUntil; ar(g); stopGraceUntil = g; }
-        ar.check(stopGraceUntil == -1 || (stopGraceUntil >= 0 && stopGraceUntil <= getClock() + 4),
+        ar.check(stopGraceUntil == -1 || (stopGraceUntil >= 0 && (stopGraceUntil <= getClock() || stopGraceUntil - 4 <= getClock())),
                  "Moira::stopGraceUntil hors domaine");
         ar(fcl); ar(readBuffer);
         // v60 — les drapeaux de Moira mêlent l'état du 68000 (STOPPED, HALTED…) et celui
@@ -657,7 +662,10 @@ public:
         // `(this->*loop[queue.ird])` dont l'assert de garde saute en Release —
         // pointeur-membre NUL pour la quasi-totalité des opcodes → SIGSEGV.
         // Même classe de durcissement que g_cur->cpuMul / enums IKBD (passes 8-9).
-        ar.check(!(flags & moira::State::LOOPING), "Moira::flags LOOPING forgé (68000)");
+        constexpr int cpuFlags = moira::State::HALTED | moira::State::STOPPED | moira::State::TRACING
+                               | moira::State::TRACE_EXC | moira::State::CHECK_IRQ;
+        ar.check(!(flags & ~(cpuFlags | moira::State::CHECK_BP | moira::State::CHECK_WP
+                             | moira::State::CHECK_CP | moira::State::LOGGING)), "Moira::flags hors modèle 68000");
     }
 
     // Lecture du vecteur de reset (SSP/PC) via l'overlay ROM : jamais de bus error.
@@ -862,7 +870,16 @@ public:
         return 4;
     }
 
-    moira::u16 readIrqUserVector(moira::u8 level) const override {
+    moira::u32 read32(moira::u32 addr) const override {
+        const moira::u32 hi = read16(addr);
+        return (hi << 16) | read16(addr + 2);
+    }
+    void write32(moira::u32 addr, moira::u32 value) const override {
+        write16(addr, moira::u16(value >> 16));
+        write16(addr + 2, moira::u16(value));
+    }
+
+    moira::IrqMode readIrqVector(moira::u8 level, moira::u8* vector) const override {
         // Port de « CycInt_Process() + MFP_UpdateIRQ_All au point d'IACK » d'Hatari
         // ([D] newcpu.c:2938-2946 @ f0736b24 branche MFP, :2998-3003 branche vidéo — dans les DEUX
         // cas juste avant l'élection/l'acquittement). En mode bloc, les SYNC de
@@ -889,19 +906,23 @@ public:
             const int v = g_cur->bus->mfp->iack();
             if (g_cur->tracer) g_cur->tracer->onInterrupt(level, v);
             neostUpdateIpl();
-            return (v >= 0) ? moira::u16(v) : moira::u16(24);
+            if (v < 0) return moira::IrqMode::SPURIOUS;
+            *vector = moira::u8(v);
+            return moira::IrqMode::USER;
         }
         if (level == 5 && g_cur->bus->scc) {                 // SCC série : vecteur vectorisé (IACK)
             const int v = g_cur->bus->scc->processIack();
             if (g_cur->tracer) g_cur->tracer->onInterrupt(level, v);
             neostUpdateIpl();
-            return (v >= 0) ? moira::u16(v) : moira::u16(24);  // NV armé → vecteur spurious 24 ($60),
+            if (v < 0) return moira::IrqMode::SPURIOUS;
+            *vector = moira::u8(v);
+            return moira::IrqMode::USER;  // NV armé → vecteur spurious 24 ($60),
                                                                // comme le MFP et Hatari (iack_cycle : vector<0 → 24)
         }
         if (g_cur->tracer) g_cur->tracer->onInterrupt(level, 24 + level);   // VBL/HBL auto-vectorisés
         if (level == 4) g_cur->vblPending = false; else if (level == 2) g_cur->hblPending = false;
         neostUpdateIpl();
-        return moira::u16(24 + level);
+        return moira::IrqMode::AUTO;
     }
 };
 
@@ -1170,7 +1191,7 @@ int Cpu68k::run(int cycles) {
         if (g_htraceOn) {
             htPc = state_->moira->getPC0() & 0xFFFFFFu;
             if (!state_->htArmed && htPc == g_htPc) { if (g_htSkip > 0) --g_htSkip; else { state_->htArmed = true; state_->htPrev = busClockNow(); } }
-            if (state_->htArmed && g_htN > 0) { disassemble(htDis, htPc); htEmit = true; }
+            if (state_->htArmed && g_htN > 0) { disassemble(htDis, htPc, sizeof htDis); htEmit = true; }
         }
         // Débogueur : breakpoint « break-before » — stoppe AVANT d'exécuter l'instruction
         // ciblée (le run() rend la main, PC dessus). Le skip-once évite de re-déclencher à
@@ -1631,9 +1652,12 @@ bool Cpu68k::triggerBusError(uint32_t addr, bool write) {
     // l'appelant abandonne l'accès avec une valeur neutre, comme le registre qui ne
     // répond pas à un accès octet sur le vrai bus.
     if (!state_->inExecute) return true;
-    return state_->moira->faultOrHalt(addr, write);
+    return state_->moira->faultOrHalt(addr, write, true);
 }
 
-int Cpu68k::disassemble(char* str, uint32_t addr) const {
-    return state_->moira->disassemble(str, addr);
+int Cpu68k::disassemble(char* str, uint32_t addr, size_t capacity) const {
+    int length;
+    const auto text = state_->moira->disassemble("%i", addr, &length);
+    std::snprintf(str, capacity, "%s", text.c_str());
+    return length;
 }

@@ -1,9 +1,8 @@
-# Porte d'échange du cœur 68000 (Moira NeoST → Moira POM68K)
+# Porte d'échange du cœur 68000 (Moira de NeoST → Moira officiel)
 
-Le Moira vendorisé (`extern/moira`) sera remplacé par le Moira de POM68K : 68000, 68030 et
-68040, avec JIT déterministe, FPU et MMU intégrés. Ce cœur descend du Moira de NeoST et
-reste cycle-exact en 68000. Ce document dit **comment prouver que l'échange ne change rien
-au ST, au STE et au Mega STE**, et **ce que NeoST attend du cœur**.
+NeoST 0.7.0 utilise le cœur officiel de Dirk W. Hoffmann en mode 68000. Le
+[plan de migration](MIGRATION_MOIRA_070.md) donne le pin, les machines couvertes,
+les adaptations et la recette d'acceptation.
 
 ## La porte
 
@@ -31,7 +30,7 @@ internes :
 | `cpu` | `Cpu68k::archState()` : D0-D7, A0-A7, USP, SSP, PC, SR, IRC, IRD, horloge **bus**, halt, stop | le cœur lui-même |
 
 ```sh
-# 1. Sur le commit de la 0.6.5, DERNIER avant l'échange (Moira actuel) :
+# 1. Sur la base immédiate du portage, avec l'ancien cœur et le palier full vert :
 python3 tools/cpu_swap_gate.py --record /chemin/gate.json      # toutes les suites
 # 2. Sur le commit de l'échange :
 python3 tools/cpu_swap_gate.py --check  /chemin/gate.json      # les suites de la référence
@@ -40,9 +39,9 @@ python3 tools/cpu_swap_gate.py --show replay/golden_axe_ste
 python3 tools/cpu_swap_gate.py --list --suite megaste
 ```
 
-La référence n'est **pas versionnée** : chaque correction d'émulation la périme. Elle
-s'enregistre juste avant l'échange, sur le commit de la release **0.6.5** (dernière sur le
-Moira de NeoST), arbre au palier `full` vert.
+La 0.6.5 publiée (`b3ced823`) garde sa référence historique, enregistrée avec
+le binaire du tag. La référence avant/après du portage utilise le dernier
+commit avec l'ancien cœur et son propre binaire. Les empreintes restent hors Git.
 
 La porte a été éprouvée le 2026-11-10 (commit `8dcbf65`) : accord contre elle-même ;
 `NEOST_MFP_BATCH=0` est vu en `machine` seul, sur plusieurs scénarios ; `NEOST_IPLDELAY=1`
@@ -50,7 +49,7 @@ en `machine` et `cpu` dès la trame 10.
 
 **Un écart se localise, il ne se recale pas.** On prend la dernière trame en accord, puis
 `--trace F --trace-from N --regs --irq` sous les deux binaires, et `tools/trace_diff.py`.
-L'instruction fautive se tranche au banc fx68k (`docs/FX68K_BENCH.md`) : si POM68K est plus
+L'instruction fautive se tranche au banc fx68k (`docs/FX68K_BENCH.md`) : si le cœur candidat est plus
 proche de fx68k, c'est un progrès, consigné et la référence ré-enregistrée ; sinon c'est
 une régression du cœur.
 
@@ -71,7 +70,7 @@ une régression du cœur.
 ## Ce que NeoST attend du cœur
 
 Relevé le 2026-11-10 dans `src/core/Cpu68k.cpp` (classe `NeostMoira`). Tout ce qui suit doit
-exister dans le cœur POM68K, avec la même sémantique en 68000.
+exister dans le cœur officiel adapté, avec la même sémantique en 68000.
 
 ### Mots du bus CPU pour la vidéo
 
@@ -102,7 +101,7 @@ Aucun changement du cœur vendorisé ; ajout limité à l’adaptateur `latchDb`
 `clock`, `reg`, `queue`, `ipl`, `iplPrev`, `iplChangeClock(Prev)`, `iplDelay2/4`,
 `iplDeferred`, `stopGraceUntil`, `fcl`, `readBuffer`, `flags` ; méthodes `pollIpl`,
 `irqDeliverable`, `faultOrHalt`. Ils servent au save-state et à la prise d'IPL : un
-renommage côté POM68K se reporte ici, une disparition demande un équivalent.
+renommage dans l'amont se reporte ici, une disparition demande un équivalent.
 
 ### Instruction garée (coroutine de `runFrame`)
 
@@ -123,9 +122,9 @@ son heure et la pile est **suspendue au milieu de l'instruction**, depuis `sync(
 `tools/check_hog_park.py` (palier `fast`) vérifie l'accord à l'octet avec une exécution d'un
 seul tenant (`NEOST_NO_FIBER=1`), le refus de l'état pendant le garage et l'abandon au reset.
 
-### Patches de NeoST, à retrouver dans POM68K
+### Patches de NeoST à vérifier à chaque import
 
-Détail et preuves → `extern/moira/NEOST_VENDOR.md`. À vérifier selon la date du fork de POM68K :
+Détail et preuves → `extern/moira/NEOST_VENDOR.md`. Origine des adaptations à confronter à chaque pin :
 
 | Date | Patch |
 |------|-------|
@@ -140,4 +139,4 @@ Détail et preuves → `extern/moira/NEOST_VENDOR.md`. À vérifier selon la dat
 | 2026-11-03 | ordre des accès d'après fx68k (MOVEM, ADD/SUB.L mémoire, ADDX/SUBX.L, DBcc, JSR, trame de groupe 0, reset +2) |
 | 2026-11-09 | `<cstdlib>` explicite (Emscripten 7) |
 
-Le moyen le plus sûr : un `diff` de `extern/moira/Moira` contre le cœur POM68K, en mode 68000.
+Le moyen le plus sûr : un `diff` de `extern/moira/Moira` contre le pin officiel, en mode 68000.

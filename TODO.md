@@ -14,8 +14,8 @@
 
 ## Le cap
 
-**Le meilleur émulateur d'Atari ST, STE et Mega STE — puis le TT et le Falcon.** Le prochain
-jalon est l'échange du cœur 68000 par le Moira de POM68K. Ce fichier est rangé par rapport
+**Le meilleur émulateur d'Atari ST, STE et Mega STE — puis le TT et le Falcon.** La 0.7.0 prépare
+l'échange du cœur 68000 pour le Moira officiel de Dirk W. Hoffmann. Ce fichier est rangé par rapport
 à lui, en trois temps :
 
 1. **Avant l'échange** (§ 1 à 8) — tout ce que le cœur actuel n'empêche pas de fermer :
@@ -75,7 +75,7 @@ correction de fidélité.
 
 | Lot | But | Items (titre → §) | Prio |
 |-----|-----|-------------------|------|
-| **0. Jalons de version** | Trois versions sur le cœur actuel, auxquelles tout se compare ensuite | **0.6.3** publiée le 2026-11-10 (`355b6c0`) ; **0.6.4** publiée le 2026-11-11 (`bf5d61f`) ; **0.6.5** juste avant l'intégration du cœur POM68K → § 7 | P1 |
+| **0. Jalons de version** | Trois versions sur le cœur actuel, auxquelles tout se compare ensuite | **0.6.3** publiée le 2026-11-10 (`355b6c0`) ; **0.6.4** publiée le 2026-11-11 (`bf5d61f`) ; **0.6.5** publiée le 2026-11-13 (`b3ced823`) → § 7 | P1 |
 | **1. Filet** | Que l'échange se juge en une commande, sur plus que 57 étalons | Porte élargie, Mega STE 16 MHz, banc fx68k étendu et sort des `.state` (refus explicite) : faits → § 2 | P1 |
 | **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | restes MFP de la fiche et WS3 en attente de source, DMA disque relevé et reporté au § 9 → § 3 ; étalons `rtl` en cours de ligne, relevés de tiers, documents primaires → § 5 | P2 |
 | **3. Logithèque** | Plus aucun plantage que le vrai matériel n'aurait pas | TOS 2.06 UK jugé (course réelle de la ROM), parcours étendus (son, STE, parties longues) → § 4 | P2 |
@@ -96,8 +96,7 @@ Procédure et contrat → [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md). La p
 **57 étalons, 29 parcours (28 de compatibilité et le diagnostic Magic Pockets), la collection en ST, STE et Mega STE, et 42 sondes Mega STE**
 (8, 16 et 16 MHz + cache : blitter/IRQ, bus/cache, DMA disquette, blit sur ses propres registres).
 
-- **Enregistrer la référence** · P1 ⏸ cœur — `cpu_swap_gate.py --record` sur le commit de la
-  **0.6.5**, dernier avant l'échange, palier `full` vert. La référence ne se versionne pas.
+- **Enregistrer la référence** · P1 ⏸ cœur — `cpu_swap_gate.py --record` sur le tag **0.6.5** pour la référence historique, puis sur la base du portage pour isoler le changement de cœur, palier `full` vert. La référence ne se versionne pas.
 
 ---
 
@@ -630,16 +629,14 @@ Ce qui touche `src/core/Cpu68k.cpp` attend l'échange → § 9.
 
 ## 9. 🔁 L'échange du cœur — gelé jusque-là
 
-Le Moira de POM68K (68000/030/040, JIT déterministe, FPU et MMU intégrés, cycle-exact en
-68000) remplace `extern/moira`. **Rien ne s'intègre avant que l'auteur le déclare prêt.**
-Tout ce qui suit touche l'intérieur du cœur ou son enveloppe `NeostMoira` : y travailler
-maintenant, c'est travailler deux fois. Exception : un défaut qui casse un titre se corrige,
-et **sa ligne s'ajoute à la table des patches** de `docs/CPU_SWAP_GATE.md`.
+La migration 0.7.0 a été engagée le 28 novembre 2026 avec le Moira officiel
+de Dirk W. Hoffmann. Le pin, les contrats et les batteries de vérification
+sont décrits dans [le plan](docs/MIGRATION_MOIRA_070.md).
 
 ### Le jour de l'échange
 
 1. Filet du § 2 en place, **0.6.5 publiée**, référence enregistrée sur son commit.
-2. `diff` de `extern/moira/Moira` contre le cœur POM68K en mode 68000 : chaque patch de
+2. `diff` de `extern/moira/Moira` contre le pin officiel en mode 68000 : chaque patch de
    `extern/moira/NEOST_VENDOR.md` s'y retrouve, ou son absence est expliquée.
 3. `cpu_swap_gate.py --check`, palier `full`, `run_moira_runner.sh`, parcours de jeu,
    `run_determinism.py`. Un écart se localise par trace et se tranche au banc fx68k : plus

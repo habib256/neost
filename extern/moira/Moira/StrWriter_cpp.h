@@ -131,6 +131,34 @@ static void sprint_signed(char *&s, i64 value, const DasmNumberFormat &fmt)
     fmt.radix == 10 ? sprintd_signed(s, value) : sprintx_signed(s, value, fmt);
 }
 
+// Helpers for the UAE syntax (fixed-width hexadecimal numbers)
+static void uaeHex(char *&s, u32 value, int digits)
+{
+    *s++ = '$';
+    for (int i = digits - 1; i >= 0; i--) {
+
+        auto digit = char((value >> (4 * i)) & 0xF);
+        *s++ = digit <= 9 ? '0' + digit : 'a' + digit - 10;
+    }
+}
+
+static void uaeHexSigned(char *&s, i32 value, int digits)
+{
+    if (value < 0) { *s++ = '-'; value = -value; }
+    uaeHex(s, (u32)value, digits);
+}
+
+// Prints a number like printf("%0*x", digits, (int)value) does (the sign is extended)
+static void uaeHexExt(char *&s, i32 value, int digits)
+{
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%0*x", digits, (u32)value);
+    *s++ = '$';
+    for (char *c = buf; *c; c++) *s++ = *c;
+}
+
+static int uaeDigits(Size sz) { return sz == Byte ? 2 : sz == Word ? 4 : 8; }
+
 StrWriter&
 StrWriter::operator<<(char c)
 {
@@ -169,6 +197,7 @@ StrWriter::operator<<(Int i)
 StrWriter&
 StrWriter::operator<<(UInt u)
 {
+    if (style.syntax == Syntax::UAE) { uaeHex(ptr, u.raw, 8); return *this; }
     sprint(ptr, u.raw, style.numberFormat);
     return *this;
 }
@@ -217,19 +246,21 @@ StrWriter::operator<<(UInt32 u)
     return *this;
 }
 
-template <Size S> StrWriter&
-StrWriter::operator<<(Imu<S> im)
+StrWriter&
+StrWriter::operator<<(Imu im)
 {
     *ptr++ = '#';
-    *this << UInt(CLIP<S>(im.raw));
+    if (style.syntax == Syntax::UAE) { uaeHex(ptr, CLIP(im.raw, im.sz), uaeDigits(im.sz)); return *this; }
+    *this << UInt(CLIP(im.raw, im.sz));
     return *this;
 }
 
-template <Size S> StrWriter&
-StrWriter::operator<<(Ims<S> im)
+StrWriter&
+StrWriter::operator<<(Ims im)
 {
     *ptr++ = '#';
-    *this << Int(SEXT<S>(im.raw));
+    if (style.syntax == Syntax::UAE) { uaeHex(ptr, CLIP((u32)im.raw, im.sz), uaeDigits(im.sz)); return *this; }
+    *this << Int(SEXT(im.raw, im.sz));
     return *this;
 }
 
@@ -237,31 +268,46 @@ StrWriter&
 StrWriter::operator<<(Imd im)
 {
     *ptr++ = '#';
+    if (style.syntax == Syntax::UAE) { uaeHex(ptr, im.raw & 0xFF, 2); return *this; }
     sprintd(ptr, im.raw);
     return *this;
 }
 
-template <Instr I> StrWriter&
-StrWriter::operator<<(Ins<I> i)
+StrWriter&
+StrWriter::operator<<(Ins i)
 {
-    if constexpr (I == Instr::DBF) {
+    if (i.raw == Instr::DBF) {
 
-        if (style.syntax == Syntax::GNU || style.syntax == Syntax::GNU_MIT) {
+        if (style.syntax == Syntax::GNU || style.syntax == Syntax::GNU_MIT || style.syntax == Syntax::UAE) {
             *this << "dbf";
         } else {
             *this << "dbra";
         }
 
+    } else if (style.syntax == Syntax::UAE) {
+
+        // UAE prints the immediate variants with the plain mnemonic
+        switch (i.raw) {
+
+            case Instr::ORI: case Instr::ORICCR: case Instr::ORISR:          *this << "or";  break;
+            case Instr::ANDI: case Instr::ANDICCR: case Instr::ANDISR:   *this << "and"; break;
+            case Instr::EORI: case Instr::EORICCR: case Instr::EORISR:   *this << "eor"; break;
+            case Instr::SUBI:                                              *this << "sub"; break;
+            case Instr::ADDI:                                              *this << "add"; break;
+            case Instr::CMPI:                                              *this << "cmp"; break;
+            default:                                                       *this << mnemonics[(int)i.raw];
+        }
+
     } else {
 
-        *this << mnemonics[(int)I];
+        *this << mnemonics[(int)i.raw];
     }
 
     return *this;
 }
 
-template <Size S> StrWriter&
-StrWriter::operator<<(Sz<S>)
+StrWriter&
+StrWriter::operator<<(Sz sz)
 {
     switch (style.syntax) {
 
@@ -269,23 +315,45 @@ StrWriter::operator<<(Sz<S>)
        case Syntax::GNU:
         case Syntax::GNU_MIT:
 
-            *this << ((S == Byte) ? "b" : (S == Word) ? "w" : "l");
+            *this << ((sz.raw == Byte) ? "b" : (sz.raw == Word) ? "w" : "l");
             break;
 
         default:
 
-            *this << ((S == Byte) ? ".b" : (S == Word) ? ".w" : ".l");
+            *this << ((sz.raw == Byte) ? ".b" : (sz.raw == Word) ? ".w" : ".l");
     }
 
     return *this;
 }
 
-template <Size S> StrWriter&
-StrWriter::operator<<(Szb<S>)
+StrWriter&
+StrWriter::operator<<(ImPacked im)
+{
+    *ptr++ = '#';
+    *ptr++ = '$';
+    for (u32 v : { im.a, im.b, im.c }) {
+        for (int i = 7; i >= 0; i--) {
+            auto digit = char((v >> (4 * i)) & 0xF);
+            *ptr++ = digit <= 9 ? '0' + digit : 'a' + digit - 10;
+        }
+    }
+    return *this;
+}
+
+StrWriter&
+StrWriter::operator<<(Usz sz)
+{
+    if (style.syntax == Syntax::UAE) *this << Sz{sz.raw};
+    return *this;
+}
+
+StrWriter&
+StrWriter::operator<<(Szb sz)
 {
     switch (style.syntax) {
 
         case Syntax::MOIRA:
+        case Syntax::UAE:
 
             *ptr++ = '.';
             [[fallthrough]];
@@ -294,9 +362,9 @@ StrWriter::operator<<(Szb<S>)
        case Syntax::GNU:
         case Syntax::GNU_MIT:
 
-            if constexpr (S == Byte) *ptr++ = 's';
-            if constexpr (S == Word) *ptr++ = 'w';
-            if constexpr (S == Long) *ptr++ = 'l';
+            if (sz.raw == Byte) *ptr++ = 's';
+            if (sz.raw == Word) *ptr++ = 'w';
+            if (sz.raw == Long) *ptr++ = 'l';
             break;
 
         default:
@@ -663,6 +731,31 @@ StrWriter::operator<<(RegRegList l)
 {
     switch (style.syntax) {
 
+        case Syntax::UAE:
+        {
+            // Mimic UAE's (quirky) register list algorithm
+            int prev = -1, last = -1;
+            bool first = true;
+            auto add = [&](int reg) {
+
+                if (prev < 0) { prev = last = reg; return; }
+                if (reg < 0 || prev + 1 != reg || (reg & 8) != (prev & 8)) {
+
+                    if (!first) *this << "/";
+                    *this << Rn{last};
+                    if (last != prev) {
+                        if (last + 2 == reg) { *this << "/" << Rn{prev}; } else { *this << "-" << Rn{prev}; }
+                    }
+                    last = reg;
+                    first = false;
+                }
+                prev = reg;
+            };
+            for (int i = 0; i < 16; i++) if (l.raw & (1 << i)) add(i);
+            add(-1);
+            break;
+        }
+
        case Syntax::GNU:
         case Syntax::GNU_MIT:
 
@@ -685,6 +778,31 @@ StrWriter::operator<<(RegRegList l)
 StrWriter&
 StrWriter::operator<<(FRegList l)
 {
+    if (style.syntax == Syntax::UAE) {
+
+        // Mimic UAE's (quirky) register list algorithm
+        int prev = -1, last = -1;
+        bool first = true;
+        auto add = [&](int reg) {
+
+            if (prev < 0) { prev = last = reg; return; }
+            if (reg < 0 || prev + 1 != reg) {
+
+                if (!first) *this << "/";
+                *this << Fp{last};
+                if (last != prev) {
+                    if (last + 2 == reg) { *this << "/" << Fp{prev}; } else { *this << "-" << Fp{prev}; }
+                }
+                last = reg;
+                first = false;
+            }
+            prev = reg;
+        };
+        for (int i = 0; i < 8; i++) if (l.raw & (1 << i)) add(i);
+        add(-1);
+        return *this;
+    }
+
     int r[8];
 
     // Step 1: Fill array r with the register list bits, e.g., 11101101
@@ -715,23 +833,23 @@ StrWriter::operator<<(FRegList l)
     return *this;
 }
 
-template <Mode M, Size S> StrWriter&
-StrWriter::operator<<(const Ea<M, S> &ea)
+StrWriter&
+StrWriter::operator<<(const Ea &ea)
 {
-    switch (M) {
+    switch (ea.m) {
 
         case Mode::DN:   *this << Dn{ea.reg};    break;
         case Mode::AN:   *this << An{ea.reg};    break;
-        case Mode::AI:   *this << Ai<M,S>{ea};   break;
-        case Mode::PI:   *this << Pi<M,S>{ea};   break;
-        case Mode::PD:   *this << Pd<M,S>{ea};   break;
-        case Mode::DI:   *this << Di<M,S>{ea};   break;
-        case Mode::IX:   *this << Ix<M,S>{ea};   break;
-        case Mode::AW:   *this << Aw<M,S>{ea};   break;
-        case Mode::AL:   *this << Al<M,S>{ea};   break;
-        case Mode::DIPC: *this << DiPc<M,S>{ea}; break;
-        case Mode::IXPC: *this << Ix<M,S>{ea};   break;
-        case Mode::IM:   *this << Im<M,S>{ea};   break;
+        case Mode::AI:   *this << Ai{ea};   break;
+        case Mode::PI:   *this << Pi{ea};   break;
+        case Mode::PD:   *this << Pd{ea};   break;
+        case Mode::DI:   *this << Di{ea};   break;
+        case Mode::IX:   *this << Ix{ea};   break;
+        case Mode::AW:   *this << Aw{ea};   break;
+        case Mode::AL:   *this << Al{ea};   break;
+        case Mode::DIPC: *this << DiPc{ea}; break;
+        case Mode::IXPC: *this << Ix{ea};   break;
+        case Mode::IM:   *this << Im{ea};   break;
 
         default:
             *this << "???";
@@ -739,14 +857,15 @@ StrWriter::operator<<(const Ea<M, S> &ea)
     return *this;
 }
 
-template <Mode M, Size S> StrWriter&
-StrWriter::operator<<(Ai<M, S> wrapper)
+StrWriter&
+StrWriter::operator<<(Ai wrapper)
 {
     auto &ea = wrapper.ea;
 
     switch (style.syntax) {
 
         case Syntax::MOIRA:
+        case Syntax::UAE:
         case Syntax::MUSASHI:
        case Syntax::GNU:
 
@@ -763,14 +882,15 @@ StrWriter::operator<<(Ai<M, S> wrapper)
     return *this;
 }
 
-template <Mode M, Size S> StrWriter&
-StrWriter::operator<<(Pi<M, S> wrapper)
+StrWriter&
+StrWriter::operator<<(Pi wrapper)
 {
     auto &ea = wrapper.ea;
 
     switch (style.syntax) {
 
         case Syntax::MOIRA:
+        case Syntax::UAE:
         case Syntax::MUSASHI:
        case Syntax::GNU:
 
@@ -787,14 +907,15 @@ StrWriter::operator<<(Pi<M, S> wrapper)
     return *this;
 }
 
-template <Mode M, Size S> StrWriter&
-StrWriter::operator<<(Pd<M, S> wrapper)
+StrWriter&
+StrWriter::operator<<(Pd wrapper)
 {
     auto &ea = wrapper.ea;
 
     switch (style.syntax) {
 
         case Syntax::MOIRA:
+        case Syntax::UAE:
         case Syntax::MUSASHI:
        case Syntax::GNU:
 
@@ -811,12 +932,19 @@ StrWriter::operator<<(Pd<M, S> wrapper)
     return *this;
 }
 
-template <Mode M, Size S> StrWriter&
-StrWriter::operator<<(Di<M, S> wrapper)
+StrWriter&
+StrWriter::operator<<(Di wrapper)
 {
     auto &ea = wrapper.ea;
 
     switch (style.syntax) {
+
+        case Syntax::UAE:
+
+            *ptr++ = '(';
+            uaeHexSigned(ptr, (i16)ea.ext1, 4);
+            *this << "," << An{ea.reg} << ")";
+            return *this;
 
         case Syntax::MOIRA:
         case Syntax::MUSASHI:
@@ -839,34 +967,39 @@ StrWriter::operator<<(Di<M, S> wrapper)
     return *this;
 }
 
-template <Mode M, Size S> StrWriter&
-StrWriter::operator<<(Ix<M, S> wrapper)
+StrWriter&
+StrWriter::operator<<(Ix wrapper)
 {
     switch (style.syntax) {
 
         case Syntax::MUSASHI:
 
-            *this << IxMus<M, S>{wrapper.ea};
+            *this << IxMus{wrapper.ea};
+            break;
+
+        case Syntax::UAE:
+
+            *this << IxUae{wrapper.ea};
             break;
 
         case Syntax::GNU_MIT:
         case Syntax::MOIRA_MIT:
 
-            *this << IxMit<M, S>{wrapper.ea};
+            *this << IxMit{wrapper.ea};
             break;
 
         default:
 
-            *this << IxMot<M, S>{wrapper.ea};
+            *this << IxMot{wrapper.ea};
     }
 
     return *this;
 }
 
-template <Mode M, Size S> StrWriter&
-StrWriter::operator<<(IxMot<M, S> wrapper)
+StrWriter&
+StrWriter::operator<<(IxMot wrapper)
 {
-    assert(M == Mode(6) || M == Mode(10));
+    assert(wrapper.ea.m == Mode(6) || wrapper.ea.m == Mode(10));
 
     auto &ea = wrapper.ea;
 
@@ -885,7 +1018,7 @@ StrWriter::operator<<(IxMot<M, S> wrapper)
         u16 disp  = ________xxxxxxxx (ea.ext1);
 
         *this << "(" << Int{(i8)disp} << ",";
-        M == Mode(10) ? *this << Pc{} : *this << An{ea.reg};
+        ea.m == Mode(10) ? *this << Pc{} : *this << An{ea.reg};
         *this << "," << Rn{reg} << (lw ? ".l" : ".w") << Scale{scale} << ")";
 
     } else {
@@ -909,7 +1042,7 @@ StrWriter::operator<<(IxMot<M, S> wrapper)
             size == 3 ? (*this << Int{(i32)base}) : (*this << Int{(i16)base});
         };
         auto baseRegister = [&]() {
-            if constexpr (M == Mode(10)) {
+            if (ea.m == Mode(10)) {
                 if (!bs) { *this << Sep{} << Pc{}; } else { *this << Sep{} << Zpc{}; }
             } else {
                 if (!bs) { *this << Sep{} << An{ea.reg}; }
@@ -952,10 +1085,10 @@ StrWriter::operator<<(IxMot<M, S> wrapper)
     return *this;
 }
 
-template <Mode M, Size S> StrWriter&
-StrWriter::operator<<(IxMit<M, S> wrapper)
+StrWriter&
+StrWriter::operator<<(IxMit wrapper)
 {
-    assert(M == Mode(6) || M == Mode(10));
+    assert(wrapper.ea.m == Mode(6) || wrapper.ea.m == Mode(10));
 
     auto &ea = wrapper.ea;
 
@@ -973,7 +1106,7 @@ StrWriter::operator<<(IxMit<M, S> wrapper)
         u16 scale = _____xx_________ (ea.ext1);
         u16 disp  = ________xxxxxxxx (ea.ext1);
 
-        M == Mode(10) ? *this << Pc{} : *this << An{ea.reg};
+        ea.m == Mode(10) ? *this << Pc{} : *this << An{ea.reg};
         *this << "@(" << Int{(i8)disp};
         *this << "," << Rn{reg} << (lw ? ":l" : ":w") << Scale{scale} << ")";
 
@@ -998,7 +1131,7 @@ StrWriter::operator<<(IxMit<M, S> wrapper)
             size == 3 ? (*this << Int{(i32)base}) : (*this << Int{(i16)base});
         };
         auto baseRegister = [&]() {
-            if constexpr (M == Mode(10)) {
+            if (ea.m == Mode(10)) {
                 bs ? *this << Zpc{} : *this << Pc{};
             } else {
                 if (!bs) *this << An{ea.reg};
@@ -1044,10 +1177,76 @@ StrWriter::operator<<(IxMit<M, S> wrapper)
     return *this;
 }
 
-template <Mode M, Size S> StrWriter&
-StrWriter::operator<<(IxMus<M, S> wrapper)
+StrWriter&
+StrWriter::operator<<(IxUae wrapper)
 {
-    assert(M == Mode(6) || M == Mode(10));
+    auto &ea = wrapper.ea;
+    bool pcrel = ea.m == Mode(10);
+
+    u16 reg   = xxxx____________ (ea.ext1);
+    u16 lw    = ____x___________ (ea.ext1);
+    u16 scale = _____xx_________ (ea.ext1);
+
+    auto name = [&]() { pcrel ? (void)(*this << Pc{}) : (void)(*this << An{ea.reg}); };
+    auto index = [&]() {
+        *this << Rn{reg} << (lw ? ".l" : ".w");
+        if (scale) { *ptr++ = '*'; *ptr++ = '0' + (char)(1 << scale); }
+    };
+
+    if (!_______x________ (ea.ext1)) {
+
+        // Brief format
+        u8 disp = ________xxxxxxxx (ea.ext1);
+
+        *ptr++ = '(';
+        uaeHexSigned(ptr, (i8)disp, 2);
+        *ptr++ = ',';
+        name();
+        *ptr++ = ',';
+        index();
+        if (pcrel) {
+            *ptr++ = '=';
+            uaeHex(ptr, U32_ADD(U32_ADD(ea.pc, 2), (i8)disp), 8);
+        }
+        *ptr++ = ')';
+        return *this;
+    }
+
+    // Full format
+    u16  bs    = ________x_______ (ea.ext1);
+    u16  is    = _________x______ (ea.ext1);
+    u16  size  = __________xx____ (ea.ext1);
+    u16  iis   = _____________xxx (ea.ext1);
+
+    *ptr++ = '(';
+    if (iis & 3) {
+        *ptr++ = '[';
+    } else {
+        if (!bs) { name(); *ptr++ = ','; }
+        if (!is) { index(); *ptr++ = ','; }
+    }
+    if (size == 2) { uaeHexExt(ptr, (i16)ea.ext2, 4); *ptr++ = ','; }
+    if (size == 3) { uaeHexExt(ptr, (i32)ea.ext2, 8); *ptr++ = ','; }
+
+    if (iis & 3) {
+        if (!bs) { name(); *ptr++ = ','; }
+        if (!(iis & 4) && !is) { index(); *ptr++ = ','; }
+        if (ptr[-1] == ',') ptr--;
+        *ptr++ = ']'; *ptr++ = ',';
+        if ((iis & 4) && !is) { index(); *ptr++ = ','; }
+    }
+    if ((iis & 3) == 2) { uaeHexExt(ptr, (i16)ea.ext3, 4); *ptr++ = ','; }
+    if ((iis & 3) == 3) { uaeHexExt(ptr, (i32)ea.ext3, 8); *ptr++ = ','; }
+
+    if (ptr[-1] == ',') ptr--;
+    *ptr++ = ')';
+    return *this;
+}
+
+StrWriter&
+StrWriter::operator<<(IxMus wrapper)
+{
+    assert(wrapper.ea.m == Mode(6) || wrapper.ea.m == Mode(10));
 
     auto &ea = wrapper.ea;
 
@@ -1067,7 +1266,7 @@ StrWriter::operator<<(IxMus<M, S> wrapper)
 
         *this << "(";
         if (disp) *this << Int{(i8)disp} << ",";
-        M == Mode(10) ? *this << Pc{} : *this << An{ea.reg};
+        ea.m == Mode(10) ? *this << Pc{} : *this << An{ea.reg};
         *this << "," << Rn{reg};
         *this << (lw ? ".l" : ".w");
         *this << Scale{scale} << ")";
@@ -1114,7 +1313,7 @@ StrWriter::operator<<(IxMus<M, S> wrapper)
         if (!bs) {
 
             if (comma) *this << ",";
-            M == Mode(10) ? *this << Pc{} : *this << An{ea.reg};
+            ea.m == Mode(10) ? *this << Pc{} : *this << An{ea.reg};
             comma = true;
         }
         if (postindex) {
@@ -1147,18 +1346,24 @@ StrWriter::operator<<(IxMus<M, S> wrapper)
     return *this;
 }
 
-template <Mode M, Size S> StrWriter&
-StrWriter::operator<<(Aw<M, S> wrapper)
+StrWriter&
+StrWriter::operator<<(Aw wrapper)
 {
     auto &ea = wrapper.ea;
 
     switch (style.syntax) {
 
+        case Syntax::UAE:
+
+            uaeHexSigned(ptr, (i16)ea.ext1, 4);
+            *this << Sz{Word};
+            break;
+
         case Syntax::MOIRA:
         case Syntax::MOIRA_MIT:
         case Syntax::MUSASHI:
 
-            *this << UInt(ea.ext1) << Sz<Word>{};
+            *this << UInt(ea.ext1) << Sz{Word};
             break;
 
        case Syntax::GNU:
@@ -1171,18 +1376,23 @@ StrWriter::operator<<(Aw<M, S> wrapper)
     return *this;
 }
 
-template <Mode M, Size S> StrWriter&
-StrWriter::operator<<(Al<M, S> wrapper)
+StrWriter&
+StrWriter::operator<<(Al wrapper)
 {
     auto &ea = wrapper.ea;
 
     switch (style.syntax) {
 
+        case Syntax::UAE:
+
+            uaeHex(ptr, ea.ext1, 8);
+            break;
+
         case Syntax::MOIRA:
         case Syntax::MOIRA_MIT:
         case Syntax::MUSASHI:
 
-            *this << UInt(ea.ext1) << Sz<Long>{};
+            *this << UInt(ea.ext1) << Sz{Long};
             break;
 
        case Syntax::GNU:
@@ -1195,13 +1405,20 @@ StrWriter::operator<<(Al<M, S> wrapper)
     return *this;
 }
 
-template <Mode M, Size S> StrWriter&
-StrWriter::operator<<(DiPc<M, S> wrapper)
+StrWriter&
+StrWriter::operator<<(DiPc wrapper)
 {
     auto &ea = wrapper.ea;
     u32 resolved;
 
     switch (style.syntax) {
+
+        case Syntax::UAE:
+
+            *ptr++ = '(';
+            uaeHexSigned(ptr, (i16)ea.ext1, 4);
+            *this << "," << Pc{} << ")";
+            break;
 
         case Syntax::MOIRA:
         case Syntax::MUSASHI:
@@ -1228,8 +1445,8 @@ StrWriter::operator<<(DiPc<M, S> wrapper)
     return *this;
 }
 
-template <Mode M, Size S> StrWriter&
-StrWriter::operator<<(Im<M, S> wrapper)
+StrWriter&
+StrWriter::operator<<(Im wrapper)
 {
     auto &ea = wrapper.ea;
 
@@ -1238,26 +1455,27 @@ StrWriter::operator<<(Im<M, S> wrapper)
        case Syntax::GNU:
         case Syntax::GNU_MIT:
 
-            *this << Ims<S>(ea.ext1);
+            *this << Ims(ea.ext1, ea.sz);
             break;
 
         default:
 
-            *this << Imu<S>(ea.ext1);
+            *this << Imu(ea.ext1, ea.sz);
             break;
     }
 
     return *this;
 }
 
-template <Mode M, Size S> StrWriter&
-StrWriter::operator<<(Ip<M, S> wrapper)
+StrWriter&
+StrWriter::operator<<(Ip wrapper)
 {
     auto &ea = wrapper.ea;
 
     switch (style.syntax) {
 
         case Syntax::MOIRA:
+        case Syntax::UAE:
         case Syntax::MUSASHI:
        case Syntax::GNU:
 
@@ -1282,6 +1500,7 @@ StrWriter::operator<<(Scale s)
     switch (style.syntax) {
 
         case Syntax::MOIRA:
+        case Syntax::UAE:
         case Syntax::MUSASHI:
        case Syntax::GNU:
 
@@ -1307,6 +1526,17 @@ StrWriter::operator<<(Fc fc)
     // 01DDD — Function code is specified as bits 2–0 of data register DDD
     // 00000 — Function code is specified as source function code register
     // 00001 — Function code is specified as destination function code register
+
+    if (style.syntax == Syntax::UAE) {
+
+        switch (fc.raw & 0x18) {
+
+            case 0x10:  *this << "#" << (int)(fc.raw & 7); break;
+            case 0x08:  *this << Dn(fc.raw & 7); break;
+            default:    (fc.raw & 1) ? (void)(*this << Dfc()) : (void)(*this << Sfc());
+        }
+        return *this;
+    }
 
     switch (fc.raw >> 3 & 0b11) {
 
@@ -1401,6 +1631,15 @@ StrWriter::operator<<(Fctrl fctrl)
     const char *prefix = style.syntax == Syntax::GNU_MIT || style.syntax == Syntax::MOIRA_MIT ? "%" : "";
     const char *delim = "";
 
+    if (style.syntax == Syntax::UAE) {
+
+        // UAE lists the control registers in the order FPCR, FPSR, FPIAR
+        if (fctrl.raw & 4) { *this << delim << "fpcr";  delim = "/"; }
+        if (fctrl.raw & 2) { *this << delim << "fpsr";  delim = "/"; }
+        if (fctrl.raw & 1) { *this << delim << "fpiar"; delim = "/"; }
+        return *this;
+    }
+
     if (fctrl.raw == 0 && style.syntax != Syntax::GNU) { *this << "{}"; }
     if (fctrl.raw & 1) { *this << delim << prefix << "fpiar"; delim = "/"; }
     if (fctrl.raw & 2) { *this << delim << prefix << "fpsr";  delim = "/"; }
@@ -1414,7 +1653,8 @@ StrWriter::operator<<(Tab tab)
 {
     switch (style.syntax) {
 
-       case Syntax::GNU:
+        case Syntax::UAE:
+        case Syntax::GNU:
         case Syntax::GNU_MIT:
 
             *ptr++ = ' ';
@@ -1428,12 +1668,12 @@ StrWriter::operator<<(Tab tab)
     return *this;
 }
 
-template <Instr I, Mode M, Size S> StrWriter&
-StrWriter::operator<<(const Av<I, M, S> &av)
+StrWriter&
+StrWriter::operator<<(const Av &av)
 {
-    if (style.syntax == Syntax::GNU || style.syntax == Syntax::GNU_MIT) { return *this; }
+    if (style.syntax == Syntax::GNU || style.syntax == Syntax::GNU_MIT || style.syntax == Syntax::UAE) { return *this; }
 
-    switch (I) {
+    switch (av.I) {
 
         case Instr::BKPT:
         case Instr::MOVES:
@@ -1445,7 +1685,7 @@ StrWriter::operator<<(const Av<I, M, S> &av)
 
         case Instr::CMPI:
 
-            *this << (isPrgMode(M) ? "; (1+)" : "");
+            *this << (isPrgMode(av.M) ? "; (1+)" : "");
             break;
 
         case Instr::CALLM:
@@ -1519,11 +1759,11 @@ StrWriter::operator<<(const Av<I, M, S> &av)
         case Instr::BLE:
         case Instr::BSR:
 
-            *this << (S == Long ? "; (2+)" : "");
+            *this << (av.S == Long ? "; (2+)" : "");
             break;
 
         case Instr::TST:
-            *this << (M == Mode(1) || M >= Mode(9) ? "; (2+)" : "");
+            *this << (av.M == Mode(1) || av.M >= Mode(9) ? "; (2+)" : "");
             break;
 
         case Instr::CINV:
@@ -1577,7 +1817,8 @@ StrWriter::operator<<(Sep)
             *ptr++ = ' ';
             break;
 
-       case Syntax::GNU:
+        case Syntax::UAE:
+        case Syntax::GNU:
         case Syntax::GNU_MIT:
 
             break;

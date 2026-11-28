@@ -5,6 +5,25 @@ directement dans le dépôt NeoST (« vendorisée ») du cœur 68000 cycle-exact
 [Moira](https://github.com/dirkwhoffmann/Moira) de Dirk W. Hoffmann (licence MIT,
 cf. `LICENSE`).
 
+## Import pour la 0.7.0
+
+L'arbre de départ de cet import est le [Moira 6.0b1 officiel de Dirk W.
+Hoffmann](https://github.com/dirkwhoffmann/Moira/tree/bf98107ffa3bb24d576bbe99ef684c77e33de938/Moira),
+commit `bf98107ffa3bb24d576bbe99ef684c77e33de938`. Le dépôt contient le cœur
+et sa licence MIT. Les bancs tiers de l'amont se construisent séparément.
+
+| Domaine | Traitement pour NeoST |
+|---|---|
+| Modèles, caches, FPU et MMU | Sources amont compilées. L'adaptateur des ST sélectionne M68000, bus physique 16 bits, syntaxe de trace Musashi. |
+| Horloge et arbitrage | Délégués avant/après chaque cycle physique du 68000, verrou TAS, position des accès longs, broches et acquittement d'interruption datés. |
+| STOP, exceptions et débogage | Échantillon IPL différé en option, délai après STOP, observation des fautes, halt au reset, délégué des opcodes GEMDOS, watchpoints sur adresse de bus. |
+| Prélecture et accès | Examiner les verdicts du banc fx68k et les tests SR/CCR pour le mot réellement chargé en IRD. La file amont comporte désormais EDB ; la valeur architecturale du PC passe par les accesseurs amont. |
+| État machine | Format v69 pour les registres et la file du 68000 par champ. Les options de processus se réappliquent au chargement. Le format v68 exige le binaire précédent. |
+
+Les sections datées qui suivent décrivent la provenance des adaptations et le
+pin de départ de la **première** vendorisation. Le plan de vérification du
+présent import est dans [MIGRATION_MOIRA_070.md](../../docs/MIGRATION_MOIRA_070.md).
+
 ## En-têtes standard explicites (2026-11-09)
 
 `Moira.cpp` inclut `<cstdlib>` pour les appels `std::getenv` du diagnostic

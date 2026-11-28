@@ -1,7 +1,7 @@
 // =============================================================================
 //  Cpu68k.hpp — Wrapper C++ autour du core Moira (Motorola 68000, cycle-exact).
 //
-//  On NE réimplémente PAS le 68000 : Moira est intégré en sous-module et exposé
+//  On NE réimplémente PAS le 68000 : Moira est vendorisé et exposé
 //  via cette façade. Le wrapper relie les accès mémoire de Moira à notre Bus et
 //  expose juste ce qu'il faut au débogueur.
 //
@@ -11,6 +11,7 @@
 #include <functional>
 #include <memory>
 #include <cstdint>
+#include <cstddef>
 #include <string>
 
 class Bus;
@@ -255,8 +256,8 @@ public:
     // Désassemble l'instruction à `addr` (lecture sans effet de bord via le bus) :
     // écrit le texte dans `str` (≥256 octets recommandés) et renvoie sa longueur en
     // octets. Utilisé par le Tracer et le mode --disasm du headless. Le désassembleur
-    // de Moira reproduit la syntaxe Musashi (cf. setDasmSyntax) → format inchangé.
-    int disassemble(char* str, uint32_t addr) const;
+    // de Moira reproduit la syntaxe Musashi (cf. setDasmStyle) → format inchangé.
+    int disassemble(char* str, uint32_t addr, std::size_t capacity = 256) const;
 
     // Save-state : état interne du cœur Moira (registres, prefetch, horloge, IPL, flags)
     // + les compteurs de timing du wrapper. Symétrique save/load (cf. StateArchive).
