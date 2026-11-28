@@ -1,38 +1,39 @@
 # Community 378
 
-> 10 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **Blitter et IRQ MegaSTE : contrôle des domaines d'horloge** (10 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **.finishTransfer()** (5 connections) — `src/core/Blitter.hpp`
-- **Cohérence BUSY / GPU_DONE dans NeoST** (3 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Audit indépendant et expériences causales** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Borne de durée** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Correctif NeoST indépendant** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Horloge des cycles internes après IACK** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Protocole** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Reproduire** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Résultats observés au pin** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **.mixSegment()** (7 connections) — `src/core/DmaSound.hpp`
+- **.mixStereo()** (7 connections) — `src/core/DmaSound.hpp`
+- **.mix()** (6 connections) — `src/core/DmaSound.hpp`
+- **.capPullLR()** (5 connections) — `src/core/DmaSound.hpp`
+- **.lmcYmFactor()** (4 connections) — `src/core/DmaSound.hpp`
+- **.capRenderAvail()** (4 connections) — `src/core/DmaSound.hpp`
+- **Son de la démo WASM : les samples redeviennent audibles (2026-08-11)** (4 connections) — `CHANGELOG.md`
+- **.syncAudioFromCpu()** (3 connections) — `src/core/DmaSound.hpp`
+- **.lowPassPull()** (3 connections) — `src/core/DmaSound.hpp`
+- **.capAvail()** (3 connections) — `src/core/DmaSound.hpp`
+- **fir121()** (2 connections) — `src/core/DmaSound.cpp`
 
 ## Relationships
 
-- [Community 189](Community_189.md) (2 shared connections)
-- [Community 37](Community_37.md) (1 shared connections)
-- [Community 218](Community_218.md) (1 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 411](Community_411.md) (1 shared connections)
-- [Community 296](Community_296.md) (1 shared connections)
+- [Community 446](Community_446.md) (10 shared connections)
+- [Community 13](Community_13.md) (9 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
+- [Community 140](Community_140.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_MEGASTE_AUDIT.md`
-- `src/core/Blitter.hpp`
+- `CHANGELOG.md`
+- `src/core/DmaSound.cpp`
+- `src/core/DmaSound.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 12 (75%)
-- INFERRED: 4 (25%)
+- EXTRACTED: 19 (54%)
+- INFERRED: 16 (46%)
 - AMBIGUOUS: 0 (0%)
 
 ---

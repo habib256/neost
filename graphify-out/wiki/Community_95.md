@@ -1,6 +1,6 @@
 # Community 95
 
-> 29 nodes
+> 23 nodes
 
 ## Key Concepts
 
@@ -16,29 +16,26 @@
 - **.setMotorOn()** (13 connections) — `src/io/Fdc.hpp`
 - **.cmdComplete()** (13 connections) — `src/io/Fdc.hpp`
 - **.spinWaitDelay()** (12 connections) — `src/io/Fdc.hpp`
-- **.bufferAdd()** (11 connections) — `src/io/Fdc.hpp`
 - **.updateRestore()** (11 connections) — `src/io/Fdc.hpp`
 - **.updateSeek()** (11 connections) — `src/io/Fdc.hpp`
 - **.updateStep()** (11 connections) — `src/io/Fdc.hpp`
 - **.updateFloppyDensity()** (10 connections) — `src/io/Fdc.hpp`
-- **.fifoPush()** (10 connections) — `src/io/Fdc.hpp`
-- **.bufferSize()** (9 connections) — `src/io/Fdc.hpp`
 - **.nextIndexCycles()** (7 connections) — `src/io/Fdc.hpp`
-- **.fifoPull()** (7 connections) — `src/io/Fdc.hpp`
 - **.bufferReset()** (7 connections) — `src/io/Fdc.hpp`
 - **.verifyTrack()** (6 connections) — `src/io/Fdc.hpp`
 - **.updateMotorStop()** (6 connections) — `src/io/Fdc.hpp`
 - **.canHandleDensity()** (5 connections) — `src/io/Fdc.hpp`
-- *... and 4 more nodes in this community*
+- **.bufferReadByte()** (4 connections) — `src/io/Fdc.hpp`
+- **.bufferReadTiming()** (4 connections) — `src/io/Fdc.hpp`
 
 ## Relationships
 
-- [Community 406](Community_406.md) (44 shared connections)
-- [Community 12](Community_12.md) (30 shared connections)
-- [Community 24](Community_24.md) (18 shared connections)
-- [Community 149](Community_149.md) (10 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
-- [Community 480](Community_480.md) (1 shared connections)
+- [Community 12](Community_12.md) (24 shared connections)
+- [Community 149](Community_149.md) (24 shared connections)
+- [Community 406](Community_406.md) (23 shared connections)
+- [Community 24](Community_24.md) (16 shared connections)
+- [Community 377](Community_377.md) (5 shared connections)
+- [Community 78](Community_78.md) (1 shared connections)
 
 ## Source Files
 
@@ -46,8 +43,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 56 (28%)
-- INFERRED: 147 (72%)
+- EXTRACTED: 43 (25%)
+- INFERRED: 132 (75%)
 - AMBIGUOUS: 0 (0%)
 
 ---

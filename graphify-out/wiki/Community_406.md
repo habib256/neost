@@ -1,6 +1,6 @@
 # Community 406
 
-> 69 nodes
+> 50 nodes
 
 ## Key Concepts
 
@@ -8,43 +8,43 @@
 - **.loadImage()** (23 connections) — `src/io/Fdc.hpp`
 - **.restoreMedia()** (15 connections) — `src/io/Fdc.hpp`
 - **.writeBack()** (13 connections) — `src/io/Fdc.hpp`
-- **.readTrackST()** (12 connections) — `src/io/Fdc.hpp`
-- **.writeTrackBuffer()** (12 connections) — `src/io/Fdc.hpp`
 - **.present()** (12 connections) — `src/io/Fdc.hpp`
 - **.eject()** (11 connections) — `src/io/Fdc.hpp`
 - **.writeSectorST()** (11 connections) — `src/io/Fdc.hpp`
 - **.mediaSelfTest()** (11 connections) — `src/io/Fdc.hpp`
 - **.readMediaCopy()** (10 connections) — `src/io/Fdc.hpp`
-- **.bytesPerTrack()** (9 connections) — `src/io/Fdc.hpp`
-- **.readAddressST()** (9 connections) — `src/io/Fdc.hpp`
-- **.stOverrideHere()** (9 connections) — `src/io/Fdc.hpp`
 - **.touchMedia()** (9 connections) — `src/io/Fdc.hpp`
 - **.refreshImageGeometry()** (8 connections) — `src/io/Fdc.hpp`
-- **.readSectorST()** (8 connections) — `src/io/Fdc.hpp`
-- **.stOverrideFromBuffer()** (8 connections) — `src/io/Fdc.hpp`
-- **.stOverrideFound()** (8 connections) — `src/io/Fdc.hpp`
 - **.writeSectorStx()** (8 connections) — `src/io/Fdc.hpp`
 - **.sameHostFile()** (8 connections) — `src/io/Fdc.hpp`
 - **decodeMsa()** (8 connections) — `src/io/Fdc.cpp`
-- **stxTrackWithSectorWrites()** (8 connections) — `src/io/Fdc.cpp`
 - **string** (8 connections)
-- **.parseWrittenTrack()** (7 connections) — `src/io/Fdc.hpp`
-- *... and 44 more nodes in this community*
+- **.writeMedia()** (7 connections) — `src/io/Fdc.hpp`
+- **.msaSelfTest()** (7 connections) — `src/io/Fdc.hpp`
+- **decodeDim()** (7 connections) — `src/io/Fdc.cpp`
+- **decodeDimUsed()** (7 connections) — `src/io/Fdc.cpp`
+- **encodeMsa()** (7 connections) — `src/io/Fdc.cpp`
+- **MediaCopy** (7 connections)
+- **.stxPersist()** (6 connections) — `src/io/Fdc.hpp`
+- **.copyMedia()** (6 connections) — `src/io/Fdc.hpp`
+- **.recreateMediaIfAllowed()** (6 connections) — `src/io/Fdc.hpp`
+- **.recreateMediaFile()** (6 connections) — `src/io/Fdc.hpp`
+- *... and 25 more nodes in this community*
 
 ## Relationships
 
-- [Community 95](Community_95.md) (44 shared connections)
-- [Community 12](Community_12.md) (40 shared connections)
-- [Community 24](Community_24.md) (36 shared connections)
-- [Community 149](Community_149.md) (23 shared connections)
-- [Community 611](Community_611.md) (14 shared connections)
-- [Community 102](Community_102.md) (10 shared connections)
+- [Community 149](Community_149.md) (38 shared connections)
+- [Community 24](Community_24.md) (32 shared connections)
+- [Community 12](Community_12.md) (28 shared connections)
+- [Community 95](Community_95.md) (23 shared connections)
+- [Community 102](Community_102.md) (21 shared connections)
+- [Community 377](Community_377.md) (10 shared connections)
 - [Community 78](Community_78.md) (6 shared connections)
-- [Community 170](Community_170.md) (5 shared connections)
-- [Community 31](Community_31.md) (5 shared connections)
+- [Community 4](Community_4.md) (5 shared connections)
 - [Community 213](Community_213.md) (3 shared connections)
 - [Community 160](Community_160.md) (3 shared connections)
-- [Community 176](Community_176.md) (3 shared connections)
+- [Community 204](Community_204.md) (3 shared connections)
+- [Community 170](Community_170.md) (3 shared connections)
 
 ## Source Files
 
@@ -55,8 +55,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 276 (68%)
-- INFERRED: 130 (32%)
+- EXTRACTED: 241 (73%)
+- INFERRED: 89 (27%)
 - AMBIGUOUS: 0 (0%)
 
 ---

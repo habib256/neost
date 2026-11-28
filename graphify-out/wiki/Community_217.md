@@ -1,6 +1,6 @@
 # Community 217
 
-> 29 nodes
+> 28 nodes
 
 ## Key Concepts
 
@@ -27,29 +27,28 @@
 - **.writeRaw()** (3 connections) — `src/io/IpfImage.cpp`
 - **.writeWeak()** (3 connections) — `src/io/IpfImage.cpp`
 - **string** (2 connections)
-- **Chasse aux bugs en quatre vagues ; format d'état v60 (2026-11-11)** (2 connections) — `CHANGELOG.md`
 - **map** (1 connections)
-- *... and 4 more nodes in this community*
+- **err** (1 connections) — `src/io/IpfImage.cpp`
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
 - [Community 143](Community_143.md) (8 shared connections)
-- [Community 611](Community_611.md) (6 shared connections)
+- [Community 102](Community_102.md) (6 shared connections)
 - [Community 459](Community_459.md) (4 shared connections)
 - [Community 561](Community_561.md) (2 shared connections)
 - [Community 583](Community_583.md) (2 shared connections)
+- [Community 150](Community_150.md) (1 shared connections)
 - [Community 220](Community_220.md) (1 shared connections)
 - [Community 503](Community_503.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
 - `src/io/IpfImage.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 91 (98%)
+- EXTRACTED: 90 (98%)
 - INFERRED: 2 (2%)
 - AMBIGUOUS: 0 (0%)
 

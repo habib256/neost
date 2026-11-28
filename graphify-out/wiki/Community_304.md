@@ -1,23 +1,18 @@
 # Community 304
 
-> 22 nodes
+> 17 nodes
 
 ## Key Concepts
 
 - **Stream** (11 connections) — `tests/ipf_image_logic.cpp`
 - **sectorStream()** (11 connections) — `tests/ipf_image_logic.cpp`
 - **Kind** (9 connections) — `tests/ipf_image_logic.cpp`
-- **buildIpf()** (9 connections) — `tests/ipf_image_logic.cpp`
-- **be32()** (7 connections) — `tests/ipf_image_logic.cpp`
-- **record()** (7 connections) — `tests/ipf_image_logic.cpp`
 - **.elem()** (6 connections) — `tests/ipf_image_logic.cpp`
 - **.end()** (6 connections) — `tests/ipf_image_logic.cpp`
-- **setBe32()** (4 connections) — `tests/ipf_image_logic.cpp`
 - **.bytes()** (4 connections) — `tests/ipf_image_logic.cpp`
 - **.sync3()** (3 connections) — `tests/ipf_image_logic.cpp`
 - **.weak()** (3 connections) — `tests/ipf_image_logic.cpp`
 - **.fill()** (2 connections) — `tests/ipf_image_logic.cpp`
-- **size_t** (1 connections)
 - **BAD_DATA_CRC** (1 connections) — `tests/ipf_image_logic.cpp`
 - **BAD_ID_CRC** (1 connections) — `tests/ipf_image_logic.cpp`
 - **DELETED** (1 connections) — `tests/ipf_image_logic.cpp`
@@ -29,11 +24,8 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (7 shared connections)
-- [Community 163](Community_163.md) (7 shared connections)
-- [Community 611](Community_611.md) (6 shared connections)
-- [Community 48](Community_48.md) (1 shared connections)
-- [Community 201](Community_201.md) (1 shared connections)
+- [Community 102](Community_102.md) (10 shared connections)
+- [Community 163](Community_163.md) (4 shared connections)
 - [Community 172](Community_172.md) (1 shared connections)
 
 ## Source Files
@@ -42,8 +34,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 54 (95%)
-- INFERRED: 3 (5%)
+- EXTRACTED: 38 (97%)
+- INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

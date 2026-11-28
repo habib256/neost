@@ -1,64 +1,46 @@
 # Community 223
 
-> 38 nodes
+> 20 nodes
 
 ## Key Concepts
 
-- **runKioskMenu()** (17 connections) — `src/gui/AppLoop.cpp`
-- **KioskNav** (16 connections) — `src/gui/AppLoop.cpp`
-- **kioskScanDisks()** (10 connections) — `src/gui/KioskMenu.cpp`
-- **joyResolveRoles()** (9 connections) — `src/gui/JoyMap.cpp`
-- **kioskPageBrowse()** (8 connections) — `src/gui/AppLoop.cpp`
-- **kioskPageList()** (8 connections) — `src/gui/AppLoop.cpp`
-- **kioskPageRomDirs()** (8 connections) — `src/gui/AppLoop.cpp`
-- **kioskPageJoy()** (7 connections) — `src/gui/AppLoop.cpp`
-- **JoyMap.cpp** (7 connections) — `src/gui/JoyMap.cpp`
-- **NavRepeat** (6 connections) — `src/gui/NavRepeat.hpp`
-- **joymapSerialize()** (6 connections) — `src/gui/JoyMap.cpp`
-- **drawKioskDiskMenu()** (6 connections) — `src/gui/KioskMenu.cpp`
-- **kioskScanBrowse()** (6 connections) — `src/gui/KioskMenu.cpp`
-- **joyGuid()** (5 connections) — `src/gui/JoyMap.cpp`
-- **joymapParse()** (5 connections) — `src/gui/JoyMap.cpp`
-- **App** (5 connections)
-- **kioskComputeShortcuts()** (4 connections) — `src/gui/KioskMenu.cpp`
-- **kioskPruneRomDirs()** (4 connections) — `src/gui/KioskMenu.cpp`
-- **NavRepeat.hpp** (4 connections) — `src/gui/NavRepeat.hpp`
-- **App** (3 connections)
-- **string** (3 connections)
-- **string** (3 connections)
-- **FPU transcendantes bit-exact, suite Hatari rejouée, nouveaux étalons et sondes (2026-10-20)** (3 connections) — `CHANGELOG.md`
-- **.tick()** (2 connections) — `src/gui/NavRepeat.hpp`
-- **low** (2 connections) — `src/io/SoftFloatX80.hpp`
-- *... and 13 more nodes in this community*
+- **M68kException** (23 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **Moira::jumpToVector()** (4 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **ADDRESS_ERROR** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **BKPT** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **BUS_ERROR** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **CHK** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **DIVIDE_BY_ZERO** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **FORMAT_ERROR** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **FPU_ARITHMETIC** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **FPU_UNIMPLEMENTED** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **ILLEGAL** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **IRQ_SPURIOUS** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **IRQ_UNINITIALIZED** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **LINEA** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **LINEF** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **PRIVILEGE** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **RESET** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **TRACE** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **TRAP** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **TRAPV** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 
 ## Relationships
 
-- [Community 214](Community_214.md) (26 shared connections)
-- [Community 4](Community_4.md) (9 shared connections)
-- [Community 138](Community_138.md) (5 shared connections)
-- [Community 325](Community_325.md) (2 shared connections)
-- [Community 15](Community_15.md) (2 shared connections)
-- [Community 130](Community_130.md) (2 shared connections)
-- [Community 21](Community_21.md) (1 shared connections)
-- [Community 204](Community_204.md) (1 shared connections)
-- [Community 283](Community_283.md) (1 shared connections)
-- [Community 442](Community_442.md) (1 shared connections)
-- [Community 470](Community_470.md) (1 shared connections)
-- [Community 48](Community_48.md) (1 shared connections)
+- [Community 64](Community_64.md) (4 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
+- [Community 166](Community_166.md) (1 shared connections)
+- [Community 9](Community_9.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/gui/AppLoop.cpp`
-- `src/gui/JoyMap.cpp`
-- `src/gui/KioskMenu.cpp`
-- `src/gui/NavRepeat.hpp`
-- `src/io/SoftFloatX80.hpp`
+- `extern/moira/Moira/MoiraDataflow_cpp.h`
+- `extern/moira/Moira/MoiraTypes.h`
 
 ## Audit Trail
 
-- EXTRACTED: 73 (66%)
-- INFERRED: 38 (34%)
+- EXTRACTED: 23 (88%)
+- INFERRED: 3 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

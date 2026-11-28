@@ -1,55 +1,67 @@
 # Community 325
 
-> 19 nodes
+> 60 nodes
 
 ## Key Concepts
 
 - **drawConfigWindow()** (32 connections) — `src/gui/ConfigWindow.cpp`
+- **DebugWindows.cpp** (24 connections) — `src/gui/DebugWindows.cpp`
+- **MediaPages.cpp** (18 connections) — `src/gui/MediaPages.cpp`
+- **imgui** (16 connections)
+- **StScreenView.cpp** (13 connections) — `src/gui/StScreenView.cpp`
+- **StScreenView.hpp** (10 connections) — `src/gui/StScreenView.hpp`
+- **UiCommon.hpp** (10 connections) — `src/gui/UiCommon.hpp`
+- **DebugWindows.hpp** (9 connections) — `src/gui/DebugWindows.hpp`
+- **drawStKiosk()** (8 connections) — `src/gui/StScreenView.cpp`
+- **CrtUi.cpp** (8 connections) — `src/gui/CrtUi.cpp`
+- **drawJoystickWindow()** (7 connections) — `src/gui/DebugWindows.cpp`
 - **IconButton()** (7 connections) — `src/gui/UiCommon.cpp`
 - **drawFloppyWindow()** (6 connections) — `src/gui/ConfigWindow.cpp`
 - **drawFloppyPage()** (6 connections) — `src/gui/MediaPages.cpp`
 - **drawHardDiskPage()** (6 connections) — `src/gui/MediaPages.cpp`
+- **crtApply()** (6 connections) — `src/gui/StScreenView.cpp`
 - **pickRomForMachine()** (5 connections) — `src/gui/ConfigWindow.cpp`
-- **drawCartPage()** (4 connections) — `src/gui/MediaPages.cpp`
-- **hardDiskDriveLetters()** (4 connections) — `src/gui/MediaPages.cpp`
-- **ConfigUi** (4 connections)
-- **string** (4 connections)
-- **.available()** (3 connections) — `src/audio/MidiInHost.hpp`
-- **pickMachineForRom()** (3 connections) — `src/gui/ConfigWindow.cpp`
-- **romIsNtsc()** (3 connections) — `src/gui/ConfigWindow.cpp`
-- **drawNetworkPage()** (3 connections) — `src/gui/MediaPages.cpp`
-- **pathEntryRow()** (3 connections) — `src/gui/MediaPages.cpp`
-- **string** (3 connections)
-- **App** (2 connections)
-- **ConfigUi** (1 connections)
-- **size_t** (1 connections)
+- **applyCrtPreset()** (5 connections) — `src/gui/CrtUi.cpp`
+- **drawCrtControls()** (5 connections) — `src/gui/CrtUi.cpp`
+- **drawCpuState()** (5 connections) — `src/gui/DebugWindows.cpp`
+- **drawDebugger()** (5 connections) — `src/gui/DebugWindows.cpp`
+- **drawStScreen()** (5 connections) — `src/gui/StScreenView.cpp`
+- **App** (5 connections)
+- **drawCrtSettings()** (4 connections) — `src/gui/CrtUi.cpp`
+- **drawBitmapExplorer()** (4 connections) — `src/gui/DebugWindows.cpp`
+- *... and 35 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (12 shared connections)
-- [Community 214](Community_214.md) (7 shared connections)
-- [Community 138](Community_138.md) (4 shared connections)
+- [Community 214](Community_214.md) (29 shared connections)
+- [Community 4](Community_4.md) (28 shared connections)
+- [Community 102](Community_102.md) (13 shared connections)
+- [Community 91](Community_91.md) (4 shared connections)
 - [Community 51](Community_51.md) (3 shared connections)
-- [Community 42](Community_42.md) (3 shared connections)
 - [Community 101](Community_101.md) (3 shared connections)
-- [Community 220](Community_220.md) (2 shared connections)
-- [Community 204](Community_204.md) (2 shared connections)
-- [Community 223](Community_223.md) (2 shared connections)
+- [Community 138](Community_138.md) (3 shared connections)
+- [Community 135](Community_135.md) (2 shared connections)
+- [Community 329](Community_329.md) (2 shared connections)
+- [Community 565](Community_565.md) (2 shared connections)
 - [Community 40](Community_40.md) (1 shared connections)
 - [Community 117](Community_117.md) (1 shared connections)
-- [Community 44](Community_44.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/MidiInHost.hpp`
 - `src/gui/ConfigWindow.cpp`
+- `src/gui/CrtUi.cpp`
+- `src/gui/DebugWindows.cpp`
+- `src/gui/DebugWindows.hpp`
 - `src/gui/MediaPages.cpp`
+- `src/gui/StScreenView.cpp`
+- `src/gui/StScreenView.hpp`
 - `src/gui/UiCommon.cpp`
+- `src/gui/UiCommon.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 47 (64%)
-- INFERRED: 26 (36%)
+- EXTRACTED: 166 (81%)
+- INFERRED: 39 (19%)
 - AMBIGUOUS: 0 (0%)
 
 ---

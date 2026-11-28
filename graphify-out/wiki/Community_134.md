@@ -1,25 +1,26 @@
 # Community 134
 
-> 26 nodes
+> 27 nodes
 
 ## Key Concepts
 
 - **Debugger** (38 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **Breakpoints** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **Catchpoints** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **Watchpoints** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.dumpLogBuffer()** (7 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.disassembleRange()** (7 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.disassembleRecorded()** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.loggedInstructions()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **.vectorName()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **Moira** (4 connections)
-- **.setNeedsCheck()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.setNeedsCheck()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.setNeedsCheck()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **string** (4 connections)
+- **.reset()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **.stepInto()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.Breakpoints()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.Catchpoints()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.Debugger()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.Watchpoints()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.stepOver()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.enableLogging()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.disableLogging()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.logInstruction()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **ostream** (2 connections)
 - **optional** (2 connections)
 - **.clearLog()** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **pair** (1 connections)
 - **u8** (1 connections)
 - **breakpoints** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **catchpoints** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
@@ -28,17 +29,14 @@
 - **logCnt** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **softStop** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **swTraps** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **watchpoints** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- *... and 1 more nodes in this community*
+- *... and 2 more nodes in this community*
 
 ## Relationships
 
-- [Community 121](Community_121.md) (15 shared connections)
-- [Community 492](Community_492.md) (7 shared connections)
-- [Community 152](Community_152.md) (5 shared connections)
-- [Community 368](Community_368.md) (5 shared connections)
+- [Community 121](Community_121.md) (23 shared connections)
+- [Community 492](Community_492.md) (8 shared connections)
 - [Community 16](Community_16.md) (1 shared connections)
-- [Community 104](Community_104.md) (1 shared connections)
+- [Community 64](Community_64.md) (1 shared connections)
 
 ## Source Files
 
@@ -46,8 +44,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 62 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 63 (97%)
+- INFERRED: 2 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

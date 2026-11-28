@@ -1,22 +1,16 @@
 # Community 400
 
-> 9 nodes
+> 3 nodes
 
 ## Key Concepts
 
 - **Cpcc** (3 connections) — `extern/moira/Moira/StrWriter.h`
-- **Dn** (3 connections) — `extern/moira/Moira/StrWriter.h`
-- **Ffmt** (3 connections) — `extern/moira/Moira/StrWriter.h`
 - **.Cpcc()** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Dn()** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Ffmt()** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
 - **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
 
 ## Relationships
 
-- [Community 109](Community_109.md) (3 shared connections)
+- [Community 109](Community_109.md) (1 shared connections)
 
 ## Source Files
 
@@ -24,7 +18,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 9 (100%)
+- EXTRACTED: 3 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

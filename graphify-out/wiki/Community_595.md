@@ -1,29 +1,26 @@
 # Community 595
 
-> 6 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **Snap** (7 connections) — `src/core/Rewind.hpp`
-- **MediaCopy** (1 connections)
-- **shared_ptr** (1 connections)
-- **disk** (1 connections) — `src/core/Rewind.hpp`
-- **state** (1 connections) — `src/core/Rewind.hpp`
-- **stxWrites** (1 connections) — `src/core/Rewind.hpp`
+- **scc_sync_logic.cpp** (4 connections) — `tests/scc_sync_logic.cpp`
+- **testSccSync()** (3 connections) — `tests/scc_sync_logic.cpp`
+- **main()** (2 connections) — `tests/scc_sync_logic.cpp`
 
 ## Relationships
 
-- [Community 611](Community_611.md) (1 shared connections)
-- [Community 298](Community_298.md) (1 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Rewind.hpp`
+- `tests/scc_sync_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 5 (83%)
+- INFERRED: 1 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

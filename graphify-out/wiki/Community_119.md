@@ -1,9 +1,10 @@
 # Community 119
 
-> 21 nodes
+> 23 nodes
 
 ## Key Concepts
 
+- **Frontend & outillage** (21 connections) — `docs/IMPLEMENTED.md`
 - **SymbolTable** (17 connections) — `src/core/Symbols.hpp`
 - **Symbols.cpp** (17 connections) — `src/core/Symbols.cpp`
 - **.load()** (7 connections) — `src/core/Symbols.hpp`
@@ -16,9 +17,10 @@
 - **Sym** (4 connections) — `src/core/Symbols.hpp`
 - **be16()** (4 connections) — `src/core/Symbols.cpp`
 - **lower()** (4 connections) — `src/core/Symbols.cpp`
+- **.activeHeight()** (3 connections) — `src/core/Shifter.hpp`
 - **.clear()** (2 connections) — `src/core/Symbols.hpp`
+- **.activeTop()** (2 connections) — `src/core/Shifter.hpp`
 - **be32()** (2 connections) — `src/core/Symbols.cpp`
-- **.count()** (2 connections) — `src/core/Symbols.hpp`
 - **string** (2 connections)
 - **unordered_map** (1 connections)
 - **addr** (1 connections) — `src/core/Symbols.hpp`
@@ -28,26 +30,30 @@
 
 ## Relationships
 
+- [Community 102](Community_102.md) (5 shared connections)
 - [Community 386](Community_386.md) (4 shared connections)
-- [Community 611](Community_611.md) (3 shared connections)
 - [Community 4](Community_4.md) (3 shared connections)
+- [Community 88](Community_88.md) (3 shared connections)
 - [Community 470](Community_470.md) (3 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 5](Community_5.md) (2 shared connections)
+- [Community 406](Community_406.md) (2 shared connections)
+- [Community 160](Community_160.md) (2 shared connections)
+- [Community 101](Community_101.md) (2 shared connections)
 - [Community 1](Community_1.md) (1 shared connections)
-- [Community 596](Community_596.md) (1 shared connections)
-- [Community 406](Community_406.md) (1 shared connections)
 - [Community 176](Community_176.md) (1 shared connections)
 - [Community 99](Community_99.md) (1 shared connections)
 
 ## Source Files
 
+- `docs/IMPLEMENTED.md`
+- `src/core/Shifter.hpp`
 - `src/core/Symbols.cpp`
 - `src/core/Symbols.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 46 (77%)
-- INFERRED: 14 (23%)
+- EXTRACTED: 49 (61%)
+- INFERRED: 31 (39%)
 - AMBIGUOUS: 0 (0%)
 
 ---

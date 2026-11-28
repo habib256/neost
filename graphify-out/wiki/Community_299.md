@@ -21,10 +21,11 @@
 
 ## Relationships
 
-- [Community 48](Community_48.md) (6 shared connections)
+- [Community 48](Community_48.md) (5 shared connections)
 - [Community 393](Community_393.md) (2 shared connections)
-- [Community 611](Community_611.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 - [Community 150](Community_150.md) (1 shared connections)
+- [Community 435](Community_435.md) (1 shared connections)
 - [Community 406](Community_406.md) (1 shared connections)
 - [Community 197](Community_197.md) (1 shared connections)
 - [Community 149](Community_149.md) (1 shared connections)

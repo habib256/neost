@@ -1,38 +1,47 @@
 # Community 377
 
-> 10 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **Cartographie Hatari ↔ NeoST — audit de correspondance** (13 connections) — `docs/HATARI_MAPPING.md`
-- **3. MFP 68901 (mfp.c)** (3 connections) — `docs/HATARI_MAPPING.md`
-- **7. IKBD / ACIA / MIDI (acia.c, ikbd.c, midi.c)** (2 connections) — `docs/HATARI_MAPPING.md`
-- **11. FPU 68881 — opérations et conversions (actualisé le 2026-10-18)** (1 connections) — `docs/HATARI_MAPPING.md`
-- **4. FDC / DMA disque / ACSI (fdc.c, floppy.c, floppies/*, hdc.c)** (1 connections) — `docs/HATARI_MAPPING.md`
-- **5. PSG / YM2149 (psg.c, sound.c)** (1 connections) — `docs/HATARI_MAPPING.md`
-- **6. Son DMA STE / Microwire / LMC1992 (dmaSnd.c)** (1 connections) — `docs/HATARI_MAPPING.md`
-- **8. Blitter (blitter.c)** (1 connections) — `docs/HATARI_MAPPING.md`
-- **9. CPU / cycles / ordonnanceur (cycInt.c, cycles.c, clocks_timings.c, hatari-glue.c, newcpu.c)** (1 connections) — `docs/HATARI_MAPPING.md`
-- **Suites de cet audit** (1 connections) — `docs/HATARI_MAPPING.md`
+- **.fifoPush()** (10 connections) — `src/io/Fdc.hpp`
+- **Bug hunt multi-agents (2026-07-29)** (10 connections) — `CHANGELOG.md`
+- **dmaAddressMask()** (9 connections) — `src/io/Fdc.cpp`
+- **.fifoPull()** (7 connections) — `src/io/Fdc.hpp`
+- **.mediaCopyBytes()** (6 connections) — `src/io/Fdc.hpp`
+- **FDC WD1772 et DMA** (5 connections) — `docs/MAME_DIVERGENCES.md`
+- **.billDmaCycles()** (4 connections) — `src/io/Fdc.hpp`
+- **.noteFifoFlush()** (4 connections) — `src/io/Fdc.hpp`
+- **.writeDmaAddressByte()** (4 connections) — `src/io/Fdc.hpp`
+- **dmaMaskAddressHigh()** (3 connections) — `src/io/Fdc.cpp`
+- **size_t** (3 connections)
 
 ## Relationships
 
-- [Community 292](Community_292.md) (1 shared connections)
-- [Community 221](Community_221.md) (1 shared connections)
-- [Community 508](Community_508.md) (1 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 319](Community_319.md) (1 shared connections)
-- [Community 352](Community_352.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
+- [Community 406](Community_406.md) (10 shared connections)
+- [Community 12](Community_12.md) (6 shared connections)
+- [Community 95](Community_95.md) (5 shared connections)
+- [Community 24](Community_24.md) (4 shared connections)
+- [Community 205](Community_205.md) (2 shared connections)
+- [Community 88](Community_88.md) (2 shared connections)
+- [Community 298](Community_298.md) (1 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 15](Community_15.md) (1 shared connections)
+- [Community 149](Community_149.md) (1 shared connections)
+- [Community 60](Community_60.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_MAPPING.md`
+- `CHANGELOG.md`
+- `docs/MAME_DIVERGENCES.md`
+- `src/io/Fdc.cpp`
+- `src/io/Fdc.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 13 (81%)
-- INFERRED: 3 (19%)
+- EXTRACTED: 28 (55%)
+- INFERRED: 23 (45%)
 - AMBIGUOUS: 0 (0%)
 
 ---

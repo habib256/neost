@@ -346,6 +346,13 @@ def main() -> int:
         a.every = ref["every"]
         # Une référence d'avant les suites ne connaît que les étalons.
         suites = a.suite or ref.get("suites", ["etalons"])
+        # Les anciennes versions écrivaient le JSON même après une erreur du headless.
+        errors = [sid for sid, reason in ref.get("skipped", {}).items()
+                  if reason.startswith("error:") and suite_of(sid) in suites
+                  and (a.only is None or sid in a.only)]
+        if errors:
+            print("ÉCHEC : erreur à l'enregistrement de la référence pour " + ", ".join(errors))
+            return 1
     todo = scenarios(suites, a.only)
     if a.only is not None:
         # Un identifiant inconnu ne doit pas réduire la porte à rien en silence.
@@ -366,18 +373,25 @@ def main() -> int:
         data = {"every": a.every, "commit": rev, "suites": suites,
                 "scenarios": {sid: rows for sid, st, rows in results if st == "ok"},
                 "skipped": {sid: st for sid, st, _ in results if st != "ok"}}
-        Path(a.record).write_text(json.dumps(data, indent=0) + "\n", encoding="utf-8")
         for name in suites:
             ids = [sid for sid in data["scenarios"] if suite_of(sid) == name]
             n = sum(len(data["scenarios"][sid]) for sid in ids)
             print(f"  {name:10} : {len(ids)} scénarios, {n} empreintes")
         for sid, st in data["skipped"].items():
             print(f"  {sid} : {st}")
-        print(f"enregistré : {len(data['scenarios'])} scénarios, commit {rev}, {elapsed:.0f} s")
         if not data["scenarios"]:
-            print("ÉCHEC : aucun scénario enregistré, la référence est vide")
+            print("ÉCHEC : aucun scénario à enregistrer")
             return 1
-        return 1 if any(st.startswith("error") for st in data["skipped"].values()) else 0
+        if any(st.startswith("error:") for st in data["skipped"].values()):
+            print("ÉCHEC : enregistrement annulé")
+            return 1
+        dest = Path(a.record)
+        with tempfile.TemporaryDirectory(dir=dest.parent) as tmp:
+            pending = Path(tmp) / "gate.json"
+            pending.write_text(json.dumps(data, indent=0) + "\n", encoding="utf-8")
+            pending.replace(dest)
+        print(f"enregistré : {len(data['scenarios'])} scénarios, commit {rev}, {elapsed:.0f} s")
+        return 0
 
     bad = 0
     per = {name: [0, 0] for name in suites}

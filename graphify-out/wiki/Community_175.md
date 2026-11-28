@@ -1,6 +1,6 @@
 # Community 175
 
-> 22 nodes
+> 21 nodes
 
 ## Key Concepts
 
@@ -13,7 +13,6 @@
 - **.gemPexec()** (3 connections) — `src/io/GemdosHd.hpp`
 - **.loadAndReloc()** (3 connections) — `src/io/GemdosHd.hpp`
 - **Scu.hpp** (3 connections) — `src/io/Scu.hpp`
-- **.gatedLevel()** (2 connections) — `src/io/Scu.hpp`
 - **.read8()** (1 connections) — `src/io/Scu.hpp`
 - **.reset()** (1 connections) — `src/io/Scu.hpp`
 - **.syncState()** (1 connections) — `src/io/Scu.hpp`
@@ -35,9 +34,9 @@
 - [Community 17](Community_17.md) (2 shared connections)
 - [Community 130](Community_130.md) (2 shared connections)
 - [Community 106](Community_106.md) (2 shared connections)
-- [Community 42](Community_42.md) (2 shared connections)
+- [Community 135](Community_135.md) (2 shared connections)
 - [Community 14](Community_14.md) (1 shared connections)
-- [Community 21](Community_21.md) (1 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
 - [Community 53](Community_53.md) (1 shared connections)
 - [Community 149](Community_149.md) (1 shared connections)
@@ -52,8 +51,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 24 (44%)
-- INFERRED: 30 (56%)
+- EXTRACTED: 24 (45%)
+- INFERRED: 29 (55%)
 - AMBIGUOUS: 0 (0%)
 
 ---

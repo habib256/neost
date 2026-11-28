@@ -1,32 +1,38 @@
 # Community 394
 
-> 8 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **CLAUDE.md** (7 connections) — `CLAUDE.md`
-- **Disquettes & ROM** (2 connections) — `CLAUDE.md`
-- **⭐ Méthode imposée (ordre strict)** (2 connections) — `CLAUDE.md`
-- **Où trouver quoi** (2 connections) — `CLAUDE.md`
-- **Build & run** (1 connections) — `CLAUDE.md`
-- **Conventions non négociables** (1 connections) — `CLAUDE.md`
-- **Les grades de preuve — à écrire dans le code** (1 connections) — `CLAUDE.md`
-- **Tester = le headless (outil n°1)** (1 connections) — `CLAUDE.md`
+- **Rig** (8 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
+- **testMachineFdcMediaVbl()** (7 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
+- **.video()** (4 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
+- **.wprt()** (3 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
+- **main()** (2 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
+- **.Rig()** (2 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
+- **.vbl()** (2 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
+- **5. Rattrapage — si la borne ne démarre plus** (2 connections) — `packaging/raspberry/README.md`
+- **Machine** (1 connections)
+- **unique_ptr** (1 connections)
+- **machine** (1 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
 
 ## Relationships
 
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 138](Community_138.md) (1 shared connections)
-- [Community 449](Community_449.md) (1 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 415](Community_415.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
+- [Community 362](Community_362.md) (1 shared connections)
 
 ## Source Files
 
-- `CLAUDE.md`
+- `packaging/raspberry/README.md`
+- `tests/machine_fdc_media_vbl_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 8 (80%)
-- INFERRED: 2 (20%)
+- EXTRACTED: 16 (80%)
+- INFERRED: 4 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---

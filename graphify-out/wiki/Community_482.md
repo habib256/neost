@@ -1,29 +1,29 @@
 # Community 482
 
-> 4 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **Interruptions (MFP 68901)** (4 connections) — `docs/IMPLEMENTED.md`
-- **.iack()** (3 connections) — `src/io/Mfp.hpp`
-- **.serialBaud()** (2 connections) — `src/io/Mfp.hpp`
-- **.serialUcr()** (2 connections) — `src/io/Mfp.hpp`
+- **case_midi_hidden()** (5 connections) — `tools/run_libretro.py`
+- **case_midi_out()** (5 connections) — `tools/run_libretro.py`
+- **bconout_midi()** (4 connections) — `tools/run_libretro.py`
+- **Bconout(3, b) : un octet sur le port MIDI par le BIOS.** (1 connections) — `tools/run_libretro.py`
+- **MIDI OUT vers l'interface MIDI de RetroArch : note on envoyée par Bconout(3),…** (1 connections) — `tools/run_libretro.py`
+- **Trames cachées de l'anticipation (son coupé) : rien ne part vers le MIDI.** (1 connections) — `tools/run_libretro.py`
 
 ## Relationships
 
-- [Community 6](Community_6.md) (3 shared connections)
-- [Community 215](Community_215.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
+- [Community 247](Community_247.md) (5 shared connections)
+- [Community 221](Community_221.md) (2 shared connections)
 
 ## Source Files
 
-- `docs/IMPLEMENTED.md`
-- `src/io/Mfp.hpp`
+- `tools/run_libretro.py`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (62%)
-- INFERRED: 3 (38%)
+- EXTRACTED: 12 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

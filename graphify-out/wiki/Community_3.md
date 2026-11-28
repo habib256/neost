@@ -1,6 +1,6 @@
 # Community 3
 
-> 160 nodes
+> 159 nodes
 
 ## Key Concepts
 
@@ -29,22 +29,22 @@
 - **scan()** (6 connections) — `tools/fix_short_reloc.py`
 - **build_cart()** (6 connections) — `tools/make_cycle_bench.py`
 - **main()** (6 connections) — `tools/run_gstmcu_bench.py`
-- *... and 135 more nodes in this community*
+- *... and 134 more nodes in this community*
 
 ## Relationships
 
-- [Community 582](Community_582.md) (22 shared connections)
-- [Community 8](Community_8.md) (18 shared connections)
+- [Community 582](Community_582.md) (23 shared connections)
+- [Community 8](Community_8.md) (20 shared connections)
 - [Community 146](Community_146.md) (13 shared connections)
-- [Community 100](Community_100.md) (8 shared connections)
 - [Community 207](Community_207.md) (8 shared connections)
-- [Community 18](Community_18.md) (7 shared connections)
-- [Community 173](Community_173.md) (7 shared connections)
+- [Community 100](Community_100.md) (6 shared connections)
+- [Community 173](Community_173.md) (5 shared connections)
 - [Community 30](Community_30.md) (5 shared connections)
+- [Community 412](Community_412.md) (5 shared connections)
 - [Community 141](Community_141.md) (5 shared connections)
+- [Community 18](Community_18.md) (4 shared connections)
 - [Community 133](Community_133.md) (4 shared connections)
 - [Community 108](Community_108.md) (3 shared connections)
-- [Community 301](Community_301.md) (2 shared connections)
 
 ## Source Files
 
@@ -66,13 +66,13 @@
 - `tools/make_scroll_test.py`
 - `tools/make_spec512_test.py`
 - `tools/make_spec512_view.py`
-- `tools/make_stcpu_rom.py`
 - `tools/make_trace_odd_test.py`
+- `tools/run_gstmcu_bench.py`
 
 ## Audit Trail
 
 - EXTRACTED: 371 (100%)
-- INFERRED: 1 (0%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

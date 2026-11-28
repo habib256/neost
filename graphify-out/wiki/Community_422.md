@@ -1,29 +1,32 @@
 # Community 422
 
-> 6 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **.abort()** (5 connections) — `src/core/EmuFiber.hpp`
-- **.switchToFiber()** (4 connections) — `src/core/EmuFiber.hpp`
-- **.resume()** (4 connections) — `src/core/EmuFiber.hpp`
-- **.requestAbort()** (3 connections) — `src/core/EmuFiber.hpp`
-- **.EmuFiber()** (3 connections) — `src/core/EmuFiber.hpp`
-- **function** (1 connections)
+- **GlueLine** (6 connections) — `src/core/Shifter.hpp`
+- **PhaseEvent** (4 connections) — `src/core/Shifter.hpp`
+- **borderMask** (1 connections) — `src/core/Shifter.hpp`
+- **displayEndCycle** (1 connections) — `src/core/Shifter.hpp`
+- **displayPixelShift** (1 connections) — `src/core/Shifter.hpp`
+- **displayStartCycle** (1 connections) — `src/core/Shifter.hpp`
+- **frameCycle** (1 connections) — `src/core/Shifter.hpp`
+- **line** (1 connections) — `src/core/Shifter.hpp`
+- **phase** (1 connections) — `src/core/Shifter.hpp`
 
 ## Relationships
 
-- [Community 288](Community_288.md) (5 shared connections)
-- [Community 59](Community_59.md) (5 shared connections)
+- [Community 396](Community_396.md) (2 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/EmuFiber.hpp`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 11 (73%)
-- INFERRED: 4 (27%)
+- EXTRACTED: 9 (90%)
+- INFERRED: 1 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

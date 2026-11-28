@@ -1,37 +1,26 @@
 # Community 593
 
-> 12 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **Guard** (10 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.guardAt()** (8 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.setEnableAt()** (7 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.isDisabledAt()** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **u32** (5 connections)
-- **.isEnabledAt()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.toggleAt()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.disableAt()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.enableAt()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **addr** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **enabled** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **ignore** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **scc_async_logic.cpp** (4 connections) — `tests/scc_async_logic.cpp`
+- **testSccAsync()** (3 connections) — `tests/scc_async_logic.cpp`
+- **main()** (2 connections) — `tests/scc_async_logic.cpp`
 
 ## Relationships
 
-- [Community 121](Community_121.md) (11 shared connections)
-- [Community 152](Community_152.md) (9 shared connections)
-- [Community 368](Community_368.md) (1 shared connections)
-- [Community 492](Community_492.md) (1 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraDebugger.h`
+- `tests/scc_async_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 34 (92%)
-- INFERRED: 3 (8%)
+- EXTRACTED: 5 (83%)
+- INFERRED: 1 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

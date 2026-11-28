@@ -1,6 +1,6 @@
 # Community 101
 
-> 36 nodes
+> 35 nodes
 
 ## Key Concepts
 
@@ -20,7 +20,6 @@
 - **saveProfile()** (5 connections) — `src/gui/AppConfig.cpp`
 - **stateFilePath()** (5 connections) — `src/gui/AppConfig.cpp`
 - **trimConfigLine()** (5 connections) — `src/gui/AppConfig.cpp`
-- **MouseScale.hpp** (5 connections) — `src/util/MouseScale.hpp`
 - **Chemins hôte unifiés, logique pure testable, `main.cpp` dégrossi (2026-08-17)** (5 connections) — `CHANGELOG.md`
 - **decodeRecords()** (4 connections) — `src/gui/AppConfig.cpp`
 - **formatChannelMask()** (4 connections) — `src/gui/AppConfig.cpp`
@@ -29,34 +28,34 @@
 - **profileFileName()** (4 connections) — `src/gui/AppConfig.cpp`
 - **profilesDir()** (4 connections) — `src/gui/AppConfig.cpp`
 - **crtF()** (3 connections) — `src/gui/AppConfig.cpp`
-- *... and 11 more nodes in this community*
+- **deleteProfile()** (3 connections) — `src/gui/AppConfig.cpp`
+- *... and 10 more nodes in this community*
 
 ## Relationships
 
-- [Community 48](Community_48.md) (11 shared connections)
-- [Community 138](Community_138.md) (9 shared connections)
-- [Community 214](Community_214.md) (9 shared connections)
+- [Community 214](Community_214.md) (18 shared connections)
+- [Community 48](Community_48.md) (10 shared connections)
 - [Community 21](Community_21.md) (9 shared connections)
-- [Community 130](Community_130.md) (5 shared connections)
-- [Community 611](Community_611.md) (4 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
+- [Community 130](Community_130.md) (6 shared connections)
 - [Community 4](Community_4.md) (4 shared connections)
 - [Community 325](Community_325.md) (3 shared connections)
 - [Community 286](Community_286.md) (3 shared connections)
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 470](Community_470.md) (2 shared connections)
+- [Community 119](Community_119.md) (2 shared connections)
 - [Community 362](Community_362.md) (1 shared connections)
+- [Community 282](Community_282.md) (1 shared connections)
+- [Community 39](Community_39.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
 - `src/gui/AppConfig.cpp`
-- `src/util/MouseScale.hpp`
 - `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 100 (65%)
-- INFERRED: 54 (35%)
+- EXTRACTED: 97 (64%)
+- INFERRED: 55 (36%)
 - AMBIGUOUS: 0 (0%)
 
 ---

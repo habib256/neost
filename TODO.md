@@ -300,13 +300,14 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 | **Lemmings** `[cr BBC][a]` | P3 ◐ | Menu, premier niveau terminé avec un Digger, bilan et présentation du niveau 2 gardés (`lemmings_first_level`, `lemmings_level1_complete`, 0,0 %). | Niveaux suivants (Floater au niveau 2). |
 | **Vroom** `[cr Elite]`, intro sous TOS 2.06 | P2 ⏸ matériel | Trame rayée transitoire, 20/1 000 trames, reproduite aussi par Hatari ; la sonde GSTMCU retrouve 230/184 octets. | Mesurer latence VBL et fréquence de la séquence sur STE réel avant tout recalage CPU/GLUE (`tools/probe_vroom_intro_glue.py`). |
 | **Switchblade** `[cr Replicants][t +2]` | P3 ⏸ relevé | Graine 8 débloquée par la cadence FDC/DMA ; seule la datation émulée change. | Relever la probabilité de collision sur un vrai ST. |
+| **Obsession** (démo v1.1, STE) | P3 ⏸ matériel | La trajectoire et le score divergent après le tir face à Hatari. | Même phase de départ au relâchement nominal. La trace `obsession_ste_launch` isole la fenêtre de divergence. Rejouer le tir sur un vrai STE pour départager. |
 | **Shadow Warriors** (2Hot2Handle) | P3 ⏸ média | Version Ocean jouée sans écart (`shadow_warrior_st`) ; le disque 2Hot2Handle manque. | S'il revient, essayer la touche 1. |
 
 Récit, traces et recettes de chacun : [`docs/CASE_STUDIES.md`](docs/CASE_STUDIES.md).
 
 ### Campagnes à mener
 
-- **Logithèque jouée** · P2 ◐ — `tools/run_game_replay.py` garde 27 parcours de compatibilité
+- **Logithèque jouée** · P2 ◐ — `tools/run_game_replay.py` garde 29 parcours de compatibilité
   contre Hatari (médias originaux, changements de disquette, souris et glisser-déposer) ; le
   diagnostic Magic Pockets est exclu par défaut. À étendre : parties plus longues, disques STE.
   Son : première passe du 2026-11-11 (`tools/compare_sound.py`, enveloppe contre Hatari, 60 s après

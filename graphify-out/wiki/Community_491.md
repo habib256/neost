@@ -12,12 +12,10 @@
 
 ## Relationships
 
-- [Community 138](Community_138.md) (2 shared connections)
+- [Community 214](Community_214.md) (4 shared connections)
 - [Community 315](Community_315.md) (2 shared connections)
 - [Community 22](Community_22.md) (2 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
 - [Community 1](Community_1.md) (1 shared connections)
-- [Community 214](Community_214.md) (1 shared connections)
 - [Community 386](Community_386.md) (1 shared connections)
 
 ## Source Files

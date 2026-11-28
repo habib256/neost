@@ -1,6 +1,6 @@
 # Community 391
 
-> 78 nodes
+> 56 nodes
 
 ## Key Concepts
 
@@ -9,7 +9,6 @@
 - **.insert()** (16 connections) — `extern/moira/Moira/Cache/Cache.h`
 - **u32** (16 connections)
 - **ICache** (13 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **Piloter NeoST depuis l'extérieur (exploration d'états, fuzzing, Go-Explore)** (13 connections) — `docs/OPENDST.md`
 - **.slot()** (11 connections) — `extern/moira/Moira/Cache/Cache.h`
 - **DCache** (9 connections) — `extern/moira/Moira/Cache/Cache.h`
 - **.fill()** (9 connections) — `extern/moira/Moira/Cache/Cache.h`
@@ -29,34 +28,33 @@
 - **.burstEnabled()** (5 connections) — `extern/moira/Moira/Cache/Cache.h`
 - **.burstEnabled()** (5 connections) — `extern/moira/Moira/Cache/Cache.h`
 - **.longword()** (5 connections) — `extern/moira/Moira/Cache/Cache.h`
-- *... and 53 more nodes in this community*
+- **Cache.h** (5 connections) — `extern/moira/Moira/Cache/Cache.h`
+- *... and 31 more nodes in this community*
 
 ## Relationships
 
-- [Community 16](Community_16.md) (6 shared connections)
+- [Community 492](Community_492.md) (3 shared connections)
+- [Community 16](Community_16.md) (2 shared connections)
+- [Community 572](Community_572.md) (2 shared connections)
 - [Community 166](Community_166.md) (2 shared connections)
-- [Community 160](Community_160.md) (2 shared connections)
+- [Community 530](Community_530.md) (2 shared connections)
+- [Community 604](Community_604.md) (1 shared connections)
 - [Community 314](Community_314.md) (1 shared connections)
-- [Community 149](Community_149.md) (1 shared connections)
+- [Community 78](Community_78.md) (1 shared connections)
 - [Community 213](Community_213.md) (1 shared connections)
-- [Community 200](Community_200.md) (1 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
+- [Community 565](Community_565.md) (1 shared connections)
 - [Community 57](Community_57.md) (1 shared connections)
-- [Community 138](Community_138.md) (1 shared connections)
-- [Community 406](Community_406.md) (1 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 499](Community_499.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/OPENDST.md`
 - `extern/moira/Moira/Cache/Cache.cpp`
 - `extern/moira/Moira/Cache/Cache.h`
-- `tools/libretro_frontend.py`
 
 ## Audit Trail
 
-- EXTRACTED: 141 (75%)
-- INFERRED: 47 (25%)
+- EXTRACTED: 119 (74%)
+- INFERRED: 41 (26%)
 - AMBIGUOUS: 0 (0%)
 
 ---

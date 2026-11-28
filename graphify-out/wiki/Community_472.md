@@ -1,30 +1,30 @@
 # Community 472
 
-> 5 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **AndroidRoms.hpp** (9 connections) — `src/android/AndroidRoms.hpp`
-- **parseAndroidRomChoice()** (4 connections) — `src/android/AndroidRoms.hpp`
-- **androidRomIndex()** (3 connections) — `src/android/AndroidRoms.hpp`
-- **formatAndroidRomChoice()** (3 connections) — `src/android/AndroidRoms.hpp`
-- **string** (3 connections)
+- **GlueProbe** (7 connections) — `src/core/Shifter.hpp`
+- **mask** (2 connections) — `src/core/Shifter.hpp`
+- **bytes** (1 connections) — `src/core/Shifter.hpp`
+- **end** (1 connections) — `src/core/Shifter.hpp`
+- **lineStart** (1 connections) — `src/core/Shifter.hpp`
+- **start** (1 connections) — `src/core/Shifter.hpp`
 
 ## Relationships
 
-- [Community 48](Community_48.md) (3 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 228](Community_228.md) (1 shared connections)
-- [Community 449](Community_449.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
+- [Community 5](Community_5.md) (1 shared connections)
+- [Community 155](Community_155.md) (1 shared connections)
 
 ## Source Files
 
-- `src/android/AndroidRoms.hpp`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 13 (87%)
-- INFERRED: 2 (13%)
+- EXTRACTED: 7 (88%)
+- INFERRED: 1 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

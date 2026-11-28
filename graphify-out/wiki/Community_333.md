@@ -1,11 +1,13 @@
 # Community 333
 
-> 14 nodes
+> 16 nodes
 
 ## Key Concepts
 
 - **Dest** (11 connections) — `src/audio/MidiOutHost.hpp`
 - **OpenDest** (7 connections) — `src/audio/MidiOutHost.hpp`
+- **.synthAvailable()** (6 connections) — `src/audio/MidiOutHost.hpp`
+- **.midiOutApply()** (6 connections) — `src/gui/App.hpp`
 - **.midiLearnUids()** (6 connections) — `src/gui/App.hpp`
 - **.openDestinations()** (5 connections) — `src/audio/MidiOutHost.hpp`
 - **.midiInApply()** (4 connections) — `src/gui/App.hpp`
@@ -21,13 +23,14 @@
 
 ## Relationships
 
-- [Community 42](Community_42.md) (8 shared connections)
+- [Community 214](Community_214.md) (8 shared connections)
+- [Community 135](Community_135.md) (6 shared connections)
+- [Community 42](Community_42.md) (4 shared connections)
+- [Community 1](Community_1.md) (3 shared connections)
 - [Community 366](Community_366.md) (2 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 1](Community_1.md) (2 shared connections)
-- [Community 138](Community_138.md) (2 shared connections)
 - [Community 11](Community_11.md) (1 shared connections)
-- [Community 611](Community_611.md) (1 shared connections)
+- [Community 325](Community_325.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
@@ -38,8 +41,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 23 (72%)
-- INFERRED: 9 (28%)
+- EXTRACTED: 31 (74%)
+- INFERRED: 11 (26%)
 - AMBIGUOUS: 0 (0%)
 
 ---

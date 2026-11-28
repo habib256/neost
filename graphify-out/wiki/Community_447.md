@@ -1,36 +1,30 @@
 # Community 447
 
-> 7 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **1. MFP 68901 — `Mfp.cpp` ↔ `mfp.c`, `rs232.c`** (6 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Refermés** (4 connections) — `docs/HATARI_DIVERGENCES.md`
-- **.firingDue()** (3 connections) — `src/core/Scheduler.hpp`
-- **Écarts voulus — ne pas réaligner** (3 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — USART (`Mfp.cpp` ↔ `rs232.c`, MAME `mc68901.cpp`)** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Z7_C_IFACE_DECL()** (8 connections) — `extern/lzma/7zTypes.h`
+- **ISeekInStream** (1 connections)
+- **IByteIn** (1 connections)
+- **IByteOut** (1 connections)
+- **ICompressProgress** (1 connections)
+- **ILookInStream** (1 connections)
+- **ISeqInStream** (1 connections)
+- **ISeqOutStream** (1 connections)
 
 ## Relationships
 
-- [Community 39](Community_39.md) (1 shared connections)
-- [Community 392](Community_392.md) (1 shared connections)
-- [Community 397](Community_397.md) (1 shared connections)
-- [Community 292](Community_292.md) (1 shared connections)
-- [Community 321](Community_321.md) (1 shared connections)
-- [Community 471](Community_471.md) (1 shared connections)
-- [Community 48](Community_48.md) (1 shared connections)
+- [Community 245](Community_245.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
-- `src/core/Scheduler.hpp`
+- `extern/lzma/7zTypes.h`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (54%)
-- INFERRED: 6 (46%)
+- EXTRACTED: 8 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

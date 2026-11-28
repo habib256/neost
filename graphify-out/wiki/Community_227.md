@@ -1,35 +1,42 @@
 # Community 227
 
-> 12 nodes
+> 20 nodes
 
 ## Key Concepts
 
-- **opendst_memdiff.py** (9 connections) — `tools/opendst_memdiff.py`
-- **main()** (7 connections) — `tools/opendst_memdiff.py`
-- **Server** (6 connections) — `tools/opendst_memdiff.py`
-- **runs()** (3 connections) — `tools/opendst_memdiff.py`
-- **.cmd()** (3 connections) — `tools/opendst_memdiff.py`
-- **.dump()** (3 connections) — `tools/opendst_memdiff.py`
-- **parse_hex()** (2 connections) — `tools/opendst_memdiff.py`
-- **read_word()** (2 connections) — `tools/opendst_memdiff.py`
-- **.close()** (2 connections) — `tools/opendst_memdiff.py`
-- **.__init__()** (1 connections) — `tools/opendst_memdiff.py`
-- **Image mémoire [start, start+length) par tranches de 4 Ko.** (1 connections) — `tools/opendst_memdiff.py`
-- **Adresses triées → plages contiguës [(début, fin)].** (1 connections) — `tools/opendst_memdiff.py`
+- **Rig** (9 connections) — `tests/hayes_modem_logic.cpp`
+- **Listener** (7 connections) — `tests/hayes_modem_logic.cpp`
+- **main()** (7 connections) — `tests/hayes_modem_logic.cpp`
+- **string** (4 connections)
+- **dialCmd()** (3 connections) — `tests/hayes_modem_logic.cpp`
+- **.accept()** (3 connections) — `tests/hayes_modem_logic.cpp`
+- **peerSeesEof()** (3 connections) — `tests/hayes_modem_logic.cpp`
+- **.waitFor()** (3 connections) — `tests/hayes_modem_logic.cpp`
+- **SocketHandle** (3 connections)
+- **expect()** (2 connections) — `tests/hayes_modem_logic.cpp`
+- **.open()** (2 connections) — `tests/hayes_modem_logic.cpp`
+- **.type()** (2 connections) — `tests/hayes_modem_logic.cpp`
+- **.~Listener()** (1 connections) — `tests/hayes_modem_logic.cpp`
+- **HayesModem** (1 connections)
+- **Mfp** (1 connections)
+- **fd** (1 connections) — `tests/hayes_modem_logic.cpp`
+- **port** (1 connections) — `tests/hayes_modem_logic.cpp`
+- **mfp** (1 connections) — `tests/hayes_modem_logic.cpp`
+- **modem** (1 connections) — `tests/hayes_modem_logic.cpp`
+- **out** (1 connections) — `tests/hayes_modem_logic.cpp`
 
 ## Relationships
 
-- [Community 100](Community_100.md) (3 shared connections)
-- [Community 582](Community_582.md) (3 shared connections)
+- [Community 186](Community_186.md) (6 shared connections)
 
 ## Source Files
 
-- `tools/opendst_memdiff.py`
+- `tests/hayes_modem_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 30 (97%)
+- INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

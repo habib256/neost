@@ -1,23 +1,26 @@
 # Community 486
 
-> 2 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **.serialize()** (2 connections) — `src/io/Mfp.hpp`
-- **StateArchive** (1 connections)
+- **10. RTC RP5C15 (Mega ST, Mega STE) — `Rtc.cpp` ↔ `rtc.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Refermés** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
-- [Community 6](Community_6.md) (1 shared connections)
+- [Community 397](Community_397.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Mfp.hpp`
+- `docs/HATARI_DIVERGENCES.md`
 
 ## Audit Trail
 
-- EXTRACTED: 2 (100%)
+- EXTRACTED: 5 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

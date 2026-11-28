@@ -1,11 +1,10 @@
 # Community 318
 
-> 24 nodes
+> 23 nodes
 
 ## Key Concepts
 
 - **Rig** (16 connections) — `tests/ikbd_keycode_logic.cpp`
-- **ikbd_keycode_logic.cpp** (12 connections) — `tests/ikbd_keycode_logic.cpp`
 - **testIkbdKeycode()** (9 connections) — `tests/ikbd_keycode_logic.cpp`
 - **Checks** (4 connections) — `tests/ikbd_keycode_logic.cpp`
 - **index()** (3 connections) — `tests/ikbd_keycode_logic.cpp`
@@ -31,9 +30,8 @@
 
 ## Relationships
 
-- [Community 611](Community_611.md) (6 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
 - [Community 48](Community_48.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
@@ -41,8 +39,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 39 (98%)
-- INFERRED: 1 (2%)
+- EXTRACTED: 33 (97%)
+- INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

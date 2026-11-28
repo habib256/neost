@@ -1,6 +1,6 @@
 # Changelog — NeoST
 
-> God node · 390 connections · `CHANGELOG.md`
+> God node · 393 connections · `CHANGELOG.md`
 
 **Community:** [Community 130](Community_130.md)
 
@@ -27,7 +27,7 @@
 - A31 — le dispatch MMIO devient une table, et sa cohérence est PROUVÉE (2026-08-28) `EXTRACTED`
 - Le PSG grésillait dans Super Hang-On : un digidrum à 45 kHz décimé de 61 % (2026-09-02) `EXTRACTED`
 - L'élection de l'exception MFP : la règle chronologique existait mais ne pouvait jamais s'appliquer (2026-09-02) `EXTRACTED`
-- *…and 370 more `contains` connection(s) not listed (lowest-degree first to go)*
+- *…and 373 more `contains` connection(s) not listed (lowest-degree first to go)*
 
 ---
 

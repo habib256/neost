@@ -20,8 +20,9 @@
 
 ## Relationships
 
-- [Community 406](Community_406.md) (5 shared connections)
-- [Community 611](Community_611.md) (2 shared connections)
+- [Community 406](Community_406.md) (3 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 149](Community_149.md) (2 shared connections)
 - [Community 78](Community_78.md) (1 shared connections)
 
 ## Source Files

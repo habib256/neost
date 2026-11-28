@@ -1,6 +1,6 @@
 # Community 146
 
-> 60 nodes
+> 62 nodes
 
 ## Key Concepts
 
@@ -29,21 +29,21 @@
 - **build()** (5 connections) — `tools/build_stcpu_bench.py`
 - **boot_disk()** (5 connections) — `tools/make_rtl_screen.py`
 - **screen_words()** (5 connections) — `tools/make_rtl_screen.py`
-- *... and 35 more nodes in this community*
+- *... and 37 more nodes in this community*
 
 ## Relationships
 
-- [Community 100](Community_100.md) (41 shared connections)
-- [Community 173](Community_173.md) (18 shared connections)
-- [Community 582](Community_582.md) (15 shared connections)
+- [Community 100](Community_100.md) (31 shared connections)
+- [Community 582](Community_582.md) (16 shared connections)
+- [Community 173](Community_173.md) (15 shared connections)
+- [Community 412](Community_412.md) (15 shared connections)
 - [Community 26](Community_26.md) (13 shared connections)
 - [Community 3](Community_3.md) (13 shared connections)
 - [Community 18](Community_18.md) (12 shared connections)
 - [Community 207](Community_207.md) (8 shared connections)
-- [Community 8](Community_8.md) (4 shared connections)
-- [Community 247](Community_247.md) (3 shared connections)
-- [Community 107](Community_107.md) (2 shared connections)
-- [Community 412](Community_412.md) (2 shared connections)
+- [Community 8](Community_8.md) (5 shared connections)
+- [Community 151](Community_151.md) (4 shared connections)
+- [Community 141](Community_141.md) (2 shared connections)
 - [Community 30](Community_30.md) (1 shared connections)
 
 ## Source Files
@@ -54,6 +54,7 @@
 - `tools/make_stcpu_raster.py`
 - `tools/make_stcpu_rom.py`
 - `tools/make_stcpu_snd.py`
+- `tools/probe_video_load.py`
 - `tools/run_stcpu_bench.py`
 - `tools/run_stcpu_raster.py`
 - `tools/run_vbl_entry_probe.py`
@@ -61,7 +62,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 259 (99%)
+- EXTRACTED: 262 (99%)
 - INFERRED: 3 (1%)
 - AMBIGUOUS: 0 (0%)
 

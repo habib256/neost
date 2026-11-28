@@ -1,26 +1,29 @@
 # Community 456
 
-> 4 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/mfp_internal_loopback_logic.cpp`
-- **.equal()** (2 connections) — `tests/mfp_internal_loopback_logic.cpp`
-- **count** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
-- **failures** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **HayesModem::DialJob** (9 connections) — `src/net/HayesModem.cpp`
+- **mutex** (1 connections)
+- **SocketHandle** (1 connections)
+- **cancelled** (1 connections) — `src/net/HayesModem.cpp`
+- **done** (1 connections) — `src/net/HayesModem.cpp`
+- **err** (1 connections) — `src/net/HayesModem.cpp`
+- **fd** (1 connections) — `src/net/HayesModem.cpp`
+- **m** (1 connections) — `src/net/HayesModem.cpp`
 
 ## Relationships
 
-- [Community 611](Community_611.md) (1 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 56](Community_56.md) (2 shared connections)
 
 ## Source Files
 
-- `tests/mfp_internal_loopback_logic.cpp`
+- `src/net/HayesModem.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 9 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

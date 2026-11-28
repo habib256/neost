@@ -4,29 +4,30 @@
 
 ## Key Concepts
 
-- **Mode borne (kiosk)** (9 connections) — `docs/KIOSK.md`
-- **Dossiers ROM** (2 connections) — `docs/KIOSK.md`
-- **Borne Raspberry Pi** (1 connections) — `docs/KIOSK.md`
-- **Clavier & souris (SELECT manette, ou F12)** (1 connections) — `docs/KIOSK.md`
-- **Démarrage direct sur un jeu (attract)** (1 connections) — `docs/KIOSK.md`
-- **Joysticks** (1 connections) — `docs/KIOSK.md`
-- **Menu in-game (START manette, ou F9)** (1 connections) — `docs/KIOSK.md`
-- **Raccourcis** (1 connections) — `docs/KIOSK.md`
-- **Zoom adaptatif (défaut, bascule F10)** (1 connections) — `docs/KIOSK.md`
+- **write_floppy()** (6 connections) — `tools/run_libretro.py`
+- **case_autorun()** (5 connections) — `tools/run_libretro.py`
+- **case_tos_fallback()** (5 connections) — `tools/run_libretro.py`
+- **case_fast_floppy()** (3 connections) — `tools/run_libretro.py`
+- **frames_to_title()** (3 connections) — `tools/run_libretro.py`
+- **Disquette FAT12 720 Ko NON amorçable (cf. fat12_volume).** (1 connections) — `tools/run_libretro.py`
+- **Chargement accéléré : ChuChu Rocket (330 Ko) copié sur une disquette non…** (1 connections) — `tools/run_libretro.py`
+- **Disquette non amorçable à un seul programme : il démarre seul…** (1 connections) — `tools/run_libretro.py`
+- **Repli de TOS : une disquette qui devait démarrer seule (programme dans \\AUTO)…** (1 connections) — `tools/run_libretro.py`
 
 ## Relationships
 
-- [Community 223](Community_223.md) (1 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
+- [Community 247](Community_247.md) (7 shared connections)
+- [Community 221](Community_221.md) (2 shared connections)
+- [Community 291](Community_291.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/KIOSK.md`
+- `tools/run_libretro.py`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (90%)
-- INFERRED: 1 (10%)
+- EXTRACTED: 18 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---
