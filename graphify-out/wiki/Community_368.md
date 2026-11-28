@@ -1,40 +1,50 @@
 # Community 368
 
-> 13 nodes
+> 23 nodes
 
 ## Key Concepts
 
-- **StateArchive** (14 connections) — `src/core/StateArchive.hpp`
-- **.raw()** (5 connections) — `src/core/StateArchive.hpp`
-- **podVec()** (4 connections) — `src/core/StateArchive.hpp`
-- **.vec()** (3 connections) — `src/core/StateArchive.hpp`
-- **arr()** (2 connections) — `src/core/StateArchive.hpp`
-- **operator()()** (2 connections) — `src/core/StateArchive.hpp`
-- **.fail()** (2 connections) — `src/core/StateArchive.hpp`
-- **.loading()** (1 connections) — `src/core/StateArchive.hpp`
-- **.ok()** (1 connections) — `src/core/StateArchive.hpp`
-- **.saveSize()** (1 connections) — `src/core/StateArchive.hpp`
-- **in_** (1 connections) — `src/core/StateArchive.hpp`
-- **inEnd_** (1 connections) — `src/core/StateArchive.hpp`
-- **out_** (1 connections) — `src/core/StateArchive.hpp`
+- **MidiTimecode.hpp** (18 connections) — `src/audio/MidiTimecode.hpp`
+- **Timecode** (9 connections) — `src/audio/MidiTimecode.hpp`
+- **locate()** (7 connections) — `src/audio/MidiTimecode.hpp`
+- **realtime()** (7 connections) — `src/audio/MidiTimecode.hpp`
+- **advance()** (5 connections) — `src/audio/MidiTimecode.hpp`
+- **.startSchedule()** (5 connections) — `src/audio/MidiTimecode.hpp`
+- **fromFrames()** (4 connections) — `src/audio/MidiTimecode.hpp`
+- **fullFrame()** (4 connections) — `src/audio/MidiTimecode.hpp`
+- **observe()** (4 connections) — `src/audio/MidiTimecode.hpp`
+- **quarterFrameData()** (4 connections) — `src/audio/MidiTimecode.hpp`
+- **realFps()** (4 connections) — `src/audio/MidiTimecode.hpp`
+- **.qfCycle()** (3 connections) — `src/audio/MidiTimecode.hpp`
+- **.setRate()** (3 connections) — `src/audio/MidiTimecode.hpp`
+- **.songAt()** (3 connections) — `src/audio/MidiTimecode.hpp`
+- **rateCode()** (3 connections) — `src/audio/MidiTimecode.hpp`
+- **.setRs232LineSink()** (3 connections) — `src/core/Machine.hpp`
+- **validRate()** (2 connections) — `src/audio/MidiTimecode.hpp`
+- **s** (2 connections) — `src/audio/MidiTimecode.hpp`
+- **.operator==()** (1 connections) — `src/audio/MidiTimecode.hpp`
+- **f** (1 connections) — `src/audio/MidiTimecode.hpp`
+- **h** (1 connections) — `src/audio/MidiTimecode.hpp`
+- **m** (1 connections) — `src/audio/MidiTimecode.hpp`
+- **function** (1 connections)
 
 ## Relationships
 
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 460](Community_460.md) (3 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 419](Community_419.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
-- [Community 298](Community_298.md) (1 shared connections)
+- [Community 105](Community_105.md) (8 shared connections)
+- [Community 4](Community_4.md) (5 shared connections)
+- [Community 386](Community_386.md) (2 shared connections)
+- [Community 10](Community_10.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/StateArchive.hpp`
+- `src/audio/MidiTimecode.hpp`
+- `src/core/Machine.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (92%)
-- INFERRED: 2 (8%)
+- EXTRACTED: 53 (95%)
+- INFERRED: 3 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,57 +1,47 @@
 # Community 131
 
-> 31 nodes
+> 21 nodes
 
 ## Key Concepts
 
-- **DasmNumberFormat** (14 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **DasmStyle** (12 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **StrWriter_cpp.h** (11 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **LetterCase** (6 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **.setNumberFormat()** (6 connections) — `extern/moira/Moira/Moira.h`
+- **StrWriter_cpp.h** (15 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **sprintx()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **sprintx_signed()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **u64** (6 connections)
+- **decDigits()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **hexDigits()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **sprint()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **sprint_signed()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **sprintd()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **sprintd_signed()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **decDigits()** (4 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **.setDasmLetterCase()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **.setDasmNumberFormat()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **.setDumpNumberFormat()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **binDigits()** (3 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **binDigits()** (4 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **uaeHex()** (3 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **uaeHexSigned()** (3 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **i64** (3 connections)
-- **.StrWriter()** (2 connections) — `extern/moira/Moira/StrWriter.h`
-- **plainZero** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **prefix** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **radix** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **upperCase** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **letterCase** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- *... and 6 more nodes in this community*
+- **.log10()** (2 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **.log2()** (2 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **uaeDigits()** (2 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **uaeHexExt()** (2 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **i32** (2 connections)
+- **Size** (1 connections)
+- **u32** (1 connections)
 
 ## Relationships
 
-- [Community 16](Community_16.md) (5 shared connections)
-- [Community 57](Community_57.md) (3 shared connections)
-- [Community 314](Community_314.md) (3 shared connections)
-- [Community 2](Community_2.md) (2 shared connections)
-- [Community 104](Community_104.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
+- [Community 590](Community_590.md) (4 shared connections)
+- [Community 197](Community_197.md) (2 shared connections)
+- [Community 186](Community_186.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/Moira.h`
-- `extern/moira/Moira/MoiraTypes.h`
-- `extern/moira/Moira/StrWriter.h`
+- `extern/moira/Moira/FPU/FpuEnv.h`
 - `extern/moira/Moira/StrWriter_cpp.h`
 
 ## Audit Trail
 
-- EXTRACTED: 70 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 46 (96%)
+- INFERRED: 2 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

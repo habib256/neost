@@ -1,61 +1,61 @@
 # Community 299
 
-> 21 nodes
+> 29 nodes
 
 ## Key Concepts
 
-- **.setIPL()** (8 connections) — `extern/moira/Moira/Moira.h`
-- **.setMegaSteSpeed()** (7 connections) — `src/core/Cpu68k.hpp`
-- **Ce que NeoST attend du cœur** (6 connections) — `docs/CPU_SWAP_GATE.md`
-- **.pollIpl()** (5 connections) — `extern/moira/Moira/Moira.h`
-- **.serialize()** (5 connections) — `src/core/Cpu68k.hpp`
-- **.setIplDelay()** (5 connections) — `extern/moira/Moira/Moira.h`
-- **Membres internes touchés** (5 connections) — `docs/CPU_SWAP_GATE.md`
-- **2. Carte des divergences (source-grounded, 3 agents — file:line des DEUX côtés)** (5 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **Patch local : `NEOST_IPLFETCH` (reconnaissance IPL différée)** (5 connections) — `extern/moira/NEOST_VENDOR.md`
-- **.applyIplFetchConfig()** (4 connections) — `src/core/Cpu68k.cpp`
-- **.commitIpl()** (4 connections) — `src/core/Cpu68k.cpp`
-- **.serializeState()** (4 connections) — `src/core/Cpu68k.cpp`
-- **4. Le 68000, hors du cœur** (4 connections) — `docs/HYPOTHESES_ST.md`
-- **.megaSte16Mhz()** (3 connections) — `src/core/Cpu68k.hpp`
-- **.irqDeliverable()** (3 connections) — `src/core/Cpu68k.cpp`
-- **Autostart `--auto`, EMail 1.56, chasse aux bugs (2026-10-24)** (3 connections) — `CHANGELOG.md`
-- **StateArchive** (2 connections)
-- **Instruction garée (coroutine de `runFrame`)** (2 connections) — `docs/CPU_SWAP_GATE.md`
-- **Mots du bus CPU pour la vidéo** (2 connections) — `docs/CPU_SWAP_GATE.md`
-- **Méthodes surchargées** (1 connections) — `docs/CPU_SWAP_GATE.md`
-- **Patches de NeoST, à retrouver dans POM68K** (1 connections) — `docs/CPU_SWAP_GATE.md`
+- **fuzz_state.cpp** (26 connections) — `tests/fuzz_state.cpp`
+- **fuzzMedia()** (15 connections) — `tests/fuzz_state.cpp`
+- **le32()** (15 connections) — `tests/fuzz_state.cpp`
+- **fuzzBody()** (10 connections) — `tests/fuzz_state.cpp`
+- **Rng** (7 connections) — `tests/fuzz_state.cpp`
+- **writeStx()** (7 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **makeMachine()** (6 connections) — `tests/fuzz_state.cpp`
+- **withDriveAPath()** (6 connections) — `tests/fuzz_state.cpp`
+- **fixMediaCrc()** (5 connections) — `tests/fuzz_state.cpp`
+- **fail()** (4 connections) — `tests/fuzz_state.cpp`
+- **readAll()** (4 connections) — `tests/fuzz_state.cpp`
+- **set32()** (4 connections) — `tests/fuzz_state.cpp`
+- **writeAll()** (4 connections) — `tests/fuzz_state.cpp`
+- **forgeStx()** (4 connections) — `tests/stx_writetrack_test.cpp`
+- **path** (4 connections)
+- **blankSt()** (3 connections) — `tests/fuzz_state.cpp`
+- **main()** (3 connections) — `tests/fuzz_state.cpp`
+- **onlyExpected()** (3 connections) — `tests/fuzz_state.cpp`
+- **.below()** (3 connections) — `tests/fuzz_state.cpp`
+- **crc16()** (3 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **size_t** (3 connections)
+- **.next()** (1 connections) — `tests/fuzz_state.cpp`
+- **.Rng()** (1 connections) — `tests/fuzz_state.cpp`
+- **Machine** (1 connections)
+- **string** (1 connections)
+- *... and 4 more nodes in this community*
 
 ## Relationships
 
-- [Community 9](Community_9.md) (9 shared connections)
-- [Community 27](Community_27.md) (8 shared connections)
-- [Community 16](Community_16.md) (4 shared connections)
-- [Community 314](Community_314.md) (3 shared connections)
-- [Community 247](Community_247.md) (2 shared connections)
-- [Community 205](Community_205.md) (2 shared connections)
-- [Community 54](Community_54.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 271](Community_271.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
-- [Community 15](Community_15.md) (1 shared connections)
+- [Community 102](Community_102.md) (16 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
+- [Community 186](Community_186.md) (3 shared connections)
+- [Community 449](Community_449.md) (2 shared connections)
+- [Community 174](Community_174.md) (2 shared connections)
+- [Community 459](Community_459.md) (1 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
+- [Community 172](Community_172.md) (1 shared connections)
+- [Community 201](Community_201.md) (1 shared connections)
+- [Community 69](Community_69.md) (1 shared connections)
+- [Community 71](Community_71.md) (1 shared connections)
+- [Community 72](Community_72.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/CPU_SWAP_GATE.md`
-- `docs/HYPOTHESES_ST.md`
-- `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- `extern/moira/Moira/Moira.h`
-- `extern/moira/NEOST_VENDOR.md`
-- `src/core/Cpu68k.cpp`
-- `src/core/Cpu68k.hpp`
+- `tests/fuzz_state.cpp`
+- `tests/stx_data_crc_write_logic.cpp`
+- `tests/stx_writetrack_test.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 36 (59%)
-- INFERRED: 25 (41%)
+- EXTRACTED: 80 (87%)
+- INFERRED: 12 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

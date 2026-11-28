@@ -1,27 +1,35 @@
 # Community 479
 
-> 3 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **mfp_rx_irq_timing_logic.cpp** (4 connections) — `tests/mfp_rx_irq_timing_logic.cpp`
-- **testMfpRxIrqTiming()** (3 connections) — `tests/mfp_rx_irq_timing_logic.cpp`
-- **main()** (2 connections) — `tests/mfp_rx_irq_timing_logic.cpp`
+- **retro_vfs_file_identity** (13 connections) — `src/libretro/libretro.h`
+- **ctime** (1 connections) — `src/libretro/libretro.h`
+- **ctime_nsec** (1 connections) — `src/libretro/libretro.h`
+- **dev** (1 connections) — `src/libretro/libretro.h`
+- **flags** (1 connections) — `src/libretro/libretro.h`
+- **gid** (1 connections) — `src/libretro/libretro.h`
+- **id** (1 connections) — `src/libretro/libretro.h`
+- **mtime** (1 connections) — `src/libretro/libretro.h`
+- **mtime_nsec** (1 connections) — `src/libretro/libretro.h`
+- **perm** (1 connections) — `src/libretro/libretro.h`
+- **size** (1 connections) — `src/libretro/libretro.h`
+- **type** (1 connections) — `src/libretro/libretro.h`
+- **uid** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 
-- [Community 252](Community_252.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/mfp_rx_irq_timing_logic.cpp`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (83%)
-- INFERRED: 1 (17%)
+- EXTRACTED: 13 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

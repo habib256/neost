@@ -1,42 +1,51 @@
 # Community 349
 
-> 16 nodes
+> 28 nodes
 
 ## Key Concepts
 
-- **run_spec512_truth.py** (16 connections) — `tools/run_spec512_truth.py`
-- **main()** (13 connections) — `tools/run_spec512_truth.py`
-- **Fat** (6 connections) — `tools/run_spec512_truth.py`
-- **finish_results()** (5 connections) — `tools/run_spec512_truth.py`
-- **screen_area()** (4 connections) — `tools/run_spec512_truth.py`
-- **decode_spc()** (3 connections) — `tools/run_spec512_truth.py`
-- **decode_spu()** (3 connections) — `tools/run_spec512_truth.py`
-- **.read()** (3 connections) — `tools/run_spec512_truth.py`
-- **.walk()** (3 connections) — `tools/run_spec512_truth.py`
-- **read_ppm()** (3 connections) — `tools/run_spec512_truth.py`
-- **render()** (3 connections) — `tools/run_spec512_truth.py`
-- **Path** (2 connections)
-- **.__init__()** (1 connections) — `tools/run_spec512_truth.py`
-- **Couleur RVB 3 bits par pixel (une valeur par composante), décalée de `shift`…** (1 connections) — `tools/run_spec512_truth.py`
-- **Comparer uniquement les machines exécutées, sans masquer leurs régressions.** (1 connections) — `tools/run_spec512_truth.py`
-- **FAT12 d'une disquette .ST, en lecture.** (1 connections) — `tools/run_spec512_truth.py`
+- **LzmaDec.c** (19 connections) — `extern/lzma/LzmaDec.c`
+- **CLzmaDec** (13 connections)
+- **LzmaDec_Allocate()** (10 connections) — `extern/lzma/LzmaDec.c`
+- **LzmaDec_AllocateProbs()** (10 connections) — `extern/lzma/LzmaDec.c`
+- **LzmaDecode()** (10 connections) — `extern/lzma/LzmaDec.c`
+- **LzmaDec_AllocateProbs2()** (8 connections) — `extern/lzma/LzmaDec.c`
+- **LzmaDec_FreeProbs()** (8 connections) — `extern/lzma/LzmaDec.c`
+- **Byte** (8 connections)
+- **LzmaDec_DecodeToBuf()** (7 connections) — `extern/lzma/LzmaDec.c`
+- **ISzAllocPtr** (7 connections)
+- **LzmaDec_Init()** (6 connections) — `extern/lzma/LzmaDec.c`
+- **LzmaProps_Decode()** (6 connections) — `extern/lzma/LzmaDec.c`
+- **SRes** (6 connections)
+- **LZMA_DECODE_REAL()** (5 connections) — `extern/lzma/LzmaDec.c`
+- **LzmaDec_DecodeReal2()** (5 connections) — `extern/lzma/LzmaDec.c`
+- **LzmaDec_Free()** (5 connections) — `extern/lzma/LzmaDec.c`
+- **LzmaDec_FreeDict()** (5 connections) — `extern/lzma/LzmaDec.c`
+- **LzmaDec_InitDicAndState()** (5 connections) — `extern/lzma/LzmaDec.c`
+- **SizeT** (5 connections)
+- **LzmaDec_TryDummy()** (4 connections) — `extern/lzma/LzmaDec.c`
+- **LzmaDec_WriteRem()** (3 connections) — `extern/lzma/LzmaDec.c`
+- **probLen()** (2 connections) — `extern/lzma/LzmaDec.c`
+- **CLzmaProps** (2 connections)
+- **ELzmaFinishMode** (2 connections)
+- **ELzmaStatus** (2 connections)
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
-- [Community 227](Community_227.md) (5 shared connections)
-- [Community 18](Community_18.md) (4 shared connections)
-- [Community 3](Community_3.md) (3 shared connections)
-- [Community 173](Community_173.md) (2 shared connections)
-- [Community 26](Community_26.md) (2 shared connections)
+- [Community 409](Community_409.md) (4 shared connections)
+- [Community 353](Community_353.md) (4 shared connections)
+- [Community 245](Community_245.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/run_spec512_truth.py`
+- `extern/lzma/LzmaDec.c`
 
 ## Audit Trail
 
-- EXTRACTED: 40 (95%)
-- INFERRED: 2 (5%)
+- EXTRACTED: 81 (92%)
+- INFERRED: 7 (8%)
 - AMBIGUOUS: 0 (0%)
 
 ---

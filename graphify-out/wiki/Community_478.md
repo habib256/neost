@@ -1,27 +1,39 @@
 # Community 478
 
-> 3 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **mfp_gpip_composite_logic.cpp** (4 connections) — `tests/mfp_gpip_composite_logic.cpp`
-- **testMfpGpipComposite()** (3 connections) — `tests/mfp_gpip_composite_logic.cpp`
-- **main()** (2 connections) — `tests/mfp_gpip_composite_logic.cpp`
+- **Rect** (8 connections) — `src/libretro/neost_libretro.cpp`
+- **fillAvInfo()** (6 connections) — `src/libretro/neost_libretro.cpp`
+- **retro_get_system_av_info()** (6 connections) — `src/libretro/neost_libretro.cpp`
+- **retro_system_av_info** (5 connections) — `src/libretro/libretro.h`
+- **frameRect()** (4 connections) — `src/libretro/neost_libretro.cpp`
+- **presentVideo()** (4 connections) — `src/libretro/neost_libretro.cpp`
+- **aspectFor()** (3 connections) — `src/libretro/neost_libretro.cpp`
+- **geometry** (1 connections) — `src/libretro/libretro.h`
+- **timing** (1 connections) — `src/libretro/libretro.h`
+- **h** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **w** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **x** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **y** (1 connections) — `src/libretro/neost_libretro.cpp`
 
 ## Relationships
 
-- [Community 252](Community_252.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
+- [Community 248](Community_248.md) (7 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
+- [Community 304](Community_304.md) (1 shared connections)
+- [Community 503](Community_503.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/mfp_gpip_composite_logic.cpp`
+- `src/libretro/libretro.h`
+- `src/libretro/neost_libretro.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (83%)
-- INFERRED: 1 (17%)
+- EXTRACTED: 25 (96%)
+- INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

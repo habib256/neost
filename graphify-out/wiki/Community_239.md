@@ -1,35 +1,55 @@
 # Community 239
 
-> 13 nodes
+> 53 nodes
 
 ## Key Concepts
 
-- **TrackInfo** (17 connections) — `src/io/IpfImage.cpp`
-- **blockCount** (1 connections) — `src/io/IpfImage.cpp`
-- **cylinder** (1 connections) — `src/io/IpfImage.cpp`
-- **data** (1 connections) — `src/io/IpfImage.cpp`
-- **dataSize** (1 connections) — `src/io/IpfImage.cpp`
-- **hasData** (1 connections) — `src/io/IpfImage.cpp`
-- **head** (1 connections) — `src/io/IpfImage.cpp`
-- **indexCells** (1 connections) — `src/io/IpfImage.cpp`
-- **infoSet** (1 connections) — `src/io/IpfImage.cpp`
-- **process** (1 connections) — `src/io/IpfImage.cpp`
-- **sigtype** (1 connections) — `src/io/IpfImage.cpp`
-- **sizeCells** (1 connections) — `src/io/IpfImage.cpp`
-- **type** (1 connections) — `src/io/IpfImage.cpp`
+- **Session** (65 connections) — `src/libretro/neost_libretro.cpp`
+- **Machine** (1 connections)
+- **pair** (1 connections)
+- **unique_ptr** (1 connections)
+- **announcedFc** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **aspect** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **av** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **bootExpected** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **content** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **crashRecord** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **desktopSeen** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **diskIndex** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **drive** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **ejected** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **fdcEvents** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **forcedMachine** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **framesSinceLoad** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **inputHeld** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **ioFaultsSeen** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **lastMachine** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **latch** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **ledOn** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **loaded** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **machine** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **machineForced** (1 connections) — `src/libretro/neost_libretro.cpp`
+- *... and 28 more nodes in this community*
 
 ## Relationships
 
-- [Community 217](Community_217.md) (4 shared connections)
-- [Community 143](Community_143.md) (1 shared connections)
+- [Community 248](Community_248.md) (4 shared connections)
+- [Community 113](Community_113.md) (2 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
+- [Community 419](Community_419.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
+- [Community 292](Community_292.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 449](Community_449.md) (1 shared connections)
+- [Community 582](Community_582.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/IpfImage.cpp`
+- `src/libretro/neost_libretro.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 17 (100%)
+- EXTRACTED: 65 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

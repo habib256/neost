@@ -9,8 +9,8 @@
 - **Key** (4 connections) — `src/io/CompDisks.hpp`
 - **.size()** (4 connections) — `src/io/CompDisks.hpp`
 - **string** (3 connections)
+- **number** (3 connections) — `src/io/CompDisks.hpp`
 - **size_t** (2 connections)
-- **number** (2 connections) — `src/io/CompDisks.hpp`
 - **byNumber_** (1 connections) — `src/io/CompDisks.hpp`
 - **byStem_** (1 connections) — `src/io/CompDisks.hpp`
 - **entries_** (1 connections) — `src/io/CompDisks.hpp`
@@ -25,13 +25,14 @@
 ## Relationships
 
 - [Community 303](Community_303.md) (4 shared connections)
-- [Community 460](Community_460.md) (2 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
 - [Community 1](Community_1.md) (1 shared connections)
 - [Community 11](Community_11.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 - [Community 325](Community_325.md) (1 shared connections)
 - [Community 252](Community_252.md) (1 shared connections)
 - [Community 444](Community_444.md) (1 shared connections)
+- [Community 101](Community_101.md) (1 shared connections)
 
 ## Source Files
 
@@ -39,8 +40,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 29 (91%)
-- INFERRED: 3 (9%)
+- EXTRACTED: 29 (88%)
+- INFERRED: 4 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

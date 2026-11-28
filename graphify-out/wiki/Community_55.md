@@ -1,53 +1,48 @@
 # Community 55
 
-> 25 nodes
+> 163 nodes
 
 ## Key Concepts
 
-- **cpu_swap_gate.py** (29 connections) — `tools/cpu_swap_gate.py`
-- **main()** (11 connections) — `tools/cpu_swap_gate.py`
-- **Scenario** (7 connections) — `tools/cpu_swap_gate.py`
-- **scenarios()** (7 connections) — `tools/cpu_swap_gate.py`
-- **megaste_scenarios()** (6 connections) — `tools/cpu_swap_gate.py`
-- **replay_scenarios()** (6 connections) — `tools/cpu_swap_gate.py`
-- **collection_scenarios()** (5 connections) — `tools/cpu_swap_gate.py`
-- **run()** (5 connections) — `tools/cpu_swap_gate.py`
-- **assemble_at_speed()** (4 connections) — `tools/cpu_swap_gate.py`
-- **etalon_scenarios()** (4 connections) — `tools/cpu_swap_gate.py`
-- **build()** (4 connections) — `tools/cpu_swap_gate.py`
-- **compare()** (3 connections) — `tools/cpu_swap_gate.py`
-- **build()** (3 connections) — `tools/cpu_swap_gate.py`
-- **self_blit()** (3 connections) — `tools/cpu_swap_gate.py`
-- **suite_of()** (2 connections) — `tools/cpu_swap_gate.py`
-- **__init__()** (1 connections) — `tools/cpu_swap_gate.py`
-- **build()** (1 connections) — `tools/cpu_swap_gate.py`
-- **diag()** (1 connections) — `tools/cpu_swap_gate.py`
-- **build()** (1 connections) — `tools/cpu_swap_gate.py`
-- **Assemble une sonde pour le Mega STE : `move.b #$40,$FF8E0D` (SCU : MFP…** (1 connections) — `tools/cpu_swap_gate.py`
-- **Le blitter écrit sa RAM de demi-teinte ($FF8A00), le CPU la relit, puis le…** (1 connections) — `tools/cpu_swap_gate.py`
-- **(id, statut, empreintes). Statut : 'ok', ou 'skip: …', ou 'error: …'.** (1 connections) — `tools/cpu_swap_gate.py`
-- **None si accord ; sinon la description de la première divergence.** (1 connections) — `tools/cpu_swap_gate.py`
-- **dataclasses** (1 connections)
-- **typing** (1 connections)
+- **retro_key** (163 connections) — `src/libretro/libretro.h`
+- **RETROK_0** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_1** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_2** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_3** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_4** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_5** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_6** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_7** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_8** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_9** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_a** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_AMPERSAND** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_ASTERISK** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_AT** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_b** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_BACKQUOTE** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_BACKSLASH** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_BACKSPACE** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_BAR** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_BREAK** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_BROWSER_BACK** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_BROWSER_FAVORITES** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_BROWSER_FORWARD** (1 connections) — `src/libretro/libretro.h`
+- **RETROK_BROWSER_HOME** (1 connections) — `src/libretro/libretro.h`
+- *... and 138 more nodes in this community*
 
 ## Relationships
 
-- [Community 18](Community_18.md) (9 shared connections)
-- [Community 26](Community_26.md) (3 shared connections)
-- [Community 173](Community_173.md) (3 shared connections)
-- [Community 273](Community_273.md) (3 shared connections)
-- [Community 227](Community_227.md) (3 shared connections)
-- [Community 34](Community_34.md) (1 shared connections)
-- [Community 49](Community_49.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/cpu_swap_gate.py`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 57 (86%)
-- INFERRED: 9 (14%)
+- EXTRACTED: 163 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

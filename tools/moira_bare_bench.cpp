@@ -14,15 +14,15 @@
 //  et write(). Le rappel tombe donc à S0 + 2 cycles. [B] M68000UM Rev 8 § 5.1.1 p. 5-4 :
 //  AS tombe au front montant de S2, un cycle après S0. Chaque accès est daté `clock − 1`, soit le front
 //  descendant d'AS, comme côté fx68k. Les lectures des vecteurs de reset
-//  (read16OnReset) et l'IACK (readIrqUserVector) n'ont pas de willAccessBus : même
+//  (read16OnReset) et l'IACK (readIrqVector) n'ont pas de willAccessBus : même
 //  convention, appliquée à leur rappel. L'IACK est daté `clock − 3` : Moira l'encadre de
 //  SYNC(iackSyncBefore = 4) et SYNC(4) (MoiraExceptions_cpp.h, execInterrupt), et les
 //  4 cycles qui PRÉCÈDENT la lecture du vecteur sont le cycle bus d'IACK lui-même —
 //  fx68k enchaîne l'IACK aussitôt après l'écriture du PC bas, sans cycle mort. Le
 //  comparateur rapporte de toute façon l'écart de cette date à part.
 //
-//  BUS ERROR : tout accès hors IACK à $E00000-$EFFFFF lève moira::BusError, avec la
-//  trame que construit NeoST (Cpu68k.cpp, raiseBusError) ; la double faute est celle de
+//  BUS ERROR : tout accès hors IACK à $E00000-$EFFFFF lève moira::BusError, avec son
+//  adresse ; le dataflow du cœur complète la trame comme dans NeoST ; la double faute est celle de
 //  Moira (processException → halt), comme dans NeoST. Ni chien de garde ni attente :
 //  la faute tombe à la place du DTACK, comme côté fx68k.
 //

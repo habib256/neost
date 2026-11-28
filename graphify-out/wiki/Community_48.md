@@ -1,10 +1,10 @@
 # Community 48
 
-> 36 nodes
+> 38 nodes
 
 ## Key Concepts
 
-- **DmaSound.cpp** (45 connections) — `src/core/DmaSound.cpp`
+- **DmaSound.cpp** (48 connections) — `src/core/DmaSound.cpp`
 - **.fifoRefill()** (15 connections) — `src/core/DmaSound.hpp`
 - **.updateDac()** (12 connections) — `src/core/DmaSound.hpp`
 - **Audio** (12 connections) — `docs/IMPLEMENTED.md`
@@ -20,45 +20,45 @@
 - **.advanceMicrowire()** (5 connections) — `src/core/DmaSound.hpp`
 - **.recordEvent()** (5 connections) — `src/core/DmaSound.hpp`
 - **.read8()** (5 connections) — `src/core/DmaSound.hpp`
+- **Refermés** (5 connections) — `docs/HATARI_DIVERGENCES.md`
 - **.fifoPull()** (4 connections) — `src/core/DmaSound.hpp`
+- **.capPush()** (4 connections) — `src/core/DmaSound.hpp`
 - **.resbReset()** (4 connections) — `src/core/DmaSound.hpp`
 - **.decodeMicrowire()** (4 connections) — `src/core/DmaSound.hpp`
-- **.synthesize()** (4 connections) — `src/core/YM2149.hpp`
 - **.reset()** (3 connections) — `src/core/DmaSound.hpp`
 - **.mwMaskRead()** (3 connections) — `src/core/DmaSound.hpp`
 - **.onMicrowireShift()** (3 connections) — `src/core/DmaSound.hpp`
 - **.applyTone()** (3 connections) — `src/core/DmaSound.hpp`
-- **.setMfp()** (3 connections) — `src/core/DmaSound.hpp`
-- *... and 11 more nodes in this community*
+- *... and 13 more nodes in this community*
 
 ## Relationships
 
-- [Community 13](Community_13.md) (28 shared connections)
+- [Community 13](Community_13.md) (30 shared connections)
 - [Community 446](Community_446.md) (10 shared connections)
-- [Community 102](Community_102.md) (5 shared connections)
-- [Community 392](Community_392.md) (3 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 112](Community_112.md) (2 shared connections)
-- [Community 140](Community_140.md) (2 shared connections)
+- [Community 102](Community_102.md) (6 shared connections)
+- [Community 288](Community_288.md) (3 shared connections)
+- [Community 449](Community_449.md) (3 shared connections)
+- [Community 140](Community_140.md) (3 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 186](Community_186.md) (2 shared connections)
 - [Community 130](Community_130.md) (2 shared connections)
-- [Community 394](Community_394.md) (1 shared connections)
+- [Community 470](Community_470.md) (2 shared connections)
 - [Community 444](Community_444.md) (1 shared connections)
-- [Community 28](Community_28.md) (1 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
+- [Community 317](Community_317.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
 - `docs/CYCLE_ACCURACY.md`
+- `docs/HATARI_DIVERGENCES.md`
 - `docs/IMPLEMENTED.md`
 - `src/core/DmaSound.cpp`
 - `src/core/DmaSound.hpp`
-- `src/core/YM2149.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 82 (60%)
-- INFERRED: 55 (40%)
+- EXTRACTED: 86 (60%)
+- INFERRED: 58 (40%)
 - AMBIGUOUS: 0 (0%)
 
 ---

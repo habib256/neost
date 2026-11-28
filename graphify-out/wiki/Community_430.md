@@ -1,13 +1,15 @@
 # Community 430
 
-> 12 nodes
+> 14 nodes
 
 ## Key Concepts
 
 - **FramePacer** (9 connections) — `src/core/Pacing.hpp`
+- **cpuHz()** (6 connections) — `src/core/Pacing.hpp`
 - **frameMillis()** (6 connections) — `src/core/Pacing.hpp`
 - **.resync()** (5 connections) — `src/core/Pacing.hpp`
 - **runDue()** (4 connections) — `src/core/Pacing.hpp`
+- **frameNanos()** (3 connections) — `src/core/Pacing.hpp`
 - **.due()** (3 connections) — `src/core/Pacing.hpp`
 - **.advance()** (2 connections) — `src/core/Pacing.hpp`
 - **A28 — le servo audio et la cadence rentrent dans le cœur (2026-08-28)** (2 connections) — `CHANGELOG.md`
@@ -19,10 +21,12 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (4 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 252](Community_252.md) (3 shared connections)
 - [Community 228](Community_228.md) (2 shared connections)
 - [Community 130](Community_130.md) (2 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 419](Community_419.md) (1 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
 
 ## Source Files
 
@@ -31,8 +35,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 18 (78%)
-- INFERRED: 5 (22%)
+- EXTRACTED: 24 (80%)
+- INFERRED: 6 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---

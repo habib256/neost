@@ -13,8 +13,8 @@ ce qui est gelé d'ici là : [`../TODO.md`](../TODO.md) § 2 et § 9.
 
 | Suite | Scénarios | Commande |
 |-------|-----------|----------|
-| `etalons` | les 56 étalons pixel de `tools/etalons.json` | celle de `run_etalons.py` |
-| `replays` | les 28 parcours de `tests/replays/replays.json`, diagnostic compris | celle de `compare_titles.py` côté NeoST, par `tools/title_cmd.py` : mêmes touches, joystick, souris, disquettes changées |
+| `etalons` | les scénarios avec un nombre de trames de `tools/etalons.json` | celle de `run_etalons.py` |
+| `replays` | les parcours de `tests/replays/replays.json`, diagnostic compris | celle de `compare_titles.py` côté NeoST, par `tools/title_cmd.py` : mêmes touches, joystick, souris, disquettes changées |
 | `collection` | chaque image de `disks/st` et `disks/stx`, en ST/TOS 1.04, STE/TOS 1.62 et Mega STE/TOS 2.06 | ESPACE toutes les 500 trames de 1000 à 3500, 4000 trames |
 | `megaste` | sondes blitter/IRQ et bus/cache à 8, 16 et 16 MHz + cache ; DMA disquette et blitter du catalogue étendu à 16 MHz ; blit sur ses propres registres (demi-teinte écrite puis relue) ; suite Q du diagnostic Field Service | générateurs de `run_megaste_blitter_checks.py`, `run_megaste_bus_oracle.py` et `timing_extended.py` (SCU ouvert et vitesse injectés en tête) ; recette de `run_megaste_diag.py` |
 
@@ -85,15 +85,15 @@ Aucun changement du cœur vendorisé ; ajout limité à l’adaptateur `latchDb`
 
 | Méthode | Usage dans NeoST |
 |---------|------------------|
-| `read8/read16/write8/write16` | accès bus, wait-states, cache Mega STE |
+| `read8/read16/read32, write8/write16/write32` | accès bus, wait-states, cache Mega STE |
 | `read16OnReset`, `read16Dasm` | vecteur de reset par l'overlay ROM ; désassembleur sans effet de bord |
 | `willAccessBus`, `didAccessBus`, `setBusLock` | arbitrage blitter sous l'instruction, verrou TAS |
 | `sync(int)` | cycles internes : blitter, broches HBL/VBL datées au cycle |
 | `willExecute` (instruction et exception), `didExecute` | trace, observateur de TRAP |
 | `willProcessFault(StackFrame)` | dernière faute de groupe 0 (A42) |
 | `illegalOpcodeHook` | instruction illégale déléguée (GEMDOS HD) |
-| `cpuDidHalt` | double faute → halt |
-| `willInterrupt`, `iackSyncBefore`, `iackSyncAfter`, `readIrqUserVector` | IACK : synchro E-clock, vecteur MFP/SCC |
+| `didHaltCPU` | double faute → halt |
+| `willInterrupt`, `iackSyncBefore`, `iackSyncAfter`, `readIrqVector` | IACK : synchro E-clock, vecteur MFP/SCC |
 | `didReachWatchpoint` | débogueur |
 
 ### Membres internes touchés

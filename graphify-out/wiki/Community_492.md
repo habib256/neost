@@ -1,27 +1,39 @@
 # Community 492
 
-> 4 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/stx_absent_track_logic.cpp`
-- **.equal()** (2 connections) — `tests/stx_absent_track_logic.cpp`
-- **count** (1 connections) — `tests/stx_absent_track_logic.cpp`
-- **failures** (1 connections) — `tests/stx_absent_track_logic.cpp`
+- **Ppmd7.h** (5 connections) — `extern/lzma/Ppmd7.h`
+- **Ppmd7Dec.c** (5 connections) — `extern/lzma/Ppmd7Dec.c`
+- **Ppmd7z_RangeDec_Init()** (4 connections) — `extern/lzma/Ppmd7Dec.c`
+- **Ppmd7z_RD_Decode()** (4 connections) — `extern/lzma/Ppmd7Dec.c`
+- **Ppmd.h** (3 connections) — `extern/lzma/Ppmd.h`
+- **typedef()** (2 connections) — `extern/lzma/Ppmd.h`
+- **CPpmd7** (2 connections)
+- **CPpmd7_RangeDec** (1 connections)
+- **BoolInt** (1 connections)
+- **Z7_FORCE_INLINE** (1 connections)
+- **MY_CPU_pragma_pack_push_1** (1 connections)
 
 ## Relationships
 
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 201](Community_201.md) (1 shared connections)
+- [Community 305](Community_305.md) (3 shared connections)
+- [Community 353](Community_353.md) (2 shared connections)
+- [Community 245](Community_245.md) (2 shared connections)
+- [Community 406](Community_406.md) (1 shared connections)
+- [Community 529](Community_529.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/stx_absent_track_logic.cpp`
+- `extern/lzma/Ppmd.h`
+- `extern/lzma/Ppmd7.h`
+- `extern/lzma/Ppmd7Dec.c`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 18 (95%)
+- INFERRED: 1 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

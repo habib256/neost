@@ -1,25 +1,40 @@
 # Community 483
 
-> 4 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **MenuKey** (4 connections) — `src/android/AndroidMenu.hpp`
-- **click** (1 connections) — `src/android/AndroidMenu.hpp`
-- **label** (1 connections) — `src/android/AndroidMenu.hpp`
-- **scancode** (1 connections) — `src/android/AndroidMenu.hpp`
+- **stblitter_bench.cpp** (12 connections) — `tools/stblitter_bench.cpp`
+- **stcpu_bench.cpp** (11 connections) — `tools/stcpu_bench.cpp`
+- **verilated** (4 connections)
+- **halfCycle()** (3 connections) — `tools/stblitter_bench.cpp`
+- **observe()** (3 connections) — `tools/stblitter_bench.cpp`
+- **main()** (3 connections) — `tools/stcpu_bench.cpp`
+- **main()** (2 connections) — `tools/stblitter_bench.cpp`
+- **ramWord()** (2 connections) — `tools/stblitter_bench.cpp`
+- **tick()** (2 connections) — `tools/stcpu_bench.cpp`
+- **unsignedArg()** (2 connections) — `tools/stcpu_bench.cpp`
+- **climits** (2 connections)
+- **vstblitter_bench_top** (1 connections)
+- **vstcpu_bench_top** (1 connections)
 
 ## Relationships
 
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 186](Community_186.md) (4 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 197](Community_197.md) (1 shared connections)
+- [Community 65](Community_65.md) (1 shared connections)
+- [Community 272](Community_272.md) (1 shared connections)
 
 ## Source Files
 
-- `src/android/AndroidMenu.hpp`
+- `tools/stblitter_bench.cpp`
+- `tools/stcpu_bench.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
+- EXTRACTED: 31 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

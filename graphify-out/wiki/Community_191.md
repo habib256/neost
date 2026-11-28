@@ -5,7 +5,7 @@
 ## Key Concepts
 
 - **Rig** (12 connections) — `tests/ikbd_acia_format_logic.cpp`
-- **testIkbdAciaFormat()** (7 connections) — `tests/ikbd_acia_format_logic.cpp`
+- **testIkbdAciaFormat()** (8 connections) — `tests/ikbd_acia_format_logic.cpp`
 - **.at()** (2 connections) — `tests/ikbd_acia_format_logic.cpp`
 - **.response()** (2 connections) — `tests/ikbd_acia_format_logic.cpp`
 - **.status()** (2 connections) — `tests/ikbd_acia_format_logic.cpp`
@@ -20,8 +20,8 @@
 
 ## Relationships
 
+- [Community 41](Community_41.md) (3 shared connections)
 - [Community 102](Community_102.md) (2 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
 - [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
@@ -30,8 +30,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 18 (95%)
-- INFERRED: 1 (5%)
+- EXTRACTED: 18 (90%)
+- INFERRED: 2 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

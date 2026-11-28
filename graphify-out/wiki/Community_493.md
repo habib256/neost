@@ -1,26 +1,32 @@
 # Community 493
 
-> 4 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **compileShader()** (4 connections) — `src/web/main_web.cpp`
-- **initGl()** (3 connections) — `src/web/main_web.cpp`
-- **GLenum** (1 connections)
-- **GLuint** (1 connections)
+- **retro_midi_interface** (11 connections) — `src/libretro/libretro.h`
+- **retro_midi_flush_t** (1 connections)
+- **retro_midi_input_enabled_t** (1 connections)
+- **retro_midi_output_enabled_t** (1 connections)
+- **retro_midi_read_t** (1 connections)
+- **retro_midi_write_t** (1 connections)
+- **flush** (1 connections) — `src/libretro/libretro.h`
+- **input_enabled** (1 connections) — `src/libretro/libretro.h`
+- **output_enabled** (1 connections) — `src/libretro/libretro.h`
+- **read** (1 connections) — `src/libretro/libretro.h`
+- **write** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 
-- [Community 68](Community_68.md) (2 shared connections)
-- [Community 449](Community_449.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `src/web/main_web.cpp`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 6 (100%)
+- EXTRACTED: 11 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

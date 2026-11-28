@@ -1,24 +1,33 @@
 # Community 447
 
-> 3 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **SpreadTable** (3 connections) — `src/core/ShifterInternal.hpp`
-- **.SpreadTable()** (1 connections) — `src/core/ShifterInternal.hpp`
-- **v** (1 connections) — `src/core/ShifterInternal.hpp`
+- **case_hard_disk_state()** (7 connections) — `tools/run_libretro.py`
+- **case_hard_disk()** (5 connections) — `tools/run_libretro.py`
+- **write_hard_disk()** (5 connections) — `tools/run_libretro.py`
+- **hd_writer_prg()** (3 connections) — `tools/run_libretro.py`
+- **disk_copy()** (1 connections) — `tools/run_libretro.py`
+- **Disque dur ACSI : secteur racine Atari (taille du disque à $1C2, table de…** (1 connections) — `tools/run_libretro.py`
+- **Image de disque dur (.hd) : montée en ACSI 0, EmuTOS lit sa partition et lance…** (1 connections) — `tools/run_libretro.py`
+- **C:\\AUTO : Rwabs écrit le secteur logique 1000 de C: (libre), fond vert, puis…** (1 connections) — `tools/run_libretro.py`
+- **Disque dur dans l'état : les écritures vont au calque (la copie privée n'est…** (1 connections) — `tools/run_libretro.py`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 429](Community_429.md) (4 shared connections)
+- [Community 247](Community_247.md) (2 shared connections)
+- [Community 377](Community_377.md) (2 shared connections)
+- [Community 596](Community_596.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/ShifterInternal.hpp`
+- `tools/run_libretro.py`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
+- EXTRACTED: 17 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

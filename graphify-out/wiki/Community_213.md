@@ -1,47 +1,62 @@
 # Community 213
 
-> 13 nodes
+> 66 nodes
 
 ## Key Concepts
 
-- **MidiEndpoint.hpp** (20 connections) — `src/audio/MidiEndpoint.hpp`
-- **Wanted** (10 connections) — `src/audio/MidiEndpoint.hpp`
-- **countMatchable()** (7 connections) — `src/audio/MidiEndpoint.hpp`
-- **alsaUid()** (6 connections) — `src/audio/MidiEndpoint.hpp`
-- **displayLabel()** (6 connections) — `src/audio/MidiEndpoint.hpp`
-- **learnUids()** (6 connections) — `src/audio/MidiEndpoint.hpp`
-- **matchEndpoints()** (6 connections) — `src/audio/MidiEndpoint.hpp`
-- **alsaBusAddress()** (5 connections) — `src/audio/MidiEndpoint.hpp`
-- **string** (5 connections)
-- **.taken()** (3 connections) — `src/core/Rewind.hpp`
-- **size_t** (2 connections)
-- **name** (1 connections) — `src/audio/MidiEndpoint.hpp`
-- **uid** (1 connections) — `src/audio/MidiEndpoint.hpp`
+- **Archive.cpp** (30 connections) — `src/util/Archive.cpp`
+- **Reader::SevenZip** (15 connections) — `src/util/Archive.cpp`
+- **Reader** (14 connections) — `src/util/Archive.hpp`
+- **.open()** (13 connections) — `src/util/Archive.hpp`
+- **ZipMember** (12 connections) — `src/util/Archive.hpp`
+- **extractZip()** (12 connections) — `src/util/Archive.cpp`
+- **gunzip()** (12 connections) — `src/util/Archive.cpp`
+- **size** (12 connections) — `src/util/Archive.cpp`
+- **Débogage headless (l'outil n°1)** (12 connections) — `DEV.md`
+- **listZip()** (11 connections) — `src/util/Archive.cpp`
+- **.extract()** (9 connections) — `src/util/Archive.hpp`
+- **MemInStream** (8 connections) — `src/util/Archive.cpp`
+- **fail()** (8 connections) — `src/util/Archive.cpp`
+- **string** (8 connections)
+- **Member** (7 connections) — `src/util/Archive.hpp`
+- **inflateRaw()** (7 connections) — `src/util/Archive.cpp`
+- **data** (7 connections) — `src/util/Archive.cpp`
+- **utf16ToUtf8()** (6 connections) — `src/util/Archive.cpp`
+- **is7z()** (5 connections) — `src/util/Archive.cpp`
+- **isGzip()** (5 connections) — `src/util/Archive.cpp`
+- **memSeek()** (5 connections) — `src/util/Archive.cpp`
+- **safeMemberPath()** (5 connections) — `src/util/Archive.cpp`
+- **isZip()** (4 connections) — `src/util/Archive.cpp`
+- **le16()** (4 connections) — `src/util/Archive.cpp`
+- **le32()** (4 connections) — `src/util/Archive.cpp`
+- *... and 41 more nodes in this community*
 
 ## Relationships
 
-- [Community 366](Community_366.md) (8 shared connections)
-- [Community 252](Community_252.md) (7 shared connections)
+- [Community 102](Community_102.md) (13 shared connections)
 - [Community 4](Community_4.md) (6 shared connections)
-- [Community 460](Community_460.md) (5 shared connections)
-- [Community 416](Community_416.md) (2 shared connections)
-- [Community 220](Community_220.md) (1 shared connections)
-- [Community 42](Community_42.md) (1 shared connections)
-- [Community 325](Community_325.md) (1 shared connections)
-- [Community 298](Community_298.md) (1 shared connections)
-- [Community 419](Community_419.md) (1 shared connections)
-- [Community 126](Community_126.md) (1 shared connections)
-- [Community 214](Community_214.md) (1 shared connections)
+- [Community 485](Community_485.md) (4 shared connections)
+- [Community 203](Community_203.md) (3 shared connections)
+- [Community 149](Community_149.md) (3 shared connections)
+- [Community 172](Community_172.md) (2 shared connections)
+- [Community 406](Community_406.md) (2 shared connections)
+- [Community 186](Community_186.md) (2 shared connections)
+- [Community 285](Community_285.md) (1 shared connections)
+- [Community 350](Community_350.md) (1 shared connections)
+- [Community 101](Community_101.md) (1 shared connections)
+- [Community 222](Community_222.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/MidiEndpoint.hpp`
-- `src/core/Rewind.hpp`
+- `DEV.md`
+- `src/gui/StbImage.cpp`
+- `src/util/Archive.cpp`
+- `src/util/Archive.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 43 (75%)
-- INFERRED: 14 (25%)
+- EXTRACTED: 150 (89%)
+- INFERRED: 19 (11%)
 - AMBIGUOUS: 0 (0%)
 
 ---

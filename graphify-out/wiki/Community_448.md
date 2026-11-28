@@ -4,44 +4,36 @@
 
 ## Key Concepts
 
-- **.draw()** (11 connections) — `src/android/AndroidMenu.hpp`
-- **MediaScan.cpp** (9 connections) — `src/io/MediaScan.cpp`
-- **scanDiskImages()** (7 connections) — `src/io/MediaScan.cpp`
-- **actionRow()** (5 connections) — `src/android/AndroidMenu.cpp`
-- **areSiblingImages()** (5 connections) — `src/io/MediaScan.cpp`
-- **commonPrefixLenCI()** (5 connections) — `src/io/MediaScan.cpp`
-- **.refresh()** (4 connections) — `src/android/AndroidMenu.hpp`
-- **string** (4 connections)
-- **lowerOf()** (3 connections) — `src/android/AndroidMenu.cpp`
-- **lowerOf()** (3 connections) — `src/io/MediaScan.cpp`
-- **main()** (3 connections) — `tests/android_menu_preview.cpp`
-- **ImVec2** (1 connections)
-- **ImVec4** (1 connections)
-- **string** (1 connections)
-- **size_t** (1 connections)
+- **u32** (10 connections)
+- **.read16()** (9 connections) — `tools/moira_bare_bench.cpp`
+- **.emit()** (8 connections) — `tools/moira_bare_bench.cpp`
+- **.write16()** (8 connections) — `tools/moira_bare_bench.cpp`
+- **.read8()** (7 connections) — `tools/moira_bare_bench.cpp`
+- **.write8()** (7 connections) — `tools/moira_bare_bench.cpp`
+- **.berrWindow()** (6 connections) — `tools/moira_bare_bench.cpp`
+- **.busError()** (6 connections) — `tools/moira_bare_bench.cpp`
+- **.fc()** (6 connections) — `tools/moira_bare_bench.cpp`
+- **.read16OnReset()** (4 connections) — `tools/moira_bare_bench.cpp`
+- **.readIrqVector()** (4 connections) — `tools/moira_bare_bench.cpp`
+- **u16** (4 connections)
+- **u8** (4 connections)
+- **.read32()** (3 connections) — `tools/moira_bare_bench.cpp`
+- **.write32()** (3 connections) — `tools/moira_bare_bench.cpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (8 shared connections)
-- [Community 51](Community_51.md) (3 shared connections)
-- [Community 92](Community_92.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 99](Community_99.md) (1 shared connections)
-- [Community 188](Community_188.md) (1 shared connections)
-- [Community 223](Community_223.md) (1 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
+- [Community 54](Community_54.md) (13 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
+- [Community 605](Community_605.md) (1 shared connections)
 
 ## Source Files
 
-- `src/android/AndroidMenu.cpp`
-- `src/android/AndroidMenu.hpp`
-- `src/io/MediaScan.cpp`
-- `tests/android_menu_preview.cpp`
+- `tools/moira_bare_bench.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 34 (83%)
-- INFERRED: 7 (17%)
+- EXTRACTED: 51 (98%)
+- INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

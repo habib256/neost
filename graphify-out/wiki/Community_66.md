@@ -1,17 +1,12 @@
 # Community 66
 
-> 49 nodes
+> 44 nodes
 
 ## Key Concepts
 
 - **CpuState** (50 connections) — `src/core/Cpu68k.cpp`
-- **.setTracer()** (3 connections) — `src/core/Cpu68k.hpp`
-- **.setScheduler()** (3 connections) — `src/core/Cpu68k.hpp`
-- **.setTrapObserver()** (3 connections) — `src/core/Cpu68k.hpp`
-- **function** (2 connections)
+- **A42 : un CPU halté le DIT enfin — et la réserve de No Cooper tombe (2026-08-30)** (3 connections) — `CHANGELOG.md`
 - **i64** (2 connections)
-- **Scheduler** (2 connections)
-- **Tracer** (2 connections)
 - **Cpu68k** (1 connections)
 - **appliedIpl** (1 connections) — `src/core/Cpu68k.cpp`
 - **blitterAccessCounted** (1 connections) — `src/core/Cpu68k.cpp`
@@ -29,22 +24,29 @@
 - **cpuSelf** (1 connections) — `src/core/Cpu68k.cpp`
 - **desiredIpl** (1 connections) — `src/core/Cpu68k.cpp`
 - **endSlice** (1 connections) — `src/core/Cpu68k.cpp`
-- *... and 24 more nodes in this community*
+- **faultAddr** (1 connections) — `src/core/Cpu68k.cpp`
+- **faultPc** (1 connections) — `src/core/Cpu68k.cpp`
+- **faultValid** (1 connections) — `src/core/Cpu68k.cpp`
+- **faultWrite** (1 connections) — `src/core/Cpu68k.cpp`
+- **grp0Vector** (1 connections) — `src/core/Cpu68k.cpp`
+- *... and 19 more nodes in this community*
 
 ## Relationships
 
-- [Community 27](Community_27.md) (8 shared connections)
-- [Community 9](Community_9.md) (4 shared connections)
+- [Community 27](Community_27.md) (5 shared connections)
+- [Community 9](Community_9.md) (3 shared connections)
+- [Community 64](Community_64.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
+- `CHANGELOG.md`
 - `src/core/Cpu68k.cpp`
-- `src/core/Cpu68k.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 59 (98%)
-- INFERRED: 1 (2%)
+- EXTRACTED: 51 (96%)
+- INFERRED: 2 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

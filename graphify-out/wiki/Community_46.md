@@ -7,8 +7,8 @@
 - **Rig** (26 connections) — `tests/fdc_media_change_logic.cpp`
 - **testFdcMediaChange()** (15 connections) — `tests/fdc_media_change_logic.cpp`
 - **Rig** (8 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
+- **testMachineFdcMediaVbl()** (7 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
 - **.reg()** (6 connections) — `tests/fdc_media_change_logic.cpp`
-- **testMachineFdcMediaVbl()** (6 connections) — `tests/machine_fdc_media_vbl_logic.cpp`
 - **.read()** (5 connections) — `tests/fdc_media_change_logic.cpp`
 - **Checks** (4 connections) — `tests/fdc_media_change_logic.cpp`
 - **.data()** (4 connections) — `tests/fdc_media_change_logic.cpp`
@@ -33,9 +33,8 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 460](Community_460.md) (3 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
 - [Community 252](Community_252.md) (2 shared connections)
 - [Community 362](Community_362.md) (1 shared connections)
 
@@ -47,8 +46,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 69 (95%)
-- INFERRED: 4 (5%)
+- EXTRACTED: 69 (93%)
+- INFERRED: 5 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

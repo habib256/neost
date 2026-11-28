@@ -1,6 +1,6 @@
 # Community 73
 
-> 34 nodes
+> 48 nodes
 
 ## Key Concepts
 
@@ -10,8 +10,12 @@
 - **start()** (15 connections) — `tools/make_blitter_programs.py`
 - **wait_busy()** (15 connections) — `tools/make_blitter_programs.py`
 - **P** (10 connections) — `tools/make_blitter_programs.py`
+- **Server** (8 connections) — `tools/opendst_explore.py`
 - **gen()** (8 connections) — `tools/make_blitter_programs.py`
+- **main()** (8 connections) — `tools/opendst_explore.py`
+- **opendst_explore.py** (7 connections) — `tools/opendst_explore.py`
 - **.w()** (6 connections) — `tools/make_blitter_programs.py`
+- **build()** (5 connections) — `tools/make_blitter_programs.py`
 - **edit_during_pause()** (5 connections) — `tools/make_blitter_programs.py`
 - **gen()** (5 connections) — `tools/make_blitter_programs.py`
 - **mulu_during_start()** (5 connections) — `tools/make_blitter_programs.py`
@@ -25,26 +29,27 @@
 - **gen()** (5 connections) — `tools/make_blitter_programs.py`
 - **two_blits()** (5 connections) — `tools/make_blitter_programs.py`
 - **write_hop_byte()** (5 connections) — `tools/make_blitter_programs.py`
-- **gap()** (4 connections) — `tools/make_blitter_programs.py`
-- **start_then()** (4 connections) — `tools/make_blitter_programs.py`
-- **pause_at()** (3 connections) — `tools/make_blitter_programs.py`
-- **.mark()** (2 connections) — `tools/make_blitter_programs.py`
-- *... and 9 more nodes in this community*
+- *... and 23 more nodes in this community*
 
 ## Relationships
 
-- [Community 18](Community_18.md) (4 shared connections)
-- [Community 227](Community_227.md) (2 shared connections)
-- [Community 3](Community_3.md) (1 shared connections)
+- [Community 227](Community_227.md) (3 shared connections)
+- [Community 3](Community_3.md) (2 shared connections)
+- [Community 100](Community_100.md) (2 shared connections)
+- [Community 26](Community_26.md) (2 shared connections)
+- [Community 49](Community_49.md) (2 shared connections)
+- [Community 18](Community_18.md) (2 shared connections)
+- [Community 186](Community_186.md) (1 shared connections)
 
 ## Source Files
 
 - `tools/make_blitter_programs.py`
+- `tools/opendst_explore.py`
 
 ## Audit Trail
 
-- EXTRACTED: 90 (87%)
-- INFERRED: 14 (13%)
+- EXTRACTED: 118 (89%)
+- INFERRED: 14 (11%)
 - AMBIGUOUS: 0 (0%)
 
 ---

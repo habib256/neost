@@ -5,7 +5,7 @@
 ## Key Concepts
 
 - **Fpu** (57 connections) — `src/io/Fpu.hpp`
-- **Fpu.cpp** (35 connections) — `src/io/Fpu.cpp`
+- **Fpu.cpp** (36 connections) — `src/io/Fpu.cpp`
 - **.command()** (17 connections) — `src/io/Fpu.hpp`
 - **Ext** (14 connections) — `src/io/Fpu.hpp`
 - **.genOp()** (13 connections) — `src/io/Fpu.hpp`
@@ -34,16 +34,15 @@
 ## Relationships
 
 - [Community 15](Community_15.md) (7 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
 - [Community 175](Community_175.md) (3 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 470](Community_470.md) (2 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 186](Community_186.md) (2 shared connections)
 - [Community 14](Community_14.md) (1 shared connections)
-- [Community 470](Community_470.md) (1 shared connections)
-- [Community 287](Community_287.md) (1 shared connections)
-- [Community 218](Community_218.md) (1 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
-- [Community 227](Community_227.md) (1 shared connections)
+- [Community 100](Community_100.md) (1 shared connections)
 
 ## Source Files
 
@@ -53,7 +52,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 122 (68%)
+- EXTRACTED: 123 (68%)
 - INFERRED: 57 (32%)
 - AMBIGUOUS: 0 (0%)
 

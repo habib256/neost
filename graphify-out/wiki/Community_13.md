@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **DmaSound** (123 connections) — `src/core/DmaSound.hpp`
+- **DmaSound** (124 connections) — `src/core/DmaSound.hpp`
 - **Bus** (3 connections) — `src/core/DmaSound.hpp`
 - **Scheduler** (3 connections) — `src/core/DmaSound.hpp`
 - **Mfp** (2 connections) — `src/core/DmaSound.hpp`
@@ -33,12 +33,10 @@
 
 ## Relationships
 
-- [Community 48](Community_48.md) (28 shared connections)
+- [Community 48](Community_48.md) (30 shared connections)
 - [Community 446](Community_446.md) (9 shared connections)
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
 - [Community 243](Community_243.md) (1 shared connections)
-- [Community 112](Community_112.md) (1 shared connections)
 - [Community 380](Community_380.md) (1 shared connections)
 
 ## Source Files
@@ -47,7 +45,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 129 (100%)
+- EXTRACTED: 130 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

@@ -148,7 +148,7 @@ CpuState* g_cur = nullptr;
     int     g_eclockPhase = []{ const char* s = std::getenv("NEOST_ECLOCK_PHASE"); return s ? std::atoi(s) : 0; }();
     // DEEP convergence WinUAE (opt-in NEOST_IACK) : timing d'IACK FIDÈLE. Hatari applique
     // l'attente E-clock + un bloc « occupé » au CYCLE D'IACK (iack_cycle, [D] newcpu.c:2958-3019 @ f0736b24),
-    // PAS avant l'empilement de trame. Moira appelle readIrqUserVector EXACTEMENT à l'IACK
+    // PAS avant l'empilement de trame. Moira appelle readIrqVector EXACTEMENT à l'IACK
     // (MoiraExceptions_cpp.h:538, après SYNC(6)+write PClo+SYNC(4)) → on y déplace l'E-clock
     // (phase correcte, inclut la latence d'amorce) ET on ajoute le bloc occupé absent de Moira :
     // CPU_IACK_CYCLES_VIDEO_CE(10)+idle(4)=14 (auto-vecteur HBL/VBL), CPU_IACK_CYCLES_MFP_CE=12
@@ -279,7 +279,7 @@ CpuState* g_cur = nullptr;
 // -----------------------------------------------------------------------------
 //  Backend Moira (cœur 68000 cycle-exact, MIT) — sous-classe routant la mémoire
 //  vers le Bus et reproduisant le vectoring ST (MFP vectorisé niveau 6,
-//  VBL/HBL auto-vectorisés) via readIrqUserVector (irqMode USER).
+//  VBL/HBL auto-vectorisés) via readIrqVector (USER, AUTO ou SPURIOUS).
 // -----------------------------------------------------------------------------
 // A33 : au scope GLOBAL (plus dans un namespace anonyme) — CpuState est déclaré
 // dans Cpu68k.hpp et porte un NeostMoira*, donc les deux doivent désigner LE
@@ -586,6 +586,15 @@ public:
     moira::u16 read16(moira::u32 a) const override { if (g_cur->bus->busFaultN(a, 2, false) && faultOrHalt(a, false)) return 0; moira::u16 v; if (g_cur->cpuMul == 2) v = readMste16Mhz(a, 2); else { if (g_busDiagPage >= 0) busDiag('R', a, getClock()); v = g_cur->bus->read16(a); } latchDb(v); udsDone(a, 2); return v; }
     void write8 (moira::u32 a, moira::u8  v) const override { if (g_cur->bus->busFaultN(a, 1, true)) { if (faultOrHalt(a, true)) return; } latchDb8(v); if (g_cur->cpuMul == 2) { writeMste16Mhz(a, 1, v); udsDone(a, 1); return; } g_cur->bus->write8(a, v); udsDone(a, 1); }
     void write16(moira::u32 a, moira::u16 v) const override { if (g_cur->bus->busFaultN(a, 2, true)) { if (faultOrHalt(a, true)) return; } latchDb(v); if (g_cur->cpuMul == 2) { writeMste16Mhz(a, 2, v); udsDone(a, 2); return; } g_cur->bus->write16(a, v); udsDone(a, 2); }
+    moira::u32 read32(moira::u32 addr) const override {
+        const moira::u32 hi = read16(addr);
+        return (hi << 16) | read16(addr + 2);
+    }
+    void write32(moira::u32 addr, moira::u32 value) const override {
+        write16(addr, moira::u16(value >> 16));
+        write16(addr + 2, moira::u16(value));
+    }
+
     // Débogueur : watchpoint mémoire atteint (appelé par la couche dataflow de Moira
     // PENDANT l'accès, si CHECK_WP). Sémantique « break-after-access » : on note le hit
     // (adresse DONNÉE) et on préempte → le run() rend la main APRÈS l'instruction fautive.
@@ -867,15 +876,6 @@ public:
         return 4;
     }
 
-    moira::u32 read32(moira::u32 addr) const override {
-        const moira::u32 hi = read16(addr);
-        return (hi << 16) | read16(addr + 2);
-    }
-    void write32(moira::u32 addr, moira::u32 value) const override {
-        write16(addr, moira::u16(value >> 16));
-        write16(addr + 2, moira::u16(value));
-    }
-
     moira::IrqMode readIrqVector(moira::u8 level, moira::u8* vector) const override {
         // Port de « CycInt_Process() + MFP_UpdateIRQ_All au point d'IACK » d'Hatari
         // ([D] newcpu.c:2938-2946 @ f0736b24 branche MFP, :2998-3003 branche vidéo — dans les DEUX
@@ -1067,7 +1067,7 @@ void Cpu68k::rebaseQuantumAndSync(bool rollFrames) {
 // (Ré)initialise le cœur Moira. Appelé par le constructeur ET par setCore()
 // (reconfigure à chaud). Suppose qu'un éventuel ancien cœur a déjà été libéré.
 void Cpu68k::initCore() {
-    state_->moira = new NeostMoira();         // backend cycle-exact (irqMode/USER, M68000)
+    state_->moira = new NeostMoira();         // backend cycle-exact M68000
 }
 
 // Conservé pour compat (reconfigure à chaud) : libère l'ancien cœur puis ré-init.

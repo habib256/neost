@@ -20,7 +20,7 @@
 ## Relationships
 
 - [Community 252](Community_252.md) (4 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
+- [Community 124](Community_124.md) (2 shared connections)
 - [Community 150](Community_150.md) (1 shared connections)
 - [Community 88](Community_88.md) (1 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)

@@ -1,41 +1,58 @@
 # Community 287
 
-> 8 nodes
+> 30 nodes
 
 ## Key Concepts
 
-- **Ce qui est implémenté — par sous-système** (18 connections) — `docs/IMPLEMENTED.md`
-- **Blitter** (4 connections) — `docs/IMPLEMENTED.md`
-- **Validé** (4 connections) — `docs/IMPLEMENTED.md`
-- **FPU MC68881** (3 connections) — `docs/IMPLEMENTED.md`
-- **Ports, cartouches et clés** (3 connections) — `docs/IMPLEMENTED.md`
-- **Rechargement du compteur pendant VSYNC (2026-11-15)** (1 connections) — `docs/IMPLEMENTED.md`
-- **Réseau — extensions NeoST (INACTIVES par défaut, cf. `docs/EXTENSIONS.md`)** (1 connections) — `docs/IMPLEMENTED.md`
-- **Réveil STOP avec HBL préarmée (2026-11-15)** (1 connections) — `docs/IMPLEMENTED.md`
+- **MMU** (16 connections) — `extern/moira/Moira/MMU/MMU.h`
+- **MmuReg** (8 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **MMU.h** (8 connections) — `extern/moira/Moira/MMU/MMU.h`
+- **MMUModel** (7 connections) — `extern/moira/Moira/MMU/MMU.h`
+- **MMU030.h** (7 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **optional** (6 connections)
+- **.peek()** (5 connections) — `extern/moira/Moira/MMU/MMU.h`
+- **.translate()** (5 connections) — `extern/moira/Moira/MMU/MMU.h`
+- **MMU040.h** (5 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.getModel()** (2 connections) — `extern/moira/Moira/MMU/MMU.h`
+- **.isEnabled()** (2 connections) — `extern/moira/Moira/MMU/MMU.h`
+- **.MMU()** (2 connections) — `extern/moira/Moira/MMU/MMU.h`
+- **.setModel()** (2 connections) — `extern/moira/Moira/MMU/MMU.h`
+- **u32** (2 connections)
+- **u8** (2 connections)
+- **.isPresent()** (1 connections) — `extern/moira/Moira/MMU/MMU.h`
+- **.reset()** (1 connections) — `extern/moira/Moira/MMU/MMU.h`
+- **CRP** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **MMUSR** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **SRP** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **TC** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **TT0** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **TT1** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **Moira** (1 connections)
+- **mmu030** (1 connections) — `extern/moira/Moira/MMU/MMU.h`
+- *... and 5 more nodes in this community*
 
 ## Relationships
 
-- [Community 27](Community_27.md) (1 shared connections)
-- [Community 393](Community_393.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 121](Community_121.md) (1 shared connections)
-- [Community 68](Community_68.md) (1 shared connections)
-- [Community 48](Community_48.md) (1 shared connections)
-- [Community 471](Community_471.md) (1 shared connections)
-- [Community 64](Community_64.md) (1 shared connections)
-- [Community 457](Community_457.md) (1 shared connections)
-- [Community 203](Community_203.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
+- [Community 229](Community_229.md) (3 shared connections)
+- [Community 57](Community_57.md) (3 shared connections)
+- [Community 284](Community_284.md) (2 shared connections)
+- [Community 155](Community_155.md) (1 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
+- [Community 141](Community_141.md) (1 shared connections)
+- [Community 306](Community_306.md) (1 shared connections)
+- [Community 469](Community_469.md) (1 shared connections)
+- [Community 264](Community_264.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/IMPLEMENTED.md`
+- `extern/moira/Moira/MMU/MMU.h`
+- `extern/moira/Moira/MMU/MMU030.h`
+- `extern/moira/Moira/MMU/MMU040.h`
 
 ## Audit Trail
 
-- EXTRACTED: 20 (71%)
-- INFERRED: 8 (29%)
+- EXTRACTED: 54 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

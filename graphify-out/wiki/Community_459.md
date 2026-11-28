@@ -1,29 +1,44 @@
 # Community 459
 
-> 6 nodes
+> 15 nodes
 
 ## Key Concepts
 
-- **Fault** (7 connections) — `src/core/Cpu68k.hpp`
-- **.lastFault()** (3 connections) — `src/core/Cpu68k.hpp`
-- **addr** (1 connections) — `src/core/Cpu68k.hpp`
-- **pc** (1 connections) — `src/core/Cpu68k.hpp`
-- **valid** (1 connections) — `src/core/Cpu68k.hpp`
-- **write** (1 connections) — `src/core/Cpu68k.hpp`
+- **FatImage** (18 connections) — `tests/selftest_logic.cpp`
+- **testFloppyCatalog()** (9 connections) — `tests/selftest_logic.cpp`
+- **.folder()** (5 connections) — `tests/selftest_logic.cpp`
+- **.pick()** (5 connections) — `tests/selftest_logic.cpp`
+- **.entry()** (4 connections) — `tests/selftest_logic.cpp`
+- **.fat()** (4 connections) — `tests/selftest_logic.cpp`
+- **.file()** (4 connections) — `tests/selftest_logic.cpp`
+- **.autoFolder()** (3 connections) — `tests/selftest_logic.cpp`
+- **.FatImage()** (3 connections) — `tests/selftest_logic.cpp`
+- **.bootable()** (2 connections) — `tests/selftest_logic.cpp`
+- **img** (1 connections) — `tests/selftest_logic.cpp`
+- **kData** (1 connections) — `tests/selftest_logic.cpp`
+- **kRoot** (1 connections) — `tests/selftest_logic.cpp`
+- **next** (1 connections) — `tests/selftest_logic.cpp`
+- **slot** (1 connections) — `tests/selftest_logic.cpp`
 
 ## Relationships
 
-- [Community 27](Community_27.md) (3 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
+- [Community 252](Community_252.md) (7 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 150](Community_150.md) (1 shared connections)
+- [Community 149](Community_149.md) (1 shared connections)
+- [Community 197](Community_197.md) (1 shared connections)
+- [Community 117](Community_117.md) (1 shared connections)
+- [Community 299](Community_299.md) (1 shared connections)
+- [Community 121](Community_121.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Cpu68k.hpp`
+- `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 30 (79%)
+- INFERRED: 8 (21%)
 - AMBIGUOUS: 0 (0%)
 
 ---

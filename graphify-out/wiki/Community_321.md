@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **testRtcElapsedDifferential()** (7 connections) — `tests/rtc_elapsed_differential_logic.cpp`
+- **testRtcElapsedDifferential()** (8 connections) — `tests/rtc_elapsed_differential_logic.cpp`
 - **rtc_elapsed_differential_logic.cpp** (7 connections) — `tests/rtc_elapsed_differential_logic.cpp`
 - **configure()** (5 connections) — `tests/rtc_elapsed_differential_logic.cpp`
 - **address()** (3 connections) — `tests/rtc_elapsed_differential_logic.cpp`
@@ -14,10 +14,10 @@
 
 ## Relationships
 
+- [Community 102](Community_102.md) (3 shared connections)
 - [Community 41](Community_41.md) (2 shared connections)
-- [Community 460](Community_460.md) (2 shared connections)
+- [Community 419](Community_419.md) (1 shared connections)
 - [Community 252](Community_252.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
@@ -25,8 +25,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 15 (94%)
-- INFERRED: 1 (6%)
+- EXTRACTED: 15 (88%)
+- INFERRED: 2 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

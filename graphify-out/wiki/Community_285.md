@@ -1,35 +1,54 @@
 # Community 285
 
-> 9 nodes
+> 34 nodes
 
 ## Key Concepts
 
-- **.clearAllFileHandles()** (8 connections) — `src/io/GemdosHd.hpp`
-- **GemdosHd::GemdosHd()** (5 connections) — `src/io/GemdosHd.cpp`
-- **.unmount()** (4 connections) — `src/io/GemdosHd.hpp`
-- **.unforceFileHandle()** (4 connections) — `src/io/GemdosHd.hpp`
-- **.dropForcedTo()** (4 connections) — `src/io/GemdosHd.hpp`
-- **.clearInfOverride()** (3 connections) — `src/io/GemdosHd.hpp`
-- **setD0()** (2 connections) — `src/io/GemdosHd.cpp`
-- **Cpu68k** (2 connections)
-- **Bus** (1 connections)
+- **7zArcIn.c** (27 connections) — `extern/lzma/7zArcIn.c`
+- **CSzData** (12 connections)
+- **ReadBitUi32s()** (9 connections) — `extern/lzma/7zArcIn.c`
+- **ISzAllocPtr** (9 connections)
+- **SzArEx_Free()** (8 connections) — `extern/lzma/7zArcIn.c`
+- **SRes** (8 connections)
+- **ReadBitVector()** (7 connections) — `extern/lzma/7zArcIn.c`
+- **ReadUi32s()** (7 connections) — `extern/lzma/7zArcIn.c`
+- **SzReadNumber32()** (7 connections) — `extern/lzma/7zArcIn.c`
+- **ReadNumber()** (6 connections) — `extern/lzma/7zArcIn.c`
+- **ReadPackInfo()** (6 connections) — `extern/lzma/7zArcIn.c`
+- **SzAr_Free()** (6 connections) — `extern/lzma/7zArcIn.c`
+- **SzBitUi32s_Free()** (6 connections) — `extern/lzma/7zArcIn.c`
+- **SzGetNextFolderItem()** (6 connections) — `extern/lzma/7zArcIn.c`
+- **RememberBitVector()** (5 connections) — `extern/lzma/7zArcIn.c`
+- **SkipData()** (5 connections) — `extern/lzma/7zArcIn.c`
+- **SzArEx_Init()** (5 connections) — `extern/lzma/7zArcIn.c`
+- **WaitId()** (5 connections) — `extern/lzma/7zArcIn.c`
+- **Z7_NO_INLINE** (5 connections)
+- **SkipBitUi32s()** (4 connections) — `extern/lzma/7zArcIn.c`
+- **SkipNumbers()** (4 connections) — `extern/lzma/7zArcIn.c`
+- **SzAr_Init()** (4 connections) — `extern/lzma/7zArcIn.c`
+- **SzBitUi32s_Alloc()** (4 connections) — `extern/lzma/7zArcIn.c`
+- **SzBitUi64s_Free()** (4 connections) — `extern/lzma/7zArcIn.c`
+- **CSzBitUi32s** (4 connections)
+- *... and 9 more nodes in this community*
 
 ## Relationships
 
-- [Community 36](Community_36.md) (7 shared connections)
-- [Community 17](Community_17.md) (5 shared connections)
-- [Community 444](Community_444.md) (2 shared connections)
-- [Community 218](Community_218.md) (1 shared connections)
+- [Community 406](Community_406.md) (10 shared connections)
+- [Community 245](Community_245.md) (3 shared connections)
+- [Community 353](Community_353.md) (1 shared connections)
+- [Community 213](Community_213.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 502](Community_502.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/GemdosHd.cpp`
-- `src/io/GemdosHd.hpp`
+- `extern/lzma/7zArcIn.c`
+- `src/util/Archive.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (58%)
-- INFERRED: 10 (42%)
+- EXTRACTED: 102 (97%)
+- INFERRED: 3 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

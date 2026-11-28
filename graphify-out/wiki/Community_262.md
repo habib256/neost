@@ -1,6 +1,6 @@
 # Community 262
 
-> 22 nodes
+> 23 nodes
 
 ## Key Concepts
 
@@ -12,6 +12,7 @@
 - **.finish()** (3 connections) — `tests/fdc_written_marks_logic.cpp`
 - **.mode()** (3 connections) — `tests/fdc_written_marks_logic.cpp`
 - **.irq()** (2 connections) — `tests/fdc_written_marks_logic.cpp`
+- **.select()** (2 connections) — `tests/fdc_written_marks_logic.cpp`
 - **.next()** (1 connections) — `tests/fdc_written_marks_logic.cpp`
 - **.Rig()** (1 connections) — `tests/fdc_written_marks_logic.cpp`
 - **Bus** (1 connections)
@@ -29,7 +30,7 @@
 
 ## Relationships
 
-- [Community 264](Community_264.md) (5 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
 
 ## Source Files
 
@@ -37,7 +38,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 34 (100%)
+- EXTRACTED: 35 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

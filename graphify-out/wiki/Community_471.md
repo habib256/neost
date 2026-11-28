@@ -1,46 +1,43 @@
 # Community 471
 
-> 11 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **.liveNow()** (11 connections) — `src/core/Scheduler.hpp`
-- **6. ACIA 6850, IKBD HD6301, MIDI — `Ikbd.cpp`, `MidiAcia.cpp` ↔ `acia.c`, `ikbd.c`, `midi.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Cœur & boot** (4 connections) — `docs/IMPLEMENTED.md`
-- **.cyclesUntil()** (3 connections) — `src/core/Scheduler.hpp`
-- **.rawCyclesUntil()** (3 connections) — `src/core/Scheduler.hpp`
-- **liveClock_** (2 connections) — `src/core/Scheduler.hpp`
-- **Les trois autres pistes « Super Hang-On » d'Hatari, instruites (2026-09-02)** (2 connections) — `CHANGELOG.md`
-- **Refermés** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **KeyZone** (14 connections) — `src/audio/MidiZones.hpp`
+- **.feed()** (9 connections) — `src/audio/MidiInHost.hpp`
+- **.pushForTest()** (7 connections) — `src/audio/MidiInHost.hpp`
+- **.deviceForTest()** (6 connections) — `src/audio/MidiInHost.hpp`
+- **.emitMessage()** (5 connections) — `src/audio/MidiInHost.hpp`
+- **.enqueue()** (3 connections) — `src/audio/MidiInHost.hpp`
+- **Device** (3 connections)
+- **size_t** (3 connections)
+- **.operator==()** (1 connections) — `src/audio/MidiZones.hpp`
+- **channel** (1 connections) — `src/audio/MidiZones.hpp`
+- **hi** (1 connections) — `src/audio/MidiZones.hpp`
+- **lo** (1 connections) — `src/audio/MidiZones.hpp`
+- **transpose** (1 connections) — `src/audio/MidiZones.hpp`
 
 ## Relationships
 
-- [Community 39](Community_39.md) (4 shared connections)
-- [Community 77](Community_77.md) (2 shared connections)
-- [Community 237](Community_237.md) (1 shared connections)
-- [Community 392](Community_392.md) (1 shared connections)
-- [Community 317](Community_317.md) (1 shared connections)
-- [Community 205](Community_205.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 397](Community_397.md) (1 shared connections)
-- [Community 287](Community_287.md) (1 shared connections)
-- [Community 27](Community_27.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
+- [Community 399](Community_399.md) (7 shared connections)
+- [Community 220](Community_220.md) (5 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
+- [Community 185](Community_185.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 286](Community_286.md) (1 shared connections)
+- [Community 217](Community_217.md) (1 shared connections)
+- [Community 186](Community_186.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/HATARI_DIVERGENCES.md`
-- `docs/IMPLEMENTED.md`
-- `src/core/Scheduler.hpp`
+- `src/audio/MidiInHost.hpp`
+- `src/audio/MidiZones.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 16 (64%)
-- INFERRED: 9 (36%)
+- EXTRACTED: 32 (82%)
+- INFERRED: 7 (18%)
 - AMBIGUOUS: 0 (0%)
 
 ---

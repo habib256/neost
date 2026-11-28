@@ -6,7 +6,7 @@
 
 - **GlScreen** (9 connections) — `src/gui/StScreenView.hpp`
 - **.blitTexFullscreen()** (4 connections) — `src/gui/StScreenView.hpp`
-- **.update()** (3 connections) — `src/gui/StScreenView.hpp`
+- **.update()** (4 connections) — `src/gui/StScreenView.hpp`
 - **.drawFullscreen()** (2 connections) — `src/gui/StScreenView.hpp`
 - **GLuint** (2 connections)
 - **CI : les deux téléchargements du job Android n'avaient aucun filet (2026-09-02)** (2 connections) — `CHANGELOG.md`
@@ -21,6 +21,7 @@
 - [Community 130](Community_130.md) (2 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
 - [Community 283](Community_283.md) (1 shared connections)
+- [Community 229](Community_229.md) (1 shared connections)
 
 ## Source Files
 
@@ -29,8 +30,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 14 (88%)
-- INFERRED: 2 (12%)
+- EXTRACTED: 14 (82%)
+- INFERRED: 3 (18%)
 - AMBIGUOUS: 0 (0%)
 
 ---

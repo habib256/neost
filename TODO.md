@@ -35,7 +35,7 @@ dont chaque verdict dit son échelon**, **des paquets livrables sans surprise**.
 
 **État au 2026-11-10** : contrat logiciel Mega STE tenu et gardé (suite Q du diagnostic Field
 Service 12/12, grade C) ; les écarts que les fiches MFP, WD1772, ACIA et SCC suffisaient à
-trancher sont corrigés ; **banc fx68k : 34 variantes sur 48 en accord** cycle à cycle, bus errors et double faute comprises (§ 9) ;
+trancher sont corrigés ; **banc fx68k : 37 variantes sur 48 en accord** cycle à cycle, bus errors et double faute comprises (§ 9) ;
 blitter, GLUE et lecture du faisceau confrontés aux RTL sur STE (§ 5) ; 27 parcours de jeu
 contre Hatari, et la collection entière inchangée en A/B après les corrections du jour.
 **Pas d'accès à un vrai ST** : les ⏸ matériel passent par les relevés de tiers, les

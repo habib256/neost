@@ -1,6 +1,6 @@
 # Community 126
 
-> 20 nodes
+> 19 nodes
 
 ## Key Concepts
 
@@ -14,7 +14,6 @@
 - **outputs()** (5 connections) — `src/audio/MidiWinmm.hpp`
 - **reFind()** (4 connections) — `src/audio/MidiWinmm.hpp`
 - **UINT** (4 connections)
-- **windows** (4 connections)
 - **MMRESULT** (3 connections)
 - **errorText()** (2 connections) — `src/audio/MidiWinmm.hpp`
 - **DWORD_PTR** (2 connections)
@@ -27,14 +26,12 @@
 
 ## Relationships
 
-- [Community 460](Community_460.md) (4 shared connections)
-- [Community 366](Community_366.md) (2 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 213](Community_213.md) (1 shared connections)
-- [Community 220](Community_220.md) (1 shared connections)
-- [Community 42](Community_42.md) (1 shared connections)
-- [Community 59](Community_59.md) (1 shared connections)
-- [Community 36](Community_36.md) (1 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 366](Community_366.md) (3 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
+- [Community 302](Community_302.md) (1 shared connections)
+- [Community 437](Community_437.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
@@ -42,7 +39,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 48 (100%)
+- EXTRACTED: 45 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

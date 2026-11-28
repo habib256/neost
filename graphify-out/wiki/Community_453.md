@@ -1,27 +1,37 @@
 # Community 453
 
-> 3 nodes
+> 15 nodes
 
 ## Key Concepts
 
-- **machine_scc_logic.cpp** (5 connections) — `tests/machine_scc_logic.cpp`
-- **testMachineScc()** (3 connections) — `tests/machine_scc_logic.cpp`
-- **main()** (2 connections) — `tests/machine_scc_logic.cpp`
+- **retro_perf_callback** (15 connections) — `src/libretro/libretro.h`
+- **retro_get_cpu_features_t** (1 connections)
+- **retro_perf_get_counter_t** (1 connections)
+- **retro_perf_get_time_usec_t** (1 connections)
+- **retro_perf_log_t** (1 connections)
+- **retro_perf_register_t** (1 connections)
+- **retro_perf_start_t** (1 connections)
+- **retro_perf_stop_t** (1 connections)
+- **get_cpu_features** (1 connections) — `src/libretro/libretro.h`
+- **get_perf_counter** (1 connections) — `src/libretro/libretro.h`
+- **get_time_usec** (1 connections) — `src/libretro/libretro.h`
+- **perf_log** (1 connections) — `src/libretro/libretro.h`
+- **perf_register** (1 connections) — `src/libretro/libretro.h`
+- **perf_start** (1 connections) — `src/libretro/libretro.h`
+- **perf_stop** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/machine_scc_logic.cpp`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 6 (86%)
-- INFERRED: 1 (14%)
+- EXTRACTED: 15 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,29 +1,36 @@
 # Community 469
 
-> 5 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **2. Vidéo (GLUE, MMU, Shifter) — `Shifter.cpp`, `VideoGlue.cpp`, `VideoCounter.cpp` ↔ `video.c`, `spec512.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Faux positifs** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Refermés** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **AtcEntry** (13 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **u32** (3 connections)
+- **.pageMask()** (2 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **busError** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **ci** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **fc** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **history** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **logical** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **modified** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **physical** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **valid** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **wp** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **u8** (1 connections)
 
 ## Relationships
 
-- [Community 88](Community_88.md) (2 shared connections)
-- [Community 397](Community_397.md) (1 shared connections)
-- [Community 160](Community_160.md) (1 shared connections)
+- [Community 284](Community_284.md) (3 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
+- `extern/moira/Moira/MMU/MMU030.h`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (62%)
-- INFERRED: 3 (38%)
+- EXTRACTED: 16 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

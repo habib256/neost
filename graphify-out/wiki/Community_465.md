@@ -1,26 +1,35 @@
 # Community 465
 
-> 5 nodes
+> 14 nodes
 
 ## Key Concepts
 
-- **10. RTC RP5C15 (Mega ST, Mega STE) — `Rtc.cpp` ↔ `rtc.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Refermés** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **retro_netpacket_callback** (14 connections) — `src/libretro/libretro.h`
+- **retro_netpacket_connected_t** (1 connections)
+- **retro_netpacket_disconnected_t** (1 connections)
+- **retro_netpacket_poll_t** (1 connections)
+- **retro_netpacket_receive_t** (1 connections)
+- **retro_netpacket_start_t** (1 connections)
+- **retro_netpacket_stop_t** (1 connections)
+- **connected** (1 connections) — `src/libretro/libretro.h`
+- **disconnected** (1 connections) — `src/libretro/libretro.h`
+- **poll** (1 connections) — `src/libretro/libretro.h`
+- **protocol_version** (1 connections) — `src/libretro/libretro.h`
+- **receive** (1 connections) — `src/libretro/libretro.h`
+- **start** (1 connections) — `src/libretro/libretro.h`
+- **stop** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 
-- [Community 397](Community_397.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 14 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

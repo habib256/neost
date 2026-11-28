@@ -5,7 +5,7 @@
 ## Key Concepts
 
 - **Rig** (13 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **testIkbdMouseMonitor()** (9 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **testIkbdMouseMonitor()** (10 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
 - **.command()** (3 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
 - **.due()** (3 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
 - **main()** (2 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
@@ -24,7 +24,7 @@
 ## Relationships
 
 - [Community 102](Community_102.md) (4 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
 - [Community 77](Community_77.md) (1 shared connections)
 - [Community 252](Community_252.md) (1 shared connections)
 
@@ -34,8 +34,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 25 (96%)
-- INFERRED: 1 (4%)
+- EXTRACTED: 25 (93%)
+- INFERRED: 2 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

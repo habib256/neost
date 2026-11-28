@@ -28,9 +28,8 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 394](Community_394.md) (2 shared connections)
-- [Community 132](Community_132.md) (1 shared connections)
+- [Community 504](Community_504.md) (3 shared connections)
+- [Community 449](Community_449.md) (2 shared connections)
 
 ## Source Files
 

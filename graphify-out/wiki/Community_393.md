@@ -1,53 +1,44 @@
 # Community 393
 
-> 18 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **Blitter.cpp** (28 connections) — `src/core/Blitter.cpp`
+- **Blitter.cpp** (30 connections) — `src/core/Blitter.cpp`
 - **.onSlice()** (9 connections) — `src/core/Blitter.hpp`
-- **.controlWritten()** (6 connections) — `src/core/Blitter.hpp`
-- **regWriteMask()** (6 connections) — `src/core/Blitter.cpp`
-- **.writeRegisters()** (5 connections) — `src/core/Blitter.hpp`
+- **.billCycles()** (5 connections) — `src/core/Blitter.hpp`
 - **.noteCpuBusAccess()** (5 connections) — `src/core/Blitter.hpp`
 - **.clearPreStartWindow()** (5 connections) — `src/core/Blitter.hpp`
 - **.finishTransfer()** (5 connections) — `src/core/Blitter.hpp`
-- **.write8()** (4 connections) — `src/core/Blitter.hpp`
-- **.write16()** (4 connections) — `src/core/Blitter.hpp`
-- **.write32()** (4 connections) — `src/core/Blitter.hpp`
 - **.start()** (4 connections) — `src/core/Blitter.hpp`
 - **.armPreStartWindow()** (4 connections) — `src/core/Blitter.hpp`
 - **.pauseTransfer()** (4 connections) — `src/core/Blitter.hpp`
 - **.reset()** (3 connections) — `src/core/Blitter.hpp`
 - **P2 — Blitter non-hog (`blitter.c:251,395`)** (3 connections) — `docs/CYCLE_ACCURACY.md`
-- **Cohérence BUSY / GPU_DONE dans NeoST** (3 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **.read8()** (2 connections) — `src/core/Blitter.hpp`
 - **.notePreStartCpuAccess()** (2 connections) — `src/core/Blitter.hpp`
 
 ## Relationships
 
-- [Community 37](Community_37.md) (15 shared connections)
-- [Community 434](Community_434.md) (9 shared connections)
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 218](Community_218.md) (1 shared connections)
-- [Community 449](Community_449.md) (1 shared connections)
-- [Community 287](Community_287.md) (1 shared connections)
-- [Community 153](Community_153.md) (1 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
+- [Community 37](Community_37.md) (11 shared connections)
+- [Community 434](Community_434.md) (8 shared connections)
+- [Community 532](Community_532.md) (7 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 186](Community_186.md) (3 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
 - [Community 317](Community_317.md) (1 shared connections)
-- [Community 411](Community_411.md) (1 shared connections)
 
 ## Source Files
 
 - `docs/CYCLE_ACCURACY.md`
-- `docs/HATARI_MEGASTE_AUDIT.md`
 - `src/core/Blitter.cpp`
 - `src/core/Blitter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 46 (66%)
-- INFERRED: 24 (34%)
+- EXTRACTED: 42 (71%)
+- INFERRED: 17 (29%)
 - AMBIGUOUS: 0 (0%)
 
 ---

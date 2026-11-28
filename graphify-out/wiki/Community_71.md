@@ -5,7 +5,7 @@
 ## Key Concepts
 
 - **Rig** (27 connections) — `tests/stx_sector_dam_logic.cpp`
-- **testStxSectorDam()** (16 connections) — `tests/stx_sector_dam_logic.cpp`
+- **testStxSectorDam()** (15 connections) — `tests/stx_sector_dam_logic.cpp`
 - **verifyTrack()** (9 connections) — `tests/stx_sector_dam_logic.cpp`
 - **.reg()** (7 connections) — `tests/stx_sector_dam_logic.cpp`
 - **Checks** (5 connections) — `tests/stx_sector_dam_logic.cpp`
@@ -33,11 +33,10 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (6 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
 - [Community 41](Community_41.md) (2 shared connections)
-- [Community 172](Community_172.md) (2 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
 - [Community 252](Community_252.md) (1 shared connections)
+- [Community 299](Community_299.md) (1 shared connections)
 
 ## Source Files
 
@@ -45,8 +44,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 62 (95%)
-- INFERRED: 3 (5%)
+- EXTRACTED: 62 (97%)
+- INFERRED: 2 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

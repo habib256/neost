@@ -1,78 +1,78 @@
 # Community 18
 
-> 134 nodes
+> 183 nodes
 
 ## Key Concepts
 
-- **subprocess** (133 connections)
-- **tempfile** (67 connections)
-- **os** (64 connections)
-- **shutil** (58 connections)
-- **audit_vbl_witness.py** (16 connections) — `tools/audit_vbl_witness.py`
-- **run_stblitter_bench.py** (16 connections) — `tools/run_stblitter_bench.py`
-- **run_stcpu_raster.py** (15 connections) — `tools/run_stcpu_raster.py`
-- **run_stcpu_bench.py** (14 connections) — `tools/run_stcpu_bench.py`
+- **subprocess** (141 connections)
+- **pathlib** (86 connections)
+- **tempfile** (78 connections)
+- **re** (61 connections)
+- **run_all.py** (19 connections) — `tools/run_all.py`
+- **run_perfbench.py** (18 connections) — `tools/run_perfbench.py`
+- **rank_unknowns.py** (17 connections) — `tools/rank_unknowns.py`
+- **sensitivity_unknown.py** (16 connections) — `tools/sensitivity_unknown.py`
+- **check_doc_claims.py** (13 connections) — `tools/check_doc_claims.py`
+- **run_closure_intro_guard.py** (13 connections) — `tools/run_closure_intro_guard.py`
 - **run_hatari_suite.py** (13 connections) — `tools/run_hatari_suite.py`
-- **main()** (11 connections) — `tools/audit_vbl_witness.py`
-- **main()** (11 connections) — `tools/opendst_oracle.py`
-- **main()** (11 connections) — `tools/run_stblitter_bench.py`
+- **time** (12 connections)
 - **check_headless_options.py** (11 connections) — `tools/check_headless_options.py`
 - **test_fpu_transcendental_oracle.py** (11 connections) — `tools/test_fpu_transcendental_oracle.py`
 - **audit_tos_patches.py** (10 connections) — `tools/audit_tos_patches.py`
-- **check_hog_park.py** (10 connections) — `tools/check_hog_park.py`
-- **opendst_oracle.py** (10 connections) — `tools/opendst_oracle.py`
-- **main()** (9 connections) — `tools/run_stcpu_bench.py`
-- **build_stcpu_bench.py** (9 connections) — `tools/build_stcpu_bench.py`
+- **check_slang.py** (10 connections) — `tools/check_slang.py`
+- **concurrent_futures** (10 connections)
+- **main()** (9 connections) — `tools/run_closure_intro_guard.py`
+- **host_info()** (9 connections) — `tools/run_perfbench.py`
+- **check_fmovecr_oracle.py** (9 connections) — `tools/check_fmovecr_oracle.py`
 - **run_determinism.py** (9 connections) — `tools/run_determinism.py`
 - **test_fpu_arithmetic_oracle.py** (9 connections) — `tools/test_fpu_arithmetic_oracle.py`
 - **test_fpu_decimal_oracle.py** (9 connections) — `tools/test_fpu_decimal_oracle.py`
 - **test_fpu_next_oracle.py** (9 connections) — `tools/test_fpu_next_oracle.py`
 - **test_fpu_unary_oracle.py** (9 connections) — `tools/test_fpu_unary_oracle.py`
-- **lot_2026_11_12()** (8 connections) — `tools/check_headless_options.py`
-- *... and 109 more nodes in this community*
+- *... and 158 more nodes in this community*
 
 ## Relationships
 
-- [Community 227](Community_227.md) (64 shared connections)
-- [Community 26](Community_26.md) (57 shared connections)
-- [Community 173](Community_173.md) (29 shared connections)
-- [Community 207](Community_207.md) (18 shared connections)
-- [Community 34](Community_34.md) (18 shared connections)
-- [Community 30](Community_30.md) (18 shared connections)
-- [Community 273](Community_273.md) (17 shared connections)
-- [Community 146](Community_146.md) (14 shared connections)
-- [Community 3](Community_3.md) (13 shared connections)
-- [Community 8](Community_8.md) (10 shared connections)
-- [Community 55](Community_55.md) (9 shared connections)
-- [Community 100](Community_100.md) (7 shared connections)
+- [Community 26](Community_26.md) (54 shared connections)
+- [Community 173](Community_173.md) (46 shared connections)
+- [Community 100](Community_100.md) (43 shared connections)
+- [Community 227](Community_227.md) (36 shared connections)
+- [Community 49](Community_49.md) (28 shared connections)
+- [Community 207](Community_207.md) (21 shared connections)
+- [Community 146](Community_146.md) (21 shared connections)
+- [Community 8](Community_8.md) (12 shared connections)
+- [Community 273](Community_273.md) (11 shared connections)
+- [Community 30](Community_30.md) (9 shared connections)
+- [Community 151](Community_151.md) (8 shared connections)
+- [Community 3](Community_3.md) (7 shared connections)
 
 ## Source Files
 
+- `docs/HW_VALIDATION.md`
+- `tools/audit_citations.py`
 - `tools/audit_tos_patches.py`
-- `tools/audit_vbl_witness.py`
-- `tools/build_stcpu_bench.py`
 - `tools/check_disk_assets.py`
+- `tools/check_doc_anchors.py`
+- `tools/check_doc_claims.py`
+- `tools/check_fmovecr_oracle.py`
 - `tools/check_frame_grid.py`
 - `tools/check_headless_options.py`
-- `tools/check_hog_park.py`
-- `tools/make_blitter_programs.py`
-- `tools/opendst.py`
-- `tools/opendst_explore.py`
-- `tools/opendst_oracle.py`
+- `tools/check_icon_glyphs.py`
+- `tools/check_licenses.py`
+- `tools/check_release.py`
+- `tools/check_slang.py`
+- `tools/classify_selftests.py`
+- `tools/probe_video_load.py`
+- `tools/rank_unknowns.py`
+- `tools/run_all.py`
+- `tools/run_closure_intro_guard.py`
 - `tools/run_determinism.py`
-- `tools/run_hatari_suite.py`
-- `tools/run_megaste_diag.py`
-- `tools/run_midi_sequencer.py`
-- `tools/run_stblitter_bench.py`
-- `tools/run_stcpu_bench.py`
-- `tools/run_stcpu_raster.py`
-- `tools/run_sting_boot.py`
-- `tools/run_wsdetect.py`
+- `tools/run_fpu_oracles.py`
 
 ## Audit Trail
 
-- EXTRACTED: 618 (100%)
-- INFERRED: 3 (0%)
+- EXTRACTED: 720 (99%)
+- INFERRED: 6 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

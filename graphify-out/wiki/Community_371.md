@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **Ne2000.cpp** (33 connections) — `src/io/Ne2000.cpp`
+- **Ne2000.cpp** (34 connections) — `src/io/Ne2000.cpp`
 - **.deliverFrame()** (8 connections) — `src/io/Ne2000.hpp`
 - **.setIsr()** (7 connections) — `src/io/Ne2000.hpp`
 - **.readReg()** (7 connections) — `src/io/Ne2000.hpp`
@@ -29,10 +29,10 @@
 - [Community 89](Community_89.md) (18 shared connections)
 - [Community 474](Community_474.md) (7 shared connections)
 - [Community 462](Community_462.md) (5 shared connections)
-- [Community 4](Community_4.md) (4 shared connections)
-- [Community 419](Community_419.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 186](Community_186.md) (2 shared connections)
+- [Community 298](Community_298.md) (1 shared connections)
 - [Community 481](Community_481.md) (1 shared connections)
 
 ## Source Files
@@ -42,7 +42,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 51 (69%)
+- EXTRACTED: 52 (69%)
 - INFERRED: 23 (31%)
 - AMBIGUOUS: 0 (0%)
 

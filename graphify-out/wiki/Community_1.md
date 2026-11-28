@@ -1,6 +1,6 @@
 # Community 1
 
-> 164 nodes
+> 162 nodes
 
 ## Key Concepts
 
@@ -19,7 +19,6 @@
 - **Mt32Synth** (2 connections) — `src/gui/App.hpp`
 - **NatBackend** (2 connections) — `src/gui/App.hpp`
 - **NetBackendNull** (2 connections) — `src/gui/App.hpp`
-- **.App()** (2 connections) — `src/gui/App.hpp`
 - **.cancelKioskInject()** (1 connections) — `src/gui/App.hpp`
 - **audio** (1 connections) — `src/gui/App.hpp`
 - **audioRate** (1 connections) — `src/gui/App.hpp`
@@ -29,22 +28,23 @@
 - **browseDir** (1 connections) — `src/gui/App.hpp`
 - **browseSel** (1 connections) — `src/gui/App.hpp`
 - **browseShortcutLabels** (1 connections) — `src/gui/App.hpp`
-- *... and 139 more nodes in this community*
+- **browseShortcutPaths** (1 connections) — `src/gui/App.hpp`
+- *... and 137 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (17 shared connections)
-- [Community 200](Community_200.md) (8 shared connections)
-- [Community 460](Community_460.md) (2 shared connections)
+- [Community 4](Community_4.md) (16 shared connections)
+- [Community 138](Community_138.md) (14 shared connections)
 - [Community 298](Community_298.md) (1 shared connections)
 - [Community 21](Community_21.md) (1 shared connections)
-- [Community 286](Community_286.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 - [Community 90](Community_90.md) (1 shared connections)
 - [Community 43](Community_43.md) (1 shared connections)
 - [Community 129](Community_129.md) (1 shared connections)
 - [Community 119](Community_119.md) (1 shared connections)
+- [Community 99](Community_99.md) (1 shared connections)
 - [Community 415](Community_415.md) (1 shared connections)
-- [Community 138](Community_138.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
@@ -52,7 +52,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 204 (100%)
+- EXTRACTED: 203 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

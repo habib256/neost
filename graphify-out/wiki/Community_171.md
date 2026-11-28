@@ -1,49 +1,48 @@
 # Community 171
 
-> 38 nodes
+> 37 nodes
 
 ## Key Concepts
 
-- **Ikbd.cpp** (89 connections) — `src/io/Ikbd.cpp`
+- **Ikbd.cpp** (91 connections) — `src/io/Ikbd.cpp`
+- **.catchUpCpuTx()** (11 connections) — `src/io/Ikbd.hpp`
 - **.customWriteDispatch()** (8 connections) — `src/io/Ikbd.hpp`
 - **.customReadDispatch()** (7 connections) — `src/io/Ikbd.hpp`
+- **.clockSciRx()** (6 connections) — `src/io/Ikbd.hpp`
+- **.scheduleCpuTx()** (6 connections) — `src/io/Ikbd.hpp`
 - **.exitExeMode()** (6 connections) — `src/io/Ikbd.hpp`
-- **.customCodeCrcForTest()** (6 connections) — `src/io/Ikbd.hpp`
-- **** (5 connections) — `src/io/Ikbd.cpp`
-- **.loadMemoryByte()** (5 connections) — `src/io/Ikbd.hpp`
 - **.froggiesWrite()** (5 connections) — `src/io/Ikbd.hpp`
 - **.audioSculptureRead()** (5 connections) — `src/io/Ikbd.hpp`
-- **crc32AddByte()** (5 connections) — `src/io/Ikbd.cpp`
-- **crc32Reset()** (5 connections) — `src/io/Ikbd.cpp`
+- **.write8()** (5 connections) — `src/io/Ikbd.hpp`
+- **.resetHw()** (5 connections) — `src/io/Ikbd.hpp`
 - **.trace()** (4 connections) — `src/io/Ikbd.hpp`
 - **.onVbl()** (4 connections) — `src/io/Ikbd.hpp`
 - **.keyEvent()** (4 connections) — `src/io/Ikbd.hpp`
 - **.updateClock()** (4 connections) — `src/io/Ikbd.hpp`
-- **.commonBoot()** (4 connections) — `src/io/Ikbd.hpp`
+- **.initClockFromHostTime()** (4 connections) — `src/io/Ikbd.hpp`
+- **.nextTxClock()** (4 connections) — `src/io/Ikbd.hpp`
+- **.aciaFrameBits()** (4 connections) — `src/io/Ikbd.hpp`
+- **.read8()** (4 connections) — `src/io/Ikbd.hpp`
+- **.sciFramingError()** (4 connections) — `src/io/Ikbd.hpp`
 - **.chaosWrite()** (4 connections) — `src/io/Ikbd.hpp`
-- **.initClockFromHostTime()** (3 connections) — `src/io/Ikbd.hpp`
+- **.aciaFrameBit()** (3 connections) — `src/io/Ikbd.hpp`
+- **.advanceTx()** (3 connections) — `src/io/Ikbd.hpp`
 - **.checkPressedKey()** (3 connections) — `src/io/Ikbd.hpp`
 - **.transbeauce2Read()** (3 connections) — `src/io/Ikbd.hpp`
-- **.dragonnelsWrite()** (3 connections) — `src/io/Ikbd.hpp`
-- **.chaosRead()** (3 connections) — `src/io/Ikbd.hpp`
-- **.audioSculptureWrite()** (3 connections) — `src/io/Ikbd.hpp`
-- **.armCommonBootForTest()** (3 connections) — `src/io/Ikbd.hpp`
-- **Ikbd::Ikbd()** (3 connections) — `src/io/Ikbd.cpp`
-- *... and 13 more nodes in this community*
+- *... and 12 more nodes in this community*
 
 ## Relationships
 
-- [Community 7](Community_7.md) (25 shared connections)
-- [Community 370](Community_370.md) (19 shared connections)
-- [Community 421](Community_421.md) (19 shared connections)
-- [Community 47](Community_47.md) (14 shared connections)
-- [Community 331](Community_331.md) (9 shared connections)
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 38](Community_38.md) (1 shared connections)
-- [Community 352](Community_352.md) (1 shared connections)
-- [Community 460](Community_460.md) (1 shared connections)
-- [Community 117](Community_117.md) (1 shared connections)
+- [Community 7](Community_7.md) (32 shared connections)
+- [Community 47](Community_47.md) (25 shared connections)
+- [Community 421](Community_421.md) (18 shared connections)
+- [Community 370](Community_370.md) (9 shared connections)
+- [Community 508](Community_508.md) (7 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 186](Community_186.md) (2 shared connections)
+- [Community 183](Community_183.md) (1 shared connections)
+- [Community 560](Community_560.md) (1 shared connections)
 
 ## Source Files
 
@@ -52,8 +51,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 132 (85%)
-- INFERRED: 24 (15%)
+- EXTRACTED: 127 (75%)
+- INFERRED: 42 (25%)
 - AMBIGUOUS: 0 (0%)
 
 ---

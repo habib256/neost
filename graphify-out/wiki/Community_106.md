@@ -1,6 +1,6 @@
 # Community 106
 
-> 28 nodes
+> 29 nodes
 
 ## Key Concepts
 
@@ -15,6 +15,7 @@
 - **.readAnalog()** (1 connections) — `src/io/StePads.hpp`
 - **.readLightpen()** (1 connections) — `src/io/StePads.hpp`
 - **.resetSelect()** (1 connections) — `src/io/StePads.hpp`
+- **.select()** (1 connections) — `src/io/StePads.hpp`
 - **.setJoystick()** (1 connections) — `src/io/StePads.hpp`
 - **.setMegaSte()** (1 connections) — `src/io/StePads.hpp`
 - **.writeSelectByte()** (1 connections) — `src/io/StePads.hpp`
@@ -28,18 +29,16 @@
 - **megaSte_** (1 connections) — `src/io/StePads.hpp`
 - **MEGASTE_DIP** (1 connections) — `src/io/StePads.hpp`
 - **oe_** (1 connections) — `src/io/StePads.hpp`
-- **pad0_** (1 connections) — `src/io/StePads.hpp`
-- *... and 3 more nodes in this community*
+- *... and 4 more nodes in this community*
 
 ## Relationships
 
 - [Community 175](Community_175.md) (2 shared connections)
-- [Community 60](Community_60.md) (1 shared connections)
 - [Community 14](Community_14.md) (1 shared connections)
 - [Community 361](Community_361.md) (1 shared connections)
 - [Community 352](Community_352.md) (1 shared connections)
-- [Community 218](Community_218.md) (1 shared connections)
-- [Community 291](Community_291.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
 
 ## Source Files
 

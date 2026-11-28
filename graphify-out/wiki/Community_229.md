@@ -1,33 +1,52 @@
 # Community 229
 
-> 10 nodes
+> 53 nodes
 
 ## Key Concepts
 
-- **MegaSteTransferChecks** (11 connections) — `tools/test_timing_oracle.py`
-- **.valid()** (4 connections) — `tools/test_timing_oracle.py`
-- **.validate()** (4 connections) — `tools/test_timing_oracle.py`
-- **.test_lower_bounds_keep_blitter_at_bus_frequency()** (3 connections) — `tools/test_timing_oracle.py`
-- **.test_missing_sample_rejected()** (3 connections) — `tools/test_timing_oracle.py`
-- **.test_one_impossible_completion_or_irq_rejected()** (3 connections) — `tools/test_timing_oracle.py`
-- **.test_irq_while_busy_rejected_even_with_valid_counts_and_durations()** (2 connections) — `tools/test_timing_oracle.py`
-- **.setUpClass()** (1 connections) — `tools/test_timing_oracle.py`
-- **.test_iack_idle_keeps_cpu_clock_domain()** (1 connections) — `tools/test_timing_oracle.py`
-- **.test_iack_missing_or_wrong_domain_rejected()** (1 connections) — `tools/test_timing_oracle.py`
+- **MMU040** (39 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **MMU040.cpp** (21 connections) — `extern/moira/Moira/MMU/MMU040.cpp`
+- **u32** (14 connections)
+- **Atc040Entry** (13 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **u8** (6 connections)
+- **TTResult** (5 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.translate()** (5 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.peek()** (5 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.atcFind()** (5 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.testTT()** (5 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **optional** (5 connections)
+- **.test()** (4 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.atcFindFree()** (4 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.atcFindUnused()** (4 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.atcInsert()** (4 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.walk()** (4 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.reset()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.readDescriptor()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.setTC()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.atcTouch()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.atcFlushPage()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.setITT0()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.setITT1()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.setDTT0()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.setDTT1()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- *... and 28 more nodes in this community*
 
 ## Relationships
 
-- [Community 207](Community_207.md) (2 shared connections)
-- [Community 151](Community_151.md) (1 shared connections)
+- [Community 287](Community_287.md) (3 shared connections)
+- [Community 329](Community_329.md) (1 shared connections)
+- [Community 141](Community_141.md) (1 shared connections)
+- [Community 186](Community_186.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/test_timing_oracle.py`
+- `extern/moira/Moira/MMU/MMU040.cpp`
+- `extern/moira/Moira/MMU/MMU040.h`
 
 ## Audit Trail
 
-- EXTRACTED: 18 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 105 (99%)
+- INFERRED: 1 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

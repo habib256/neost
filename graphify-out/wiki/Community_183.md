@@ -1,50 +1,66 @@
 # Community 183
 
-> 23 nodes
+> 85 nodes
 
 ## Key Concepts
 
-- **Stream** (11 connections) — `tests/ipf_image_logic.cpp`
-- **sectorStream()** (11 connections) — `tests/ipf_image_logic.cpp`
-- **Kind** (9 connections) — `tests/ipf_image_logic.cpp`
-- **buildIpf()** (9 connections) — `tests/ipf_image_logic.cpp`
-- **be32()** (7 connections) — `tests/ipf_image_logic.cpp`
-- **record()** (7 connections) — `tests/ipf_image_logic.cpp`
-- **.elem()** (6 connections) — `tests/ipf_image_logic.cpp`
-- **.end()** (6 connections) — `tests/ipf_image_logic.cpp`
-- **setBe32()** (4 connections) — `tests/ipf_image_logic.cpp`
-- **.bytes()** (4 connections) — `tests/ipf_image_logic.cpp`
-- **pattern()** (3 connections) — `tests/ipf_image_logic.cpp`
-- **.sync3()** (3 connections) — `tests/ipf_image_logic.cpp`
-- **.weak()** (3 connections) — `tests/ipf_image_logic.cpp`
-- **.fill()** (2 connections) — `tests/ipf_image_logic.cpp`
-- **size_t** (1 connections)
-- **BAD_DATA_CRC** (1 connections) — `tests/ipf_image_logic.cpp`
-- **BAD_ID_CRC** (1 connections) — `tests/ipf_image_logic.cpp`
-- **DELETED** (1 connections) — `tests/ipf_image_logic.cpp`
-- **NO_DAM** (1 connections) — `tests/ipf_image_logic.cpp`
-- **NORMAL** (1 connections) — `tests/ipf_image_logic.cpp`
-- **WEAK** (1 connections) — `tests/ipf_image_logic.cpp`
-- **cells** (1 connections) — `tests/ipf_image_logic.cpp`
-- **d** (1 connections) — `tests/ipf_image_logic.cpp`
+- **FpuFormats.cpp** (27 connections) — `extern/moira/Moira/FPU/FpuFormats.cpp`
+- **u128** (25 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **Wide.h** (20 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **FpuFormat** (18 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **RoundingMode** (18 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
+- **.fromPacked()** (18 connections) — `extern/moira/Moira/FPU/FpuFormats.h`
+- **FpuFormats** (15 connections) — `extern/moira/Moira/FPU/FpuFormats.h`
+- **.toPacked()** (15 connections) — `extern/moira/Moira/FPU/FpuFormats.h`
+- **hi64()** (12 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **lo64()** (12 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **makeU128()** (12 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **BinFloat** (10 connections) — `extern/moira/Moira/FPU/FpuFormats.cpp`
+- **Moira::readFpuOpEa()** (10 connections) — `extern/moira/Moira/MoiraExecFPU_cpp.h`
+- **.fromSingle()** (9 connections) — `extern/moira/Moira/FPU/FpuFormats.h`
+- **round64()** (9 connections) — `extern/moira/Moira/FPU/FpuFormats.cpp`
+- **roundMagnitude()** (9 connections) — `extern/moira/Moira/FPU/FpuFormats.cpp`
+- **mul128To256()** (9 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **Moira::readFpuOpIm()** (9 connections) — `extern/moira/Moira/MoiraExecFPU_cpp.h`
+- **Moira::writeFpuOpEa()** (9 connections) — `extern/moira/Moira/MoiraExecFPU_cpp.h`
+- **bit** (9 connections)
+- **IllegalInstruction** (8 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **.fromDouble()** (8 connections) — `extern/moira/Moira/FPU/FpuFormats.h`
+- **estimateDecimalExponent()** (8 connections) — `extern/moira/Moira/FPU/FpuFormats.cpp`
+- **powerOfTen()** (8 connections) — `extern/moira/Moira/FPU/FpuFormats.cpp`
+- **.u128()** (8 connections) — `extern/moira/Moira/FPU/Wide.h`
+- *... and 60 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (8 shared connections)
-- [Community 163](Community_163.md) (7 shared connections)
-- [Community 460](Community_460.md) (6 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
-- [Community 201](Community_201.md) (1 shared connections)
-- [Community 172](Community_172.md) (1 shared connections)
+- [Community 197](Community_197.md) (27 shared connections)
+- [Community 63](Community_63.md) (24 shared connections)
+- [Community 145](Community_145.md) (9 shared connections)
+- [Community 264](Community_264.md) (7 shared connections)
+- [Community 202](Community_202.md) (6 shared connections)
+- [Community 57](Community_57.md) (4 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 186](Community_186.md) (2 shared connections)
+- [Community 510](Community_510.md) (1 shared connections)
+- [Community 64](Community_64.md) (1 shared connections)
+- [Community 171](Community_171.md) (1 shared connections)
+- [Community 7](Community_7.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/ipf_image_logic.cpp`
+- `extern/moira/Moira/FPU/FPU.h`
+- `extern/moira/Moira/FPU/FpuEnv.h`
+- `extern/moira/Moira/FPU/FpuFormats.cpp`
+- `extern/moira/Moira/FPU/FpuFormats.h`
+- `extern/moira/Moira/FPU/Wide.h`
+- `extern/moira/Moira/MoiraExecFPU_cpp.h`
+- `extern/moira/Moira/MoiraTypes.h`
+- `src/io/Ikbd.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 56 (95%)
-- INFERRED: 3 (5%)
+- EXTRACTED: 263 (88%)
+- INFERRED: 35 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

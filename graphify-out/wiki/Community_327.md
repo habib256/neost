@@ -1,21 +1,22 @@
 # Community 327
 
-> 7 nodes
+> 8 nodes
 
 ## Key Concepts
 
+- **Ims** (6 connections) — `extern/moira/Moira/StrWriter.h`
 - **i32** (5 connections)
-- **Ims** (4 connections) — `extern/moira/Moira/StrWriter.h`
 - **Int** (4 connections) — `extern/moira/Moira/StrWriter.h`
 - **.Ims()** (2 connections) — `extern/moira/Moira/StrWriter.h`
 - **.Int()** (2 connections) — `extern/moira/Moira/StrWriter.h`
 - **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **sz** (1 connections) — `extern/moira/Moira/StrWriter.h`
 - **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
 
 ## Relationships
 
-- [Community 76](Community_76.md) (2 shared connections)
-- [Community 109](Community_109.md) (1 shared connections)
+- [Community 109](Community_109.md) (3 shared connections)
+- [Community 497](Community_497.md) (1 shared connections)
 
 ## Source Files
 
@@ -23,7 +24,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 11 (100%)
+- EXTRACTED: 13 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

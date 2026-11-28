@@ -5,7 +5,7 @@
 ## Key Concepts
 
 - **Rig** (27 connections) — `tests/gemdos_process_logic.cpp`
-- **testGemdosProcess()** (16 connections) — `tests/gemdos_process_logic.cpp`
+- **testGemdosProcess()** (17 connections) — `tests/gemdos_process_logic.cpp`
 - **.trap()** (11 connections) — `tests/gemdos_process_logic.cpp`
 - **string** (7 connections)
 - **.named()** (6 connections) — `tests/gemdos_process_logic.cpp`
@@ -33,8 +33,9 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (3 shared connections)
+- [Community 186](Community_186.md) (3 shared connections)
 - [Community 330](Community_330.md) (1 shared connections)
+- [Community 419](Community_419.md) (1 shared connections)
 - [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
@@ -43,8 +44,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 61 (97%)
-- INFERRED: 2 (3%)
+- EXTRACTED: 61 (95%)
+- INFERRED: 3 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

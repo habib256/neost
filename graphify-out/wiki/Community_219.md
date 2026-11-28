@@ -15,6 +15,7 @@
 - **.counter()** (4 connections) — `tests/selftest_logic.cpp`
 - **Scheduler** (4 connections)
 - **.setDmaAddr()** (3 connections) — `tests/selftest_logic.cpp`
+- **.settle()** (3 connections) — `tests/selftest_logic.cpp`
 - **.run()** (3 connections) — `tests/selftest_logic.cpp`
 - **Bus** (3 connections)
 - **main()** (2 connections) — `tests/mmio_fidelity_logic.cpp`
@@ -23,7 +24,6 @@
 - **.program()** (2 connections) — `tests/selftest_logic.cpp`
 - **.dmaAddr()** (2 connections) — `tests/selftest_logic.cpp`
 - **.setMode()** (2 connections) — `tests/selftest_logic.cpp`
-- **.settle()** (2 connections) — `tests/selftest_logic.cpp`
 - **.setEnd()** (2 connections) — `tests/selftest_logic.cpp`
 - **.setStart()** (2 connections) — `tests/selftest_logic.cpp`
 - **Mfp** (2 connections)
@@ -36,8 +36,9 @@
 - [Community 252](Community_252.md) (20 shared connections)
 - [Community 102](Community_102.md) (2 shared connections)
 - [Community 41](Community_41.md) (2 shared connections)
-- [Community 160](Community_160.md) (1 shared connections)
-- [Community 419](Community_419.md) (1 shared connections)
+- [Community 449](Community_449.md) (1 shared connections)
+- [Community 298](Community_298.md) (1 shared connections)
+- [Community 149](Community_149.md) (1 shared connections)
 - [Community 226](Community_226.md) (1 shared connections)
 
 ## Source Files
@@ -47,8 +48,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 77 (94%)
-- INFERRED: 5 (6%)
+- EXTRACTED: 77 (93%)
+- INFERRED: 6 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---
