@@ -1,11 +1,10 @@
 # Community 328
 
-> 21 nodes
+> 20 nodes
 
 ## Key Concepts
 
 - **GlueView** (27 connections) — `src/core/Shifter.hpp`
-- **VideoCounter::read()** (2 connections) — `src/core/VideoCounter.cpp`
 - **.blankLines()** (1 connections) — `src/core/Shifter.hpp`
 - **.catchUp()** (1 connections) — `src/core/Shifter.hpp`
 - **.frame()** (1 connections) — `src/core/Shifter.hpp`
@@ -28,9 +27,11 @@
 
 ## Relationships
 
-- [Community 258](Community_258.md) (2 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
+- [Community 565](Community_565.md) (1 shared connections)
+- [Community 258](Community_258.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 - [Community 5](Community_5.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
 - [Community 270](Community_270.md) (1 shared connections)
 - [Community 396](Community_396.md) (1 shared connections)
 - [Community 237](Community_237.md) (1 shared connections)
@@ -38,12 +39,11 @@
 ## Source Files
 
 - `src/core/Shifter.hpp`
-- `src/core/VideoCounter.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 24 (86%)
-- INFERRED: 4 (14%)
+- EXTRACTED: 23 (85%)
+- INFERRED: 4 (15%)
 - AMBIGUOUS: 0 (0%)
 
 ---

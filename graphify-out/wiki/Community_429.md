@@ -24,9 +24,9 @@
 - [Community 607](Community_607.md) (9 shared connections)
 - [Community 14](Community_14.md) (8 shared connections)
 - [Community 319](Community_319.md) (3 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
+- [Community 48](Community_48.md) (2 shared connections)
 - [Community 203](Community_203.md) (1 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
+- [Community 484](Community_484.md) (1 shared connections)
 
 ## Source Files
 

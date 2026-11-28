@@ -1,18 +1,16 @@
 # Community 174
 
-> 32 nodes
+> 28 nodes
 
 ## Key Concepts
 
 - **Rig** (22 connections) — `tests/stx_data_crc_write_logic.cpp`
 - **testStxDataCrcWrite()** (12 connections) — `tests/stx_data_crc_write_logic.cpp`
-- **writeStx()** (7 connections) — `tests/stx_data_crc_write_logic.cpp`
 - **.command()** (5 connections) — `tests/stx_data_crc_write_logic.cpp`
 - **.reg()** (5 connections) — `tests/stx_data_crc_write_logic.cpp`
 - **Checks** (4 connections) — `tests/stx_data_crc_write_logic.cpp`
 - **.data()** (4 connections) — `tests/stx_data_crc_write_logic.cpp`
 - **.finish()** (4 connections) — `tests/stx_data_crc_write_logic.cpp`
-- **crc16()** (3 connections) — `tests/stx_data_crc_write_logic.cpp`
 - **.advance()** (3 connections) — `tests/stx_data_crc_write_logic.cpp`
 - **.irq()** (3 connections) — `tests/stx_data_crc_write_logic.cpp`
 - **.mode()** (3 connections) — `tests/stx_data_crc_write_logic.cpp`
@@ -25,17 +23,19 @@
 - **failures** (1 connections) — `tests/stx_data_crc_write_logic.cpp`
 - **Bus** (1 connections)
 - **Fdc** (1 connections)
-- **initializer_list** (1 connections)
 - **Mfp** (1 connections)
-- **path** (1 connections)
 - **Scheduler** (1 connections)
-- *... and 7 more nodes in this community*
+- **YM2149** (1 connections)
+- **bus** (1 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **fdc** (1 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **live** (1 connections) — `tests/stx_data_crc_write_logic.cpp`
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (7 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
-- [Community 145](Community_145.md) (1 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 145](Community_145.md) (2 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
 
 ## Source Files
 
@@ -43,8 +43,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 52 (96%)
-- INFERRED: 2 (4%)
+- EXTRACTED: 46 (98%)
+- INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

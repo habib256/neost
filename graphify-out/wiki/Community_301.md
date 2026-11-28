@@ -1,41 +1,37 @@
 # Community 301
 
-> 16 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **run_spec512_truth.py** (16 connections) — `tools/run_spec512_truth.py`
-- **main()** (13 connections) — `tools/run_spec512_truth.py`
-- **Fat** (6 connections) — `tools/run_spec512_truth.py`
-- **finish_results()** (5 connections) — `tools/run_spec512_truth.py`
-- **screen_area()** (4 connections) — `tools/run_spec512_truth.py`
-- **decode_spc()** (3 connections) — `tools/run_spec512_truth.py`
-- **decode_spu()** (3 connections) — `tools/run_spec512_truth.py`
-- **.read()** (3 connections) — `tools/run_spec512_truth.py`
-- **.walk()** (3 connections) — `tools/run_spec512_truth.py`
-- **read_ppm()** (3 connections) — `tools/run_spec512_truth.py`
-- **render()** (3 connections) — `tools/run_spec512_truth.py`
+- **check_hog_park.py** (10 connections) — `tools/check_hog_park.py`
+- **hog_prg()** (8 connections) — `tools/check_hog_park.py`
+- **main()** (7 connections) — `tools/check_hog_park.py`
+- **run()** (5 connections) — `tools/check_hog_park.py`
+- **hashes()** (2 connections) — `tools/check_hog_park.py`
 - **Path** (2 connections)
-- **.__init__()** (1 connections) — `tools/run_spec512_truth.py`
-- **Couleur RVB 3 bits par pixel (une valeur par composante), décalée de `shift`…** (1 connections) — `tools/run_spec512_truth.py`
-- **Comparer uniquement les machines exécutées, sans masquer leurs régressions.** (1 connections) — `tools/run_spec512_truth.py`
-- **FAT12 d'une disquette .ST, en lecture.** (1 connections) — `tools/run_spec512_truth.py`
+- **mvb()** (1 connections) — `tools/check_hog_park.py`
+- **mvl()** (1 connections) — `tools/check_hog_park.py`
+- **mvw()** (1 connections) — `tools/check_hog_park.py`
+- **check()** (1 connections) — `tools/check_hog_park.py`
+- **CompletedProcess** (1 connections)
+- **PRG superviseur : blit HOG xcount×ycount mots, puis compteur en $600.** (1 connections) — `tools/check_hog_park.py`
 
 ## Relationships
 
-- [Community 173](Community_173.md) (6 shared connections)
 - [Community 100](Community_100.md) (5 shared connections)
-- [Community 3](Community_3.md) (3 shared connections)
-- [Community 26](Community_26.md) (2 shared connections)
+- [Community 3](Community_3.md) (2 shared connections)
+- [Community 582](Community_582.md) (2 shared connections)
+- [Community 146](Community_146.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/run_spec512_truth.py`
+- `tools/check_hog_park.py`
 
 ## Audit Trail
 
-- EXTRACTED: 40 (95%)
-- INFERRED: 2 (5%)
+- EXTRACTED: 25 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,12 +1,11 @@
 # Community 241
 
-> 10 nodes
+> 9 nodes
 
 ## Key Concepts
 
 - **testSccExtendedRead()** (8 connections) — `tests/scc_extended_read_logic.cpp`
 - **ExtendedRig** (7 connections) — `tests/scc_extended_read_logic.cpp`
-- **scc_extended_read_logic.cpp** (6 connections) — `tests/scc_extended_read_logic.cpp`
 - **.write()** (4 connections) — `tests/scc_extended_read_logic.cpp`
 - **.extended()** (3 connections) — `tests/scc_extended_read_logic.cpp`
 - **.ExtendedRig()** (2 connections) — `tests/scc_extended_read_logic.cpp`
@@ -17,8 +16,9 @@
 
 ## Relationships
 
-- [Community 41](Community_41.md) (3 shared connections)
-- [Community 102](Community_102.md) (3 shared connections)
+- [Community 611](Community_611.md) (3 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
 
 ## Source Files
 
@@ -26,8 +26,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 20 (95%)
-- INFERRED: 1 (5%)
+- EXTRACTED: 17 (94%)
+- INFERRED: 1 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

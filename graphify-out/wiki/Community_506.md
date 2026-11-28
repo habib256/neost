@@ -4,25 +4,26 @@
 
 ## Key Concepts
 
-- **Log.cpp** (7 connections) — `src/util/Log.cpp`
-- **cstdarg** (5 connections)
-- **err()** (3 connections) — `src/util/Log.cpp`
-- **verr()** (3 connections) — `src/util/Log.cpp`
-- **va_list** (1 connections)
+- **WrittenTrack.hpp** (7 connections) — `src/io/WrittenTrack.hpp`
+- **parse()** (5 connections) — `src/io/WrittenTrack.cpp`
+- **WrittenTrack.cpp** (4 connections) — `src/io/WrittenTrack.cpp`
+- **crc16()** (2 connections) — `src/io/WrittenTrack.cpp`
+- **Sector** (1 connections)
 
 ## Relationships
 
-- [Community 4](Community_4.md) (2 shared connections)
+- [Community 611](Community_611.md) (2 shared connections)
 - [Community 102](Community_102.md) (2 shared connections)
-- [Community 568](Community_568.md) (1 shared connections)
-- [Community 377](Community_377.md) (1 shared connections)
-- [Community 117](Community_117.md) (1 shared connections)
-- [Community 171](Community_171.md) (1 shared connections)
-- [Community 248](Community_248.md) (1 shared connections)
+- [Community 51](Community_51.md) (1 shared connections)
+- [Community 406](Community_406.md) (1 shared connections)
+- [Community 31](Community_31.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 436](Community_436.md) (1 shared connections)
 
 ## Source Files
 
-- `src/util/Log.cpp`
+- `src/io/WrittenTrack.cpp`
+- `src/io/WrittenTrack.hpp`
 
 ## Audit Trail
 

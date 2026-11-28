@@ -1,23 +1,29 @@
 # Community 434
 
-> 8 nodes
+> 13 nodes
 
 ## Key Concepts
 
 - **Docs à corriger** (7 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
-- **HATARI_MAPPING_AUDIT_2026-07.md** (4 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
+- **Prochains travaux de précision** (6 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
 - **Audit de cartographie Hatari ↔ NeoST — tables du 2026-07-08 (archive)** (3 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
+- **P1 — Timing systémique (dérives d'horloge, phase CPU↔faisceau)** (3 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
+- **Commentaires code (signalés au passage)** (2 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
+- **✗ Candidats réfutés (mémo anti-faux-positifs)** (1 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
 - **CHANGELOG.md** (1 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
 - **DEV.md** (1 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
 - **docs/CYCLE_ACCURACY.md** (1 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
 - **docs/HATARI_DIVERGENCES.md** (1 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
+- **P2 — Datation d'événements localisée** (1 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
+- **P3 — Comportement / protocole (IRQ, registres, resets)** (1 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
 - **TODO.md** (1 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
 
 ## Relationships
 
-- [Community 232](Community_232.md) (3 shared connections)
-- [Community 221](Community_221.md) (1 shared connections)
-- [Community 160](Community_160.md) (1 shared connections)
+- [Community 221](Community_221.md) (2 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
+- [Community 449](Community_449.md) (1 shared connections)
+- [Community 522](Community_522.md) (1 shared connections)
 
 ## Source Files
 
@@ -25,8 +31,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 12 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 14 (82%)
+- INFERRED: 3 (18%)
 - AMBIGUOUS: 0 (0%)
 
 ---

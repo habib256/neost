@@ -1,12 +1,13 @@
 # Community 185
 
-> 21 nodes
+> 22 nodes
 
 ## Key Concepts
 
 - **KeyZone** (14 connections) — `src/audio/MidiZones.hpp`
 - **Device** (13 connections) — `src/audio/MidiInHost.hpp`
 - **Want** (10 connections) — `src/audio/MidiInHost.hpp`
+- **routeVoice()** (4 connections) — `src/audio/MidiZones.hpp`
 - **string** (2 connections)
 - **.operator==()** (1 connections) — `src/audio/MidiZones.hpp`
 - **forceChannel** (1 connections) — `src/audio/MidiInHost.hpp`
@@ -29,12 +30,12 @@
 ## Relationships
 
 - [Community 220](Community_220.md) (5 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
+- [Community 611](Community_611.md) (3 shared connections)
 - [Community 44](Community_44.md) (1 shared connections)
 - [Community 386](Community_386.md) (1 shared connections)
 - [Community 286](Community_286.md) (1 shared connections)
+- [Community 42](Community_42.md) (1 shared connections)
 
 ## Source Files
 
@@ -43,8 +44,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 34 (97%)
-- INFERRED: 1 (3%)
+- EXTRACTED: 36 (95%)
+- INFERRED: 2 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

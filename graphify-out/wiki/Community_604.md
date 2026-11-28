@@ -4,22 +4,24 @@
 
 ## Key Concepts
 
-- **retro_subsystem_memory_info** (3 connections) — `src/libretro/libretro.h`
-- **extension** (1 connections) — `src/libretro/libretro.h`
-- **type** (1 connections) — `src/libretro/libretro.h`
+- **neost_shared_probe()** (2 connections) — `tests/shared_probe.cpp`
+- **main()** (2 connections) — `tests/shared_probe_run.cpp`
+- **shared_probe_run.cpp** (2 connections) — `tests/shared_probe_run.cpp`
 
 ## Relationships
 
-- [Community 83](Community_83.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 611](Community_611.md) (1 shared connections)
 
 ## Source Files
 
-- `src/libretro/libretro.h`
+- `tests/shared_probe.cpp`
+- `tests/shared_probe_run.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 3 (75%)
+- INFERRED: 1 (25%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,24 +1,27 @@
 # Community 605
 
-> 3 nodes
+> 2 nodes
 
 ## Key Concepts
 
-- **retro_throttle_state** (3 connections) — `src/libretro/libretro.h`
-- **mode** (1 connections) — `src/libretro/libretro.h`
-- **rate** (1 connections) — `src/libretro/libretro.h`
+- **windows** (5 connections)
+- **7zWindows.h** (2 connections) — `extern/lzma/7zWindows.h`
 
 ## Relationships
 
-- [Community 83](Community_83.md) (1 shared connections)
+- [Community 263](Community_263.md) (1 shared connections)
+- [Community 126](Community_126.md) (1 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 36](Community_36.md) (1 shared connections)
 
 ## Source Files
 
-- `src/libretro/libretro.h`
+- `extern/lzma/7zWindows.h`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
+- EXTRACTED: 6 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

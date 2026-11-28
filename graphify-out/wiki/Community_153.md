@@ -1,62 +1,56 @@
 # Community 153
 
-> 22 nodes
+> 21 nodes
 
 ## Key Concepts
 
-- **appInit()** (23 connections) — `src/gui/AppInit.cpp`
-- **A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30)** (19 connections) — `CHANGELOG.md`
-- **joyResolveRoles()** (9 connections) — `src/gui/JoyMap.cpp`
-- **parseCommandLine()** (8 connections) — `src/gui/AppInit.cpp`
-- **kioskPageJoy()** (7 connections) — `src/gui/AppLoop.cpp`
-- **JoyMap.cpp** (7 connections) — `src/gui/JoyMap.cpp`
-- **Mega ST / Mega STE — RTC, SCU, cache, SCC** (7 connections) — `docs/IMPLEMENTED.md`
-- **joymapSerialize()** (6 connections) — `src/gui/JoyMap.cpp`
-- **loadRtcFromConfig()** (5 connections) — `src/gui/App.cpp`
-- **snapshotRtc()** (5 connections) — `src/gui/App.cpp`
-- **joyGuid()** (5 connections) — `src/gui/JoyMap.cpp`
-- **joymapParse()** (5 connections) — `src/gui/JoyMap.cpp`
-- **.resolvePath()** (4 connections) — `src/gui/App.hpp`
-- **Machine** (4 connections)
-- **.usatanApply()** (3 connections) — `src/gui/App.hpp`
-- **.etherApply()** (3 connections) — `src/gui/App.hpp`
-- **App** (3 connections)
-- **string** (3 connections)
-- **.gatedLevel()** (2 connections) — `src/io/Scu.hpp`
-- **App** (2 connections)
-- **string** (1 connections)
-- **Et une affirmation fausse trouvée en corrigeant ces renvois** (1 connections) — `CHANGELOG.md`
+- **UInt32** (30 connections) — `extern/moira/Moira/StrWriter.h`
+- **7zCrc.c** (12 connections) — `extern/lzma/7zCrc.c`
+- **Z7_FASTCALL()** (6 connections) — `extern/lzma/7zCrc.c`
+- **7zCrc.h** (5 connections) — `extern/lzma/7zCrc.h`
+- **CrcCalc()** (4 connections) — `extern/lzma/7zCrc.c`
+- **CrcUpdate()** (4 connections) — `extern/lzma/7zCrc.c`
+- **Z7_BRANCH_CONV_ST()** (4 connections) — `extern/lzma/Bra86.c`
+- **Z7_BRANCH_CONV_ENC()** (4 connections) — `extern/lzma/Bra.c`
+- **void()** (3 connections) — `extern/lzma/7zCrc.c`
+- **Z7_CRC_UPDATE_T1_FUNC_NAME()** (3 connections) — `extern/lzma/7zCrc.c`
+- **z7_GetFunc_CrcUpdate()** (2 connections) — `extern/lzma/7zCrc.c`
+- **arm_acle** (2 connections)
+- **CrcGenerateTable** (1 connections)
+- **Byte** (1 connections)
+- **SizeT** (1 connections)
+- **Byte** (1 connections)
+- **SizeT** (1 connections)
+- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **Z7_CRC_UPDATE_FUNC** (1 connections)
+- **7zcrcemu** (1 connections)
+- **intrin** (1 connections)
 
 ## Relationships
 
-- [Community 214](Community_214.md) (11 shared connections)
-- [Community 4](Community_4.md) (10 shared connections)
-- [Community 138](Community_138.md) (7 shared connections)
-- [Community 449](Community_449.md) (4 shared connections)
-- [Community 204](Community_204.md) (4 shared connections)
-- [Community 223](Community_223.md) (4 shared connections)
-- [Community 1](Community_1.md) (3 shared connections)
-- [Community 101](Community_101.md) (3 shared connections)
-- [Community 27](Community_27.md) (3 shared connections)
-- [Community 21](Community_21.md) (2 shared connections)
-- [Community 288](Community_288.md) (2 shared connections)
-- [Community 325](Community_325.md) (2 shared connections)
+- [Community 285](Community_285.md) (10 shared connections)
+- [Community 263](Community_263.md) (8 shared connections)
+- [Community 245](Community_245.md) (5 shared connections)
+- [Community 353](Community_353.md) (4 shared connections)
+- [Community 169](Community_169.md) (2 shared connections)
+- [Community 213](Community_213.md) (2 shared connections)
+- [Community 305](Community_305.md) (2 shared connections)
+- [Community 357](Community_357.md) (1 shared connections)
+- [Community 109](Community_109.md) (1 shared connections)
+- [Community 520](Community_520.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/IMPLEMENTED.md`
-- `src/gui/App.cpp`
-- `src/gui/App.hpp`
-- `src/gui/AppInit.cpp`
-- `src/gui/AppLoop.cpp`
-- `src/gui/JoyMap.cpp`
-- `src/io/Scu.hpp`
+- `extern/lzma/7zCrc.c`
+- `extern/lzma/7zCrc.h`
+- `extern/lzma/Bra.c`
+- `extern/lzma/Bra86.c`
+- `extern/moira/Moira/StrWriter.h`
 
 ## Audit Trail
 
-- EXTRACTED: 50 (49%)
-- INFERRED: 52 (51%)
+- EXTRACTED: 60 (97%)
+- INFERRED: 2 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,13 +1,15 @@
 # Community 229
 
-> 37 nodes
+> 53 nodes
 
 ## Key Concepts
 
 - **MMU040** (39 connections) — `extern/moira/Moira/MMU/MMU040.h`
 - **MMU040.cpp** (21 connections) — `extern/moira/Moira/MMU/MMU040.cpp`
 - **u32** (14 connections)
+- **Atc040Entry** (13 connections) — `extern/moira/Moira/MMU/MMU040.h`
 - **u8** (6 connections)
+- **TTResult** (5 connections) — `extern/moira/Moira/MMU/MMU040.h`
 - **.translate()** (5 connections) — `extern/moira/Moira/MMU/MMU040.h`
 - **.peek()** (5 connections) — `extern/moira/Moira/MMU/MMU040.h`
 - **.atcFind()** (5 connections) — `extern/moira/Moira/MMU/MMU040.h`
@@ -21,23 +23,19 @@
 - **.reset()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
 - **.readDescriptor()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
 - **.setTC()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.atcTouch()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
 - **.atcFlushPage()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
 - **.setITT0()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
 - **.setITT1()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
 - **.setDTT0()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
 - **.setDTT1()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
-- **.MMU040()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
-- **.atcFlush()** (2 connections) — `extern/moira/Moira/MMU/MMU040.h`
-- **.isEnabled()** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
-- *... and 12 more nodes in this community*
+- *... and 28 more nodes in this community*
 
 ## Relationships
 
-- [Community 357](Community_357.md) (8 shared connections)
 - [Community 287](Community_287.md) (3 shared connections)
-- [Community 532](Community_532.md) (2 shared connections)
-- [Community 570](Community_570.md) (1 shared connections)
-- [Community 16](Community_16.md) (1 shared connections)
+- [Community 16](Community_16.md) (2 shared connections)
+- [Community 329](Community_329.md) (1 shared connections)
 
 ## Source Files
 
@@ -46,7 +44,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 90 (99%)
+- EXTRACTED: 105 (99%)
 - INFERRED: 1 (1%)
 - AMBIGUOUS: 0 (0%)
 

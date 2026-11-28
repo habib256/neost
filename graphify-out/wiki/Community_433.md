@@ -1,29 +1,28 @@
 # Community 433
 
-> 8 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **HayesModem::DialJob** (9 connections) — `src/net/HayesModem.cpp`
-- **mutex** (1 connections)
-- **SocketHandle** (1 connections)
-- **cancelled** (1 connections) — `src/net/HayesModem.cpp`
-- **done** (1 connections) — `src/net/HayesModem.cpp`
-- **err** (1 connections) — `src/net/HayesModem.cpp`
-- **fd** (1 connections) — `src/net/HayesModem.cpp`
-- **m** (1 connections) — `src/net/HayesModem.cpp`
+- **FrameGeometry** (7 connections) — `src/core/Shifter.hpp`
+- **ah** (1 connections) — `src/core/Shifter.hpp`
+- **h** (1 connections) — `src/core/Shifter.hpp`
+- **w** (1 connections) — `src/core/Shifter.hpp`
+- **x** (1 connections) — `src/core/Shifter.hpp`
+- **y** (1 connections) — `src/core/Shifter.hpp`
 
 ## Relationships
 
-- [Community 300](Community_300.md) (2 shared connections)
+- [Community 596](Community_596.md) (1 shared connections)
+- [Community 5](Community_5.md) (1 shared connections)
 
 ## Source Files
 
-- `src/net/HayesModem.cpp`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (100%)
+- EXTRACTED: 7 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

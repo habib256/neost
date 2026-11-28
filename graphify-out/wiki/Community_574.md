@@ -4,9 +4,9 @@
 
 ## Key Concepts
 
-- **retro_led_interface** (3 connections) — `src/libretro/libretro.h`
-- **retro_set_led_state_t** (1 connections)
-- **set_led_state** (1 connections) — `src/libretro/libretro.h`
+- **retro_hw_render_context_negotiation_interface** (3 connections) — `src/libretro/libretro.h`
+- **interface_type** (1 connections) — `src/libretro/libretro.h`
+- **interface_version** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 

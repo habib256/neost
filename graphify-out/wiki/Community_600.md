@@ -4,22 +4,25 @@
 
 ## Key Concepts
 
-- **retro_core_option_display** (3 connections) — `src/libretro/libretro.h`
-- **key** (1 connections) — `src/libretro/libretro.h`
-- **visible** (1 connections) — `src/libretro/libretro.h`
+- **testMfpUsartControl()** (4 connections) — `tests/mfp_usart_control_logic.cpp`
+- **mfp_usart_control_logic.cpp** (4 connections) — `tests/mfp_usart_control_logic.cpp`
+- **main()** (2 connections) — `tests/mfp_usart_control_logic.cpp`
 
 ## Relationships
 
-- [Community 83](Community_83.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 611](Community_611.md) (1 shared connections)
 
 ## Source Files
 
-- `src/libretro/libretro.h`
+- `tests/mfp_usart_control_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 5 (71%)
+- INFERRED: 2 (29%)
 - AMBIGUOUS: 0 (0%)
 
 ---

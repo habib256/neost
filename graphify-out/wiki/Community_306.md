@@ -1,10 +1,11 @@
 # Community 306
 
-> 28 nodes
+> 29 nodes
 
 ## Key Concepts
 
 - **MmuContext** (33 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **u32** (20 connections)
 - **.walk()** (13 connections) — `extern/moira/Moira/MMU/MMU030.h`
 - **.lookupLong()** (11 connections) — `extern/moira/Moira/MMU/MMU030.h`
 - **.lookupShort()** (10 connections) — `extern/moira/Moira/MMU/MMU030.h`
@@ -28,12 +29,11 @@
 - **modified** (1 connections) — `extern/moira/Moira/MMU/MMU030.cpp`
 - **ptest** (1 connections) — `extern/moira/Moira/MMU/MMU030.cpp`
 - **shiftCnt** (1 connections) — `extern/moira/Moira/MMU/MMU030.cpp`
-- **su** (1 connections) — `extern/moira/Moira/MMU/MMU030.cpp`
-- *... and 3 more nodes in this community*
+- *... and 4 more nodes in this community*
 
 ## Relationships
 
-- [Community 284](Community_284.md) (22 shared connections)
+- [Community 284](Community_284.md) (28 shared connections)
 - [Community 287](Community_287.md) (1 shared connections)
 
 ## Source Files
@@ -43,8 +43,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 63 (94%)
-- INFERRED: 4 (6%)
+- EXTRACTED: 76 (95%)
+- INFERRED: 4 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

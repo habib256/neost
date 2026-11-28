@@ -1,11 +1,12 @@
 # Community 552
 
-> 11 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **NeoST 0.7.0 — migration du cœur 68000** (6 connections) — `docs/MIGRATION_MOIRA_070.md`
+- **NeoST 0.7.0 — migration du cœur 68000** (7 connections) — `docs/MIGRATION_MOIRA_070.md`
 - **Relevés du port sur le commit de code `ea55549d`** (6 connections) — `docs/MIGRATION_MOIRA_070.md`
+- **Actualisation du pin au 28 novembre 2026** (1 connections) — `docs/MIGRATION_MOIRA_070.md`
 - **Contrats et témoins** (1 connections) — `docs/MIGRATION_MOIRA_070.md`
 - **Doubles fautes déjà présentes dans les deux cœurs** (1 connections) — `docs/MIGRATION_MOIRA_070.md`
 - **Débit sur le poste macOS arm64** (1 connections) — `docs/MIGRATION_MOIRA_070.md`
@@ -26,7 +27,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 11 (100%)
+- EXTRACTED: 12 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

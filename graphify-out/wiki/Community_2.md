@@ -1,6 +1,6 @@
 # Community 2
 
-> 144 nodes
+> 147 nodes
 
 ## Key Concepts
 
@@ -29,20 +29,20 @@
 - **Moira::dasmAddiRg()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
 - **Moira::dasmAddqAn()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
 - **Moira::dasmAddqDn()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- *... and 119 more nodes in this community*
+- *... and 122 more nodes in this community*
 
 ## Relationships
 
 - [Community 0](Community_0.md) (128 shared connections)
 - [Community 167](Community_167.md) (15 shared connections)
 - [Community 155](Community_155.md) (9 shared connections)
-- [Community 539](Community_539.md) (8 shared connections)
 - [Community 16](Community_16.md) (5 shared connections)
-- [Community 112](Community_112.md) (2 shared connections)
+- [Community 9](Community_9.md) (3 shared connections)
+- [Community 57](Community_57.md) (2 shared connections)
 - [Community 109](Community_109.md) (2 shared connections)
 - [Community 32](Community_32.md) (2 shared connections)
 - [Community 414](Community_414.md) (1 shared connections)
-- [Community 548](Community_548.md) (1 shared connections)
+- [Community 131](Community_131.md) (1 shared connections)
 
 ## Source Files
 
@@ -53,7 +53,7 @@
 ## Audit Trail
 
 - EXTRACTED: 954 (99%)
-- INFERRED: 10 (1%)
+- INFERRED: 13 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

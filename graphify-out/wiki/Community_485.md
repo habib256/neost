@@ -1,29 +1,26 @@
 # Community 485
 
-> 6 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **FPUModel** (7 connections) — `extern/moira/Moira/FPU/FPU.h`
-- **.setModel()** (3 connections) — `extern/moira/Moira/FPU/FPU.h`
-- **.getModel()** (2 connections) — `extern/moira/Moira/FPU/FPU.h`
-- **M68040** (1 connections) — `extern/moira/Moira/FPU/FPU.h`
-- **M68881** (1 connections) — `extern/moira/Moira/FPU/FPU.h`
-- **M68882** (1 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **14. TOS et configuration — `Machine.cpp` ↔ `tos.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Refermés** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
-- [Community 63](Community_63.md) (3 shared connections)
-- [Community 287](Community_287.md) (1 shared connections)
-- [Community 16](Community_16.md) (1 shared connections)
+- [Community 397](Community_397.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/FPU/FPU.h`
+- `docs/HATARI_DIVERGENCES.md`
 
 ## Audit Trail
 
-- EXTRACTED: 10 (100%)
+- EXTRACTED: 5 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

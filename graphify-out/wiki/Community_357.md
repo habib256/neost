@@ -1,35 +1,39 @@
 # Community 357
 
-> 12 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **Atc040Entry** (13 connections) — `extern/moira/Moira/MMU/MMU040.h`
-- **.atcTouch()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
-- **.atc()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
-- **u32** (3 connections)
-- **.pageMask()** (2 connections) — `extern/moira/Moira/MMU/MMU040.h`
-- **history** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
-- **logical** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
-- **physical** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
-- **status** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
-- **super** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
-- **valid** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
-- **u8** (1 connections)
+- **Ppmd7.h** (5 connections) — `extern/lzma/Ppmd7.h`
+- **Ppmd7Dec.c** (5 connections) — `extern/lzma/Ppmd7Dec.c`
+- **Ppmd7z_RangeDec_Init()** (4 connections) — `extern/lzma/Ppmd7Dec.c`
+- **Ppmd7z_RD_Decode()** (4 connections) — `extern/lzma/Ppmd7Dec.c`
+- **Ppmd.h** (3 connections) — `extern/lzma/Ppmd.h`
+- **typedef()** (2 connections) — `extern/lzma/Ppmd.h`
+- **CPpmd7** (2 connections)
+- **CPpmd7_RangeDec** (1 connections)
+- **BoolInt** (1 connections)
+- **Z7_FORCE_INLINE** (1 connections)
+- **MY_CPU_pragma_pack_push_1** (1 connections)
 
 ## Relationships
 
-- [Community 229](Community_229.md) (8 shared connections)
-- [Community 287](Community_287.md) (1 shared connections)
+- [Community 305](Community_305.md) (3 shared connections)
+- [Community 353](Community_353.md) (2 shared connections)
+- [Community 245](Community_245.md) (2 shared connections)
+- [Community 153](Community_153.md) (1 shared connections)
+- [Community 529](Community_529.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MMU/MMU040.h`
+- `extern/lzma/Ppmd.h`
+- `extern/lzma/Ppmd7.h`
+- `extern/lzma/Ppmd7Dec.c`
 
 ## Audit Trail
 
-- EXTRACTED: 20 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 18 (95%)
+- INFERRED: 1 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

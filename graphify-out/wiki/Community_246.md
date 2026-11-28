@@ -1,10 +1,11 @@
 # Community 246
 
-> 12 nodes
+> 13 nodes
 
 ## Key Concepts
 
 - **Rig** (12 connections) — `tests/ikbd_autosend_logic.cpp`
+- **testIkbdAutoSend()** (8 connections) — `tests/ikbd_autosend_logic.cpp`
 - **.due()** (3 connections) — `tests/ikbd_autosend_logic.cpp`
 - **.advance()** (2 connections) — `tests/ikbd_autosend_logic.cpp`
 - **.warm()** (2 connections) — `tests/ikbd_autosend_logic.cpp`
@@ -20,8 +21,9 @@
 ## Relationships
 
 - [Community 41](Community_41.md) (3 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 611](Community_611.md) (2 shared connections)
 - [Community 77](Community_77.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
 
 ## Source Files
 
@@ -29,8 +31,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 16 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 19 (90%)
+- INFERRED: 2 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,28 +1,34 @@
 # Community 491
 
-> 6 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **retro_vr_pose** (6 connections) — `src/libretro/libretro.h`
-- **angular_velocity** (1 connections) — `src/libretro/libretro.h`
-- **flags** (1 connections) — `src/libretro/libretro.h`
-- **linear_velocity** (1 connections) — `src/libretro/libretro.h`
-- **orientation** (1 connections) — `src/libretro/libretro.h`
-- **position** (1 connections) — `src/libretro/libretro.h`
+- **.parseSpec()** (7 connections) — `src/io/UsbDevice.hpp`
+- **.netUsbeeApply()** (5 connections) — `src/gui/App.hpp`
+- **.attach()** (4 connections) — `src/io/UsbDevice.hpp`
+- **Kind** (2 connections)
+- **string** (2 connections)
 
 ## Relationships
 
-- [Community 83](Community_83.md) (1 shared connections)
+- [Community 138](Community_138.md) (2 shared connections)
+- [Community 315](Community_315.md) (2 shared connections)
+- [Community 22](Community_22.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 1](Community_1.md) (1 shared connections)
+- [Community 214](Community_214.md) (1 shared connections)
+- [Community 386](Community_386.md) (1 shared connections)
 
 ## Source Files
 
-- `src/libretro/libretro.h`
+- `src/gui/App.hpp`
+- `src/io/UsbDevice.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 6 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 14 (93%)
+- INFERRED: 1 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

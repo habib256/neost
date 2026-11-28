@@ -1,6 +1,7 @@
 # NeoST 0.7.0 — migration du cœur 68000
 
-Plan du 28 novembre 2026, avant modification du cœur. La 0.6.5 a été publiée le
+Plan initial du 28 novembre 2026, actualisé après le portage et l’avancement
+de l’amont. La 0.6.5 a été publiée le
 13 novembre (tag `0.6.5`, `b3ced823`). Depuis, le Moira actuel a continué à
 faire tourner ST, Mega ST, STE et Mega STE sur `main`. Le portage 0.7.0
 conserve ces quatre machines en mode 68000.
@@ -8,12 +9,12 @@ conserve ces quatre machines en mode 68000.
 ## Source et périmètre
 
 Vendoriser le répertoire `Moira/` et la licence du master officiel de Dirk W.
-Hoffmann au commit `bf98107ffa3bb24d576bbe99ef684c77e33de938` (6.0b1).
-Cette révision comprend les PR de habib256 #42 à #49, notamment le
+Hoffmann au commit `c6fbb4eaaaf831ce1f4b11a7b13442e67fa42d00` (6.0b1).
+Cette révision comprend les PR de habib256 #42 à #52, notamment le
 remplissage après MOVE vers SR et les corrections de trames FPU. Elle contient
 le 68030, le 68040, leurs MMU et la FPU. Le JIT de POM68K et les cartes mères
 TT/Falcon sont des chantiers distincts. Le FPU périphérique du Mega STE garde
-son interface de bus actuelle. [Source officielle au pin](https://github.com/dirkwhoffmann/Moira/tree/bf98107ffa3bb24d576bbe99ef684c77e33de938/Moira) · [Fusion #49](https://github.com/dirkwhoffmann/Moira/pull/49)
+son interface de bus actuelle. [Source officielle au pin](https://github.com/dirkwhoffmann/Moira/tree/c6fbb4eaaaf831ce1f4b11a7b13442e67fa42d00/Moira) · [Fusion #52](https://github.com/dirkwhoffmann/Moira/pull/52)
 
 ## Ordre de livraison
 
@@ -85,7 +86,35 @@ la mesure de débit à une machine libre.
 Contrats détaillés et hiérarchie des témoins dans [CPU_SWAP_GATE.md](CPU_SWAP_GATE.md),
 [FX68K_BENCH.md](FX68K_BENCH.md) et [REFERENCE_LADDER.md](REFERENCE_LADDER.md).
 
+## Actualisation du pin au 28 novembre 2026
+
+Le passage de `bf98107f` à `c6fbb4ea` intègre trois corrections amont.
+
+- Une faute de bus sur un descripteur est consignée dans l’ATC. À la reprise,
+  la faute porte sur l’adresse logique de l’accès. Vérifier les tests MMU
+  68030/68040 de `Unit` et rejouer `RetryMoira030`/`RetryMoira040`.
+  La recherche de table lancée par PTEST ou PLOAD relève d’un autre chemin.
+  [PR #50](https://github.com/dirkwhoffmann/Moira/pull/50)
+- La trame longue de faute de bus du 68020 conserve le tampon de sortie.
+  Rejouer les tests de trame de `Unit` et `ExceptionUAE020`.
+  [PR #51](https://github.com/dirkwhoffmann/Moira/pull/51)
+- Le mot écarté d’un DBcc expiré est lu via le cache d’instructions sur le
+  cœur 68020. Le montant de 13 cycles sur 68030 avec défaut de cache reste à
+  modéliser en amont. Vérifier les suites `SequenceUAE020`/`SequenceUAE030`
+  et le scénario `flow` de fx68k, qui couvre le chemin 68000 de NeoST.
+  [PR #52](https://github.com/dirkwhoffmann/Moira/pull/52)
+
+Rebaser le diff NeoST sur le nouveau pin et noter les arbitrages dans
+`extern/moira/NEOST_VENDOR.md`. Reconstruire l’adaptateur 68000 et le banc nu,
+rejeter les mises à jour d’empreintes sans nouvel arbitrage et rejouer les
+contrôles CPU et machine du portage. Le runner récupère les sources de test
+de `c6fbb4ea`, y compris les nouveaux cas de faute MMU et de trame longue.
+
 ## Relevés du port sur le commit de code `ea55549d`
+
+Campagnes du 28 novembre 2026 sur le pin initial `bf98107f`.
+Les **26 tests CTest officiels** ont passé sur la copie NeoST à ce pin,
+dont RandomMusashi, RandomUAE, RandomMAME, DasmMot et DasmMit.
 
 Le binaire Release annonce NeoST 0.7.0. ST, Mega ST, STE et Mega STE
 sélectionnent `M68000`. Les tests des modèles 68030 et 68040 s'exécutent

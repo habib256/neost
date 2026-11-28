@@ -15,7 +15,7 @@ Architecture en deux mots : **le `Bus` *est* le plan mémoire** (route read8/wri
 les puces) et **`neost_core` ne dépend pas du GUI**.
 
 **Version publiée : 0.6.5** (tag du 13 novembre 2026, `b3ced823`).
-La **0.7.0** porte le cœur officiel de Dirk W. Hoffmann (Moira 6.0b1, `bf98107f`).
+La **0.7.0** porte le cœur officiel de Dirk W. Hoffmann (Moira 6.0b1, `c6fbb4ea`).
 Les quatre machines ST utilisent son interpréteur 68000. La migration et ses
 critères d'acceptation sont dans `docs/MIGRATION_MOIRA_070.md`. Les cartes mères
 TT et Falcon constituent le chantier suivant. Les résultats de mesure passent

@@ -4,26 +4,23 @@
 
 ## Key Concepts
 
-- **.read16Dasm()** (8 connections) — `src/core/Cpu68k.cpp`
-- **Moira::dasmIncRead()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmRead()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::disassembleInstr()** (3 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **EM_JS()** (4 connections) — `src/core/EmuFiber.cpp`
+- **Module** (1 connections)
+- **neost_jspi_park** (1 connections)
+- **neost_jspi_release** (1 connections)
 
 ## Relationships
 
-- [Community 2](Community_2.md) (8 shared connections)
-- [Community 9](Community_9.md) (4 shared connections)
-- [Community 64](Community_64.md) (1 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraDasm_cpp.h`
-- `src/core/Cpu68k.cpp`
+- `src/core/EmuFiber.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 11 (69%)
-- INFERRED: 5 (31%)
+- EXTRACTED: 4 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,54 +1,58 @@
 # Community 141
 
-> 21 nodes
+> 26 nodes
 
 ## Key Concepts
 
-- **Cache.cpp** (24 connections) — `extern/moira/Moira/Cache/Cache.cpp`
-- **.insert()** (16 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **u32** (16 connections)
-- **.slot()** (11 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **DCache** (9 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **.fill()** (9 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **.read()** (9 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **.hit()** (9 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **.write()** (7 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **.invalidate()** (7 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **.burstFill()** (7 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **.index()** (6 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **.fetch()** (5 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **Cache.h** (5 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **.cacrDidChange()** (4 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **.cacrDidChange()** (4 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **.caarDidChange()** (3 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **.caarDidChange()** (3 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **.refresh()** (2 connections) — `extern/moira/Moira/Cache/Cache.h`
-- **u16** (1 connections)
-- **u8** (1 connections)
+- **run_nat_sting.py** (14 connections) — `tools/run_nat_sting.py`
+- **make_sting_test.py** (10 connections) — `tools/make_sting_test.py`
+- **main()** (9 connections) — `tools/run_nat_sting.py`
+- **replace_program()** (8 connections) — `tools/run_nat_sting.py`
+- **socket** (8 connections)
+- **build_floppy()** (7 connections) — `tools/make_sting_test.py`
+- **threading** (7 connections)
+- **build_prg()** (6 connections) — `tools/make_sting_test.py`
+- **build_code()** (5 connections) — `tools/make_sting_test.py`
+- **main()** (5 connections) — `tools/make_sting_test.py`
+- **handle()** (5 connections) — `tools/net_gateway80.py`
+- **net_gateway80.py** (5 connections) — `tools/net_gateway80.py`
+- **net_localdns.py** (3 connections) — `tools/net_localdns.py`
+- **alloc()** (2 connections) — `tools/make_sting_test.py`
+- **set_fat()** (2 connections) — `tools/make_sting_test.py`
+- **pump()** (2 connections) — `tools/net_gateway80.py`
+- **chain()** (2 connections) — `tools/run_nat_sting.py`
+- **replace()** (2 connections) — `tools/run_nat_sting.py`
+- **cl_off()** (1 connections) — `tools/make_sting_test.py`
+- **entry()** (1 connections) — `tools/make_sting_test.py`
+- **rd()** (1 connections) — `tools/make_sting_test.py`
+- **qname()** (1 connections) — `tools/net_localdns.py`
+- **serve()** (1 connections) — `tools/run_nat_sting.py`
+- **find()** (1 connections) — `tools/run_nat_sting.py`
+- **STinG/ENEC → NAT → HTTP loopback, avec DNS localhost, sans accès Internet. Le…** (1 connections) — `tools/run_nat_sting.py`
+- *... and 1 more nodes in this community*
 
 ## Relationships
 
-- [Community 391](Community_391.md) (23 shared connections)
-- [Community 622](Community_622.md) (8 shared connections)
-- [Community 448](Community_448.md) (6 shared connections)
-- [Community 16](Community_16.md) (2 shared connections)
-- [Community 568](Community_568.md) (2 shared connections)
-- [Community 287](Community_287.md) (2 shared connections)
-- [Community 78](Community_78.md) (1 shared connections)
-- [Community 213](Community_213.md) (1 shared connections)
-- [Community 377](Community_377.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 57](Community_57.md) (1 shared connections)
+- [Community 100](Community_100.md) (6 shared connections)
+- [Community 3](Community_3.md) (5 shared connections)
+- [Community 8](Community_8.md) (4 shared connections)
+- [Community 18](Community_18.md) (4 shared connections)
+- [Community 582](Community_582.md) (4 shared connections)
+- [Community 186](Community_186.md) (3 shared connections)
+- [Community 146](Community_146.md) (1 shared connections)
+- [Community 273](Community_273.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/Cache/Cache.cpp`
-- `extern/moira/Moira/Cache/Cache.h`
+- `tools/make_sting_test.py`
+- `tools/net_gateway80.py`
+- `tools/net_localdns.py`
+- `tools/run_nat_sting.py`
 
 ## Audit Trail
 
-- EXTRACTED: 71 (69%)
-- INFERRED: 32 (31%)
+- EXTRACTED: 66 (96%)
+- INFERRED: 3 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

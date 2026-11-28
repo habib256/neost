@@ -1,58 +1,56 @@
 # Community 383
 
-> 35 nodes
+> 28 nodes
 
 ## Key Concepts
 
 - **Server.cpp** (18 connections) — `src/headless/Server.cpp`
 - **run()** (13 connections) — `src/headless/Server.cpp`
 - **JoyScript.hpp** (13 connections) — `src/util/JoyScript.hpp`
-- **stcpu_bench.cpp** (11 connections) — `tools/stcpu_bench.cpp`
 - **Slot** (8 connections) — `src/headless/Server.cpp`
 - **parseHexU32()** (7 connections) — `src/util/JoyScript.hpp`
 - **parse()** (6 connections) — `src/util/JoyScript.hpp`
+- **Server.hpp** (6 connections) — `src/headless/Server.hpp`
 - **arity()** (5 connections) — `src/headless/Server.cpp`
 - **string** (5 connections)
-- **cerrno** (5 connections)
 - **reply()** (4 connections) — `src/headless/Server.cpp`
 - **words()** (4 connections) — `src/headless/Server.cpp`
-- **verilated** (4 connections)
 - **applyJoy()** (3 connections) — `src/headless/Server.cpp`
 - **parseLong()** (3 connections) — `src/headless/Server.cpp`
 - **splitFirst()** (3 connections) — `src/headless/Server.cpp`
-- **main()** (3 connections) — `tools/stcpu_bench.cpp`
 - **data** (3 connections) — `src/headless/Server.cpp`
 - **bitFor()** (2 connections) — `src/util/JoyScript.hpp`
 - **hexDigit()** (2 connections) — `src/util/JoyScript.hpp`
-- **tick()** (2 connections) — `tools/stcpu_bench.cpp`
-- **unsignedArg()** (2 connections) — `tools/stcpu_bench.cpp`
 - **Machine** (2 connections)
 - **string** (2 connections)
-- **climits** (2 connections)
-- *... and 10 more nodes in this community*
+- **Options** (1 connections)
+- **size_t** (1 connections)
+- **frame** (1 connections) — `src/headless/Server.cpp`
+- **joy0** (1 connections) — `src/headless/Server.cpp`
+- **joy1** (1 connections) — `src/headless/Server.cpp`
+- **joyKnown** (1 connections) — `src/headless/Server.cpp`
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (14 shared connections)
-- [Community 102](Community_102.md) (9 shared connections)
-- [Community 58](Community_58.md) (2 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 36](Community_36.md) (1 shared connections)
-- [Community 186](Community_186.md) (1 shared connections)
-- [Community 197](Community_197.md) (1 shared connections)
-- [Community 65](Community_65.md) (1 shared connections)
-- [Community 272](Community_272.md) (1 shared connections)
+- [Community 611](Community_611.md) (7 shared connections)
+- [Community 4](Community_4.md) (6 shared connections)
+- [Community 58](Community_58.md) (4 shared connections)
+- [Community 186](Community_186.md) (4 shared connections)
+- [Community 48](Community_48.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 448](Community_448.md) (1 shared connections)
 
 ## Source Files
 
 - `src/headless/Server.cpp`
+- `src/headless/Server.hpp`
 - `src/util/JoyScript.hpp`
-- `tools/stcpu_bench.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 85 (98%)
-- INFERRED: 2 (2%)
+- EXTRACTED: 70 (97%)
+- INFERRED: 2 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,12 +1,11 @@
 # Community 38
 
-> 25 nodes
+> 24 nodes
 
 ## Key Concepts
 
 - **Rig** (17 connections) — `tests/ikbd_response_logic.cpp`
 - **testIkbdResponses()** (15 connections) — `tests/ikbd_response_logic.cpp`
-- **ikbd_response_logic.cpp** (10 connections) — `tests/ikbd_response_logic.cpp`
 - **.load()** (5 connections) — `tests/ikbd_response_logic.cpp`
 - **Checks** (4 connections) — `tests/ikbd_response_logic.cpp`
 - **.save()** (4 connections) — `tests/ikbd_response_logic.cpp`
@@ -32,10 +31,10 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (6 shared connections)
-- [Community 41](Community_41.md) (5 shared connections)
+- [Community 611](Community_611.md) (7 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
 - [Community 508](Community_508.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
 
 ## Source Files
 
@@ -43,7 +42,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 48 (98%)
+- EXTRACTED: 43 (98%)
 - INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,52 +1,53 @@
 # Community 124
 
-> 32 nodes
+> 30 nodes
 
 ## Key Concepts
 
-- **Frame** (58 connections) — `src/gui/AppLoop.cpp`
-- **string** (2 connections)
-- **ConfigUi** (1 connections)
-- **cfgUi** (1 connections) — `src/gui/AppLoop.cpp`
-- **cH** (1 connections) — `src/gui/AppLoop.cpp`
-- **color** (1 connections) — `src/gui/AppLoop.cpp`
-- **cTop** (1 connections) — `src/gui/AppLoop.cpp`
-- **cW** (1 connections) — `src/gui/AppLoop.cpp`
-- **fbh** (1 connections) — `src/gui/AppLoop.cpp`
-- **fbw** (1 connections) — `src/gui/AppLoop.cpp`
-- **kH** (1 connections) — `src/gui/AppLoop.cpp`
-- **kTop** (1 connections) — `src/gui/AppLoop.cpp`
-- **kW** (1 connections) — `src/gui/AppLoop.cpp`
-- **menuH** (1 connections) — `src/gui/AppLoop.cpp`
-- **reqEject** (1 connections) — `src/gui/AppLoop.cpp`
-- **reqEjectAcsi** (1 connections) — `src/gui/AppLoop.cpp`
-- **reqEjectB** (1 connections) — `src/gui/AppLoop.cpp`
-- **reqEjectCart** (1 connections) — `src/gui/AppLoop.cpp`
-- **reqEjectGemdos** (1 connections) — `src/gui/AppLoop.cpp`
-- **reqHardReset** (1 connections) — `src/gui/AppLoop.cpp`
-- **reqMonitor** (1 connections) — `src/gui/AppLoop.cpp`
-- **reqMount** (1 connections) — `src/gui/AppLoop.cpp`
-- **reqMountAcsi** (1 connections) — `src/gui/AppLoop.cpp`
-- **reqMountB** (1 connections) — `src/gui/AppLoop.cpp`
-- **reqMountCart** (1 connections) — `src/gui/AppLoop.cpp`
-- *... and 7 more nodes in this community*
+- **.checkArea()** (17 connections) — `src/io/GemdosHd.hpp`
+- **ProcPaths** (12 connections) — `src/io/GemdosHd.hpp`
+- **.readLong()** (10 connections) — `src/io/GemdosHd.hpp`
+- **.currentBasepage()** (10 connections) — `src/io/GemdosHd.hpp`
+- **.ensureEntry()** (10 connections) — `src/io/GemdosHd.hpp`
+- **.reapDead()** (7 connections) — `src/io/GemdosHd.hpp`
+- **.procEntry()** (7 connections) — `src/io/GemdosHd.hpp`
+- **.chainEntry()** (7 connections) — `src/io/GemdosHd.hpp`
+- **.currentDrive()** (6 connections) — `src/io/GemdosHd.hpp`
+- **.effectiveState()** (6 connections) — `src/io/GemdosHd.hpp`
+- **.freezeChildren()** (6 connections) — `src/io/GemdosHd.hpp`
+- **.setCurrentPath()** (6 connections) — `src/io/GemdosHd.hpp`
+- **.readByte()** (5 connections) — `src/io/GemdosHd.hpp`
+- **.getString()** (5 connections) — `src/io/GemdosHd.hpp`
+- **.forcedHandle()** (5 connections) — `src/io/GemdosHd.hpp`
+- **.setForcedHandle()** (5 connections) — `src/io/GemdosHd.hpp`
+- **.openByOther()** (4 connections) — `src/io/GemdosHd.hpp`
+- **.unforceFileHandle()** (4 connections) — `src/io/GemdosHd.hpp`
+- **.dropForcedTo()** (4 connections) — `src/io/GemdosHd.hpp`
+- **.getValidFileHandle()** (3 connections) — `src/io/GemdosHd.hpp`
+- **.readWord()** (3 connections) — `src/io/GemdosHd.hpp`
+- **.writeByte()** (3 connections) — `src/io/GemdosHd.hpp`
+- **.writeWord()** (3 connections) — `src/io/GemdosHd.hpp`
+- **.writeLong()** (3 connections) — `src/io/GemdosHd.hpp`
+- **.romIsEmuTos()** (3 connections) — `src/io/GemdosHd.hpp`
+- *... and 5 more nodes in this community*
 
 ## Relationships
 
-- [Community 214](Community_214.md) (20 shared connections)
-- [Community 325](Community_325.md) (3 shared connections)
-- [Community 138](Community_138.md) (2 shared connections)
-- [Community 223](Community_223.md) (2 shared connections)
-- [Community 204](Community_204.md) (1 shared connections)
+- [Community 36](Community_36.md) (30 shared connections)
+- [Community 17](Community_17.md) (25 shared connections)
+- [Community 123](Community_123.md) (1 shared connections)
+- [Community 332](Community_332.md) (1 shared connections)
+- [Community 449](Community_449.md) (1 shared connections)
+- [Community 203](Community_203.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/AppLoop.cpp`
+- `src/io/GemdosHd.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 59 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 62 (57%)
+- INFERRED: 47 (43%)
 - AMBIGUOUS: 0 (0%)
 
 ---

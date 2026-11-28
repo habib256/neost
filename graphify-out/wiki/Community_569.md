@@ -1,25 +1,24 @@
 # Community 569
 
-> 4 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **PointerAction** (4 connections) — `src/libretro/neost_libretro.cpp`
-- **left** (1 connections) — `src/libretro/neost_libretro.cpp`
-- **x** (1 connections) — `src/libretro/neost_libretro.cpp`
-- **y** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **retro_audio_buffer_status_callback** (3 connections) — `src/libretro/libretro.h`
+- **retro_audio_buffer_status_callback_t** (1 connections)
+- **callback** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 
-- [Community 239](Community_239.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `src/libretro/neost_libretro.cpp`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
+- EXTRACTED: 3 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

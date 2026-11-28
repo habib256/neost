@@ -16,7 +16,6 @@
 - **.busError()** (6 connections) — `tools/moira_bare_bench.cpp`
 - **.fc()** (6 connections) — `tools/moira_bare_bench.cpp`
 - **IrqEv** (4 connections) — `tools/moira_bare_bench.cpp`
-- **glueLineLenFor()** (4 connections) — `src/core/VideoGlue.cpp`
 - **.read16OnReset()** (4 connections) — `tools/moira_bare_bench.cpp`
 - **.readIrqVector()** (4 connections) — `tools/moira_bare_bench.cpp`
 - **u16** (4 connections)
@@ -24,6 +23,7 @@
 - **.read32()** (3 connections) — `tools/moira_bare_bench.cpp`
 - **.write32()** (3 connections) — `tools/moira_bare_bench.cpp`
 - **V3 est CLOS : l'attribution de ligne à la grille réelle devient le défaut — et le verrou ne faisait rien (2026-09-01)** (3 connections) — `CHANGELOG.md`
+- **.sync()** (2 connections) — `tools/moira_bare_bench.cpp`
 - **main()** (2 connections) — `tools/moira_bare_bench.cpp`
 - **i64** (2 connections)
 - **.BareMoira()** (1 connections) — `tools/moira_bare_bench.cpp`
@@ -33,25 +33,22 @@
 
 ## Relationships
 
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 205](Community_205.md) (2 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
+- [Community 611](Community_611.md) (3 shared connections)
+- [Community 9](Community_9.md) (2 shared connections)
 - [Community 57](Community_57.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 112](Community_112.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
+- [Community 205](Community_205.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
 - `extern/moira/Moira/MoiraTypes.h`
-- `src/core/VideoGlue.cpp`
 - `tools/moira_bare_bench.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 80 (96%)
-- INFERRED: 3 (4%)
+- EXTRACTED: 77 (95%)
+- INFERRED: 4 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

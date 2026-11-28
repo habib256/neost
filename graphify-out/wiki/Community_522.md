@@ -1,42 +1,35 @@
 # Community 522
 
-> 9 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **Architecture** (8 connections) — `DEV.md`
-- **MmuGlue** (7 connections) — `src/core/MmuGlue.hpp`
-- **Framing** (5 connections) — `src/libretro/neost_libretro.cpp`
-- **.read8()** (1 connections) — `src/core/MmuGlue.hpp`
-- **.write8()** (1 connections) — `src/core/MmuGlue.hpp`
-- **memConfig_** (1 connections) — `src/core/MmuGlue.hpp`
-- **Active** (1 connections) — `src/libretro/neost_libretro.cpp`
-- **Adaptive** (1 connections) — `src/libretro/neost_libretro.cpp`
-- **Full** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **Refermés** (5 connections) — `docs/HATARI_DIVERGENCES.md`
+- **.setHpfBypass()** (4 connections) — `src/core/YM2149.hpp`
+- **.applyHpfMono()** (3 connections) — `src/core/DmaSound.hpp`
+- **P4 — Audio (registre-exactitude et chaîne STE)** (2 connections) — `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
 
 ## Relationships
 
-- [Community 14](Community_14.md) (1 shared connections)
-- [Community 10](Community_10.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 484](Community_484.md) (1 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
-- [Community 103](Community_103.md) (1 shared connections)
-- [Community 20](Community_20.md) (1 shared connections)
-- [Community 31](Community_31.md) (1 shared connections)
-- [Community 396](Community_396.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
+- [Community 446](Community_446.md) (2 shared connections)
+- [Community 13](Community_13.md) (1 shared connections)
+- [Community 28](Community_28.md) (1 shared connections)
+- [Community 138](Community_138.md) (1 shared connections)
+- [Community 434](Community_434.md) (1 shared connections)
+- [Community 397](Community_397.md) (1 shared connections)
+- [Community 140](Community_140.md) (1 shared connections)
 
 ## Source Files
 
-- `DEV.md`
-- `src/core/MmuGlue.hpp`
-- `src/libretro/neost_libretro.cpp`
+- `docs/HATARI_DIVERGENCES.md`
+- `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
+- `src/core/DmaSound.hpp`
+- `src/core/YM2149.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 11 (61%)
-- INFERRED: 7 (39%)
+- EXTRACTED: 5 (45%)
+- INFERRED: 6 (55%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -4,25 +4,22 @@
 
 ## Key Concepts
 
-- **.update()** (4 connections) — `src/gui/StScreenView.hpp`
-- **CI : les deux téléchargements du job Android n'avaient aucun filet (2026-09-02)** (2 connections) — `CHANGELOG.md`
-- **La 0.6.1 ne se publiait pas : un `apt-get install` sans `update` (2026-09-02)** (2 connections) — `CHANGELOG.md`
+- **retro_log_callback** (3 connections) — `src/libretro/libretro.h`
+- **retro_log_printf_t** (1 connections)
+- **log** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 
-- [Community 130](Community_130.md) (2 shared connections)
-- [Community 329](Community_329.md) (1 shared connections)
-- [Community 229](Community_229.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/gui/StScreenView.hpp`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (50%)
-- INFERRED: 3 (50%)
+- EXTRACTED: 3 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

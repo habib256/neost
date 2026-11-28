@@ -1,32 +1,26 @@
 # Community 547
 
-> 8 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **After** (9 connections) — `src/io/Fpu.hpp`
-- **.armIn()** (5 connections) — `src/io/Fpu.hpp`
-- **CtrlIn** (1 connections) — `src/io/Fpu.hpp`
-- **GenOp** (1 connections) — `src/io/Fpu.hpp`
-- **MovemIn** (1 connections) — `src/io/Fpu.hpp`
-- **MoveOutDone** (1 connections) — `src/io/Fpu.hpp`
-- **None** (1 connections) — `src/io/Fpu.hpp`
-- **RestoreIn** (1 connections) — `src/io/Fpu.hpp`
+- **MenuKey** (4 connections) — `src/android/AndroidMenu.hpp`
+- **click** (1 connections) — `src/android/AndroidMenu.hpp`
+- **label** (1 connections) — `src/android/AndroidMenu.hpp`
+- **scancode** (1 connections) — `src/android/AndroidMenu.hpp`
 
 ## Relationships
 
-- [Community 551](Community_551.md) (2 shared connections)
-- [Community 20](Community_20.md) (2 shared connections)
-- [Community 422](Community_422.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Fpu.hpp`
+- `src/android/AndroidMenu.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 11 (85%)
-- INFERRED: 2 (15%)
+- EXTRACTED: 4 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

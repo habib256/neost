@@ -1,47 +1,50 @@
 # Community 283
 
-> 18 nodes
+> 15 nodes
 
 ## Key Concepts
 
-- **Rect** (8 connections) — `src/libretro/neost_libretro.cpp`
-- **fillAvInfo()** (6 connections) — `src/libretro/neost_libretro.cpp`
-- **retro_get_system_av_info()** (6 connections) — `src/libretro/neost_libretro.cpp`
-- **retro_system_av_info** (5 connections) — `src/libretro/libretro.h`
-- **retro_run()** (5 connections) — `src/libretro/neost_libretro.cpp`
-- **L'image : zoom adaptatif et shaders** (5 connections) — `docs/LIBRETRO.md`
-- **frameRect()** (4 connections) — `src/libretro/neost_libretro.cpp`
-- **presentVideo()** (4 connections) — `src/libretro/neost_libretro.cpp`
-- **Zoom adaptatif : ce que libretro permet** (4 connections) — `docs/LIBRETRO.md`
-- **aspectFor()** (3 connections) — `src/libretro/neost_libretro.cpp`
-- **geometry** (1 connections) — `src/libretro/libretro.h`
-- **timing** (1 connections) — `src/libretro/libretro.h`
-- **h** (1 connections) — `src/libretro/neost_libretro.cpp`
-- **w** (1 connections) — `src/libretro/neost_libretro.cpp`
-- **x** (1 connections) — `src/libretro/neost_libretro.cpp`
-- **y** (1 connections) — `src/libretro/neost_libretro.cpp`
-- **Le reste du métier, à hauteur de POM2** (1 connections) — `docs/LIBRETRO.md`
-- **Shaders : ce qu'un shader slang peut savoir** (1 connections) — `docs/LIBRETRO.md`
+- **.draw()** (11 connections) — `src/android/AndroidMenu.hpp`
+- **MediaScan.cpp** (10 connections) — `src/io/MediaScan.cpp`
+- **scanDiskImages()** (9 connections) — `src/io/MediaScan.cpp`
+- **actionRow()** (5 connections) — `src/android/AndroidMenu.cpp`
+- **areSiblingImages()** (5 connections) — `src/io/MediaScan.cpp`
+- **commonPrefixLenCI()** (5 connections) — `src/io/MediaScan.cpp`
+- **.refresh()** (4 connections) — `src/android/AndroidMenu.hpp`
+- **string** (4 connections)
+- **lowerOf()** (3 connections) — `src/android/AndroidMenu.cpp`
+- **lowerOf()** (3 connections) — `src/io/MediaScan.cpp`
+- **main()** (3 connections) — `tests/android_menu_preview.cpp`
+- **ImVec2** (1 connections)
+- **ImVec4** (1 connections)
+- **string** (1 connections)
+- **size_t** (1 connections)
 
 ## Relationships
 
-- [Community 248](Community_248.md) (8 shared connections)
-- [Community 23](Community_23.md) (4 shared connections)
-- [Community 83](Community_83.md) (1 shared connections)
-- [Community 129](Community_129.md) (1 shared connections)
-- [Community 282](Community_282.md) (1 shared connections)
-- [Community 421](Community_421.md) (1 shared connections)
+- [Community 4](Community_4.md) (8 shared connections)
+- [Community 92](Community_92.md) (2 shared connections)
+- [Community 99](Community_99.md) (2 shared connections)
+- [Community 51](Community_51.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 188](Community_188.md) (1 shared connections)
+- [Community 223](Community_223.md) (1 shared connections)
+- [Community 611](Community_611.md) (1 shared connections)
+- [Community 15](Community_15.md) (1 shared connections)
+- [Community 228](Community_228.md) (1 shared connections)
+- [Community 186](Community_186.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/LIBRETRO.md`
-- `src/libretro/libretro.h`
-- `src/libretro/neost_libretro.cpp`
+- `src/android/AndroidMenu.cpp`
+- `src/android/AndroidMenu.hpp`
+- `src/io/MediaScan.cpp`
+- `tests/android_menu_preview.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 32 (86%)
-- INFERRED: 5 (14%)
+- EXTRACTED: 35 (80%)
+- INFERRED: 9 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,42 +1,29 @@
 # Community 417
 
-> 17 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **libretro_frontend.py** (13 connections) — `tools/libretro_frontend.py`
-- **.__init__()** (5 connections) — `tools/libretro_frontend.py`
-- **.load()** (4 connections) — `tools/libretro_frontend.py`
-- **AvInfo** (2 connections) — `tools/libretro_frontend.py`
-- **Game** (2 connections) — `tools/libretro_frontend.py`
-- **MidiInterface** (2 connections) — `tools/libretro_frontend.py`
-- **SystemInfo** (2 connections) — `tools/libretro_frontend.py`
-- **.info()** (2 connections) — `tools/libretro_frontend.py`
-- **DiskControlExt** (1 connections) — `tools/libretro_frontend.py`
-- **Geometry** (1 connections) — `tools/libretro_frontend.py`
-- **Timing** (1 connections) — `tools/libretro_frontend.py`
-- **Variable** (1 connections) — `tools/libretro_frontend.py`
-- **midi_flush()** (1 connections) — `tools/libretro_frontend.py`
-- **midi_read()** (1 connections) — `tools/libretro_frontend.py`
-- **midi_write()** (1 connections) — `tools/libretro_frontend.py`
-- **Frontend libretro minimal, sans fenêtre, pour éprouver neost_libretro. Charge…** (1 connections) — `tools/libretro_frontend.py`
-- **ctypes** (1 connections)
+- **SysExJob** (7 connections) — `src/audio/MidiOutHost.cpp`
+- **HMIDIOUT** (1 connections)
+- **MIDIHDR** (1 connections)
+- **buf** (1 connections) — `src/audio/MidiOutHost.cpp`
+- **h** (1 connections) — `src/audio/MidiOutHost.cpp`
+- **hdr** (1 connections) — `src/audio/MidiOutHost.cpp`
 
 ## Relationships
 
-- [Community 200](Community_200.md) (4 shared connections)
-- [Community 247](Community_247.md) (1 shared connections)
-- [Community 207](Community_207.md) (1 shared connections)
-- [Community 100](Community_100.md) (1 shared connections)
+- [Community 611](Community_611.md) (1 shared connections)
+- [Community 42](Community_42.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/libretro_frontend.py`
+- `src/audio/MidiOutHost.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 20 (83%)
-- INFERRED: 4 (17%)
+- EXTRACTED: 7 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

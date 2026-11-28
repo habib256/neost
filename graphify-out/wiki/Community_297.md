@@ -1,10 +1,11 @@
 # Community 297
 
-> 11 nodes
+> 12 nodes
 
 ## Key Concepts
 
 - **rtc_long_elapsed_logic.cpp** (7 connections) — `tests/rtc_long_elapsed_logic.cpp`
+- **limits** (7 connections)
 - **testRtcLongElapsed()** (6 connections) — `tests/rtc_long_elapsed_logic.cpp`
 - **Checks** (5 connections) — `tests/rtc_long_elapsed_logic.cpp`
 - **.date()** (5 connections) — `tests/rtc_long_elapsed_logic.cpp`
@@ -18,10 +19,14 @@
 
 ## Relationships
 
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 611](Community_611.md) (2 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
+- [Community 264](Community_264.md) (1 shared connections)
+- [Community 20](Community_20.md) (1 shared connections)
+- [Community 315](Community_315.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 619](Community_619.md) (1 shared connections)
+- [Community 477](Community_477.md) (1 shared connections)
 
 ## Source Files
 
@@ -29,8 +34,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 19 (95%)
-- INFERRED: 1 (5%)
+- EXTRACTED: 25 (96%)
+- INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

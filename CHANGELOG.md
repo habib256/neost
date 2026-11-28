@@ -777,13 +777,13 @@ l'ordre inverse. Version courante : **0.7.0** (en préparation).
 ## 0.7.0 — migration du cœur 68000 (en préparation)
 
 Le binaire de développement utilise le Moira officiel de Dirk W. Hoffmann
-6.0b1 (`bf98107f`) avec les adaptations de bus et d'interruptions de NeoST.
+6.0b1 (`c6fbb4ea`) avec les adaptations de bus et d'interruptions de NeoST.
 Les modèles ST, Mega ST, STE et Mega STE exécutent le 68000. La nouvelle
 représentation de la file de prélecture et des registres porte le format
 d'état à **v69**. Pour reprendre un état v68, utiliser le binaire qui l'a créé.
 
-Sur le banc RTL fx68k épinglé, 37 des 48 variantes concordent cycle à cycle
-(34 avant le portage). Les trois gains concernent des doubles fautes. La
+Le 28 novembre 2026, sur le pin d’import initial `bf98107f`, 37 des 48
+variantes du banc RTL fx68k concordaient cycle à cycle (34 avant le portage). Les trois gains concernent des doubles fautes. La
 variante de bus error présente les mêmes valeurs sur ses 611 accès ; un cycle
 de TAS la sépare encore du RTL. [Mesures et incertitudes](docs/FX68K_BENCH.md).
 
