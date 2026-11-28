@@ -1,49 +1,38 @@
 # Community 377
 
-> 11 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **Clavier, souris, joystick (ACIA 6850 / IKBD HD6301)** (14 connections) — `docs/IMPLEMENTED.md`
-- **Règles de l'adaptateur** (11 connections) — `docs/LIBRETRO.md`
-- **2026-11-24 — Frontière libretro : ce qu'un cinquième frontend exige du cœur** (10 connections) — `CHANGELOG.md`
-- **.switchTos()** (7 connections) — `src/core/Machine.hpp`
-- **.freezeHostClocks()** (6 connections) — `src/core/Machine.hpp`
-- **.armAudioClocks()** (6 connections) — `src/core/Machine.hpp`
-- **.setJoysticks()** (5 connections) — `src/core/Machine.hpp`
-- **Garde-fous (à NE PAS faire)** (4 connections) — `TODO.md`
-- **setSink()** (3 connections) — `src/util/Log.cpp`
-- **.frameRelCycle()** (2 connections) — `src/core/Machine.hpp`
-- **Sink** (1 connections)
+- **Cartographie Hatari ↔ NeoST — audit de correspondance** (13 connections) — `docs/HATARI_MAPPING.md`
+- **3. MFP 68901 (mfp.c)** (3 connections) — `docs/HATARI_MAPPING.md`
+- **7. IKBD / ACIA / MIDI (acia.c, ikbd.c, midi.c)** (2 connections) — `docs/HATARI_MAPPING.md`
+- **11. FPU 68881 — opérations et conversions (actualisé le 2026-10-18)** (1 connections) — `docs/HATARI_MAPPING.md`
+- **4. FDC / DMA disque / ACSI (fdc.c, floppy.c, floppies/*, hdc.c)** (1 connections) — `docs/HATARI_MAPPING.md`
+- **5. PSG / YM2149 (psg.c, sound.c)** (1 connections) — `docs/HATARI_MAPPING.md`
+- **6. Son DMA STE / Microwire / LMC1992 (dmaSnd.c)** (1 connections) — `docs/HATARI_MAPPING.md`
+- **8. Blitter (blitter.c)** (1 connections) — `docs/HATARI_MAPPING.md`
+- **9. CPU / cycles / ordonnanceur (cycInt.c, cycles.c, clocks_timings.c, hatari-glue.c, newcpu.c)** (1 connections) — `docs/HATARI_MAPPING.md`
+- **Suites de cet audit** (1 connections) — `docs/HATARI_MAPPING.md`
 
 ## Relationships
 
-- [Community 160](Community_160.md) (9 shared connections)
-- [Community 10](Community_10.md) (6 shared connections)
-- [Community 449](Community_449.md) (4 shared connections)
-- [Community 421](Community_421.md) (3 shared connections)
-- [Community 406](Community_406.md) (2 shared connections)
-- [Community 23](Community_23.md) (2 shared connections)
-- [Community 31](Community_31.md) (1 shared connections)
-- [Community 506](Community_506.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 470](Community_470.md) (1 shared connections)
-- [Community 106](Community_106.md) (1 shared connections)
-- [Community 499](Community_499.md) (1 shared connections)
+- [Community 292](Community_292.md) (1 shared connections)
+- [Community 221](Community_221.md) (1 shared connections)
+- [Community 508](Community_508.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
+- [Community 319](Community_319.md) (1 shared connections)
+- [Community 352](Community_352.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `TODO.md`
-- `docs/IMPLEMENTED.md`
-- `docs/LIBRETRO.md`
-- `src/core/Machine.hpp`
-- `src/util/Log.cpp`
+- `docs/HATARI_MAPPING.md`
 
 ## Audit Trail
 
-- EXTRACTED: 16 (30%)
-- INFERRED: 38 (70%)
+- EXTRACTED: 13 (81%)
+- INFERRED: 3 (19%)
 - AMBIGUOUS: 0 (0%)
 
 ---

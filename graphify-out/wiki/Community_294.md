@@ -1,44 +1,38 @@
 # Community 294
 
-> 19 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **stx_raw_track_wrap_logic.cpp** (26 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **Scenario** (11 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **testStxRawTrackWrap()** (10 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **writeImage()** (9 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **updateExpected()** (7 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **rotatedDump()** (6 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **dumpTrack()** (5 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **position()** (5 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **put16()** (4 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **put32()** (4 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **checksum()** (3 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **main()** (2 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **path** (1 connections)
-- **ambiguousDam** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **badCrc** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **name** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **nonzeroSync** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **rotation** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **truncated** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **RomProbe.cpp** (11 connections) — `src/util/RomProbe.cpp`
+- **classifyPositional()** (6 connections) — `src/util/RomProbe.cpp`
+- **Positional** (5 connections) — `src/util/RomProbe.hpp`
+- **looksLikeTosHeader()** (5 connections) — `src/util/RomProbe.cpp`
+- **looksLikeTosRom()** (5 connections) — `src/util/RomProbe.cpp`
+- **tosRomSize()** (4 connections) — `src/util/RomProbe.cpp`
+- **string** (4 connections)
+- **isFloppyImageName()** (3 connections) — `src/util/RomProbe.cpp`
+- **tosHeader()** (2 connections) — `src/util/RomProbe.cpp`
+- **uintmax_t** (2 connections)
+- **Floppy** (1 connections) — `src/util/RomProbe.hpp`
+- **Invalid** (1 connections) — `src/util/RomProbe.hpp`
+- **Rom** (1 connections) — `src/util/RomProbe.hpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (16 shared connections)
-- [Community 70](Community_70.md) (11 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
+- [Community 48](Community_48.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
 
 ## Source Files
 
-- `tests/stx_raw_track_wrap_logic.cpp`
+- `src/util/RomProbe.cpp`
+- `src/util/RomProbe.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 63 (98%)
-- INFERRED: 1 (2%)
+- EXTRACTED: 27 (93%)
+- INFERRED: 2 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

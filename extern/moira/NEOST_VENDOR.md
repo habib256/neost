@@ -8,8 +8,8 @@ cf. `LICENSE`).
 ## Import pour la 0.7.0
 
 L'arbre de départ de cet import est le [Moira 6.0b1 officiel de Dirk W.
-Hoffmann](https://github.com/dirkwhoffmann/Moira/tree/bf98107ffa3bb24d576bbe99ef684c77e33de938/Moira),
-commit `bf98107ffa3bb24d576bbe99ef684c77e33de938`. Le dépôt contient le cœur
+Hoffmann](https://github.com/dirkwhoffmann/Moira/tree/c6fbb4eaaaf831ce1f4b11a7b13442e67fa42d00/Moira),
+commit `c6fbb4eaaaf831ce1f4b11a7b13442e67fa42d00`. Le dépôt contient le cœur
 et sa licence MIT. Les bancs tiers de l'amont se construisent séparément.
 
 | Domaine | Traitement pour NeoST |

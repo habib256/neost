@@ -1,35 +1,40 @@
 # Community 393
 
-> 11 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **Validation sur matériel réel — registre par cible** (11 connections) — `docs/HW_VALIDATION.md`
-- **Ce qui se vérifie STATIQUEMENT, sans la cible (2026-09-01)** (2 connections) — `docs/HW_VALIDATION.md`
-- **Raspberry Pi (borne) — ⭘ aucun budget temps réel mesuré** (2 connections) — `docs/HW_VALIDATION.md`
-- **Android arm64 — ◐ émulateur arm64 API 36, jamais posé sur un appareil** (1 connections) — `docs/HW_VALIDATION.md`
-- **La mesure de débit : `--budget`** (1 connections) — `docs/HW_VALIDATION.md`
-- **Le protocole d'une passe** (1 connections) — `docs/HW_VALIDATION.md`
-- **⚠ Le trou structurel que cette passe a mis au jour** (1 connections) — `docs/HW_VALIDATION.md`
-- **Linux x86_64 — ⭘ non consigné** (1 connections) — `docs/HW_VALIDATION.md`
-- **Pas 1 et 2 — passés sur les HUIT paquets (2026-09-01)** (1 connections) — `docs/HW_VALIDATION.md`
-- **Pourquoi ce fichier** (1 connections) — `docs/HW_VALIDATION.md`
-- **Windows x64 — ⭘ jamais lancé hors CI** (1 connections) — `docs/HW_VALIDATION.md`
+- **.open()** (7 connections) — `src/audio/Mt32Synth.hpp`
+- **.report()** (6 connections) — `src/io/UsbDevice.hpp`
+- **loadRom()** (5 connections) — `src/audio/Mt32Synth.cpp`
+- **.pick()** (5 connections) — `tests/selftest_logic.cpp`
+- **freeRom()** (4 connections) — `src/audio/Mt32Synth.cpp`
+- **.close()** (3 connections) — `src/audio/Mt32Synth.hpp`
+- **ROMImage** (2 connections)
+- **string** (2 connections)
+- **path** (1 connections)
 
 ## Relationships
 
-- [Community 273](Community_273.md) (1 shared connections)
-- [Community 354](Community_354.md) (1 shared connections)
-- [Community 282](Community_282.md) (1 shared connections)
+- [Community 117](Community_117.md) (6 shared connections)
+- [Community 315](Community_315.md) (3 shared connections)
+- [Community 299](Community_299.md) (2 shared connections)
+- [Community 611](Community_611.md) (1 shared connections)
+- [Community 22](Community_22.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
+- [Community 145](Community_145.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HW_VALIDATION.md`
+- `src/audio/Mt32Synth.cpp`
+- `src/audio/Mt32Synth.hpp`
+- `src/io/UsbDevice.hpp`
+- `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 12 (92%)
-- INFERRED: 1 (8%)
+- EXTRACTED: 20 (80%)
+- INFERRED: 5 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---

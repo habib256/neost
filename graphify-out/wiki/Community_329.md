@@ -1,42 +1,37 @@
 # Community 329
 
-> 14 nodes
+> 11 nodes
 
 ## Key Concepts
 
 - **GlScreen** (9 connections) — `src/gui/StScreenView.hpp`
-- **drawStKiosk()** (8 connections) — `src/gui/StScreenView.cpp`
-- **crtApply()** (6 connections) — `src/gui/StScreenView.cpp`
-- **drawStScreen()** (5 connections) — `src/gui/StScreenView.cpp`
 - **.blitTexFullscreen()** (4 connections) — `src/gui/StScreenView.hpp`
-- **App** (3 connections)
-- **GlScreen** (3 connections)
+- **.update()** (4 connections) — `src/gui/StScreenView.hpp`
 - **.drawFullscreen()** (2 connections) — `src/gui/StScreenView.hpp`
 - **GLuint** (2 connections)
+- **CI : les deux téléchargements du job Android n'avaient aucun filet (2026-09-02)** (2 connections) — `CHANGELOG.md`
+- **La 0.6.1 ne se publiait pas : un `apt-get install` sans `update` (2026-09-02)** (2 connections) — `CHANGELOG.md`
 - **.init()** (1 connections) — `src/gui/StScreenView.hpp`
-- **GLuint** (1 connections)
 - **h** (1 connections) — `src/gui/StScreenView.hpp`
 - **tex** (1 connections) — `src/gui/StScreenView.hpp`
 - **w** (1 connections) — `src/gui/StScreenView.hpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (4 shared connections)
-- [Community 570](Community_570.md) (1 shared connections)
-- [Community 214](Community_214.md) (1 shared connections)
-- [Community 68](Community_68.md) (1 shared connections)
-- [Community 160](Community_160.md) (1 shared connections)
-- [Community 325](Community_325.md) (1 shared connections)
+- [Community 130](Community_130.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 444](Community_444.md) (1 shared connections)
+- [Community 229](Community_229.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/StScreenView.cpp`
+- `CHANGELOG.md`
 - `src/gui/StScreenView.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 24 (86%)
-- INFERRED: 4 (14%)
+- EXTRACTED: 14 (82%)
+- INFERRED: 3 (18%)
 - AMBIGUOUS: 0 (0%)
 
 ---

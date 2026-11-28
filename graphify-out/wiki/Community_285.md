@@ -33,10 +33,10 @@
 
 ## Relationships
 
-- [Community 263](Community_263.md) (9 shared connections)
-- [Community 245](Community_245.md) (4 shared connections)
+- [Community 153](Community_153.md) (10 shared connections)
+- [Community 245](Community_245.md) (3 shared connections)
 - [Community 353](Community_353.md) (1 shared connections)
-- [Community 487](Community_487.md) (1 shared connections)
+- [Community 213](Community_213.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
 - [Community 502](Community_502.md) (1 shared connections)
 

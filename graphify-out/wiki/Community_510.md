@@ -4,11 +4,11 @@
 
 ## Key Concepts
 
-- **retro_message_type** (5 connections) — `src/libretro/libretro.h`
-- **RETRO_MESSAGE_TYPE_NOTIFICATION** (1 connections) — `src/libretro/libretro.h`
-- **RETRO_MESSAGE_TYPE_NOTIFICATION_ALT** (1 connections) — `src/libretro/libretro.h`
-- **RETRO_MESSAGE_TYPE_PROGRESS** (1 connections) — `src/libretro/libretro.h`
-- **RETRO_MESSAGE_TYPE_STATUS** (1 connections) — `src/libretro/libretro.h`
+- **retro_execution_phase** (5 connections) — `src/libretro/libretro.h`
+- **RETRO_EXECUTION_PHASE_REPLAY** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_EXECUTION_PHASE_RETAINED** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_EXECUTION_PHASE_SPECULATIVE** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_EXECUTION_PHASE_UNKNOWN** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 

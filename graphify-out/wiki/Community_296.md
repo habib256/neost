@@ -1,34 +1,42 @@
 # Community 296
 
-> 10 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **build()** (10 connections) — `tools/make_selftest_cart.py`
-- **make_selftest_cart.py** (5 connections) — `tools/make_selftest_cart.py`
-- **raw()** (3 connections) — `tools/make_selftest_cart.py`
-- **stritem()** (3 connections) — `tools/make_selftest_cart.py`
-- **main()** (3 connections) — `tools/make_selftest_cart.py`
-- **lbl()** (2 connections) — `tools/make_selftest_cart.py`
-- **raw32()** (2 connections) — `tools/make_selftest_cart.py`
-- **br()** (1 connections) — `tools/make_selftest_cart.py`
-- **imm_addr()** (1 connections) — `tools/make_selftest_cart.py`
-- **vec()** (1 connections) — `tools/make_selftest_cart.py`
+- **.runSlice()** (8 connections) — `src/core/Blitter.hpp`
+- **.readWord()** (6 connections) — `src/core/Blitter.hpp`
+- **.writeWord()** (6 connections) — `src/core/Blitter.hpp`
+- **.billCycles()** (5 connections) — `src/core/Blitter.hpp`
+- **8. Blitter — `Blitter.cpp` ↔ `blitter.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Refermés** (5 connections) — `docs/HATARI_DIVERGENCES.md`
+- **blitWordFault()** (4 connections) — `src/core/Blitter.cpp`
+- **accessObserver** (3 connections) — `src/core/Blitter.hpp`
+- **Bus** (1 connections)
+- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
-- [Community 3](Community_3.md) (2 shared connections)
-- [Community 26](Community_26.md) (2 shared connections)
-- [Community 173](Community_173.md) (1 shared connections)
+- [Community 189](Community_189.md) (8 shared connections)
+- [Community 37](Community_37.md) (5 shared connections)
+- [Community 445](Community_445.md) (1 shared connections)
+- [Community 378](Community_378.md) (1 shared connections)
+- [Community 397](Community_397.md) (1 shared connections)
+- [Community 386](Community_386.md) (1 shared connections)
+- [Community 321](Community_321.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/make_selftest_cart.py`
+- `docs/HATARI_DIVERGENCES.md`
+- `src/core/Blitter.cpp`
+- `src/core/Blitter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 18 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 18 (56%)
+- INFERRED: 14 (44%)
 - AMBIGUOUS: 0 (0%)
 
 ---

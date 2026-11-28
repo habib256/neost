@@ -1,39 +1,27 @@
 # Community 490
 
-> 10 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **Ext** (14 connections) — `src/io/Fpu.hpp`
-- **.romConstant()** (5 connections) — `src/io/Fpu.hpp`
-- **.toE()** (5 connections) — `src/io/Fpu.hpp`
-- **.extToD()** (4 connections) — `src/io/Fpu.hpp`
-- **.toF()** (4 connections) — `src/io/Fpu.hpp`
-- **Le FPU arrondissait deux fois — et son banc de test ne voyait pas les tests qu'on lui ajoutait (2026-09-02)** (4 connections) — `CHANGELOG.md`
-- **.Ext()** (1 connections) — `src/io/Fpu.hpp`
-- **man** (1 connections) — `src/io/Fpu.hpp`
-- **pad_** (1 connections) — `src/io/Fpu.hpp`
-- **se** (1 connections) — `src/io/Fpu.hpp`
+- **retro_frame_time_callback** (5 connections) — `src/libretro/libretro.h`
+- **retro_frame_time_callback_t** (1 connections)
+- **retro_usec_t** (1 connections)
+- **callback** (1 connections) — `src/libretro/libretro.h`
+- **reference** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 
-- [Community 422](Community_422.md) (7 shared connections)
-- [Community 551](Community_551.md) (5 shared connections)
-- [Community 20](Community_20.md) (5 shared connections)
-- [Community 15](Community_15.md) (2 shared connections)
-- [Community 470](Community_470.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 26](Community_26.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/io/Fpu.hpp`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (74%)
-- INFERRED: 8 (26%)
+- EXTRACTED: 5 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

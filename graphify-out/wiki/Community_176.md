@@ -1,6 +1,6 @@
 # Community 176
 
-> 46 nodes
+> 45 nodes
 
 ## Key Concepts
 
@@ -29,31 +29,29 @@
 - **bareMachine()** (4 connections) — `tests/fdc_mount_guard_logic.cpp`
 - **.mode()** (4 connections) — `tests/fdc_mount_guard_logic.cpp`
 - **readFile()** (3 connections) — `tests/fdc_mount_guard_logic.cpp`
-- *... and 21 more nodes in this community*
+- *... and 20 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (14 shared connections)
-- [Community 4](Community_4.md) (4 shared connections)
-- [Community 41](Community_41.md) (3 shared connections)
-- [Community 406](Community_406.md) (2 shared connections)
+- [Community 102](Community_102.md) (11 shared connections)
+- [Community 611](Community_611.md) (6 shared connections)
+- [Community 406](Community_406.md) (3 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 149](Community_149.md) (2 shared connections)
 - [Community 119](Community_119.md) (1 shared connections)
 - [Community 145](Community_145.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
-- [Community 149](Community_149.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
 - [Community 172](Community_172.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 12](Community_12.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
 - `tests/fdc_mount_guard_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 145 (96%)
-- INFERRED: 6 (4%)
+- EXTRACTED: 144 (97%)
+- INFERRED: 5 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

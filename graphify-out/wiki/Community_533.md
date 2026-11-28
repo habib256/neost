@@ -1,29 +1,25 @@
 # Community 533
 
-> 6 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **** (10 connections) — `src/io/StJoyBits.hpp`
-- **DOWN** (1 connections) — `src/io/StJoyBits.hpp`
-- **FIRE** (1 connections) — `src/io/StJoyBits.hpp`
-- **LEFT** (1 connections) — `src/io/StJoyBits.hpp`
-- **RIGHT** (1 connections) — `src/io/StJoyBits.hpp`
-- **UP** (1 connections) — `src/io/StJoyBits.hpp`
+- **Base** (5 connections) — `extern/moira/Moira/FPU/FpuEnvMath.cpp`
+- **E** (1 connections) — `extern/moira/Moira/FPU/FpuEnvMath.cpp`
+- **TEN** (1 connections) — `extern/moira/Moira/FPU/FpuEnvMath.cpp`
+- **TWO** (1 connections) — `extern/moira/Moira/FPU/FpuEnvMath.cpp`
 
 ## Relationships
 
-- [Community 91](Community_91.md) (1 shared connections)
-- [Community 248](Community_248.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 202](Community_202.md) (2 shared connections)
 
 ## Source Files
 
-- `src/io/StJoyBits.hpp`
+- `extern/moira/Moira/FPU/FpuEnvMath.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (100%)
+- EXTRACTED: 5 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

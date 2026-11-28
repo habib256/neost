@@ -15,7 +15,7 @@
 ## Relationships
 
 - [Community 319](Community_319.md) (1 shared connections)
-- [Community 39](Community_39.md) (1 shared connections)
+- [Community 292](Community_292.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
 - [Community 203](Community_203.md) (1 shared connections)
 

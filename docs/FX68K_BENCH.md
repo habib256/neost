@@ -162,8 +162,8 @@ sondage de mémoire) serait le premier à les révéler.
 
 ## Migration vers Moira 6 : fautes de groupe 0
 
-Comparaison de l'ancien cœur NeoST et de Moira officiel `bf98107f` avec le même banc
-fx68k `0602ee46`. Le banc passe de 34 à 37 accords sur 48 variantes. L'API officielle expose avec `getPC()` le PC interne moins deux
+Relevé du 28 novembre 2026 comparant l’ancien cœur NeoST et le port initial
+de Moira officiel `bf98107f` avec le même banc fx68k `0602ee46`. Le banc passe de 34 à 37 accords sur 48 variantes. L'API officielle expose avec `getPC()` le PC interne moins deux
 octets. Les accès mémoire du cœur lèvent désormais une faute par son adresse et
 Moira termine la trame avec le contexte de l'instruction. La voie hors accès
 mémoire du cœur conserve une trame complète, avec le PC interne.

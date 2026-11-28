@@ -1,6 +1,6 @@
 # Community 396
 
-> 65 nodes
+> 66 nodes
 
 ## Key Concepts
 
@@ -11,9 +11,10 @@
 - **** (4 connections) — `src/core/Shifter.hpp`
 - **PhaseEvent** (4 connections) — `src/core/Shifter.hpp`
 - **5. Vidéo, par classe** (4 connections) — `docs/HYPOTHESES_ST.md`
-- **VideoGlue::updateGlueRes()** (2 connections) — `src/core/VideoGlue.cpp`
-- **border336At** (2 connections) — `src/core/Shifter.hpp`
+- **.vblankAtLine()** (3 connections) — `src/core/Shifter.hpp`
+- **.detectPhaseScroll()** (2 connections) — `src/core/Shifter.hpp`
 - **Chiffrage** (2 connections) — `docs/HYPOTHESES_ST.md`
+- **Ce que le modèle confirme déjà** (2 connections) — `docs/REFERENCE_LADDER.md`
 - **.liveLineDisplayed()** (1 connections) — `src/core/Shifter.hpp`
 - **borderMask** (1 connections) — `src/core/Shifter.hpp`
 - **displayEndCycle** (1 connections) — `src/core/Shifter.hpp`
@@ -28,20 +29,19 @@
 - **phase** (1 connections) — `src/core/Shifter.hpp`
 - **frameCycle** (1 connections) — `src/core/Shifter.hpp`
 - **isRes** (1 connections) — `src/core/Shifter.hpp`
-- **val** (1 connections) — `src/core/Shifter.hpp`
-- *... and 40 more nodes in this community*
+- *... and 41 more nodes in this community*
 
 ## Relationships
 
-- [Community 205](Community_205.md) (5 shared connections)
-- [Community 258](Community_258.md) (5 shared connections)
-- [Community 449](Community_449.md) (3 shared connections)
+- [Community 88](Community_88.md) (9 shared connections)
+- [Community 449](Community_449.md) (4 shared connections)
 - [Community 24](Community_24.md) (2 shared connections)
+- [Community 205](Community_205.md) (2 shared connections)
 - [Community 5](Community_5.md) (2 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
+- [Community 611](Community_611.md) (1 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
-- [Community 268](Community_268.md) (1 shared connections)
-- [Community 522](Community_522.md) (1 shared connections)
+- [Community 258](Community_258.md) (1 shared connections)
+- [Community 484](Community_484.md) (1 shared connections)
 - [Community 237](Community_237.md) (1 shared connections)
 - [Community 328](Community_328.md) (1 shared connections)
 - [Community 270](Community_270.md) (1 shared connections)
@@ -49,13 +49,13 @@
 ## Source Files
 
 - `docs/HYPOTHESES_ST.md`
+- `docs/REFERENCE_LADDER.md`
 - `src/core/Shifter.hpp`
-- `src/core/VideoGlue.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 83 (88%)
-- INFERRED: 11 (12%)
+- EXTRACTED: 83 (86%)
+- INFERRED: 13 (14%)
 - AMBIGUOUS: 0 (0%)
 
 ---

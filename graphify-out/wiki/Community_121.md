@@ -34,12 +34,10 @@
 - [Community 368](Community_368.md) (13 shared connections)
 - [Community 593](Community_593.md) (11 shared connections)
 - [Community 152](Community_152.md) (10 shared connections)
-- [Community 16](Community_16.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 16](Community_16.md) (4 shared connections)
+- [Community 611](Community_611.md) (2 shared connections)
 - [Community 492](Community_492.md) (2 shared connections)
 - [Community 182](Community_182.md) (1 shared connections)
-- [Community 287](Community_287.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
 - [Community 57](Community_57.md) (1 shared connections)
 
 ## Source Files

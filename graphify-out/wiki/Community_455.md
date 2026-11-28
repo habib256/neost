@@ -1,32 +1,28 @@
 # Community 455
 
-> 7 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **NavRepeat** (6 connections) — `src/gui/NavRepeat.hpp`
-- **NavRepeat.hpp** (4 connections) — `src/gui/NavRepeat.hpp`
-- **.tick()** (2 connections) — `src/gui/NavRepeat.hpp`
-- **kFirstDelayMs** (1 connections) — `src/gui/NavRepeat.hpp`
-- **kRepeatMs** (1 connections) — `src/gui/NavRepeat.hpp`
-- **next_** (1 connections) — `src/gui/NavRepeat.hpp`
-- **previous_** (1 connections) — `src/gui/NavRepeat.hpp`
+- **retro_power_state** (6 connections) — `src/libretro/libretro.h`
+- **RETRO_POWERSTATE_CHARGED** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_POWERSTATE_CHARGING** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_POWERSTATE_DISCHARGING** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_POWERSTATE_PLUGGED_IN** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_POWERSTATE_UNKNOWN** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 
-- [Community 223](Community_223.md) (1 shared connections)
-- [Community 214](Community_214.md) (1 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/NavRepeat.hpp`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (90%)
-- INFERRED: 1 (10%)
+- EXTRACTED: 6 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

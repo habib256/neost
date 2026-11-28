@@ -1,37 +1,29 @@
 # Community 415
 
-> 10 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **.gpipInput()** (13 connections) — `src/io/Mfp.hpp`
-- **.timerA_setLineInput()** (8 connections) — `src/io/Mfp.hpp`
-- **.gpipEdges()** (8 connections) — `src/io/Mfp.hpp`
-- **.gpipUpdateInterruptAt()** (7 connections) — `src/io/Mfp.hpp`
-- **.gpipIrqView()** (7 connections) — `src/io/Mfp.hpp`
-- **.gpipUpdateInterrupt()** (6 connections) — `src/io/Mfp.hpp`
-- **.setTbiLine()** (6 connections) — `src/io/Mfp.hpp`
-- **.countTimerAEvent()** (4 connections) — `src/io/Mfp.hpp`
-- **.setAciaLineKbdAt()** (3 connections) — `src/io/Mfp.hpp`
-- **.setAciaLineMidiAt()** (3 connections) — `src/io/Mfp.hpp`
+- **Port** (8 connections) — `src/io/PortDevices.hpp`
+- **CartButton** (1 connections) — `src/io/PortDevices.hpp`
+- **Count** (1 connections) — `src/io/PortDevices.hpp`
+- **Joy0** (1 connections) — `src/io/PortDevices.hpp`
+- **Joy1** (1 connections) — `src/io/PortDevices.hpp`
+- **Printer** (1 connections) — `src/io/PortDevices.hpp`
+- **Rs232** (1 connections) — `src/io/PortDevices.hpp`
 
 ## Relationships
 
-- [Community 215](Community_215.md) (13 shared connections)
-- [Community 6](Community_6.md) (10 shared connections)
-- [Community 221](Community_221.md) (8 shared connections)
-- [Community 392](Community_392.md) (3 shared connections)
-- [Community 275](Community_275.md) (2 shared connections)
-- [Community 205](Community_205.md) (1 shared connections)
+- [Community 51](Community_51.md) (2 shared connections)
 
 ## Source Files
 
-- `src/io/Mfp.hpp`
+- `src/io/PortDevices.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 24 (47%)
-- INFERRED: 27 (53%)
+- EXTRACTED: 8 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

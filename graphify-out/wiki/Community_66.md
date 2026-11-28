@@ -1,12 +1,13 @@
 # Community 66
 
-> 44 nodes
+> 45 nodes
 
 ## Key Concepts
 
 - **CpuState** (50 connections) — `src/core/Cpu68k.cpp`
 - **A42 : un CPU halté le DIT enfin — et la réserve de No Cooper tombe (2026-08-30)** (3 connections) — `CHANGELOG.md`
 - **i64** (2 connections)
+- **trapObserver** (2 connections) — `src/core/Cpu68k.cpp`
 - **Cpu68k** (1 connections)
 - **appliedIpl** (1 connections) — `src/core/Cpu68k.cpp`
 - **blitterAccessCounted** (1 connections) — `src/core/Cpu68k.cpp`
@@ -28,8 +29,7 @@
 - **faultPc** (1 connections) — `src/core/Cpu68k.cpp`
 - **faultValid** (1 connections) — `src/core/Cpu68k.cpp`
 - **faultWrite** (1 connections) — `src/core/Cpu68k.cpp`
-- **grp0Vector** (1 connections) — `src/core/Cpu68k.cpp`
-- *... and 19 more nodes in this community*
+- *... and 20 more nodes in this community*
 
 ## Relationships
 
@@ -45,7 +45,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 51 (96%)
+- EXTRACTED: 52 (96%)
 - INFERRED: 2 (4%)
 - AMBIGUOUS: 0 (0%)
 

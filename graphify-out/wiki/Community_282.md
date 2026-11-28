@@ -1,55 +1,47 @@
 # Community 282
 
-> 20 nodes
+> 17 nodes
 
 ## Key Concepts
 
-- **AvTracker** (14 connections) — `src/core/Pacing.hpp`
-- **.same()** (6 connections) — `src/core/Pacing.hpp`
-- **Av** (5 connections) — `src/core/Pacing.hpp`
-- **.fps()** (5 connections) — `src/core/Pacing.hpp`
-- **testAvTracker()** (5 connections) — `tests/libretro_frontier_logic.cpp`
-- **Change** (4 connections) — `src/core/Pacing.hpp`
-- **.onFrame()** (3 connections) — `src/core/Pacing.hpp`
-- **macOS arm64 — ◐ passe faite le 2026-09-01, le VISUEL reste** (3 connections) — `docs/HW_VALIDATION.md`
-- **announced_** (2 connections) — `src/core/Pacing.hpp`
-- **.reset()** (1 connections) — `src/core/Pacing.hpp`
-- **frameCycles** (1 connections) — `src/core/Pacing.hpp`
-- **height** (1 connections) — `src/core/Pacing.hpp`
-- **width** (1 connections) — `src/core/Pacing.hpp`
-- **armed_** (1 connections) — `src/core/Pacing.hpp`
-- **candidate_** (1 connections) — `src/core/Pacing.hpp`
-- **kStable** (1 connections) — `src/core/Pacing.hpp`
-- **streak_** (1 connections) — `src/core/Pacing.hpp`
-- **Geometry** (1 connections) — `src/core/Pacing.hpp`
-- **None** (1 connections) — `src/core/Pacing.hpp`
-- **Timing** (1 connections) — `src/core/Pacing.hpp`
+- **CompDiskCatalog** (19 connections) — `src/io/CompDisks.hpp`
+- **CompDiskInfo** (7 connections) — `src/io/CompDisks.hpp`
+- **Key** (4 connections) — `src/io/CompDisks.hpp`
+- **.size()** (4 connections) — `src/io/CompDisks.hpp`
+- **string** (3 connections)
+- **number** (3 connections) — `src/io/CompDisks.hpp`
+- **size_t** (2 connections)
+- **byNumber_** (1 connections) — `src/io/CompDisks.hpp`
+- **byStem_** (1 connections) — `src/io/CompDisks.hpp`
+- **entries_** (1 connections) — `src/io/CompDisks.hpp`
+- **fileKeys_** (1 connections) — `src/io/CompDisks.hpp`
+- **teamKeys_** (1 connections) — `src/io/CompDisks.hpp`
+- **games** (1 connections) — `src/io/CompDisks.hpp`
+- **name** (1 connections) — `src/io/CompDisks.hpp`
+- **team** (1 connections) — `src/io/CompDisks.hpp`
+- **unordered_map** (1 connections)
+- **letters** (1 connections) — `src/io/CompDisks.hpp`
 
 ## Relationships
 
-- [Community 239](Community_239.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 283](Community_283.md) (1 shared connections)
-- [Community 299](Community_299.md) (1 shared connections)
-- [Community 23](Community_23.md) (1 shared connections)
-- [Community 162](Community_162.md) (1 shared connections)
-- [Community 230](Community_230.md) (1 shared connections)
-- [Community 478](Community_478.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
-- [Community 393](Community_393.md) (1 shared connections)
+- [Community 303](Community_303.md) (4 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 1](Community_1.md) (1 shared connections)
+- [Community 11](Community_11.md) (1 shared connections)
+- [Community 611](Community_611.md) (1 shared connections)
+- [Community 325](Community_325.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
+- [Community 36](Community_36.md) (1 shared connections)
 - [Community 101](Community_101.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HW_VALIDATION.md`
-- `src/core/Pacing.hpp`
-- `tests/libretro_frontier_logic.cpp`
+- `src/io/CompDisks.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 24 (69%)
-- INFERRED: 11 (31%)
+- EXTRACTED: 29 (88%)
+- INFERRED: 4 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

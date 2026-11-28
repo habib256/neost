@@ -1,62 +1,48 @@
 # Community 288
 
-> 24 nodes
+> 14 nodes
 
 ## Key Concepts
 
-- **2. Plan mémoire figé** (18 connections) — `docs/HYPOTHESES_ST.md`
-- **parseRamBytes()** (11 connections) — `src/core/MachineType.hpp`
-- **memConfigForBytes()** (10 connections) — `src/core/MachineType.hpp`
-- **.loadTos()** (8 connections) — `src/core/Bus.hpp`
-- **tosUnsupportedMachine()** (8 connections) — `src/core/MachineType.hpp`
-- **size_t** (8 connections)
-- **ramLabel()** (7 connections) — `src/core/MachineType.hpp`
-- **tosHeaderIsEmuTos()** (7 connections) — `src/core/MachineType.hpp`
-- **tosHeaderVersion()** (7 connections) — `src/core/MachineType.hpp`
-- **ramDisplayName()** (5 connections) — `src/core/MachineType.hpp`
-- **readTosInfo()** (5 connections) — `src/core/TosChoice.cpp`
-- **machineSummary()** (5 connections) — `src/gui/MachineSummary.hpp`
-- **.seedResetVectors()** (4 connections) — `src/core/Bus.hpp`
-- **mmuFastLimit_** (4 connections) — `src/core/Bus.hpp`
-- **tosImageBase()** (4 connections) — `src/core/MachineType.hpp`
-- **.loadCart()** (3 connections) — `src/core/Bus.hpp`
-- **.mmuConfNow()** (3 connections) — `src/core/Bus.hpp`
-- **parseMachine()** (3 connections) — `src/core/MachineType.hpp`
-- **string** (3 connections)
-- **1. Bus & mémoire (ioMem.c, cpu/memory.c, stMemory.c)** (3 connections) — `docs/HATARI_MAPPING.md`
-- **string** (2 connections)
-- **string** (1 connections)
-- **Machine** (1 connections)
-- **string** (1 connections)
+- **EmuFiber.cpp** (29 connections) — `src/core/EmuFiber.cpp`
+- **emuFiberEnter()** (6 connections) — `src/core/EmuFiber.cpp`
+- **.supported()** (5 connections) — `src/core/EmuFiber.hpp`
+- **.runJobs()** (4 connections) — `src/core/EmuFiber.hpp`
+- **.switchToHost()** (4 connections) — `src/core/EmuFiber.hpp`
+- **.yield()** (3 connections) — `src/core/EmuFiber.hpp`
+- **.setHostCanSuspend()** (2 connections) — `src/core/EmuFiber.hpp`
+- **fiberEntry()** (2 connections) — `src/core/EmuFiber.cpp`
+- **fiberEntryWin()** (2 connections) — `src/core/EmuFiber.cpp`
+- **fiberThreadEntry()** (2 connections) — `src/core/EmuFiber.cpp`
+- **emscripten** (2 connections)
+- **mman** (1 connections)
+- **pthread** (1 connections)
+- **ucontext** (1 connections)
 
 ## Relationships
 
-- [Community 4](Community_4.md) (10 shared connections)
-- [Community 319](Community_319.md) (7 shared connections)
-- [Community 14](Community_14.md) (5 shared connections)
-- [Community 203](Community_203.md) (5 shared connections)
-- [Community 607](Community_607.md) (4 shared connections)
-- [Community 138](Community_138.md) (4 shared connections)
-- [Community 41](Community_41.md) (4 shared connections)
-- [Community 325](Community_325.md) (4 shared connections)
-- [Community 449](Community_449.md) (3 shared connections)
-- [Community 394](Community_394.md) (3 shared connections)
-- [Community 153](Community_153.md) (2 shared connections)
-- [Community 386](Community_386.md) (2 shared connections)
+- [Community 59](Community_59.md) (6 shared connections)
+- [Community 422](Community_422.md) (5 shared connections)
+- [Community 160](Community_160.md) (2 shared connections)
+- [Community 68](Community_68.md) (2 shared connections)
+- [Community 186](Community_186.md) (2 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 386](Community_386.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 91](Community_91.md) (1 shared connections)
+- [Community 611](Community_611.md) (1 shared connections)
+- [Community 605](Community_605.md) (1 shared connections)
+- [Community 539](Community_539.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_MAPPING.md`
-- `docs/HYPOTHESES_ST.md`
-- `src/core/Bus.hpp`
-- `src/core/MachineType.hpp`
-- `src/core/TosChoice.cpp`
-- `src/gui/MachineSummary.hpp`
+- `src/core/EmuFiber.cpp`
+- `src/core/EmuFiber.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 41 (43%)
-- INFERRED: 55 (57%)
+- EXTRACTED: 42 (93%)
+- INFERRED: 3 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

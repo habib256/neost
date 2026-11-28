@@ -1,11 +1,14 @@
 # Community 213
 
-> 33 nodes
+> 66 nodes
 
 ## Key Concepts
 
 - **Archive.cpp** (30 connections) — `src/util/Archive.cpp`
+- **Reader::SevenZip** (15 connections) — `src/util/Archive.cpp`
+- **Reader** (14 connections) — `src/util/Archive.hpp`
 - **.open()** (13 connections) — `src/util/Archive.hpp`
+- **ZipMember** (12 connections) — `src/util/Archive.hpp`
 - **extractZip()** (12 connections) — `src/util/Archive.cpp`
 - **gunzip()** (12 connections) — `src/util/Archive.cpp`
 - **size** (12 connections) — `src/util/Archive.cpp`
@@ -15,6 +18,7 @@
 - **MemInStream** (8 connections) — `src/util/Archive.cpp`
 - **fail()** (8 connections) — `src/util/Archive.cpp`
 - **string** (8 connections)
+- **Member** (7 connections) — `src/util/Archive.hpp`
 - **inflateRaw()** (7 connections) — `src/util/Archive.cpp`
 - **data** (7 connections) — `src/util/Archive.cpp`
 - **utf16ToUtf8()** (6 connections) — `src/util/Archive.cpp`
@@ -25,26 +29,22 @@
 - **isZip()** (4 connections) — `src/util/Archive.cpp`
 - **le16()** (4 connections) — `src/util/Archive.cpp`
 - **le32()** (4 connections) — `src/util/Archive.cpp`
-- **szError()** (4 connections) — `src/util/Archive.cpp`
-- **memRead()** (3 connections) — `src/util/Archive.cpp`
-- **size_t** (3 connections)
-- **SRes** (3 connections)
-- *... and 8 more nodes in this community*
+- *... and 41 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (11 shared connections)
-- [Community 321](Community_321.md) (5 shared connections)
-- [Community 4](Community_4.md) (5 shared connections)
+- [Community 611](Community_611.md) (14 shared connections)
+- [Community 4](Community_4.md) (6 shared connections)
 - [Community 428](Community_428.md) (4 shared connections)
 - [Community 406](Community_406.md) (3 shared connections)
-- [Community 487](Community_487.md) (2 shared connections)
-- [Community 245](Community_245.md) (2 shared connections)
+- [Community 172](Community_172.md) (2 shared connections)
+- [Community 153](Community_153.md) (2 shared connections)
+- [Community 285](Community_285.md) (1 shared connections)
 - [Community 350](Community_350.md) (1 shared connections)
-- [Community 101](Community_101.md) (1 shared connections)
+- [Community 292](Community_292.md) (1 shared connections)
 - [Community 222](Community_222.md) (1 shared connections)
+- [Community 245](Community_245.md) (1 shared connections)
 - [Community 467](Community_467.md) (1 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
 
 ## Source Files
 
@@ -55,8 +55,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 111 (87%)
-- INFERRED: 16 (13%)
+- EXTRACTED: 150 (89%)
+- INFERRED: 19 (11%)
 - AMBIGUOUS: 0 (0%)
 
 ---

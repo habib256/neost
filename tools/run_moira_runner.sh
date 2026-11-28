@@ -9,7 +9,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 UP="${NEOST_MOIRA_UPSTREAM:-$ROOT/extern/moira-upstream}"
 OUT="$ROOT/build-moira-runner"
 JOBS="${NEOST_MOIRA_JOBS:-4}"
-PIN=bf98107ffa3bb24d576bbe99ef684c77e33de938
+PIN=c6fbb4eaaaf831ce1f4b11a7b13442e67fa42d00
 URL=https://github.com/dirkwhoffmann/Moira.git
 TEST_DIRS=(Tests/Common Tests/Random Tests/Sequence Tests/Smoke Tests/SST
            Tests/ThirdParty Tests/Unit)

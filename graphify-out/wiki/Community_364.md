@@ -1,41 +1,37 @@
 # Community 364
 
-> 20 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **Rig** (9 connections) — `tests/hayes_modem_logic.cpp`
-- **Listener** (7 connections) — `tests/hayes_modem_logic.cpp`
-- **main()** (7 connections) — `tests/hayes_modem_logic.cpp`
-- **string** (4 connections)
-- **dialCmd()** (3 connections) — `tests/hayes_modem_logic.cpp`
-- **.accept()** (3 connections) — `tests/hayes_modem_logic.cpp`
-- **peerSeesEof()** (3 connections) — `tests/hayes_modem_logic.cpp`
-- **.waitFor()** (3 connections) — `tests/hayes_modem_logic.cpp`
-- **SocketHandle** (3 connections)
-- **expect()** (2 connections) — `tests/hayes_modem_logic.cpp`
-- **.open()** (2 connections) — `tests/hayes_modem_logic.cpp`
-- **.type()** (2 connections) — `tests/hayes_modem_logic.cpp`
-- **.~Listener()** (1 connections) — `tests/hayes_modem_logic.cpp`
-- **HayesModem** (1 connections)
-- **Mfp** (1 connections)
-- **fd** (1 connections) — `tests/hayes_modem_logic.cpp`
-- **port** (1 connections) — `tests/hayes_modem_logic.cpp`
-- **mfp** (1 connections) — `tests/hayes_modem_logic.cpp`
-- **modem** (1 connections) — `tests/hayes_modem_logic.cpp`
-- **out** (1 connections) — `tests/hayes_modem_logic.cpp`
+- **run_selftests.py** (14 connections) — `tools/run_selftests.py`
+- **run_one()** (7 connections) — `tools/run_selftests.py`
+- **ensure_rom_asset()** (5 connections) — `tools/run_selftests.py`
+- **run_timed()** (5 connections) — `tools/run_selftests.py`
+- **is_untracked()** (4 connections) — `tools/run_selftests.py`
+- **main()** (4 connections) — `tools/run_selftests.py`
+- **rom_is_free()** (3 connections) — `tools/run_selftests.py`
+- **load_manifest()** (2 connections) — `tools/run_selftests.py`
+- **parse_verdicts()** (2 connections) — `tools/run_selftests.py`
+- **Vrai si git ne versionne PAS `path` (étalon gitignoré). Sans git (archive…** (1 connections) — `tools/run_selftests.py`
+- **EmuTOS (`roms/etos*.img`) est livré avec le dépôt : son absence est une casse.…** (1 connections) — `tools/run_selftests.py`
 
 ## Relationships
 
-- [Community 186](Community_186.md) (6 shared connections)
+- [Community 100](Community_100.md) (5 shared connections)
+- [Community 26](Community_26.md) (2 shared connections)
+- [Community 582](Community_582.md) (2 shared connections)
+- [Community 20](Community_20.md) (1 shared connections)
+- [Community 18](Community_18.md) (1 shared connections)
+- [Community 146](Community_146.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/hayes_modem_logic.cpp`
+- `tools/run_selftests.py`
 
 ## Audit Trail
 
-- EXTRACTED: 30 (97%)
+- EXTRACTED: 29 (97%)
 - INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 

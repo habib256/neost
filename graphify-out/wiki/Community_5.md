@@ -1,6 +1,6 @@
 # Community 5
 
-> 95 nodes
+> 93 nodes
 
 ## Key Concepts
 
@@ -14,8 +14,6 @@
 - **.setHblShorten()** (2 connections) — `src/core/Shifter.hpp`
 - **.setLineGeom()** (2 connections) — `src/core/Shifter.hpp`
 - **.snapLiveHeight()** (2 connections) — `src/core/Shifter.hpp`
-- **.timerBLinePos()** (2 connections) — `src/core/Shifter.hpp`
-- **Shifter::timerBPosForLine()** (2 connections) — `src/core/VideoGlue.cpp`
 - **.activeLeft()** (1 connections) — `src/core/Shifter.hpp`
 - **.blankLines()** (1 connections) — `src/core/Shifter.hpp`
 - **.bordersOpen()** (1 connections) — `src/core/Shifter.hpp`
@@ -29,32 +27,33 @@
 - **.lineStartCount()** (1 connections) — `src/core/Shifter.hpp`
 - **.lineState()** (1 connections) — `src/core/Shifter.hpp`
 - **.lineWidthWords()** (1 connections) — `src/core/Shifter.hpp`
-- *... and 70 more nodes in this community*
+- **.liveLine()** (1 connections) — `src/core/Shifter.hpp`
+- **.liveLineDisplayed()** (1 connections) — `src/core/Shifter.hpp`
+- *... and 68 more nodes in this community*
 
 ## Relationships
 
-- [Community 88](Community_88.md) (22 shared connections)
-- [Community 596](Community_596.md) (14 shared connections)
-- [Community 60](Community_60.md) (12 shared connections)
-- [Community 205](Community_205.md) (5 shared connections)
-- [Community 258](Community_258.md) (2 shared connections)
+- [Community 596](Community_596.md) (26 shared connections)
+- [Community 88](Community_88.md) (13 shared connections)
+- [Community 205](Community_205.md) (8 shared connections)
+- [Community 60](Community_60.md) (7 shared connections)
 - [Community 396](Community_396.md) (2 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
 - [Community 470](Community_470.md) (2 shared connections)
+- [Community 392](Community_392.md) (2 shared connections)
+- [Community 258](Community_258.md) (1 shared connections)
 - [Community 270](Community_270.md) (1 shared connections)
+- [Community 611](Community_611.md) (1 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
-- [Community 461](Community_461.md) (1 shared connections)
-- [Community 235](Community_235.md) (1 shared connections)
+- [Community 548](Community_548.md) (1 shared connections)
 
 ## Source Files
 
 - `src/core/Shifter.hpp`
-- `src/core/VideoGlue.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 169 (99%)
-- INFERRED: 2 (1%)
+- EXTRACTED: 168 (99%)
+- INFERRED: 1 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

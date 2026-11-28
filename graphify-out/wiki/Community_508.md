@@ -19,7 +19,7 @@
 - [Community 47](Community_47.md) (2 shared connections)
 - [Community 559](Community_559.md) (1 shared connections)
 - [Community 38](Community_38.md) (1 shared connections)
-- [Community 352](Community_352.md) (1 shared connections)
+- [Community 377](Community_377.md) (1 shared connections)
 
 ## Source Files
 

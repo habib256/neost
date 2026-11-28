@@ -4,10 +4,10 @@
 
 ## Key Concepts
 
-- **retro_system_content_info_override** (4 connections) — `src/libretro/libretro.h`
-- **extensions** (1 connections) — `src/libretro/libretro.h`
-- **need_fullpath** (1 connections) — `src/libretro/libretro.h`
-- **persistent_data** (1 connections) — `src/libretro/libretro.h`
+- **retro_vr_eye** (4 connections) — `src/libretro/libretro.h`
+- **RETRO_VR_EYE_DUMMY** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_VR_EYE_LEFT** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_VR_EYE_RIGHT** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 

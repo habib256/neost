@@ -6,7 +6,7 @@
 
 - **Automatiser Hatari (oracle de référence)** (18 connections) — `docs/HATARI_AUTOMATION.md`
 - **Autres signaux (sans image)** (2 connections) — `docs/HATARI_AUTOMATION.md`
-- **Traces de référence pour `trace_diff` (2026-11-12)** (2 connections) — `docs/HATARI_AUTOMATION.md`
+- **Comparaison temporelle des IRQ** (2 connections) — `docs/HATARI_AUTOMATION.md`
 - **Contrôler les références SANS les écraser (`--oracle-check`, A11)** (1 connections) — `docs/HATARI_AUTOMATION.md`
 - **CPU et cache MegaSTE à 16 MHz** (1 connections) — `docs/HATARI_AUTOMATION.md`
 - **⚠ Hatari n'est PAS déterministe d'un run à l'autre (et ça change la méthode)** (1 connections) — `docs/HATARI_AUTOMATION.md`
@@ -26,8 +26,8 @@
 ## Relationships
 
 - [Community 232](Community_232.md) (1 shared connections)
-- [Community 64](Community_64.md) (1 shared connections)
 - [Community 150](Community_150.md) (1 shared connections)
+- [Community 64](Community_64.md) (1 shared connections)
 
 ## Source Files
 

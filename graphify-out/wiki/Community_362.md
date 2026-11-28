@@ -1,17 +1,14 @@
 # Community 362
 
-> 19 nodes
+> 16 nodes
 
 ## Key Concepts
 
-- **cfgPath()** (9 connections) — `src/gui/AppConfig.cpp`
 - **Borne NeoST sur Raspberry Pi — démarrage direct sur l'émulateur** (8 connections) — `packaging/raspberry/README.md`
 - **2. Installation** (5 connections) — `packaging/raspberry/README.md`
-- **profilesDir()** (4 connections) — `src/gui/AppConfig.cpp`
 - **3bis. La sortie son — HDMI ou Bluetooth** (3 connections) — `packaging/raspberry/README.md`
 - **4. Exploitation** (3 connections) — `packaging/raspberry/README.md`
 - **Disposition installée** (3 connections) — `packaging/raspberry/README.md`
-- **A36 — `neost.cfg` sait où il habite, y compris installé dans `/usr` (2026-08-28)** (2 connections) — `CHANGELOG.md`
 - **0. Avant tout : mesurer d'où viennent les coupures son** (2 connections) — `packaging/raspberry/README.md`
 - **Verrouillage pour une expo publique** (2 connections) — `packaging/raspberry/README.md`
 - **1. Ce que la borne enlève, et ce que ça rapporte** (1 connections) — `packaging/raspberry/README.md`
@@ -26,25 +23,20 @@
 
 ## Relationships
 
-- [Community 214](Community_214.md) (4 shared connections)
-- [Community 101](Community_101.md) (4 shared connections)
-- [Community 325](Community_325.md) (1 shared connections)
-- [Community 153](Community_153.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
 - [Community 46](Community_46.md) (1 shared connections)
+- [Community 101](Community_101.md) (1 shared connections)
 - [Community 138](Community_138.md) (1 shared connections)
+- [Community 214](Community_214.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
 - `packaging/raspberry/README.md`
-- `src/gui/AppConfig.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 24 (75%)
-- INFERRED: 8 (25%)
+- EXTRACTED: 17 (85%)
+- INFERRED: 3 (15%)
 - AMBIGUOUS: 0 (0%)
 
 ---

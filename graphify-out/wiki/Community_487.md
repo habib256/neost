@@ -1,36 +1,28 @@
 # Community 487
 
-> 11 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **Reader::SevenZip** (15 connections) — `src/util/Archive.cpp`
-- **Byte** (1 connections)
-- **CLookToRead2** (1 connections)
-- **CSzArEx** (1 connections)
-- **blockIndex** (1 connections) — `src/util/Archive.cpp`
-- **db** (1 connections) — `src/util/Archive.cpp`
-- **look** (1 connections) — `src/util/Archive.cpp`
-- **lookBuf** (1 connections) — `src/util/Archive.cpp`
-- **mem** (1 connections) — `src/util/Archive.cpp`
-- **outBuffer** (1 connections) — `src/util/Archive.cpp`
-- **outBufferSize** (1 connections) — `src/util/Archive.cpp`
+- **4. ACSI — `Acsi.cpp`, `Fdc.cpp` ↔ `hdc.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Refermés** (2 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
-- [Community 213](Community_213.md) (2 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 263](Community_263.md) (1 shared connections)
-- [Community 285](Community_285.md) (1 shared connections)
+- [Community 397](Community_397.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
 
 ## Source Files
 
-- `src/util/Archive.cpp`
+- `docs/HATARI_DIVERGENCES.md`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 5 (83%)
+- INFERRED: 1 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,13 +1,11 @@
 # Community 366
 
-> 34 nodes
+> 30 nodes
 
 ## Key Concepts
 
-- **MidiEndpoint.hpp** (20 connections) — `src/audio/MidiEndpoint.hpp`
 - **Endpoint** (19 connections) — `src/audio/MidiEndpoint.hpp`
 - **MidiAlsa.hpp** (12 connections) — `src/audio/MidiAlsa.hpp`
-- **testMidiHomonymes()** (11 connections) — `tests/selftest_logic.cpp`
 - **Wanted** (10 connections) — `src/audio/MidiEndpoint.hpp`
 - **Port** (7 connections) — `src/audio/MidiAlsa.hpp`
 - **countMatchable()** (7 connections) — `src/audio/MidiEndpoint.hpp`
@@ -19,45 +17,47 @@
 - **matchEndpoints()** (6 connections) — `src/audio/MidiEndpoint.hpp`
 - **alsaBusAddress()** (5 connections) — `src/audio/MidiEndpoint.hpp`
 - **string** (5 connections)
+- **.openEndpoints()** (4 connections) — `src/audio/MidiInHost.hpp`
 - **endpoints()** (4 connections) — `src/audio/MidiAlsa.hpp`
-- **shortMessageLength()** (4 connections) — `src/audio/MidiMessageParser.hpp`
 - **cardLongname()** (3 connections) — `src/audio/MidiAlsa.hpp`
-- **byte()** (3 connections) — `src/audio/MidiMessageParser.hpp`
-- **dataBytesFor()** (3 connections) — `src/audio/MidiMessageParser.hpp`
-- **asoundlib** (3 connections)
+- **.taken()** (3 connections) — `src/core/Rewind.hpp`
 - **size_t** (2 connections)
 - **snd_seq_t** (1 connections)
 - **string** (1 connections)
 - **client** (1 connections) — `src/audio/MidiAlsa.hpp`
-- *... and 9 more nodes in this community*
+- **ep** (1 connections) — `src/audio/MidiAlsa.hpp`
+- **port** (1 connections) — `src/audio/MidiAlsa.hpp`
+- **name** (1 connections) — `src/audio/MidiEndpoint.hpp`
+- **uid** (1 connections) — `src/audio/MidiEndpoint.hpp`
+- *... and 5 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (12 shared connections)
-- [Community 102](Community_102.md) (9 shared connections)
-- [Community 220](Community_220.md) (6 shared connections)
-- [Community 42](Community_42.md) (6 shared connections)
-- [Community 41](Community_41.md) (5 shared connections)
-- [Community 126](Community_126.md) (3 shared connections)
+- [Community 4](Community_4.md) (10 shared connections)
+- [Community 611](Community_611.md) (8 shared connections)
+- [Community 220](Community_220.md) (7 shared connections)
+- [Community 48](Community_48.md) (6 shared connections)
+- [Community 42](Community_42.md) (3 shared connections)
+- [Community 126](Community_126.md) (2 shared connections)
 - [Community 333](Community_333.md) (2 shared connections)
 - [Community 11](Community_11.md) (1 shared connections)
 - [Community 325](Community_325.md) (1 shared connections)
 - [Community 298](Community_298.md) (1 shared connections)
-- [Community 214](Community_214.md) (1 shared connections)
-- [Community 416](Community_416.md) (1 shared connections)
+- [Community 386](Community_386.md) (1 shared connections)
+- [Community 186](Community_186.md) (1 shared connections)
 
 ## Source Files
 
 - `docs/EXTENSIONS.md`
 - `src/audio/MidiAlsa.hpp`
 - `src/audio/MidiEndpoint.hpp`
-- `src/audio/MidiMessageParser.hpp`
-- `tests/selftest_logic.cpp`
+- `src/audio/MidiInHost.hpp`
+- `src/core/Rewind.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 88 (81%)
-- INFERRED: 20 (19%)
+- EXTRACTED: 70 (80%)
+- INFERRED: 18 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---

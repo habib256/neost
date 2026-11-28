@@ -1,6 +1,6 @@
 # Community 202
 
-> 77 nodes
+> 73 nodes
 
 ## Key Concepts
 
@@ -29,14 +29,15 @@
 - **twotox_()** (11 connections) — `extern/moira/Moira/FPU/FpuEnvMath.cpp`
 - **cmpAbs()** (10 connections) — `extern/moira/Moira/FPU/FpuEnvMath.cpp`
 - **etox_()** (10 connections) — `extern/moira/Moira/FPU/FpuEnvMath.cpp`
-- *... and 52 more nodes in this community*
+- *... and 48 more nodes in this community*
 
 ## Relationships
 
 - [Community 63](Community_63.md) (45 shared connections)
 - [Community 197](Community_197.md) (28 shared connections)
-- [Community 34](Community_34.md) (5 shared connections)
-- [Community 264](Community_264.md) (3 shared connections)
+- [Community 183](Community_183.md) (6 shared connections)
+- [Community 264](Community_264.md) (2 shared connections)
+- [Community 533](Community_533.md) (2 shared connections)
 - [Community 164](Community_164.md) (1 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
@@ -48,7 +49,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 337 (91%)
+- EXTRACTED: 334 (91%)
 - INFERRED: 33 (9%)
 - AMBIGUOUS: 0 (0%)
 

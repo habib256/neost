@@ -4,9 +4,9 @@
 
 ## Key Concepts
 
-- **retro_get_proc_address_interface** (3 connections) — `src/libretro/libretro.h`
-- **retro_get_proc_address_t** (1 connections)
-- **get_proc_address** (1 connections) — `src/libretro/libretro.h`
+- **retro_controller_info** (3 connections) — `src/libretro/libretro.h`
+- **num_types** (1 connections) — `src/libretro/libretro.h`
+- **types** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 
