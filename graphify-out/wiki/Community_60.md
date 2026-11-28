@@ -1,6 +1,6 @@
 # Community 60
 
-> 32 nodes
+> 29 nodes
 
 ## Key Concepts
 
@@ -10,7 +10,6 @@
 - **liveFrameClock_** (9 connections) — `src/core/Shifter.hpp`
 - **.videoCounter()** (8 connections) — `src/core/Shifter.hpp`
 - **.recordColorWrite()** (7 connections) — `src/core/Shifter.hpp`
-- **7. CHANTIER RESTANT (plus de deadlock, mais EL scramble en jeu)** (7 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
 - **Shifter::writeVideoCounterByte()** (5 connections) — `src/core/VideoCounter.cpp`
 - **⭐ ÉTAT COURANT (posé le 2026-08-27 — lire CECI avant tout le reste)** (5 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
 - **.realLinePos()** (4 connections) — `src/core/Shifter.hpp`
@@ -28,20 +27,21 @@
 - **hblShorten_** (2 connections) — `src/core/Shifter.hpp`
 - **A10 — la couverture Spectrum 512 est RENDUE, sans une ligne de ROM Atari (2026-08-28)** (2 connections) — `CHANGELOG.md`
 - **1. L'outil n°1 — harnais différentiel de cycles (Moira ↔ WinUAE)** (2 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **4. Implémenté (RAM_SLOT+IACK DÉFAUT ON depuis 2026-06-17 ; toggle via `=0`)** (2 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- *... and 7 more nodes in this community*
+- **5. ✅ CONVERGENCE INSTRUCTION — COMPLÈTE (validée par workflow 6 classes)** (2 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
+- **8. 🎯 PLAN D'ATTAQUE COORDONNÉ (refonte beam-sync) — pour la prochaine passe** (2 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
+- *... and 4 more nodes in this community*
 
 ## Relationships
 
 - [Community 5](Community_5.md) (12 shared connections)
-- [Community 186](Community_186.md) (9 shared connections)
-- [Community 205](Community_205.md) (9 shared connections)
+- [Community 4](Community_4.md) (9 shared connections)
+- [Community 596](Community_596.md) (7 shared connections)
 - [Community 88](Community_88.md) (5 shared connections)
-- [Community 27](Community_27.md) (4 shared connections)
-- [Community 288](Community_288.md) (3 shared connections)
-- [Community 9](Community_9.md) (3 shared connections)
+- [Community 205](Community_205.md) (4 shared connections)
+- [Community 27](Community_27.md) (3 shared connections)
+- [Community 9](Community_9.md) (2 shared connections)
 - [Community 449](Community_449.md) (1 shared connections)
-- [Community 412](Community_412.md) (1 shared connections)
+- [Community 149](Community_149.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
 - [Community 470](Community_470.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
@@ -57,8 +57,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 36 (40%)
-- INFERRED: 53 (60%)
+- EXTRACTED: 35 (42%)
+- INFERRED: 48 (58%)
 - AMBIGUOUS: 0 (0%)
 
 ---

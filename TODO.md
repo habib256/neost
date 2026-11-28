@@ -85,9 +85,9 @@ enregistrée sur le parent du portage (`4bccff0f`) couvre **68 étalons, 29 parc
 (28 de compatibilité et le diagnostic Magic Pockets), **294 scénarios de collection**
 en ST, STE et Mega STE et **42 sondes Mega STE** (8, 16 et 16 MHz + cache).
 
-- **Vérifier le port face à sa référence** · P1 ◐ — `cpu_swap_gate.py --check` avec le
-  binaire candidat. Enregistrer aussi la référence historique avec le binaire du tag
-  **0.6.5**. Les deux fichiers d'empreintes se conservent hors Git.
+Le [bilan du port](docs/MIGRATION_MOIRA_070.md) donne le détail des 353 scénarios
+strictement identiques et des 80 écarts attribués. La référence historique du tag
+0.6.5 couvre 422 scénarios. Les questions de mesure sur matériel restent au § 9.
 
 ---
 

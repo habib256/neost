@@ -1,26 +1,34 @@
 # Community 583
 
-> 3 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **Porte d'échange du cœur 68000 (Moira de NeoST → Moira officiel)** (3 connections) — `docs/CPU_SWAP_GATE.md`
-- **La porte** (2 connections) — `docs/CPU_SWAP_GATE.md`
-- **Ce que la porte ne couvre pas, à rejouer à part** (1 connections) — `docs/CPU_SWAP_GATE.md`
+- **CellTrack** (14 connections) — `src/io/IpfImage.hpp`
+- **.Stream()** (2 connections) — `src/io/IpfImage.cpp`
+- **cells** (1 connections) — `src/io/IpfImage.hpp`
+- **cylinder** (1 connections) — `src/io/IpfImage.hpp`
+- **head** (1 connections) — `src/io/IpfImage.hpp`
+- **noise** (1 connections) — `src/io/IpfImage.hpp`
+- **timeNs** (1 connections) — `src/io/IpfImage.hpp`
 
 ## Relationships
 
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
+- [Community 143](Community_143.md) (3 shared connections)
+- [Community 217](Community_217.md) (2 shared connections)
+- [Community 163](Community_163.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/CPU_SWAP_GATE.md`
+- `src/io/IpfImage.cpp`
+- `src/io/IpfImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 14 (93%)
+- INFERRED: 1 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

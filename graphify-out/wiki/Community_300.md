@@ -24,8 +24,7 @@
 ## Relationships
 
 - [Community 56](Community_56.md) (15 shared connections)
-- [Community 186](Community_186.md) (4 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
+- [Community 4](Community_4.md) (6 shared connections)
 - [Community 433](Community_433.md) (2 shared connections)
 - [Community 40](Community_40.md) (1 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)

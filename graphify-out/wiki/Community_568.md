@@ -14,8 +14,8 @@
 - [Community 141](Community_141.md) (2 shared connections)
 - [Community 200](Community_200.md) (1 shared connections)
 - [Community 291](Community_291.md) (1 shared connections)
-- [Community 149](Community_149.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 406](Community_406.md) (1 shared connections)
+- [Community 506](Community_506.md) (1 shared connections)
 
 ## Source Files
 

@@ -1,37 +1,39 @@
 # Community 490
 
-> 12 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **check_hog_park.py** (10 connections) — `tools/check_hog_park.py`
-- **hog_prg()** (8 connections) — `tools/check_hog_park.py`
-- **main()** (7 connections) — `tools/check_hog_park.py`
-- **run()** (5 connections) — `tools/check_hog_park.py`
-- **hashes()** (2 connections) — `tools/check_hog_park.py`
-- **Path** (2 connections)
-- **mvb()** (1 connections) — `tools/check_hog_park.py`
-- **mvl()** (1 connections) — `tools/check_hog_park.py`
-- **mvw()** (1 connections) — `tools/check_hog_park.py`
-- **check()** (1 connections) — `tools/check_hog_park.py`
-- **CompletedProcess** (1 connections)
-- **PRG superviseur : blit HOG xcount×ycount mots, puis compteur en $600.** (1 connections) — `tools/check_hog_park.py`
+- **Ext** (14 connections) — `src/io/Fpu.hpp`
+- **.romConstant()** (5 connections) — `src/io/Fpu.hpp`
+- **.toE()** (5 connections) — `src/io/Fpu.hpp`
+- **.extToD()** (4 connections) — `src/io/Fpu.hpp`
+- **.toF()** (4 connections) — `src/io/Fpu.hpp`
+- **Le FPU arrondissait deux fois — et son banc de test ne voyait pas les tests qu'on lui ajoutait (2026-09-02)** (4 connections) — `CHANGELOG.md`
+- **.Ext()** (1 connections) — `src/io/Fpu.hpp`
+- **man** (1 connections) — `src/io/Fpu.hpp`
+- **pad_** (1 connections) — `src/io/Fpu.hpp`
+- **se** (1 connections) — `src/io/Fpu.hpp`
 
 ## Relationships
 
-- [Community 18](Community_18.md) (6 shared connections)
-- [Community 3](Community_3.md) (2 shared connections)
-- [Community 49](Community_49.md) (1 shared connections)
-- [Community 227](Community_227.md) (1 shared connections)
+- [Community 422](Community_422.md) (7 shared connections)
+- [Community 551](Community_551.md) (5 shared connections)
+- [Community 20](Community_20.md) (5 shared connections)
+- [Community 15](Community_15.md) (2 shared connections)
+- [Community 470](Community_470.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 26](Community_26.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/check_hog_park.py`
+- `CHANGELOG.md`
+- `src/io/Fpu.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 25 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 23 (74%)
+- INFERRED: 8 (26%)
 - AMBIGUOUS: 0 (0%)
 
 ---

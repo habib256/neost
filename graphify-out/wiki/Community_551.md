@@ -1,28 +1,35 @@
 # Community 551
 
-> 5 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **9. SCC Z85C30 et SCU (Mega STE) — `Scc.cpp`, `Scu.hpp` ↔ `scc.c`, `scu_vme.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Refermés** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **.command()** (17 connections) — `src/io/Fpu.hpp`
+- **.encodeFmt()** (11 connections) — `src/io/Fpu.hpp`
+- **.startMoveOut()** (7 connections) — `src/io/Fpu.hpp`
+- **.setCC()** (6 connections) — `src/io/Fpu.hpp`
+- **.armOut()** (6 connections) — `src/io/Fpu.hpp`
+- **.fmtLen()** (4 connections) — `src/io/Fpu.hpp`
+- **put32()** (4 connections) — `src/io/Fpu.cpp`
+- **put64()** (3 connections) — `src/io/Fpu.cpp`
 
 ## Relationships
 
-- [Community 397](Community_397.md) (1 shared connections)
-- [Community 27](Community_27.md) (1 shared connections)
+- [Community 422](Community_422.md) (18 shared connections)
+- [Community 20](Community_20.md) (6 shared connections)
+- [Community 490](Community_490.md) (5 shared connections)
+- [Community 547](Community_547.md) (2 shared connections)
+- [Community 15](Community_15.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
+- `src/io/Fpu.cpp`
+- `src/io/Fpu.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (83%)
-- INFERRED: 1 (17%)
+- EXTRACTED: 21 (47%)
+- INFERRED: 24 (53%)
 - AMBIGUOUS: 0 (0%)
 
 ---

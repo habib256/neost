@@ -1,11 +1,12 @@
 # Community 287
 
-> 30 nodes
+> 26 nodes
 
 ## Key Concepts
 
 - **MMU** (16 connections) — `extern/moira/Moira/MMU/MMU.h`
-- **MmuReg** (8 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **Moira.h** (16 connections) — `extern/moira/Moira/Moira.h`
+- **FPU.h** (9 connections) — `extern/moira/Moira/FPU/FPU.h`
 - **MMU.h** (8 connections) — `extern/moira/Moira/MMU/MMU.h`
 - **MMUModel** (7 connections) — `extern/moira/Moira/MMU/MMU.h`
 - **MMU030.h** (7 connections) — `extern/moira/Moira/MMU/MMU030.h`
@@ -21,37 +22,41 @@
 - **u8** (2 connections)
 - **.isPresent()** (1 connections) — `extern/moira/Moira/MMU/MMU.h`
 - **.reset()** (1 connections) — `extern/moira/Moira/MMU/MMU.h`
-- **CRP** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
-- **MMUSR** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
-- **SRP** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
-- **TC** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
-- **TT0** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
-- **TT1** (1 connections) — `extern/moira/Moira/MMU/MMU030.h`
+- **changeOfFlow()** (1 connections) — `extern/moira/Moira/Moira.h`
 - **Moira** (1 connections)
 - **mmu030** (1 connections) — `extern/moira/Moira/MMU/MMU.h`
-- *... and 5 more nodes in this community*
+- **mmu040** (1 connections) — `extern/moira/Moira/MMU/MMU.h`
+- **model** (1 connections) — `extern/moira/Moira/MMU/MMU.h`
+- **M68030** (1 connections) — `extern/moira/Moira/MMU/MMU.h`
+- **M68040** (1 connections) — `extern/moira/Moira/MMU/MMU.h`
+- *... and 1 more nodes in this community*
 
 ## Relationships
 
+- [Community 16](Community_16.md) (5 shared connections)
+- [Community 57](Community_57.md) (5 shared connections)
+- [Community 284](Community_284.md) (3 shared connections)
 - [Community 229](Community_229.md) (3 shared connections)
-- [Community 57](Community_57.md) (3 shared connections)
-- [Community 284](Community_284.md) (2 shared connections)
-- [Community 155](Community_155.md) (1 shared connections)
-- [Community 16](Community_16.md) (1 shared connections)
-- [Community 141](Community_141.md) (1 shared connections)
+- [Community 63](Community_63.md) (2 shared connections)
+- [Community 183](Community_183.md) (2 shared connections)
+- [Community 141](Community_141.md) (2 shared connections)
+- [Community 485](Community_485.md) (1 shared connections)
+- [Community 496](Community_496.md) (1 shared connections)
 - [Community 306](Community_306.md) (1 shared connections)
+- [Community 155](Community_155.md) (1 shared connections)
 - [Community 469](Community_469.md) (1 shared connections)
-- [Community 264](Community_264.md) (1 shared connections)
 
 ## Source Files
 
+- `extern/moira/Moira/FPU/FPU.h`
 - `extern/moira/Moira/MMU/MMU.h`
 - `extern/moira/Moira/MMU/MMU030.h`
 - `extern/moira/Moira/MMU/MMU040.h`
+- `extern/moira/Moira/Moira.h`
 
 ## Audit Trail
 
-- EXTRACTED: 54 (100%)
+- EXTRACTED: 69 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

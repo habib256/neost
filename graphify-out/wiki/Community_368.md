@@ -1,50 +1,37 @@
 # Community 368
 
-> 23 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **MidiTimecode.hpp** (18 connections) — `src/audio/MidiTimecode.hpp`
-- **Timecode** (9 connections) — `src/audio/MidiTimecode.hpp`
-- **locate()** (7 connections) — `src/audio/MidiTimecode.hpp`
-- **realtime()** (7 connections) — `src/audio/MidiTimecode.hpp`
-- **advance()** (5 connections) — `src/audio/MidiTimecode.hpp`
-- **.startSchedule()** (5 connections) — `src/audio/MidiTimecode.hpp`
-- **fromFrames()** (4 connections) — `src/audio/MidiTimecode.hpp`
-- **fullFrame()** (4 connections) — `src/audio/MidiTimecode.hpp`
-- **observe()** (4 connections) — `src/audio/MidiTimecode.hpp`
-- **quarterFrameData()** (4 connections) — `src/audio/MidiTimecode.hpp`
-- **realFps()** (4 connections) — `src/audio/MidiTimecode.hpp`
-- **.qfCycle()** (3 connections) — `src/audio/MidiTimecode.hpp`
-- **.setRate()** (3 connections) — `src/audio/MidiTimecode.hpp`
-- **.songAt()** (3 connections) — `src/audio/MidiTimecode.hpp`
-- **rateCode()** (3 connections) — `src/audio/MidiTimecode.hpp`
-- **.setRs232LineSink()** (3 connections) — `src/core/Machine.hpp`
-- **validRate()** (2 connections) — `src/audio/MidiTimecode.hpp`
-- **s** (2 connections) — `src/audio/MidiTimecode.hpp`
-- **.operator==()** (1 connections) — `src/audio/MidiTimecode.hpp`
-- **f** (1 connections) — `src/audio/MidiTimecode.hpp`
-- **h** (1 connections) — `src/audio/MidiTimecode.hpp`
-- **m** (1 connections) — `src/audio/MidiTimecode.hpp`
-- **function** (1 connections)
+- **isize** (13 connections)
+- **.guardNr()** (9 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.dumpLogBuffer()** (7 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.disassembleRange()** (7 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.isDisabled()** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.disassembleRecorded()** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.isEnabled()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.ignore()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.loggedInstructions()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **string** (4 connections)
+- **ostream** (2 connections)
+- **pair** (1 connections)
 
 ## Relationships
 
-- [Community 105](Community_105.md) (8 shared connections)
-- [Community 4](Community_4.md) (5 shared connections)
-- [Community 386](Community_386.md) (2 shared connections)
-- [Community 10](Community_10.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 121](Community_121.md) (13 shared connections)
+- [Community 152](Community_152.md) (8 shared connections)
+- [Community 134](Community_134.md) (5 shared connections)
+- [Community 593](Community_593.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/MidiTimecode.hpp`
-- `src/core/Machine.hpp`
+- `extern/moira/Moira/MoiraDebugger.h`
 
 ## Audit Trail
 
-- EXTRACTED: 53 (95%)
-- INFERRED: 3 (5%)
+- EXTRACTED: 40 (87%)
+- INFERRED: 6 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

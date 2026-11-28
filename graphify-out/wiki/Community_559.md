@@ -1,27 +1,33 @@
 # Community 559
 
-> 5 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **ShadowMask** (5 connections) — `src/gui/CrtParams.h`
-- **Aperture** (1 connections) — `src/gui/CrtParams.h`
-- **Dot** (1 connections) — `src/gui/CrtParams.h`
-- **Off** (1 connections) — `src/gui/CrtParams.h`
-- **Triad** (1 connections) — `src/gui/CrtParams.h`
+- **.customWriteDispatch()** (8 connections) — `src/io/Ikbd.hpp`
+- **.exitExeMode()** (6 connections) — `src/io/Ikbd.hpp`
+- **.froggiesWrite()** (5 connections) — `src/io/Ikbd.hpp`
+- **.audioSculptureRead()** (5 connections) — `src/io/Ikbd.hpp`
+- **.chaosWrite()** (4 connections) — `src/io/Ikbd.hpp`
+- **.checkPressedKey()** (3 connections) — `src/io/Ikbd.hpp`
+- **.dragonnelsWrite()** (3 connections) — `src/io/Ikbd.hpp`
+- **.audioSculptureWrite()** (3 connections) — `src/io/Ikbd.hpp`
 
 ## Relationships
 
-- [Community 129](Community_129.md) (1 shared connections)
+- [Community 171](Community_171.md) (10 shared connections)
+- [Community 7](Community_7.md) (8 shared connections)
+- [Community 47](Community_47.md) (2 shared connections)
+- [Community 508](Community_508.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/CrtParams.h`
+- `src/io/Ikbd.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 16 (55%)
+- INFERRED: 13 (45%)
 - AMBIGUOUS: 0 (0%)
 
 ---

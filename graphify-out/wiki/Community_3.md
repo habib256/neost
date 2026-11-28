@@ -1,6 +1,6 @@
 # Community 3
 
-> 152 nodes
+> 153 nodes
 
 ## Key Concepts
 
@@ -21,7 +21,7 @@
 - **make_overscan_test.py** (8 connections) — `tools/make_overscan_test.py`
 - **make_spec512_view.py** (8 connections) — `tools/make_spec512_view.py`
 - **make_trace_odd_test.py** (8 connections) — `tools/make_trace_odd_test.py`
-- **make_vblank_test.py** (8 connections) — `tools/make_vblank_test.py`
+- **make_disk()** (7 connections) — `tools/make_blankline_test.py`
 - **make_dmasnd_test.py** (7 connections) — `tools/make_dmasnd_test.py`
 - **make_floppy.py** (7 connections) — `tools/make_floppy.py`
 - **make_scroll_test.py** (7 connections) — `tools/make_scroll_test.py`
@@ -29,27 +29,28 @@
 - **scan()** (6 connections) — `tools/fix_short_reloc.py`
 - **build_cart()** (6 connections) — `tools/make_cycle_bench.py`
 - **metadata()** (5 connections) — `tools/appimage_ls.py`
-- *... and 127 more nodes in this community*
+- *... and 128 more nodes in this community*
 
 ## Relationships
 
-- [Community 227](Community_227.md) (20 shared connections)
+- [Community 173](Community_173.md) (24 shared connections)
 - [Community 8](Community_8.md) (20 shared connections)
+- [Community 100](Community_100.md) (11 shared connections)
 - [Community 146](Community_146.md) (11 shared connections)
 - [Community 207](Community_207.md) (8 shared connections)
 - [Community 18](Community_18.md) (7 shared connections)
 - [Community 30](Community_30.md) (5 shared connections)
-- [Community 273](Community_273.md) (5 shared connections)
-- [Community 173](Community_173.md) (4 shared connections)
 - [Community 133](Community_133.md) (4 shared connections)
 - [Community 108](Community_108.md) (3 shared connections)
-- [Community 34](Community_34.md) (3 shared connections)
-- [Community 490](Community_490.md) (2 shared connections)
+- [Community 301](Community_301.md) (3 shared connections)
+- [Community 360](Community_360.md) (2 shared connections)
+- [Community 296](Community_296.md) (2 shared connections)
 
 ## Source Files
 
 - `tools/appimage_ls.py`
 - `tools/fix_short_reloc.py`
+- `tools/make_blankline_test.py`
 - `tools/make_blitter_test.py`
 - `tools/make_cycle_bench.py`
 - `tools/make_digidrum_test.py`
@@ -67,12 +68,11 @@
 - `tools/make_spec512_test.py`
 - `tools/make_spec512_view.py`
 - `tools/make_trace_odd_test.py`
-- `tools/make_vblank_test.py`
 
 ## Audit Trail
 
-- EXTRACTED: 352 (99%)
-- INFERRED: 2 (1%)
+- EXTRACTED: 353 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

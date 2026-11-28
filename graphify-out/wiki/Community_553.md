@@ -1,26 +1,25 @@
 # Community 553
 
-> 5 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **Banc du blitter — NeoST contre `stBlitter.sv` et fx68k** (5 connections) — `docs/STBLITTER_BENCH.md`
-- **Ce que le banc a trouvé (2026-11-04)** (1 connections) — `docs/STBLITTER_BENCH.md`
-- **Ce qui manque** (1 connections) — `docs/STBLITTER_BENCH.md`
-- **Comment** (1 connections) — `docs/STBLITTER_BENCH.md`
-- **Pourquoi** (1 connections) — `docs/STBLITTER_BENCH.md`
+- **retro_system_content_info_override** (4 connections) — `src/libretro/libretro.h`
+- **extensions** (1 connections) — `src/libretro/libretro.h`
+- **need_fullpath** (1 connections) — `src/libretro/libretro.h`
+- **persistent_data** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 
-- [Community 232](Community_232.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/STBLITTER_BENCH.md`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 4 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

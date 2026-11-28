@@ -1,26 +1,25 @@
 # Community 600
 
-> 2 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **.process()** (4 connections) — `src/gui/CrtEffectStack.h`
-- **.createTextures()** (3 connections) — `src/gui/CrtEffectStack.h`
+- **retro_core_option_display** (3 connections) — `src/libretro/libretro.h`
+- **key** (1 connections) — `src/libretro/libretro.h`
+- **visible** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 
-- [Community 91](Community_91.md) (2 shared connections)
-- [Community 43](Community_43.md) (2 shared connections)
-- [Community 470](Community_470.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/CrtEffectStack.h`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (67%)
-- INFERRED: 2 (33%)
+- EXTRACTED: 3 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

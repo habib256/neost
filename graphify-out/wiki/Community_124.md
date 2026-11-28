@@ -1,65 +1,52 @@
 # Community 124
 
-> 38 nodes
+> 32 nodes
 
 ## Key Concepts
 
-- **** (28 connections) — `src/io/JoystickInput.hpp`
-- **DebugWindows.cpp** (24 connections) — `src/gui/DebugWindows.cpp`
-- **DebugWindows.hpp** (9 connections) — `src/gui/DebugWindows.hpp`
-- **drawJoystickWindow()** (7 connections) — `src/gui/DebugWindows.cpp`
-- **BitmapView.hpp** (6 connections) — `src/core/BitmapView.hpp`
-- **drawDebugger()** (5 connections) — `src/gui/DebugWindows.cpp`
-- **compose()** (5 connections) — `src/io/JoystickInput.hpp`
-- **debug()** (5 connections) — `src/io/JoystickInput.hpp`
-- **resolveAssign()** (5 connections) — `src/io/JoystickInput.hpp`
-- **App** (5 connections)
-- **drawBitmapExplorer()** (4 connections) — `src/gui/DebugWindows.cpp`
-- **drawHexViewer()** (4 connections) — `src/gui/DebugWindows.cpp`
-- **composeAux()** (4 connections) — `src/io/JoystickInput.hpp`
-- **readStick()** (4 connections) — `src/io/JoystickInput.hpp`
-- **Terminal sobre ; la page ROM choisit le modèle (2026-11-13)** (4 connections) — `CHANGELOG.md`
-- **readAux()** (3 connections) — `src/io/JoystickInput.hpp`
-- **readStickRaw()** (3 connections) — `src/io/JoystickInput.hpp`
-- **fadeStereo()** (2 connections) — `src/core/Pacing.hpp`
-- **drawJoyDirLed()** (2 connections) — `src/gui/DebugWindows.cpp`
-- **drawJoystickAxisBar()** (2 connections) — `src/gui/DebugWindows.cpp`
-- **parseBpAddr()** (2 connections) — `src/gui/DebugWindows.cpp`
-- **Machine** (2 connections)
-- **GLFWwindow** (2 connections)
-- **Signature** (2 connections) — `packaging/android/README.md`
-- **App** (1 connections) — `src/gui/DebugWindows.hpp`
-- *... and 13 more nodes in this community*
+- **Frame** (58 connections) — `src/gui/AppLoop.cpp`
+- **string** (2 connections)
+- **ConfigUi** (1 connections)
+- **cfgUi** (1 connections) — `src/gui/AppLoop.cpp`
+- **cH** (1 connections) — `src/gui/AppLoop.cpp`
+- **color** (1 connections) — `src/gui/AppLoop.cpp`
+- **cTop** (1 connections) — `src/gui/AppLoop.cpp`
+- **cW** (1 connections) — `src/gui/AppLoop.cpp`
+- **fbh** (1 connections) — `src/gui/AppLoop.cpp`
+- **fbw** (1 connections) — `src/gui/AppLoop.cpp`
+- **kH** (1 connections) — `src/gui/AppLoop.cpp`
+- **kTop** (1 connections) — `src/gui/AppLoop.cpp`
+- **kW** (1 connections) — `src/gui/AppLoop.cpp`
+- **menuH** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqEject** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqEjectAcsi** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqEjectB** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqEjectCart** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqEjectGemdos** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqHardReset** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqMonitor** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqMount** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqMountAcsi** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqMountB** (1 connections) — `src/gui/AppLoop.cpp`
+- **reqMountCart** (1 connections) — `src/gui/AppLoop.cpp`
+- *... and 7 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (14 shared connections)
-- [Community 102](Community_102.md) (6 shared connections)
-- [Community 204](Community_204.md) (6 shared connections)
-- [Community 470](Community_470.md) (3 shared connections)
-- [Community 214](Community_214.md) (2 shared connections)
-- [Community 91](Community_91.md) (2 shared connections)
+- [Community 214](Community_214.md) (20 shared connections)
+- [Community 325](Community_325.md) (3 shared connections)
+- [Community 138](Community_138.md) (2 shared connections)
 - [Community 223](Community_223.md) (2 shared connections)
-- [Community 68](Community_68.md) (2 shared connections)
-- [Community 435](Community_435.md) (2 shared connections)
-- [Community 186](Community_186.md) (2 shared connections)
-- [Community 533](Community_533.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 204](Community_204.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `packaging/android/README.md`
-- `src/core/BitmapView.hpp`
-- `src/core/Pacing.hpp`
-- `src/gui/DebugWindows.cpp`
-- `src/gui/DebugWindows.hpp`
-- `src/io/JoystickInput.hpp`
+- `src/gui/AppLoop.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 87 (87%)
-- INFERRED: 13 (13%)
+- EXTRACTED: 59 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -33,7 +33,7 @@
 ## Relationships
 
 - [Community 3](Community_3.md) (3 shared connections)
-- [Community 227](Community_227.md) (1 shared connections)
+- [Community 173](Community_173.md) (1 shared connections)
 
 ## Source Files
 

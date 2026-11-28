@@ -1,25 +1,28 @@
 # Community 606
 
-> 4 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/fdc_written_marks_logic.cpp`
-- **.equal()** (2 connections) — `tests/fdc_written_marks_logic.cpp`
-- **count** (1 connections) — `tests/fdc_written_marks_logic.cpp`
-- **failures** (1 connections) — `tests/fdc_written_marks_logic.cpp`
+- **nat_backend_test.cpp** (6 connections) — `tests/nat_backend_test.cpp`
+- **main()** (3 connections) — `tests/nat_backend_test.cpp`
+- **check()** (2 connections) — `tests/nat_backend_test.cpp`
+- **natpacket** (1 connections)
+- **socketcompat** (1 connections)
 
 ## Relationships
 
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 40](Community_40.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/fdc_written_marks_logic.cpp`
+- `tests/nat_backend_test.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 8 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

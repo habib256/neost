@@ -1,30 +1,26 @@
 # Community 510
 
-> 8 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **Division** (11 connections) — `extern/moira/Moira/FPU/FPU.cpp`
-- **i32** (1 connections)
-- **u64** (1 connections)
-- **divisor** (1 connections) — `extern/moira/Moira/FPU/FPU.cpp`
-- **quotient** (1 connections) — `extern/moira/Moira/FPU/FPU.cpp`
-- **rem** (1 connections) — `extern/moira/Moira/FPU/FPU.cpp`
-- **small** (1 connections) — `extern/moira/Moira/FPU/FPU.cpp`
-- **unit** (1 connections) — `extern/moira/Moira/FPU/FPU.cpp`
+- **retro_message_type** (5 connections) — `src/libretro/libretro.h`
+- **RETRO_MESSAGE_TYPE_NOTIFICATION** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_MESSAGE_TYPE_NOTIFICATION_ALT** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_MESSAGE_TYPE_PROGRESS** (1 connections) — `src/libretro/libretro.h`
+- **RETRO_MESSAGE_TYPE_STATUS** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 
-- [Community 63](Community_63.md) (3 shared connections)
-- [Community 183](Community_183.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/FPU/FPU.cpp`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 11 (100%)
+- EXTRACTED: 5 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

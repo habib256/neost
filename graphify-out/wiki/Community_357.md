@@ -1,46 +1,35 @@
 # Community 357
 
-> 20 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **M68kException** (23 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **Moira::jumpToVector()** (4 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **ADDRESS_ERROR** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **BKPT** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **BUS_ERROR** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **CHK** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **DIVIDE_BY_ZERO** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **FORMAT_ERROR** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **FPU_ARITHMETIC** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **FPU_UNIMPLEMENTED** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ILLEGAL** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **IRQ_SPURIOUS** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **IRQ_UNINITIALIZED** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **LINEA** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **LINEF** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **PRIVILEGE** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **RESET** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **TRACE** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **TRAP** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **TRAPV** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **Atc040Entry** (13 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.atcTouch()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **.atc()** (3 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **u32** (3 connections)
+- **.pageMask()** (2 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **history** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **logical** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **physical** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **status** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **super** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **valid** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **u8** (1 connections)
 
 ## Relationships
 
-- [Community 64](Community_64.md) (4 shared connections)
-- [Community 57](Community_57.md) (1 shared connections)
-- [Community 166](Community_166.md) (1 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
+- [Community 229](Community_229.md) (8 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraDataflow_cpp.h`
-- `extern/moira/Moira/MoiraTypes.h`
+- `extern/moira/Moira/MMU/MMU040.h`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (88%)
-- INFERRED: 3 (12%)
+- EXTRACTED: 20 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

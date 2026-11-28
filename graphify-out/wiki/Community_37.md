@@ -1,50 +1,65 @@
 # Community 37
 
-> 25 nodes
+> 53 nodes
 
 ## Key Concepts
 
 - **Blitter** (44 connections) — `src/core/Blitter.hpp`
+- **.onSlice()** (9 connections) — `src/core/Blitter.hpp`
+- **.runSlice()** (8 connections) — `src/core/Blitter.hpp`
+- **.readWord()** (6 connections) — `src/core/Blitter.hpp`
+- **.writeWord()** (6 connections) — `src/core/Blitter.hpp`
+- **.controlWritten()** (6 connections) — `src/core/Blitter.hpp`
+- **regWriteMask()** (6 connections) — `src/core/Blitter.cpp`
+- **.billCycles()** (5 connections) — `src/core/Blitter.hpp`
+- **.writeRegisters()** (5 connections) — `src/core/Blitter.hpp`
+- **.noteCpuBusAccess()** (5 connections) — `src/core/Blitter.hpp`
+- **.clearPreStartWindow()** (5 connections) — `src/core/Blitter.hpp`
+- **.finishTransfer()** (5 connections) — `src/core/Blitter.hpp`
+- **Refermés** (5 connections) — `docs/HATARI_DIVERGENCES.md`
+- **1. Masques d'adresse 24 bits** (5 connections) — `docs/HYPOTHESES_ST.md`
+- **.write8()** (4 connections) — `src/core/Blitter.hpp`
+- **.write16()** (4 connections) — `src/core/Blitter.hpp`
+- **.write32()** (4 connections) — `src/core/Blitter.hpp`
+- **.start()** (4 connections) — `src/core/Blitter.hpp`
+- **.armPreStartWindow()** (4 connections) — `src/core/Blitter.hpp`
+- **.pauseTransfer()** (4 connections) — `src/core/Blitter.hpp`
+- **blitWordFault()** (4 connections) — `src/core/Blitter.cpp`
+- **Blitter** (4 connections) — `docs/IMPLEMENTED.md`
 - **Bus** (3 connections) — `src/core/Blitter.hpp`
-- **.Blitter()** (2 connections) — `src/core/Blitter.hpp`
-- **.serialize()** (2 connections) — `src/core/Blitter.hpp`
-- **.setScheduler()** (2 connections) — `src/core/Blitter.hpp`
-- **Scheduler** (2 connections)
-- **.busy()** (1 connections) — `src/core/Blitter.hpp`
-- **buffer_** (1 connections) — `src/core/Blitter.hpp`
-- **busCountError_** (1 connections) — `src/core/Blitter.hpp`
-- **busWord_** (1 connections) — `src/core/Blitter.hpp`
-- **cpuBusCnt_** (1 connections) — `src/core/Blitter.hpp`
-- **dstWord_** (1 connections) — `src/core/Blitter.hpp`
-- **haveDst_** (1 connections) — `src/core/Blitter.hpp`
-- **haveFxsr_** (1 connections) — `src/core/Blitter.hpp`
-- **haveSrc_** (1 connections) — `src/core/Blitter.hpp`
-- **inSlice_** (1 connections) — `src/core/Blitter.hpp`
-- **midBlit_** (1 connections) — `src/core/Blitter.hpp`
-- **nfsrInt_** (1 connections) — `src/core/Blitter.hpp`
-- **reg_** (1 connections) — `src/core/Blitter.hpp`
-- **sched_** (1 connections) — `src/core/Blitter.hpp`
-- **sliceBus_** (1 connections) — `src/core/Blitter.hpp`
-- **xReset_** (1 connections) — `src/core/Blitter.hpp`
-- **yLatch_** (1 connections) — `src/core/Blitter.hpp`
-- **function** (1 connections)
-- **StateArchive** (1 connections)
+- **.reset()** (3 connections) — `src/core/Blitter.hpp`
+- **accessObserver** (3 connections) — `src/core/Blitter.hpp`
+- *... and 28 more nodes in this community*
 
 ## Relationships
 
-- [Community 393](Community_393.md) (11 shared connections)
-- [Community 532](Community_532.md) (5 shared connections)
-- [Community 434](Community_434.md) (4 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 4](Community_4.md) (23 shared connections)
+- [Community 218](Community_218.md) (1 shared connections)
+- [Community 445](Community_445.md) (1 shared connections)
+- [Community 317](Community_317.md) (1 shared connections)
+- [Community 397](Community_397.md) (1 shared connections)
+- [Community 386](Community_386.md) (1 shared connections)
+- [Community 39](Community_39.md) (1 shared connections)
+- [Community 411](Community_411.md) (1 shared connections)
+- [Community 396](Community_396.md) (1 shared connections)
+- [Community 607](Community_607.md) (1 shared connections)
+- [Community 36](Community_36.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
+- `docs/CYCLE_ACCURACY.md`
+- `docs/HATARI_DIVERGENCES.md`
+- `docs/HATARI_MEGASTE_AUDIT.md`
+- `docs/HYPOTHESES_ST.md`
+- `docs/IMPLEMENTED.md`
+- `src/core/Blitter.cpp`
 - `src/core/Blitter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 48 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 79 (67%)
+- INFERRED: 39 (33%)
 - AMBIGUOUS: 0 (0%)
 
 ---

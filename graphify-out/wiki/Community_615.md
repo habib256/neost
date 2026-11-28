@@ -1,21 +1,21 @@
 # Community 615
 
-> 3 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **case_state_replay()** (4 connections) — `tools/run_libretro.py`
-- **scripted()** (1 connections) — `tools/run_libretro.py`
-- **Un état repris rejoue à l'identique (exécution anticipée, retour arrière,…** (1 connections) — `tools/run_libretro.py`
+- **** (4 connections) — `src/io/IpfImage.hpp`
+- **CELL_0** (1 connections) — `src/io/IpfImage.hpp`
+- **CELL_1** (1 connections) — `src/io/IpfImage.hpp`
+- **CELL_WEAK** (1 connections) — `src/io/IpfImage.hpp`
 
 ## Relationships
 
-- [Community 247](Community_247.md) (1 shared connections)
-- [Community 429](Community_429.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/run_libretro.py`
+- `src/io/IpfImage.hpp`
 
 ## Audit Trail
 

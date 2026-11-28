@@ -1,34 +1,42 @@
 # Community 522
 
-> 7 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **Quartz** (9 connections) — `src/core/Pacing.hpp`
-- **.setClocks()** (4 connections) — `src/core/Machine.hpp`
-- **parseQuartz()** (2 connections) — `src/core/Pacing.hpp`
-- **setQuartzGlobal()** (2 connections) — `src/core/Pacing.hpp`
-- **Pal** (1 connections) — `src/core/Pacing.hpp`
-- **Q32042** (1 connections) — `src/core/Pacing.hpp`
-- **Q32216** (1 connections) — `src/core/Pacing.hpp`
+- **Architecture** (8 connections) — `DEV.md`
+- **MmuGlue** (7 connections) — `src/core/MmuGlue.hpp`
+- **Framing** (5 connections) — `src/libretro/neost_libretro.cpp`
+- **.read8()** (1 connections) — `src/core/MmuGlue.hpp`
+- **.write8()** (1 connections) — `src/core/MmuGlue.hpp`
+- **memConfig_** (1 connections) — `src/core/MmuGlue.hpp`
+- **Active** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **Adaptive** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **Full** (1 connections) — `src/libretro/neost_libretro.cpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 138](Community_138.md) (2 shared connections)
-- [Community 160](Community_160.md) (1 shared connections)
+- [Community 14](Community_14.md) (1 shared connections)
 - [Community 10](Community_10.md) (1 shared connections)
-- [Community 304](Community_304.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 484](Community_484.md) (1 shared connections)
+- [Community 9](Community_9.md) (1 shared connections)
+- [Community 103](Community_103.md) (1 shared connections)
+- [Community 20](Community_20.md) (1 shared connections)
+- [Community 31](Community_31.md) (1 shared connections)
+- [Community 396](Community_396.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Machine.hpp`
-- `src/core/Pacing.hpp`
+- `DEV.md`
+- `src/core/MmuGlue.hpp`
+- `src/libretro/neost_libretro.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 13 (93%)
-- INFERRED: 1 (7%)
+- EXTRACTED: 11 (61%)
+- INFERRED: 7 (39%)
 - AMBIGUOUS: 0 (0%)
 
 ---

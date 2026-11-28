@@ -1,6 +1,6 @@
 # Community 353
 
-> 26 nodes
+> 28 nodes
 
 ## Key Concepts
 
@@ -23,22 +23,21 @@
 - **Lzma2Dec.h** (4 connections) — `extern/lzma/Lzma2Dec.h`
 - **LzmaDec.h** (4 connections) — `extern/lzma/LzmaDec.h`
 - **ReadByte()** (3 connections) — `extern/lzma/7zDec.c`
+- **Bcj2Dec_Init()** (3 connections) — `extern/lzma/Bcj2.c`
 - **typedef()** (2 connections) — `extern/lzma/Lzma2Dec.h`
 - **BoolInt** (2 connections)
 - **CSzFolder** (2 connections)
+- **CBcj2Dec** (1 connections)
 - **CSzCoderInfo** (1 connections)
-- **CSzAr** (1 connections)
-- **EXTERN_C_BEGIN** (1 connections)
-- *... and 1 more nodes in this community*
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
-- [Community 245](Community_245.md) (8 shared connections)
-- [Community 305](Community_305.md) (5 shared connections)
-- [Community 406](Community_406.md) (4 shared connections)
+- [Community 245](Community_245.md) (9 shared connections)
+- [Community 305](Community_305.md) (7 shared connections)
 - [Community 349](Community_349.md) (4 shared connections)
 - [Community 409](Community_409.md) (4 shared connections)
-- [Community 492](Community_492.md) (2 shared connections)
+- [Community 263](Community_263.md) (3 shared connections)
 - [Community 285](Community_285.md) (1 shared connections)
 - [Community 350](Community_350.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
@@ -46,12 +45,13 @@
 ## Source Files
 
 - `extern/lzma/7zDec.c`
+- `extern/lzma/Bcj2.c`
 - `extern/lzma/Lzma2Dec.h`
 - `extern/lzma/LzmaDec.h`
 
 ## Audit Trail
 
-- EXTRACTED: 77 (83%)
+- EXTRACTED: 79 (83%)
 - INFERRED: 16 (17%)
 - AMBIGUOUS: 0 (0%)
 

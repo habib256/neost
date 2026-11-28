@@ -4,17 +4,17 @@
 
 ## Key Concepts
 
-- **retro_rumble_interface** (3 connections) — `src/libretro/libretro.h`
-- **retro_set_rumble_state_t** (1 connections)
-- **set_rumble_state** (1 connections) — `src/libretro/libretro.h`
+- **ScrollWrite** (3 connections) — `src/core/Shifter.hpp`
+- **count** (1 connections) — `src/core/Shifter.hpp`
+- **frameCycle** (1 connections) — `src/core/Shifter.hpp`
 
 ## Relationships
 
-- [Community 83](Community_83.md) (1 shared connections)
+- [Community 5](Community_5.md) (1 shared connections)
 
 ## Source Files
 
-- `src/libretro/libretro.h`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 

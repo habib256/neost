@@ -1,56 +1,58 @@
 # Community 273
 
-> 26 nodes
+> 56 nodes
 
 ## Key Concepts
 
-- **run_nat_sting.py** (14 connections) — `tools/run_nat_sting.py`
-- **make_sting_test.py** (10 connections) — `tools/make_sting_test.py`
-- **main()** (9 connections) — `tools/run_nat_sting.py`
-- **replace_program()** (8 connections) — `tools/run_nat_sting.py`
-- **socket** (8 connections)
-- **build_floppy()** (7 connections) — `tools/make_sting_test.py`
+- **cpu_swap_gate.py** (29 connections) — `tools/cpu_swap_gate.py`
+- **run_perfbench.py** (18 connections) — `tools/run_perfbench.py`
+- **run_closure_intro_guard.py** (13 connections) — `tools/run_closure_intro_guard.py`
+- **time** (12 connections)
+- **main()** (11 connections) — `tools/cpu_swap_gate.py`
+- **main()** (9 connections) — `tools/run_closure_intro_guard.py`
+- **host_info()** (9 connections) — `tools/run_perfbench.py`
+- **Scenario** (7 connections) — `tools/cpu_swap_gate.py`
+- **scenarios()** (7 connections) — `tools/cpu_swap_gate.py`
 - **threading** (7 connections)
-- **build_prg()** (6 connections) — `tools/make_sting_test.py`
-- **build_code()** (5 connections) — `tools/make_sting_test.py`
-- **main()** (5 connections) — `tools/make_sting_test.py`
+- **megaste_scenarios()** (6 connections) — `tools/cpu_swap_gate.py`
+- **replay_scenarios()** (6 connections) — `tools/cpu_swap_gate.py`
+- **budget()** (6 connections) — `tools/run_perfbench.py`
+- **_cpu_name()** (6 connections) — `tools/run_perfbench.py`
+- **measure_load()** (6 connections) — `tools/run_perfbench.py`
+- **collection_scenarios()** (5 connections) — `tools/cpu_swap_gate.py`
+- **run()** (5 connections) — `tools/cpu_swap_gate.py`
 - **handle()** (5 connections) — `tools/net_gateway80.py`
+- **features()** (5 connections) — `tools/run_closure_intro_guard.py`
+- **main()** (5 connections) — `tools/run_perfbench.py`
 - **net_gateway80.py** (5 connections) — `tools/net_gateway80.py`
-- **net_localdns.py** (3 connections) — `tools/net_localdns.py`
-- **alloc()** (2 connections) — `tools/make_sting_test.py`
-- **set_fat()** (2 connections) — `tools/make_sting_test.py`
-- **pump()** (2 connections) — `tools/net_gateway80.py`
-- **chain()** (2 connections) — `tools/run_nat_sting.py`
-- **replace()** (2 connections) — `tools/run_nat_sting.py`
-- **cl_off()** (1 connections) — `tools/make_sting_test.py`
-- **entry()** (1 connections) — `tools/make_sting_test.py`
-- **rd()** (1 connections) — `tools/make_sting_test.py`
-- **qname()** (1 connections) — `tools/net_localdns.py`
-- **serve()** (1 connections) — `tools/run_nat_sting.py`
-- **find()** (1 connections) — `tools/run_nat_sting.py`
-- **STinG/ENEC → NAT → HTTP loopback, avec DNS localhost, sans accès Internet. Le…** (1 connections) — `tools/run_nat_sting.py`
-- *... and 1 more nodes in this community*
+- **assemble_at_speed()** (4 connections) — `tools/cpu_swap_gate.py`
+- **etalon_scenarios()** (4 connections) — `tools/cpu_swap_gate.py`
+- **build()** (4 connections) — `tools/cpu_swap_gate.py`
+- **measure_all()** (4 connections) — `tools/run_perfbench.py`
+- *... and 31 more nodes in this community*
 
 ## Relationships
 
-- [Community 18](Community_18.md) (11 shared connections)
-- [Community 3](Community_3.md) (5 shared connections)
-- [Community 8](Community_8.md) (4 shared connections)
-- [Community 227](Community_227.md) (3 shared connections)
-- [Community 186](Community_186.md) (3 shared connections)
-- [Community 49](Community_49.md) (2 shared connections)
+- [Community 100](Community_100.md) (23 shared connections)
+- [Community 173](Community_173.md) (13 shared connections)
+- [Community 26](Community_26.md) (9 shared connections)
+- [Community 18](Community_18.md) (6 shared connections)
+- [Community 186](Community_186.md) (2 shared connections)
+- [Community 8](Community_8.md) (2 shared connections)
+- [Community 393](Community_393.md) (1 shared connections)
+- [Community 49](Community_49.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/make_sting_test.py`
+- `tools/cpu_swap_gate.py`
 - `tools/net_gateway80.py`
-- `tools/net_localdns.py`
-- `tools/run_nat_sting.py`
+- `tools/run_closure_intro_guard.py`
+- `tools/run_perfbench.py`
 
 ## Audit Trail
 
-- EXTRACTED: 66 (96%)
-- INFERRED: 3 (4%)
+- EXTRACTED: 142 (92%)
+- INFERRED: 12 (8%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,25 +1,33 @@
 # Community 591
 
-> 3 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **retro_core_option_display** (3 connections) — `src/libretro/libretro.h`
-- **key** (1 connections) — `src/libretro/libretro.h`
-- **visible** (1 connections) — `src/libretro/libretro.h`
+- **MouseMode** (7 connections) — `src/io/Ikbd.hpp`
+- **Relecture adversariale pré-release (2026-08-01)** (4 connections) — `CHANGELOG.md`
+- **ABS** (1 connections) — `src/io/Ikbd.hpp`
+- **CURSOR** (1 connections) — `src/io/Ikbd.hpp`
+- **OFF** (1 connections) — `src/io/Ikbd.hpp`
+- **REL** (1 connections) — `src/io/Ikbd.hpp`
 
 ## Relationships
 
-- [Community 83](Community_83.md) (1 shared connections)
+- [Community 47](Community_47.md) (1 shared connections)
+- [Community 7](Community_7.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 205](Community_205.md) (1 shared connections)
+- [Community 406](Community_406.md) (1 shared connections)
 
 ## Source Files
 
-- `src/libretro/libretro.h`
+- `CHANGELOG.md`
+- `src/io/Ikbd.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 7 (70%)
+- INFERRED: 3 (30%)
 - AMBIGUOUS: 0 (0%)
 
 ---

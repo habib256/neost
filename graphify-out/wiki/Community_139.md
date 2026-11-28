@@ -1,12 +1,11 @@
 # Community 139
 
-> 12 nodes
+> 11 nodes
 
 ## Key Concepts
 
 - **testSccAckPriority()** (10 connections) — `tests/scc_ack_priority_logic.cpp`
 - **PriorityRig** (9 connections) — `tests/scc_ack_priority_logic.cpp`
-- **scc_ack_priority_logic.cpp** (6 connections) — `tests/scc_ack_priority_logic.cpp`
 - **.command()** (4 connections) — `tests/scc_ack_priority_logic.cpp`
 - **.read()** (4 connections) — `tests/scc_ack_priority_logic.cpp`
 - **.write()** (4 connections) — `tests/scc_ack_priority_logic.cpp`
@@ -20,8 +19,7 @@
 ## Relationships
 
 - [Community 102](Community_102.md) (3 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
 
 ## Source Files
 
@@ -29,7 +27,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 26 (96%)
+- EXTRACTED: 23 (96%)
 - INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 

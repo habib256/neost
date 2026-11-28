@@ -1,44 +1,35 @@
 # Community 393
 
-> 13 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **Blitter.cpp** (30 connections) — `src/core/Blitter.cpp`
-- **.onSlice()** (9 connections) — `src/core/Blitter.hpp`
-- **.billCycles()** (5 connections) — `src/core/Blitter.hpp`
-- **.noteCpuBusAccess()** (5 connections) — `src/core/Blitter.hpp`
-- **.clearPreStartWindow()** (5 connections) — `src/core/Blitter.hpp`
-- **.finishTransfer()** (5 connections) — `src/core/Blitter.hpp`
-- **.start()** (4 connections) — `src/core/Blitter.hpp`
-- **.armPreStartWindow()** (4 connections) — `src/core/Blitter.hpp`
-- **.pauseTransfer()** (4 connections) — `src/core/Blitter.hpp`
-- **.reset()** (3 connections) — `src/core/Blitter.hpp`
-- **P2 — Blitter non-hog (`blitter.c:251,395`)** (3 connections) — `docs/CYCLE_ACCURACY.md`
-- **.read8()** (2 connections) — `src/core/Blitter.hpp`
-- **.notePreStartCpuAccess()** (2 connections) — `src/core/Blitter.hpp`
+- **Validation sur matériel réel — registre par cible** (11 connections) — `docs/HW_VALIDATION.md`
+- **Ce qui se vérifie STATIQUEMENT, sans la cible (2026-09-01)** (2 connections) — `docs/HW_VALIDATION.md`
+- **Raspberry Pi (borne) — ⭘ aucun budget temps réel mesuré** (2 connections) — `docs/HW_VALIDATION.md`
+- **Android arm64 — ◐ émulateur arm64 API 36, jamais posé sur un appareil** (1 connections) — `docs/HW_VALIDATION.md`
+- **La mesure de débit : `--budget`** (1 connections) — `docs/HW_VALIDATION.md`
+- **Le protocole d'une passe** (1 connections) — `docs/HW_VALIDATION.md`
+- **⚠ Le trou structurel que cette passe a mis au jour** (1 connections) — `docs/HW_VALIDATION.md`
+- **Linux x86_64 — ⭘ non consigné** (1 connections) — `docs/HW_VALIDATION.md`
+- **Pas 1 et 2 — passés sur les HUIT paquets (2026-09-01)** (1 connections) — `docs/HW_VALIDATION.md`
+- **Pourquoi ce fichier** (1 connections) — `docs/HW_VALIDATION.md`
+- **Windows x64 — ⭘ jamais lancé hors CI** (1 connections) — `docs/HW_VALIDATION.md`
 
 ## Relationships
 
-- [Community 37](Community_37.md) (11 shared connections)
-- [Community 434](Community_434.md) (8 shared connections)
-- [Community 532](Community_532.md) (7 shared connections)
-- [Community 102](Community_102.md) (5 shared connections)
-- [Community 186](Community_186.md) (3 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 317](Community_317.md) (1 shared connections)
+- [Community 273](Community_273.md) (1 shared connections)
+- [Community 354](Community_354.md) (1 shared connections)
+- [Community 282](Community_282.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/CYCLE_ACCURACY.md`
-- `src/core/Blitter.cpp`
-- `src/core/Blitter.hpp`
+- `docs/HW_VALIDATION.md`
 
 ## Audit Trail
 
-- EXTRACTED: 42 (71%)
-- INFERRED: 17 (29%)
+- EXTRACTED: 12 (92%)
+- INFERRED: 1 (8%)
 - AMBIGUOUS: 0 (0%)
 
 ---

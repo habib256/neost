@@ -1,31 +1,25 @@
 # Community 573
 
-> 8 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **CLAUDE.md** (7 connections) — `CLAUDE.md`
-- **Disquettes & ROM** (2 connections) — `CLAUDE.md`
-- **⭐ Méthode imposée (ordre strict)** (2 connections) — `CLAUDE.md`
-- **Où trouver quoi** (2 connections) — `CLAUDE.md`
-- **Build & run** (1 connections) — `CLAUDE.md`
-- **Conventions non négociables** (1 connections) — `CLAUDE.md`
-- **Les grades de preuve — à écrire dans le code** (1 connections) — `CLAUDE.md`
-- **Tester = le headless (outil n°1)** (1 connections) — `CLAUDE.md`
+- **retro_get_proc_address_interface** (3 connections) — `src/libretro/libretro.h`
+- **retro_get_proc_address_t** (1 connections)
+- **get_proc_address** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 
-- [Community 449](Community_449.md) (2 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `CLAUDE.md`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 8 (80%)
-- INFERRED: 2 (20%)
+- EXTRACTED: 3 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

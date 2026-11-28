@@ -1,26 +1,35 @@
 # Community 487
 
-> 4 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **Event** (5 connections) — `src/audio/Mt32Synth.hpp`
-- **cycle** (1 connections) — `src/audio/Mt32Synth.hpp`
-- **msg** (1 connections) — `src/audio/Mt32Synth.hpp`
-- **sysex** (1 connections) — `src/audio/Mt32Synth.hpp`
+- **Reader::SevenZip** (15 connections) — `src/util/Archive.cpp`
+- **Byte** (1 connections)
+- **CLookToRead2** (1 connections)
+- **CSzArEx** (1 connections)
+- **blockIndex** (1 connections) — `src/util/Archive.cpp`
+- **db** (1 connections) — `src/util/Archive.cpp`
+- **look** (1 connections) — `src/util/Archive.cpp`
+- **lookBuf** (1 connections) — `src/util/Archive.cpp`
+- **mem** (1 connections) — `src/util/Archive.cpp`
+- **outBuffer** (1 connections) — `src/util/Archive.cpp`
+- **outBufferSize** (1 connections) — `src/util/Archive.cpp`
 
 ## Relationships
 
+- [Community 213](Community_213.md) (2 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
-- [Community 117](Community_117.md) (1 shared connections)
+- [Community 263](Community_263.md) (1 shared connections)
+- [Community 285](Community_285.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/Mt32Synth.hpp`
+- `src/util/Archive.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 15 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,6 +1,6 @@
 # Community 305
 
-> 29 nodes
+> 40 nodes
 
 ## Key Concepts
 
@@ -25,29 +25,31 @@
 - **Ppmd7_Update1_0()** (5 connections) — `extern/lzma/Ppmd7.c`
 - **Ppmd7_Update2()** (5 connections) — `extern/lzma/Ppmd7.c`
 - **Z7_NO_INLINE** (5 connections)
+- **Ppmd7.h** (5 connections) — `extern/lzma/Ppmd7.h`
+- **Ppmd7Dec.c** (5 connections) — `extern/lzma/Ppmd7Dec.c`
 - **Ppmd7_GlueFreeBlocks()** (4 connections) — `extern/lzma/Ppmd7.c`
 - **Ppmd7_Init()** (4 connections) — `extern/lzma/Ppmd7.c`
-- **Ppmd7_Construct()** (3 connections) — `extern/lzma/Ppmd7.c`
-- **ISzAllocPtr** (2 connections)
-- *... and 4 more nodes in this community*
+- *... and 15 more nodes in this community*
 
 ## Relationships
 
-- [Community 353](Community_353.md) (5 shared connections)
-- [Community 492](Community_492.md) (3 shared connections)
-- [Community 406](Community_406.md) (2 shared connections)
-- [Community 245](Community_245.md) (1 shared connections)
+- [Community 353](Community_353.md) (7 shared connections)
+- [Community 263](Community_263.md) (3 shared connections)
+- [Community 245](Community_245.md) (3 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
+- [Community 529](Community_529.md) (1 shared connections)
 
 ## Source Files
 
+- `extern/lzma/Ppmd.h`
 - `extern/lzma/Ppmd7.c`
+- `extern/lzma/Ppmd7.h`
 - `extern/lzma/Ppmd7Dec.c`
 
 ## Audit Trail
 
-- EXTRACTED: 85 (90%)
-- INFERRED: 9 (10%)
+- EXTRACTED: 100 (91%)
+- INFERRED: 10 (9%)
 - AMBIGUOUS: 0 (0%)
 
 ---

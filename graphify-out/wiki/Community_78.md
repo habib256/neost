@@ -33,12 +33,13 @@
 
 ## Relationships
 
-- [Community 149](Community_149.md) (7 shared connections)
+- [Community 149](Community_149.md) (5 shared connections)
 - [Community 12](Community_12.md) (3 shared connections)
-- [Community 95](Community_95.md) (2 shared connections)
+- [Community 406](Community_406.md) (3 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
 - [Community 31](Community_31.md) (1 shared connections)
 - [Community 170](Community_170.md) (1 shared connections)
+- [Community 95](Community_95.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
 - [Community 141](Community_141.md) (1 shared connections)
 

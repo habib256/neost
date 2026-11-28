@@ -1,10 +1,12 @@
 # Community 43
 
-> 39 nodes
+> 41 nodes
 
 ## Key Concepts
 
 - **CrtEffectStack** (45 connections) — `src/gui/CrtEffectStack.h`
+- **.process()** (4 connections) — `src/gui/CrtEffectStack.h`
+- **.createTextures()** (3 connections) — `src/gui/CrtEffectStack.h`
 - **.CrtEffectStack()** (2 connections) — `src/gui/CrtEffectStack.h`
 - **.available()** (1 connections) — `src/gui/CrtEffectStack.h`
 - **.outputHeight()** (1 connections) — `src/gui/CrtEffectStack.h`
@@ -27,17 +29,15 @@
 - **uCenterLighting** (1 connections) — `src/gui/CrtEffectStack.h`
 - **uContrast** (1 connections) — `src/gui/CrtEffectStack.h`
 - **uHue** (1 connections) — `src/gui/CrtEffectStack.h`
-- **uLuminanceGain** (1 connections) — `src/gui/CrtEffectStack.h`
-- **uOutSize** (1 connections) — `src/gui/CrtEffectStack.h`
-- *... and 14 more nodes in this community*
+- *... and 16 more nodes in this community*
 
 ## Relationships
 
+- [Community 91](Community_91.md) (4 shared connections)
 - [Community 129](Community_129.md) (2 shared connections)
-- [Community 91](Community_91.md) (2 shared connections)
-- [Community 600](Community_600.md) (2 shared connections)
 - [Community 1](Community_1.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
+- [Community 470](Community_470.md) (1 shared connections)
 
 ## Source Files
 
@@ -45,8 +45,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 46 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 48 (96%)
+- INFERRED: 2 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

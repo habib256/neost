@@ -1,9 +1,10 @@
 # Community 176
 
-> 44 nodes
+> 46 nodes
 
 ## Key Concepts
 
+- **fdc_mount_guard_logic.cpp** (31 connections) — `tests/fdc_mount_guard_logic.cpp`
 - **Rig** (21 connections) — `tests/fdc_mount_guard_logic.cpp`
 - **stxOverlayStateCases()** (18 connections) — `tests/fdc_mount_guard_logic.cpp`
 - **dimUsedCases()** (13 connections) — `tests/fdc_mount_guard_logic.cpp`
@@ -27,20 +28,22 @@
 - **TempDir** (4 connections) — `tests/fdc_mount_guard_logic.cpp`
 - **bareMachine()** (4 connections) — `tests/fdc_mount_guard_logic.cpp`
 - **.mode()** (4 connections) — `tests/fdc_mount_guard_logic.cpp`
-- **.finish()** (3 connections) — `tests/fdc_mount_guard_logic.cpp`
-- **2026-11-25 — Écritures des disquettes protégées dans l'état** (3 connections) — `CHANGELOG.md`
-- *... and 19 more nodes in this community*
+- **readFile()** (3 connections) — `tests/fdc_mount_guard_logic.cpp`
+- *... and 21 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (19 shared connections)
-- [Community 149](Community_149.md) (3 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 121](Community_121.md) (2 shared connections)
+- [Community 102](Community_102.md) (14 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
+- [Community 406](Community_406.md) (2 shared connections)
 - [Community 119](Community_119.md) (1 shared connections)
-- [Community 299](Community_299.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 145](Community_145.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
+- [Community 149](Community_149.md) (1 shared connections)
+- [Community 172](Community_172.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
+- [Community 12](Community_12.md) (1 shared connections)
 
 ## Source Files
 
@@ -49,7 +52,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 128 (96%)
+- EXTRACTED: 145 (96%)
 - INFERRED: 6 (4%)
 - AMBIGUOUS: 0 (0%)
 

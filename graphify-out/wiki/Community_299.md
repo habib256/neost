@@ -1,61 +1,60 @@
 # Community 299
 
-> 29 nodes
+> 28 nodes
 
 ## Key Concepts
 
-- **fuzz_state.cpp** (26 connections) — `tests/fuzz_state.cpp`
-- **fuzzMedia()** (15 connections) — `tests/fuzz_state.cpp`
-- **le32()** (15 connections) — `tests/fuzz_state.cpp`
-- **fuzzBody()** (10 connections) — `tests/fuzz_state.cpp`
-- **Rng** (7 connections) — `tests/fuzz_state.cpp`
-- **writeStx()** (7 connections) — `tests/stx_data_crc_write_logic.cpp`
-- **makeMachine()** (6 connections) — `tests/fuzz_state.cpp`
-- **withDriveAPath()** (6 connections) — `tests/fuzz_state.cpp`
-- **fixMediaCrc()** (5 connections) — `tests/fuzz_state.cpp`
-- **fail()** (4 connections) — `tests/fuzz_state.cpp`
-- **readAll()** (4 connections) — `tests/fuzz_state.cpp`
-- **set32()** (4 connections) — `tests/fuzz_state.cpp`
-- **writeAll()** (4 connections) — `tests/fuzz_state.cpp`
-- **forgeStx()** (4 connections) — `tests/stx_writetrack_test.cpp`
-- **path** (4 connections)
-- **blankSt()** (3 connections) — `tests/fuzz_state.cpp`
-- **main()** (3 connections) — `tests/fuzz_state.cpp`
-- **onlyExpected()** (3 connections) — `tests/fuzz_state.cpp`
-- **.below()** (3 connections) — `tests/fuzz_state.cpp`
-- **crc16()** (3 connections) — `tests/stx_data_crc_write_logic.cpp`
-- **size_t** (3 connections)
-- **.next()** (1 connections) — `tests/fuzz_state.cpp`
-- **.Rng()** (1 connections) — `tests/fuzz_state.cpp`
-- **Machine** (1 connections)
-- **string** (1 connections)
-- *... and 4 more nodes in this community*
+- **FatImage** (18 connections) — `tests/selftest_logic.cpp`
+- **AudioPacer** (17 connections) — `src/core/Pacing.hpp`
+- **testPacing()** (14 connections) — `tests/selftest_logic.cpp`
+- **testFloppyCatalog()** (9 connections) — `tests/selftest_logic.cpp`
+- **cpuHz()** (6 connections) — `src/core/Pacing.hpp`
+- **.folder()** (5 connections) — `tests/selftest_logic.cpp`
+- **.pick()** (5 connections) — `tests/selftest_logic.cpp`
+- **.entry()** (4 connections) — `tests/selftest_logic.cpp`
+- **.fat()** (4 connections) — `tests/selftest_logic.cpp`
+- **.file()** (4 connections) — `tests/selftest_logic.cpp`
+- **.samplesForFrame()** (3 connections) — `src/core/Pacing.hpp`
+- **frameNanos()** (3 connections) — `src/core/Pacing.hpp`
+- **.autoFolder()** (3 connections) — `tests/selftest_logic.cpp`
+- **.FatImage()** (3 connections) — `tests/selftest_logic.cpp`
+- **.applyMasterVolume()** (2 connections) — `src/core/Pacing.hpp`
+- **.clampStereo()** (2 connections) — `src/core/Pacing.hpp`
+- **.reset()** (2 connections) — `src/core/Pacing.hpp`
+- **.volumeSmoothed()** (2 connections) — `src/core/Pacing.hpp`
+- **.bootable()** (2 connections) — `tests/selftest_logic.cpp`
+- **.carry()** (1 connections) — `src/core/Pacing.hpp`
+- **kMaxAdjust** (1 connections) — `src/core/Pacing.hpp`
+- **kServoDivisor** (1 connections) — `src/core/Pacing.hpp`
+- **volSmooth_** (1 connections) — `src/core/Pacing.hpp`
+- **img** (1 connections) — `tests/selftest_logic.cpp`
+- **kData** (1 connections) — `tests/selftest_logic.cpp`
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (16 shared connections)
-- [Community 4](Community_4.md) (4 shared connections)
-- [Community 186](Community_186.md) (3 shared connections)
-- [Community 449](Community_449.md) (2 shared connections)
-- [Community 174](Community_174.md) (2 shared connections)
-- [Community 459](Community_459.md) (1 shared connections)
-- [Community 176](Community_176.md) (1 shared connections)
-- [Community 172](Community_172.md) (1 shared connections)
-- [Community 201](Community_201.md) (1 shared connections)
-- [Community 69](Community_69.md) (1 shared connections)
-- [Community 71](Community_71.md) (1 shared connections)
-- [Community 72](Community_72.md) (1 shared connections)
+- [Community 41](Community_41.md) (15 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 430](Community_430.md) (2 shared connections)
+- [Community 61](Community_61.md) (1 shared connections)
+- [Community 239](Community_239.md) (1 shared connections)
+- [Community 228](Community_228.md) (1 shared connections)
+- [Community 282](Community_282.md) (1 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
+- [Community 406](Community_406.md) (1 shared connections)
+- [Community 197](Community_197.md) (1 shared connections)
+- [Community 117](Community_117.md) (1 shared connections)
+- [Community 145](Community_145.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/fuzz_state.cpp`
-- `tests/stx_data_crc_write_logic.cpp`
-- `tests/stx_writetrack_test.cpp`
+- `src/core/Pacing.hpp`
+- `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 80 (87%)
-- INFERRED: 12 (13%)
+- EXTRACTED: 54 (72%)
+- INFERRED: 21 (28%)
 - AMBIGUOUS: 0 (0%)
 
 ---

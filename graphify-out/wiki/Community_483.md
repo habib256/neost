@@ -1,41 +1,32 @@
 # Community 483
 
-> 13 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **stblitter_bench.cpp** (12 connections) — `tools/stblitter_bench.cpp`
-- **stcpu_bench.cpp** (11 connections) — `tools/stcpu_bench.cpp`
-- **verilated** (4 connections)
-- **halfCycle()** (3 connections) — `tools/stblitter_bench.cpp`
-- **observe()** (3 connections) — `tools/stblitter_bench.cpp`
-- **main()** (3 connections) — `tools/stcpu_bench.cpp`
-- **main()** (2 connections) — `tools/stblitter_bench.cpp`
-- **ramWord()** (2 connections) — `tools/stblitter_bench.cpp`
-- **tick()** (2 connections) — `tools/stcpu_bench.cpp`
-- **unsignedArg()** (2 connections) — `tools/stcpu_bench.cpp`
-- **climits** (2 connections)
-- **vstblitter_bench_top** (1 connections)
-- **vstcpu_bench_top** (1 connections)
+- **Performance du cœur NeoST — profil, optimisations, recette de build** (7 connections) — `docs/PERFORMANCE.md`
+- **2. Le profil de départ (boot TOS 1.62, 300 trames)** (3 connections) — `docs/PERFORMANCE.md`
+- **5. La recette de build : PGO + LTO** (2 connections) — `docs/PERFORMANCE.md`
+- **1. Refaire le profil** (1 connections) — `docs/PERFORMANCE.md`
+- **4. Résultat des optimisations de code** (1 connections) — `docs/PERFORMANCE.md`
+- **6. Ce qui reste sur la table** (1 connections) — `docs/PERFORMANCE.md`
+- **⚠ Le piège du PGO, qui coûte le gain sans rien dire** (1 connections) — `docs/PERFORMANCE.md`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 186](Community_186.md) (4 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 197](Community_197.md) (1 shared connections)
-- [Community 65](Community_65.md) (1 shared connections)
-- [Community 272](Community_272.md) (1 shared connections)
+- [Community 319](Community_319.md) (1 shared connections)
+- [Community 39](Community_39.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
+- [Community 203](Community_203.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/stblitter_bench.cpp`
-- `tools/stcpu_bench.cpp`
+- `docs/PERFORMANCE.md`
 
 ## Audit Trail
 
-- EXTRACTED: 31 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 8 (80%)
+- INFERRED: 2 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---

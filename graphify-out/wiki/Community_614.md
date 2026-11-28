@@ -1,26 +1,25 @@
 # Community 614
 
-> 3 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **case_netplay_keyboard()** (5 connections) — `tools/run_libretro.py`
-- **colour0()** (1 connections) — `tools/run_libretro.py`
-- **Port 3 « clavier pour le netplay » : la touche tenue est relue chaque trame ;…** (1 connections) — `tools/run_libretro.py`
+- **KioskKey** (4 connections) — `src/gui/KioskMenu.hpp`
+- **kind** (1 connections) — `src/gui/KioskMenu.hpp`
+- **label** (1 connections) — `src/gui/KioskMenu.hpp`
+- **scancode** (1 connections) — `src/gui/KioskMenu.hpp`
 
 ## Relationships
 
-- [Community 247](Community_247.md) (1 shared connections)
-- [Community 377](Community_377.md) (1 shared connections)
-- [Community 429](Community_429.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/run_libretro.py`
+- `src/gui/KioskMenu.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 4 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

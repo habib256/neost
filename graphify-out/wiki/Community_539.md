@@ -1,31 +1,29 @@
 # Community 539
 
-> 6 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **retro_game_info** (7 connections) — `src/libretro/libretro.h`
-- **retro_load_game_special()** (3 connections) — `src/libretro/neost_libretro.cpp`
-- **data** (1 connections) — `src/libretro/libretro.h`
-- **meta** (1 connections) — `src/libretro/libretro.h`
-- **path** (1 connections) — `src/libretro/libretro.h`
-- **size** (1 connections) — `src/libretro/libretro.h`
+- **.read16Dasm()** (8 connections) — `src/core/Cpu68k.cpp`
+- **Moira::dasmIncRead()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmRead()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::disassembleInstr()** (3 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
 
 ## Relationships
 
-- [Community 304](Community_304.md) (2 shared connections)
-- [Community 83](Community_83.md) (1 shared connections)
-- [Community 248](Community_248.md) (1 shared connections)
+- [Community 2](Community_2.md) (8 shared connections)
+- [Community 9](Community_9.md) (4 shared connections)
+- [Community 64](Community_64.md) (1 shared connections)
 
 ## Source Files
 
-- `src/libretro/libretro.h`
-- `src/libretro/neost_libretro.cpp`
+- `extern/moira/Moira/MoiraDasm_cpp.h`
+- `src/core/Cpu68k.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 11 (69%)
+- INFERRED: 5 (31%)
 - AMBIGUOUS: 0 (0%)
 
 ---

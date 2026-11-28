@@ -1,26 +1,32 @@
 # Community 578
 
-> 4 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **retro_system_content_info_override** (4 connections) — `src/libretro/libretro.h`
-- **extensions** (1 connections) — `src/libretro/libretro.h`
-- **need_fullpath** (1 connections) — `src/libretro/libretro.h`
-- **persistent_data** (1 connections) — `src/libretro/libretro.h`
+- **PsgBusRig** (10 connections) — `tests/psg_odd_write_logic.cpp`
+- **portA** (2 connections) — `tests/psg_odd_write_logic.cpp`
+- **.PsgBusRig()** (1 connections) — `tests/psg_odd_write_logic.cpp`
+- **Bus** (1 connections)
+- **YM2149** (1 connections)
+- **bus** (1 connections) — `tests/psg_odd_write_logic.cpp`
+- **portB** (1 connections) — `tests/psg_odd_write_logic.cpp`
+- **printed** (1 connections) — `tests/psg_odd_write_logic.cpp`
+- **psg** (1 connections) — `tests/psg_odd_write_logic.cpp`
 
 ## Relationships
 
-- [Community 83](Community_83.md) (1 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 386](Community_386.md) (1 shared connections)
 
 ## Source Files
 
-- `src/libretro/libretro.h`
+- `tests/psg_odd_write_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 10 (91%)
+- INFERRED: 1 (9%)
 - AMBIGUOUS: 0 (0%)
 
 ---

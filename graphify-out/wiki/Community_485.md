@@ -1,40 +1,30 @@
 # Community 485
 
-> 13 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **ArchiveDisks.cpp** (20 connections) — `src/util/ArchiveDisks.cpp`
-- **unpackFloppies()** (11 connections) — `src/util/ArchiveDisks.cpp`
-- **string** (9 connections)
-- **extOf()** (5 connections) — `src/util/ArchiveDisks.cpp`
-- **lowerOf()** (5 connections) — `src/util/ArchiveDisks.cpp`
-- **readAll()** (4 connections) — `src/util/ArchiveDisks.cpp`
-- **unpackedFloppies()** (4 connections) — `src/util/ArchiveDisks.cpp`
-- **writeIfAbsent()** (4 connections) — `src/util/ArchiveDisks.cpp`
-- **isArchiveName()** (3 connections) — `src/util/ArchiveDisks.cpp`
-- **isFloppyArchiveName()** (3 connections) — `src/util/ArchiveDisks.cpp`
-- **macJunk()** (3 connections) — `src/util/ArchiveDisks.cpp`
-- **unpackDirFor()** (2 connections) — `src/util/ArchiveDisks.cpp`
-- **path** (1 connections)
+- **FPUModel** (7 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **.setModel()** (3 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **.getModel()** (2 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **M68040** (1 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **M68881** (1 connections) — `extern/moira/Moira/FPU/FPU.h`
+- **M68882** (1 connections) — `extern/moira/Moira/FPU/FPU.h`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (7 shared connections)
-- [Community 213](Community_213.md) (4 shared connections)
-- [Community 4](Community_4.md) (4 shared connections)
-- [Community 428](Community_428.md) (1 shared connections)
-- [Community 186](Community_186.md) (1 shared connections)
-- [Community 294](Community_294.md) (1 shared connections)
+- [Community 63](Community_63.md) (3 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
 
 ## Source Files
 
-- `src/util/ArchiveDisks.cpp`
+- `extern/moira/Moira/FPU/FPU.h`
 
 ## Audit Trail
 
-- EXTRACTED: 42 (91%)
-- INFERRED: 4 (9%)
+- EXTRACTED: 10 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

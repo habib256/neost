@@ -1,30 +1,32 @@
 # Community 547
 
-> 6 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **case_midi_hidden()** (5 connections) — `tools/run_libretro.py`
-- **case_midi_out()** (5 connections) — `tools/run_libretro.py`
-- **bconout_midi()** (4 connections) — `tools/run_libretro.py`
-- **Bconout(3, b) : un octet sur le port MIDI par le BIOS.** (1 connections) — `tools/run_libretro.py`
-- **MIDI OUT vers l'interface MIDI de RetroArch : note on envoyée par Bconout(3),…** (1 connections) — `tools/run_libretro.py`
-- **Trames cachées de l'anticipation (son coupé) : rien ne part vers le MIDI.** (1 connections) — `tools/run_libretro.py`
+- **After** (9 connections) — `src/io/Fpu.hpp`
+- **.armIn()** (5 connections) — `src/io/Fpu.hpp`
+- **CtrlIn** (1 connections) — `src/io/Fpu.hpp`
+- **GenOp** (1 connections) — `src/io/Fpu.hpp`
+- **MovemIn** (1 connections) — `src/io/Fpu.hpp`
+- **MoveOutDone** (1 connections) — `src/io/Fpu.hpp`
+- **None** (1 connections) — `src/io/Fpu.hpp`
+- **RestoreIn** (1 connections) — `src/io/Fpu.hpp`
 
 ## Relationships
 
-- [Community 429](Community_429.md) (3 shared connections)
-- [Community 247](Community_247.md) (2 shared connections)
-- [Community 377](Community_377.md) (2 shared connections)
+- [Community 551](Community_551.md) (2 shared connections)
+- [Community 20](Community_20.md) (2 shared connections)
+- [Community 422](Community_422.md) (2 shared connections)
 
 ## Source Files
 
-- `tools/run_libretro.py`
+- `src/io/Fpu.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 12 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 11 (85%)
+- INFERRED: 2 (15%)
 - AMBIGUOUS: 0 (0%)
 
 ---

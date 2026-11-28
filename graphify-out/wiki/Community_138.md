@@ -1,64 +1,60 @@
 # Community 138
 
-> 42 nodes
+> 23 nodes
 
 ## Key Concepts
 
-- **App.cpp** (60 connections) — `src/gui/App.cpp`
-- **appInit()** (23 connections) — `src/gui/AppInit.cpp`
-- **A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30)** (19 connections) — `CHANGELOG.md`
 - **.applyConfig()** (15 connections) — `src/gui/App.hpp`
 - **string** (15 connections)
 - **consumeProfileRequests()** (14 connections) — `src/gui/AppLoop.cpp`
 - **resolveData()** (13 connections) — `src/gui/App.cpp`
-- **.resolveQuartz()** (9 connections) — `src/core/Machine.hpp`
+- **FdcSound** (12 connections) — `src/io/Fdc.hpp`
 - **consumeApplyRequests()** (9 connections) — `src/gui/AppLoop.cpp`
 - **tosFileUnsupportedMachine()** (8 connections) — `src/gui/App.cpp`
-- **parseCommandLine()** (8 connections) — `src/gui/AppInit.cpp`
-- **archiveCacheRoot()** (7 connections) — `src/gui/App.cpp`
 - **archiveFloppies()** (7 connections) — `src/gui/App.cpp`
 - **fileExists()** (7 connections) — `src/gui/App.cpp`
-- **.midiOutApply()** (6 connections) — `src/gui/App.hpp`
-- **.midiLearnUids()** (6 connections) — `src/gui/App.hpp`
-- **.switchKioskMode()** (6 connections) — `src/gui/App.hpp`
+- **Profils de réglages nommés (2026-08-10)** (7 connections) — `CHANGELOG.md`
 - **mountableFloppy()** (6 connections) — `src/gui/App.cpp`
 - **quartzFromConfig()** (6 connections) — `src/gui/App.cpp`
 - **romLoadable()** (6 connections) — `src/gui/App.cpp`
 - **romUnloadableReason()** (6 connections) — `src/gui/App.cpp`
-- **.loadDongleTable()** (5 connections) — `src/gui/App.hpp`
-- **.neBackend()** (5 connections) — `src/gui/App.hpp`
-- **.netUsbeeApply()** (5 connections) — `src/gui/App.hpp`
-- **.applyPeripherals()** (5 connections) — `src/gui/App.hpp`
-- *... and 17 more nodes in this community*
+- **pickTosForMachine()** (5 connections) — `src/gui/App.cpp`
+- **looksLikeTosHeader()** (4 connections) — `src/gui/App.cpp`
+- **App** (4 connections)
+- **uintmax_t** (1 connections)
+- **Index** (1 connections) — `src/io/Fdc.hpp`
+- **MotorOff** (1 connections) — `src/io/Fdc.hpp`
+- **MotorOn** (1 connections) — `src/io/Fdc.hpp`
+- **Seek** (1 connections) — `src/io/Fdc.hpp`
+- **Step** (1 connections) — `src/io/Fdc.hpp`
 
 ## Relationships
 
-- [Community 214](Community_214.md) (25 shared connections)
-- [Community 4](Community_4.md) (18 shared connections)
-- [Community 449](Community_449.md) (14 shared connections)
-- [Community 1](Community_1.md) (14 shared connections)
-- [Community 101](Community_101.md) (8 shared connections)
-- [Community 102](Community_102.md) (7 shared connections)
-- [Community 99](Community_99.md) (4 shared connections)
-- [Community 51](Community_51.md) (4 shared connections)
-- [Community 27](Community_27.md) (4 shared connections)
-- [Community 223](Community_223.md) (4 shared connections)
-- [Community 186](Community_186.md) (4 shared connections)
-- [Community 333](Community_333.md) (3 shared connections)
+- [Community 214](Community_214.md) (16 shared connections)
+- [Community 4](Community_4.md) (11 shared connections)
+- [Community 153](Community_153.md) (7 shared connections)
+- [Community 101](Community_101.md) (6 shared connections)
+- [Community 449](Community_449.md) (4 shared connections)
+- [Community 288](Community_288.md) (4 shared connections)
+- [Community 325](Community_325.md) (3 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 27](Community_27.md) (2 shared connections)
+- [Community 124](Community_124.md) (2 shared connections)
+- [Community 51](Community_51.md) (2 shared connections)
+- [Community 239](Community_239.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
-- `src/core/Machine.hpp`
 - `src/gui/App.cpp`
 - `src/gui/App.hpp`
-- `src/gui/AppInit.cpp`
 - `src/gui/AppLoop.cpp`
+- `src/io/Fdc.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 155 (67%)
-- INFERRED: 76 (33%)
+- EXTRACTED: 72 (64%)
+- INFERRED: 40 (36%)
 - AMBIGUOUS: 0 (0%)
 
 ---

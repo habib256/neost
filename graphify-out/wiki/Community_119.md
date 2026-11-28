@@ -1,6 +1,6 @@
 # Community 119
 
-> 22 nodes
+> 20 nodes
 
 ## Key Concepts
 
@@ -16,10 +16,8 @@
 - **Sym** (4 connections) — `src/core/Symbols.hpp`
 - **be16()** (4 connections) — `src/core/Symbols.cpp`
 - **lower()** (4 connections) — `src/core/Symbols.cpp`
-- **sstream** (4 connections)
 - **.clear()** (2 connections) — `src/core/Symbols.hpp`
 - **be32()** (2 connections) — `src/core/Symbols.cpp`
-- **.count()** (2 connections) — `src/core/Symbols.hpp`
 - **string** (2 connections)
 - **unordered_map** (1 connections)
 - **addr** (1 connections) — `src/core/Symbols.hpp`
@@ -29,18 +27,15 @@
 
 ## Relationships
 
-- [Community 298](Community_298.md) (4 shared connections)
+- [Community 4](Community_4.md) (5 shared connections)
+- [Community 386](Community_386.md) (4 shared connections)
 - [Community 102](Community_102.md) (3 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
 - [Community 470](Community_470.md) (3 shared connections)
-- [Community 186](Community_186.md) (2 shared connections)
 - [Community 1](Community_1.md) (1 shared connections)
 - [Community 88](Community_88.md) (1 shared connections)
-- [Community 149](Community_149.md) (1 shared connections)
+- [Community 406](Community_406.md) (1 shared connections)
 - [Community 176](Community_176.md) (1 shared connections)
 - [Community 303](Community_303.md) (1 shared connections)
-- [Community 99](Community_99.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
@@ -49,8 +44,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 49 (78%)
-- INFERRED: 14 (22%)
+- EXTRACTED: 46 (78%)
+- INFERRED: 13 (22%)
 - AMBIGUOUS: 0 (0%)
 
 ---

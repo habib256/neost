@@ -19,11 +19,10 @@
 
 - [Community 21](Community_21.md) (3 shared connections)
 - [Community 11](Community_11.md) (2 shared connections)
+- [Community 101](Community_101.md) (2 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
-- [Community 471](Community_471.md) (1 shared connections)
-- [Community 101](Community_101.md) (1 shared connections)
+- [Community 185](Community_185.md) (1 shared connections)
 - [Community 325](Community_325.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 

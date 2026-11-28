@@ -1,56 +1,36 @@
 # Community 399
 
-> 22 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **MidiInHost.cpp** (28 connections) — `src/audio/MidiInHost.cpp`
-- **.setDevices()** (12 connections) — `src/audio/MidiInHost.hpp`
-- **.sources()** (9 connections) — `src/audio/MidiInHost.hpp`
-- **InBuffer** (5 connections) — `src/audio/MidiInHost.cpp`
-- **.openNames()** (5 connections) — `src/audio/MidiInHost.hpp`
-- **.readerLoop()** (5 connections) — `src/audio/MidiInHost.hpp`
-- **displayName()** (5 connections) — `src/audio/MidiInHost.cpp`
-- **uniqueId()** (5 connections) — `src/audio/MidiInHost.cpp`
-- **.closeBackend()** (4 connections) — `src/audio/MidiInHost.hpp`
-- **.available()** (3 connections) — `src/audio/MidiInHost.hpp`
-- **.close()** (3 connections) — `src/audio/MidiInHost.hpp`
-- **string** (3 connections)
-- **data** (3 connections) — `src/audio/MidiInHost.cpp`
-- **asoundlib** (3 connections)
-- **MIDIPacketList** (2 connections) — `src/audio/MidiInHost.hpp`
-- **.tryPop()** (2 connections) — `src/audio/MidiInHost.hpp`
-- **.MidiInHost()** (2 connections) — `src/audio/MidiInHost.hpp`
-- **MidiInHost::coreMidiRead()** (2 connections) — `src/audio/MidiInHost.cpp`
-- **MIDIObjectRef** (2 connections)
-- **coremidi** (2 connections)
-- **MIDIHDR** (1 connections)
-- **hdr** (1 connections) — `src/audio/MidiInHost.cpp`
+- **make_ref_traces.py** (14 connections) — `tools/make_ref_traces.py`
+- **capture()** (9 connections) — `tools/make_ref_traces.py`
+- **main()** (6 connections) — `tools/make_ref_traces.py`
+- **entry_args()** (5 connections) — `tools/make_ref_traces.py`
+- **hatari_cmd()** (4 connections) — `tools/make_ref_traces.py`
+- **sha()** (4 connections) — `tools/make_ref_traces.py`
+- **source()** (4 connections) — `tools/make_ref_traces.py`
+- **Path** (4 connections)
+- **Le parcours dont l'entrée reprend les entrées : `replay`…** (1 connections) — `tools/make_ref_traces.py`
+- **Arguments compare_titles/title_cmd du parcours de référence : mêmes entrées.** (1 connections) — `tools/make_ref_traces.py`
+- **Même configuration que compare_titles.hatari_shots (TOS original, FDC lent).** (1 connections) — `tools/make_ref_traces.py`
 
 ## Relationships
 
-- [Community 220](Community_220.md) (9 shared connections)
-- [Community 471](Community_471.md) (7 shared connections)
-- [Community 102](Community_102.md) (6 shared connections)
-- [Community 366](Community_366.md) (6 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 186](Community_186.md) (2 shared connections)
-- [Community 302](Community_302.md) (2 shared connections)
-- [Community 214](Community_214.md) (1 shared connections)
-- [Community 298](Community_298.md) (1 shared connections)
-- [Community 185](Community_185.md) (1 shared connections)
-- [Community 325](Community_325.md) (1 shared connections)
-- [Community 126](Community_126.md) (1 shared connections)
+- [Community 100](Community_100.md) (5 shared connections)
+- [Community 26](Community_26.md) (4 shared connections)
+- [Community 173](Community_173.md) (4 shared connections)
+- [Community 207](Community_207.md) (2 shared connections)
 
 ## Source Files
 
-- `src/audio/MidiInHost.cpp`
-- `src/audio/MidiInHost.hpp`
+- `tools/make_ref_traces.py`
 
 ## Audit Trail
 
-- EXTRACTED: 66 (90%)
-- INFERRED: 7 (10%)
+- EXTRACTED: 34 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

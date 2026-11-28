@@ -356,11 +356,8 @@ public:
         g_cur->faultWrite = !(frame.code & 0x10);
         g_cur->faultValid = true;
     }
-    // Moira notifie ces deux délégués À L'ENTRÉE (MoiraExceptions_cpp.h:268 et :305)
-    // et À LA SORTIE (:296 et :333) de execAddressError/execBusError. On s'en sert
-    // uniquement pour retenir le vecteur en cours de prise : c'est la seule donnée
-    // FIABLE dont dispose didHaltCPU() (cf. plus bas — reg.pc0 a déjà été avancé par
-    // le prefetch de l'instruction fautive, il ne désigne PAS la faute).
+    // Moira encadre la construction de la trame de groupe 0 par ces deux
+    // délégués. didHaltCPU peut ainsi nommer le vecteur dont la prise a échoué.
     void willExecute(moira::M68kException exc, moira::u16 vector) override {
         if (exc == moira::M68kException::TRAP && g_cur->trapObserver) g_cur->trapObserver(vector);
         if (exc == moira::M68kException::BUS_ERROR ||
@@ -388,11 +385,9 @@ public:
     // porte Moira MoiraExceptions_cpp.h:281-282). Le halt lui-même est FIDÈLE
     // (mesuré : même instruction que Hatari) — seule l'observabilité manquait.
     //
-    // ⚠ On n'affiche PAS de PC : getPC0() vaut ici l'instruction SUIVANTE, le
-    // prefetch de l'instruction fautive (MoiraDataflow_cpp.h:586 `reg.pc0 = reg.pc`)
-    // ayant lieu AVANT le test d'alignement (MoiraExec_cpp.h:2874-2886). Hatari
-    // n'en affiche pas non plus dans son message. Le vecteur et le SSP, eux, sont
-    // exacts au moment de la faute.
+    // La dernière faute conserve le PC de l'instruction et l'adresse du
+    // transfert. Sur les doubles fautes de Stardust, Pacemaker et Faster Atari,
+    // Moira 6 garde en PC0 le MOVE.L qui écrit sur la pile.
     void didHaltCPU() override {
         if (g_cur->inReset) {
             neost::log::err(
@@ -473,8 +468,7 @@ public:
     // vecteur et préfetchait — soit 3 accès bus APRÈS la faute, là où le vrai 68000
     // assère /HALT au deuxième échec et ne fait plus un seul cycle. Le throw remonte
     // jusqu'au catch(DoubleFault) de Moira::processException, qui appelle le vrai
-    // halt() — lequel restaure aussi reg.pc = reg.pc0 et notifie didHaltCPU(), deux
-    // choses que le drapeau posé à la main sautait.
+    // halt(), qui conserve PC0, remet le PC interne à PC0 + 2 et appelle didHaltCPU().
     bool faultOrHalt(moira::u32 a, bool write, bool external = false) const {
         if (g_cur->inBusError) {
             g_cur->faultAddr = a;

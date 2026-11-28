@@ -1,31 +1,27 @@
 # Community 550
 
-> 5 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **8. Blitter — `Blitter.cpp` ↔ `blitter.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Refermés** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Event** (5 connections) — `src/audio/Mt32Synth.hpp`
+- **cycle** (1 connections) — `src/audio/Mt32Synth.hpp`
+- **msg** (1 connections) — `src/audio/Mt32Synth.hpp`
+- **sysex** (1 connections) — `src/audio/Mt32Synth.hpp`
 
 ## Relationships
 
-- [Community 397](Community_397.md) (1 shared connections)
-- [Community 532](Community_532.md) (1 shared connections)
-- [Community 434](Community_434.md) (1 shared connections)
-- [Community 298](Community_298.md) (1 shared connections)
-- [Community 58](Community_58.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 117](Community_117.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
+- `src/audio/Mt32Synth.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (56%)
-- INFERRED: 4 (44%)
+- EXTRACTED: 5 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

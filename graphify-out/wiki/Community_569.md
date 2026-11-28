@@ -4,22 +4,22 @@
 
 ## Key Concepts
 
-- **Base** (5 connections) — `extern/moira/Moira/FPU/FpuEnvMath.cpp`
-- **E** (1 connections) — `extern/moira/Moira/FPU/FpuEnvMath.cpp`
-- **TEN** (1 connections) — `extern/moira/Moira/FPU/FpuEnvMath.cpp`
-- **TWO** (1 connections) — `extern/moira/Moira/FPU/FpuEnvMath.cpp`
+- **PointerAction** (4 connections) — `src/libretro/neost_libretro.cpp`
+- **left** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **x** (1 connections) — `src/libretro/neost_libretro.cpp`
+- **y** (1 connections) — `src/libretro/neost_libretro.cpp`
 
 ## Relationships
 
-- [Community 202](Community_202.md) (2 shared connections)
+- [Community 239](Community_239.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/FPU/FpuEnvMath.cpp`
+- `src/libretro/neost_libretro.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 4 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

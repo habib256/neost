@@ -1,39 +1,43 @@
 # Community 492
 
-> 11 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **Ppmd7.h** (5 connections) — `extern/lzma/Ppmd7.h`
-- **Ppmd7Dec.c** (5 connections) — `extern/lzma/Ppmd7Dec.c`
-- **Ppmd7z_RangeDec_Init()** (4 connections) — `extern/lzma/Ppmd7Dec.c`
-- **Ppmd7z_RD_Decode()** (4 connections) — `extern/lzma/Ppmd7Dec.c`
-- **Ppmd.h** (3 connections) — `extern/lzma/Ppmd.h`
-- **typedef()** (2 connections) — `extern/lzma/Ppmd.h`
-- **CPpmd7** (2 connections)
-- **CPpmd7_RangeDec** (1 connections)
-- **BoolInt** (1 connections)
-- **Z7_FORCE_INLINE** (1 connections)
-- **MY_CPU_pragma_pack_push_1** (1 connections)
+- **MoiraDebugger.h** (14 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **SoftwareTraps** (8 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **SoftwareTrap** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.create()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **u16** (4 connections)
+- **unordered_map** (4 connections)
+- **.resolve()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.isLineAInstr()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.isLineFInstr()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **u16** (2 connections)
+- **instruction** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **traps** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **ostream** (1 connections)
 
 ## Relationships
 
-- [Community 305](Community_305.md) (3 shared connections)
-- [Community 353](Community_353.md) (2 shared connections)
-- [Community 245](Community_245.md) (2 shared connections)
-- [Community 406](Community_406.md) (1 shared connections)
-- [Community 529](Community_529.md) (1 shared connections)
+- [Community 134](Community_134.md) (7 shared connections)
+- [Community 121](Community_121.md) (2 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
+- [Community 109](Community_109.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 593](Community_593.md) (1 shared connections)
+- [Community 152](Community_152.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/lzma/Ppmd.h`
-- `extern/lzma/Ppmd7.h`
-- `extern/lzma/Ppmd7Dec.c`
+- `extern/moira/Moira/MoiraDebugger.h`
 
 ## Audit Trail
 
-- EXTRACTED: 18 (95%)
-- INFERRED: 1 (5%)
+- EXTRACTED: 34 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

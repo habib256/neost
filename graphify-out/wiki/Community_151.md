@@ -1,6 +1,6 @@
 # Community 151
 
-> 63 nodes
+> 56 nodes
 
 ## Key Concepts
 
@@ -15,11 +15,9 @@
 - **main()** (8 connections) — `tools/trace_diff.py`
 - **parse_hatari()** (8 connections) — `tools/trace_diff.py`
 - **report_periods()** (8 connections) — `tools/trace_diff.py`
-- **MegaSteBusComparison** (7 connections) — `tools/test_timing_oracle.py`
 - **main()** (7 connections) — `tools/run_mfp_iack_probe.py`
 - **TraceRegisters** (5 connections) — `tools/test_timing_oracle.py`
 - **fdc_fixture()** (5 connections) — `tools/test_timing_oracle.py`
-- **.check()** (5 connections) — `tools/test_timing_oracle.py`
 - **HardwareProbeProtocol** (4 connections) — `tools/test_timing_oracle.py`
 - **check_output()** (4 connections) — `tools/run_mfp_iack_probe.py`
 - **color()** (4 connections) — `tools/trace_diff.py`
@@ -29,18 +27,21 @@
 - **.test_fdc_write_preserves_cpu_stall_independently_of_disk_cadence()** (3 connections) — `tools/test_timing_oracle.py`
 - **.test_transfer_mutations_and_strict_blitter()** (3 connections) — `tools/test_timing_oracle.py`
 - **.test_neost_operand_does_not_consume_register_dump()** (3 connections) — `tools/test_timing_oracle.py`
-- *... and 38 more nodes in this community*
+- **detect_format()** (3 connections) — `tools/trace_diff.py`
+- **histo()** (3 connections) — `tools/trace_diff.py`
+- *... and 31 more nodes in this community*
 
 ## Relationships
 
-- [Community 207](Community_207.md) (15 shared connections)
-- [Community 18](Community_18.md) (8 shared connections)
-- [Community 173](Community_173.md) (8 shared connections)
+- [Community 207](Community_207.md) (14 shared connections)
+- [Community 173](Community_173.md) (12 shared connections)
+- [Community 100](Community_100.md) (6 shared connections)
 - [Community 26](Community_26.md) (4 shared connections)
-- [Community 227](Community_227.md) (4 shared connections)
+- [Community 18](Community_18.md) (3 shared connections)
 - [Community 3](Community_3.md) (2 shared connections)
 - [Community 8](Community_8.md) (2 shared connections)
-- [Community 146](Community_146.md) (1 shared connections)
+- [Community 590](Community_590.md) (1 shared connections)
+- [Community 504](Community_504.md) (1 shared connections)
 
 ## Source Files
 
@@ -51,7 +52,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 145 (99%)
+- EXTRACTED: 135 (99%)
 - INFERRED: 1 (1%)
 - AMBIGUOUS: 0 (0%)
 

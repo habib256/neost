@@ -1,28 +1,24 @@
 # Community 605
 
-> 5 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **IrqMode** (7 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **AUTO** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **SPURIOUS** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **UNINITIALIZED** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **USER** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **retro_throttle_state** (3 connections) — `src/libretro/libretro.h`
+- **mode** (1 connections) — `src/libretro/libretro.h`
+- **rate** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 
-- [Community 9](Community_9.md) (1 shared connections)
-- [Community 448](Community_448.md) (1 shared connections)
-- [Community 57](Community_57.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraTypes.h`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (100%)
+- EXTRACTED: 3 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

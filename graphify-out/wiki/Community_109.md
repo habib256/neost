@@ -40,10 +40,10 @@
 - [Community 400](Community_400.md) (3 shared connections)
 - [Community 530](Community_530.md) (2 shared connections)
 - [Community 385](Community_385.md) (2 shared connections)
-- [Community 252](Community_252.md) (2 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
 - [Community 2](Community_2.md) (2 shared connections)
-- [Community 282](Community_282.md) (1 shared connections)
-- [Community 406](Community_406.md) (1 shared connections)
+- [Community 492](Community_492.md) (1 shared connections)
+- [Community 263](Community_263.md) (1 shared connections)
 - [Community 0](Community_0.md) (1 shared connections)
 
 ## Source Files

@@ -1,33 +1,26 @@
 # Community 532
 
-> 6 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **.controlWritten()** (6 connections) — `src/core/Blitter.hpp`
-- **regWriteMask()** (6 connections) — `src/core/Blitter.cpp`
-- **.writeRegisters()** (5 connections) — `src/core/Blitter.hpp`
-- **.write8()** (4 connections) — `src/core/Blitter.hpp`
-- **.write16()** (4 connections) — `src/core/Blitter.hpp`
-- **.write32()** (4 connections) — `src/core/Blitter.hpp`
+- **TTResult** (5 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **MATCH** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **NO_MATCH** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
+- **NO_WRITE** (1 connections) — `extern/moira/Moira/MMU/MMU040.h`
 
 ## Relationships
 
-- [Community 393](Community_393.md) (7 shared connections)
-- [Community 37](Community_37.md) (5 shared connections)
-- [Community 550](Community_550.md) (1 shared connections)
-- [Community 449](Community_449.md) (1 shared connections)
-- [Community 470](Community_470.md) (1 shared connections)
+- [Community 229](Community_229.md) (2 shared connections)
 
 ## Source Files
 
-- `src/core/Blitter.cpp`
-- `src/core/Blitter.hpp`
+- `extern/moira/Moira/MMU/MMU040.h`
 
 ## Audit Trail
 
-- EXTRACTED: 13 (59%)
-- INFERRED: 9 (41%)
+- EXTRACTED: 5 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

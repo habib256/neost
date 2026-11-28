@@ -1,6 +1,6 @@
 # Community 520
 
-> 8 nodes
+> 9 nodes
 
 ## Key Concepts
 
@@ -10,14 +10,14 @@
 - **crc32Bytewise()** (3 connections) — `src/util/Crc32.cpp`
 - **size_t** (3 connections)
 - **Tables** (2 connections) — `src/util/Crc32.cpp`
+- **arm_acle** (2 connections)
 - **crc32Hardware()** (1 connections) — `src/util/Crc32.cpp`
 - **t** (1 connections) — `src/util/Crc32.cpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 406](Community_406.md) (1 shared connections)
-- [Community 186](Community_186.md) (1 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 263](Community_263.md) (1 shared connections)
 
 ## Source Files
 
@@ -25,7 +25,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 14 (100%)
+- EXTRACTED: 15 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

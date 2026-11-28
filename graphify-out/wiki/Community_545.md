@@ -1,28 +1,33 @@
 # Community 545
 
-> 6 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **retro_vr_pose** (6 connections) — `src/libretro/libretro.h`
-- **angular_velocity** (1 connections) — `src/libretro/libretro.h`
-- **flags** (1 connections) — `src/libretro/libretro.h`
-- **linear_velocity** (1 connections) — `src/libretro/libretro.h`
-- **orientation** (1 connections) — `src/libretro/libretro.h`
-- **position** (1 connections) — `src/libretro/libretro.h`
+- **.catchUpCpuTx()** (11 connections) — `src/io/Ikbd.hpp`
+- **.scheduleCpuTx()** (6 connections) — `src/io/Ikbd.hpp`
+- **.write8()** (5 connections) — `src/io/Ikbd.hpp`
+- **.resetHw()** (5 connections) — `src/io/Ikbd.hpp`
+- **.nextTxClock()** (4 connections) — `src/io/Ikbd.hpp`
+- **.aciaFrameBits()** (4 connections) — `src/io/Ikbd.hpp`
+- **.read8()** (4 connections) — `src/io/Ikbd.hpp`
+- **.aciaFrameBit()** (3 connections) — `src/io/Ikbd.hpp`
+- **.advanceTx()** (3 connections) — `src/io/Ikbd.hpp`
 
 ## Relationships
 
-- [Community 83](Community_83.md) (1 shared connections)
+- [Community 171](Community_171.md) (10 shared connections)
+- [Community 7](Community_7.md) (9 shared connections)
+- [Community 47](Community_47.md) (2 shared connections)
 
 ## Source Files
 
-- `src/libretro/libretro.h`
+- `src/io/Ikbd.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 6 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 18 (55%)
+- INFERRED: 15 (45%)
 - AMBIGUOUS: 0 (0%)
 
 ---

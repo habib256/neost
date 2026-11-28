@@ -1,25 +1,37 @@
 # Community 593
 
-> 3 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **retro_subsystem_memory_info** (3 connections) — `src/libretro/libretro.h`
-- **extension** (1 connections) — `src/libretro/libretro.h`
-- **type** (1 connections) — `src/libretro/libretro.h`
+- **Guard** (10 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.guardAt()** (8 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.setEnableAt()** (7 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.isDisabledAt()** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **u32** (5 connections)
+- **.isEnabledAt()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.toggleAt()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.disableAt()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.enableAt()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **addr** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **enabled** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **ignore** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
 
 ## Relationships
 
-- [Community 83](Community_83.md) (1 shared connections)
+- [Community 121](Community_121.md) (11 shared connections)
+- [Community 152](Community_152.md) (9 shared connections)
+- [Community 368](Community_368.md) (1 shared connections)
+- [Community 492](Community_492.md) (1 shared connections)
 
 ## Source Files
 
-- `src/libretro/libretro.h`
+- `extern/moira/Moira/MoiraDebugger.h`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 34 (92%)
+- INFERRED: 3 (8%)
 - AMBIGUOUS: 0 (0%)
 
 ---

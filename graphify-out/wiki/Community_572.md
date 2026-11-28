@@ -1,21 +1,21 @@
 # Community 572
 
-> 4 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **Event** (4 connections) — `src/audio/GmSynth.hpp`
-- **cycle** (1 connections) — `src/audio/GmSynth.hpp`
-- **len** (1 connections) — `src/audio/GmSynth.hpp`
-- **msg** (1 connections) — `src/audio/GmSynth.hpp`
+- **Porte d'échange du cœur 68000 (Moira de NeoST → Moira officiel)** (3 connections) — `docs/CPU_SWAP_GATE.md`
+- **La porte** (2 connections) — `docs/CPU_SWAP_GATE.md`
+- **Ce que la porte ne couvre pas, à rejouer à part** (1 connections) — `docs/CPU_SWAP_GATE.md`
 
 ## Relationships
 
-- [Community 44](Community_44.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
+- [Community 9](Community_9.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/GmSynth.hpp`
+- `docs/CPU_SWAP_GATE.md`
 
 ## Audit Trail
 

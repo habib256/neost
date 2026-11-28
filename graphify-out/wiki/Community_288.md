@@ -1,63 +1,62 @@
 # Community 288
 
-> 25 nodes
+> 24 nodes
 
 ## Key Concepts
 
-- **Audit Hatari, 5ᵉ passe : statuts remis en phase, chantiers Super Hang-On et Rick Dangerous (2026-07-07, complétée le 2026-07-08)** (25 connections) — `CHANGELOG.md`
-- **A32 clos : le Shifter en trois classes (2026-11-11)** (12 connections) — `CHANGELOG.md`
-- **.updateGlueState()** (10 connections) — `src/core/Shifter.hpp`
-- **.startHBL()** (9 connections) — `src/core/Shifter.hpp`
-- **.liveGlueCatchUp()** (8 connections) — `src/core/Shifter.hpp`
-- **VideoGlue::replayGlue()** (7 connections) — `src/core/VideoGlue.cpp`
-- **.updateGlueRes()** (6 connections) — `src/core/Shifter.hpp`
-- **VideoGlue::liveGlueCatchUp()** (6 connections) — `src/core/VideoGlue.cpp`
-- **Passe de cohérence doc ↔ code, 3ᵉ tour (2026-08-19)** (5 connections) — `CHANGELOG.md`
-- **2. Vidéo / Shifter / Glue (video.c, spec512.c, conv_st.c)** (5 connections) — `docs/HATARI_MAPPING.md`
+- **2. Plan mémoire figé** (18 connections) — `docs/HYPOTHESES_ST.md`
+- **parseRamBytes()** (11 connections) — `src/core/MachineType.hpp`
+- **memConfigForBytes()** (10 connections) — `src/core/MachineType.hpp`
+- **.loadTos()** (8 connections) — `src/core/Bus.hpp`
+- **tosUnsupportedMachine()** (8 connections) — `src/core/MachineType.hpp`
+- **size_t** (8 connections)
+- **ramLabel()** (7 connections) — `src/core/MachineType.hpp`
+- **tosHeaderIsEmuTos()** (7 connections) — `src/core/MachineType.hpp`
+- **tosHeaderVersion()** (7 connections) — `src/core/MachineType.hpp`
+- **ramDisplayName()** (5 connections) — `src/core/MachineType.hpp`
+- **readTosInfo()** (5 connections) — `src/core/TosChoice.cpp`
+- **machineSummary()** (5 connections) — `src/gui/MachineSummary.hpp`
 - **.seedResetVectors()** (4 connections) — `src/core/Bus.hpp`
-- **.recordSyncWrite()** (4 connections) — `src/core/Shifter.hpp`
-- **.replayGlue()** (4 connections) — `src/core/Shifter.hpp`
-- **glueLineLenFor()** (4 connections) — `src/core/VideoGlue.cpp`
-- **.restartVideoCounter()** (3 connections) — `src/core/Shifter.hpp`
-- **.updateLiveStartHBL()** (3 connections) — `src/core/Shifter.hpp`
-- **.vblankAtLine()** (3 connections) — `src/core/Shifter.hpp`
-- **A16b — le segfault du chantier V3 : un invariant rompu par `replayGlue`, pas un défaut du selftest (2026-08-28)** (3 connections) — `CHANGELOG.md`
-- **V3 est CLOS : l'attribution de ligne à la grille réelle devient le défaut — et le verrou ne faisait rien (2026-09-01)** (3 connections) — `CHANGELOG.md`
-- **.catchUp()** (2 connections) — `src/core/Shifter.hpp`
-- **.detectPhaseScroll()** (2 connections) — `src/core/Shifter.hpp`
-- **VideoGlue::liveLineDisplayed()** (2 connections) — `src/core/VideoGlue.cpp`
-- **lineGeom** (2 connections) — `src/core/Shifter.hpp`
-- **2026-11-26 — Campagne CD LGD : boot des 881 disquettes, deux corrections** (2 connections) — `CHANGELOG.md`
-- **Ce que le modèle confirme déjà** (2 connections) — `docs/REFERENCE_LADDER.md`
+- **mmuFastLimit_** (4 connections) — `src/core/Bus.hpp`
+- **tosImageBase()** (4 connections) — `src/core/MachineType.hpp`
+- **.loadCart()** (3 connections) — `src/core/Bus.hpp`
+- **.mmuConfNow()** (3 connections) — `src/core/Bus.hpp`
+- **parseMachine()** (3 connections) — `src/core/MachineType.hpp`
+- **string** (3 connections)
+- **1. Bus & mémoire (ioMem.c, cpu/memory.c, stMemory.c)** (3 connections) — `docs/HATARI_MAPPING.md`
+- **string** (2 connections)
+- **string** (1 connections)
+- **Machine** (1 connections)
+- **string** (1 connections)
 
 ## Relationships
 
-- [Community 396](Community_396.md) (10 shared connections)
-- [Community 88](Community_88.md) (8 shared connections)
-- [Community 130](Community_130.md) (6 shared connections)
-- [Community 205](Community_205.md) (4 shared connections)
-- [Community 186](Community_186.md) (4 shared connections)
-- [Community 5](Community_5.md) (3 shared connections)
-- [Community 60](Community_60.md) (3 shared connections)
-- [Community 48](Community_48.md) (3 shared connections)
-- [Community 221](Community_221.md) (3 shared connections)
-- [Community 14](Community_14.md) (2 shared connections)
-- [Community 203](Community_203.md) (2 shared connections)
-- [Community 215](Community_215.md) (2 shared connections)
+- [Community 4](Community_4.md) (10 shared connections)
+- [Community 319](Community_319.md) (7 shared connections)
+- [Community 14](Community_14.md) (5 shared connections)
+- [Community 203](Community_203.md) (5 shared connections)
+- [Community 607](Community_607.md) (4 shared connections)
+- [Community 138](Community_138.md) (4 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
+- [Community 325](Community_325.md) (4 shared connections)
+- [Community 449](Community_449.md) (3 shared connections)
+- [Community 394](Community_394.md) (3 shared connections)
+- [Community 153](Community_153.md) (2 shared connections)
+- [Community 386](Community_386.md) (2 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
 - `docs/HATARI_MAPPING.md`
-- `docs/REFERENCE_LADDER.md`
+- `docs/HYPOTHESES_ST.md`
 - `src/core/Bus.hpp`
-- `src/core/Shifter.hpp`
-- `src/core/VideoGlue.cpp`
+- `src/core/MachineType.hpp`
+- `src/core/TosChoice.cpp`
+- `src/gui/MachineSummary.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 29 (28%)
-- INFERRED: 74 (72%)
+- EXTRACTED: 41 (43%)
+- INFERRED: 55 (57%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,28 +1,34 @@
 # Community 460
 
-> 6 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **ym_c10_noise_logic.cpp** (8 connections) — `tests/ym_c10_noise_logic.cpp`
-- **render()** (4 connections) — `tests/ym_c10_noise_logic.cpp`
-- **testYmC10Noise()** (4 connections) — `tests/ym_c10_noise_logic.cpp`
-- **setReg()** (3 connections) — `tests/ym_c10_noise_logic.cpp`
-- **swing()** (3 connections) — `tests/ym_c10_noise_logic.cpp`
-- **YM2149** (1 connections)
+- **Quartz** (9 connections) — `src/core/Pacing.hpp`
+- **.setClocks()** (4 connections) — `src/core/Machine.hpp`
+- **parseQuartz()** (2 connections) — `src/core/Pacing.hpp`
+- **setQuartzGlobal()** (2 connections) — `src/core/Pacing.hpp`
+- **Pal** (1 connections) — `src/core/Pacing.hpp`
+- **Q32042** (1 connections) — `src/core/Pacing.hpp`
+- **Q32216** (1 connections) — `src/core/Pacing.hpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (6 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 449](Community_449.md) (1 shared connections)
+- [Community 138](Community_138.md) (1 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
+- [Community 10](Community_10.md) (1 shared connections)
+- [Community 23](Community_23.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/ym_c10_noise_logic.cpp`
+- `src/core/Machine.hpp`
+- `src/core/Pacing.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (93%)
+- EXTRACTED: 13 (93%)
 - INFERRED: 1 (7%)
 - AMBIGUOUS: 0 (0%)
 

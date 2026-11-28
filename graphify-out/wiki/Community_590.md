@@ -4,29 +4,25 @@
 
 ## Key Concepts
 
-- **DasmNumberFormat** (12 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **u8** (4 connections)
-- **.validate()** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **plainZero** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **prefix** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **radix** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **upperCase** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **MegaSteBusComparison** (7 connections) — `tools/test_timing_oracle.py`
+- **.check()** (5 connections) — `tools/test_timing_oracle.py`
+- **.test_changed_program_rejected()** (2 connections) — `tools/test_timing_oracle.py`
+- **.test_exact_reference_and_probe_identity()** (2 connections) — `tools/test_timing_oracle.py`
+- **.test_missing_sample_rejected()** (2 connections) — `tools/test_timing_oracle.py`
+- **.test_one_cycle_and_clock_domain_errors_rejected()** (2 connections) — `tools/test_timing_oracle.py`
+- **.setUpClass()** (1 connections) — `tools/test_timing_oracle.py`
 
 ## Relationships
 
-- [Community 131](Community_131.md) (4 shared connections)
-- [Community 57](Community_57.md) (2 shared connections)
-- [Community 104](Community_104.md) (1 shared connections)
-- [Community 548](Community_548.md) (1 shared connections)
-- [Community 166](Community_166.md) (1 shared connections)
+- [Community 151](Community_151.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraTypes.h`
+- `tools/test_timing_oracle.py`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (100%)
+- EXTRACTED: 11 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

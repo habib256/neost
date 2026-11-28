@@ -1,37 +1,32 @@
 # Community 499
 
-> 10 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **Parser** (15 connections) — `src/audio/MidiMessageParser.hpp`
-- **.reset()** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **size_t** (1 connections)
-- **data_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **got_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **inSysex_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **kMaxSysex** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **needed_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **status_** (1 connections) — `src/audio/MidiMessageParser.hpp`
-- **sysex_** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **compile()** (7 connections) — `src/android/main_android.cpp`
+- **Pilotage externe : menu, spécification du protocole, recherche d'adresses (2026-09-05)** (2 connections) — `CHANGELOG.md`
+- **0. Démarrer en cinq commandes** (2 connections) — `docs/OPENDST.md`
+- **GLenum** (1 connections)
+- **GLuint** (1 connections)
 
 ## Relationships
 
-- [Community 44](Community_44.md) (1 shared connections)
-- [Community 185](Community_185.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 42](Community_42.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 228](Community_228.md) (2 shared connections)
+- [Community 377](Community_377.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 291](Community_291.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/MidiMessageParser.hpp`
+- `CHANGELOG.md`
+- `docs/OPENDST.md`
+- `src/android/main_android.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (93%)
-- INFERRED: 1 (7%)
+- EXTRACTED: 6 (67%)
+- INFERRED: 3 (33%)
 - AMBIGUOUS: 0 (0%)
 
 ---

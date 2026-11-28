@@ -1,29 +1,25 @@
 # Community 604
 
-> 6 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **Slice** (5 connections) — `tests/blitter_share_gap_logic.cpp`
-- **run()** (4 connections) — `tests/blitter_share_gap_logic.cpp`
-- **testBlitterShareGap()** (3 connections) — `tests/blitter_share_gap_logic.cpp`
-- **accesses** (1 connections) — `tests/blitter_share_gap_logic.cpp`
-- **last** (1 connections) — `tests/blitter_share_gap_logic.cpp`
-- **start** (1 connections) — `tests/blitter_share_gap_logic.cpp`
+- **retro_subsystem_memory_info** (3 connections) — `src/libretro/libretro.h`
+- **extension** (1 connections) — `src/libretro/libretro.h`
+- **type** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/blitter_share_gap_logic.cpp`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (90%)
-- INFERRED: 1 (10%)
+- EXTRACTED: 3 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

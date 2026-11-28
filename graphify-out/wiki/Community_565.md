@@ -1,26 +1,29 @@
 # Community 565
 
-> 5 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **retro_message_type** (5 connections) — `src/libretro/libretro.h`
-- **RETRO_MESSAGE_TYPE_NOTIFICATION** (1 connections) — `src/libretro/libretro.h`
-- **RETRO_MESSAGE_TYPE_NOTIFICATION_ALT** (1 connections) — `src/libretro/libretro.h`
-- **RETRO_MESSAGE_TYPE_PROGRESS** (1 connections) — `src/libretro/libretro.h`
-- **RETRO_MESSAGE_TYPE_STATUS** (1 connections) — `src/libretro/libretro.h`
+- **Site** (6 connections) — `src/util/Unknowns.hpp`
+- **Registrar** (4 connections) — `src/util/Unknowns.hpp`
+- **.Registrar()** (1 connections) — `src/util/Unknowns.hpp`
+- **site** (1 connections) — `src/util/Unknowns.hpp`
+- **file** (1 connections) — `src/util/Unknowns.hpp`
+- **hits** (1 connections) — `src/util/Unknowns.hpp`
+- **id** (1 connections) — `src/util/Unknowns.hpp`
+- **line** (1 connections) — `src/util/Unknowns.hpp`
 
 ## Relationships
 
-- [Community 83](Community_83.md) (1 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
 
 ## Source Files
 
-- `src/libretro/libretro.h`
+- `src/util/Unknowns.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 9 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

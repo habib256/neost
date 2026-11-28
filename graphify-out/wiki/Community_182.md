@@ -1,58 +1,60 @@
 # Community 182
 
-> 33 nodes
+> 31 nodes
 
 ## Key Concepts
 
 - **Moira — copie vendorisée (fork NeoST)** (20 connections) — `extern/moira/NEOST_VENDOR.md`
-- **InterruptRig** (10 connections) — `tests/scc_mie_ius_logic.cpp`
-- **testSccMieIus()** (10 connections) — `tests/scc_mie_ius_logic.cpp`
-- **scc_mie_ius_logic.cpp** (6 connections) — `tests/scc_mie_ius_logic.cpp`
+- **.halt()** (7 connections) — `extern/moira/Moira/Moira.h`
+- **MoiraInterface.h** (7 connections) — `extern/moira/Moira/MoiraInterface.h`
 - **.checkForIrq()** (5 connections) — `extern/moira/Moira/Moira.h`
-- **.master()** (5 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.write()** (5 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.control()** (4 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.receive()** (4 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.InterruptRig()** (3 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.pop()** (3 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.read()** (3 connections) — `tests/scc_mie_ius_logic.cpp`
+- **.reset()** (4 connections) — `extern/moira/Moira/Moira.h`
+- **willProcessFault()** (4 connections) — `extern/moira/Moira/MoiraInterface.h`
+- **iackSyncAfter()** (3 connections) — `extern/moira/Moira/MoiraInterface.h`
+- **iackSyncBefore()** (3 connections) — `extern/moira/Moira/MoiraInterface.h`
+- **Bus error et double faute (2026-11-10)** (3 connections) — `docs/FX68K_BENCH.md`
 - **Patch local : watchpoints masqués au bus 24 bits (2026-07-11)** (3 connections) — `extern/moira/NEOST_VENDOR.md`
-- **main()** (2 connections) — `tests/scc_mie_ius_logic.cpp`
+- **illegalOpcodeHook()** (2 connections) — `extern/moira/Moira/MoiraInterface.h`
+- **u8** (2 connections)
 - **moira/NEOST_VENDOR.md** (2 connections) — `extern/moira/NEOST_VENDOR.md`
 - **Patch local : hooks d'IACK (`iackSyncBefore` / `iackSyncAfter`)** (2 connections) — `extern/moira/NEOST_VENDOR.md`
+- **Patch local : reset gardé (2026-07-08)** (2 connections) — `extern/moira/NEOST_VENDOR.md`
 - **Patch local : STOP+8 — retenue d'IRQ de 4 cycles après STOP (2026-10-22)** (2 connections) — `extern/moira/NEOST_VENDOR.md`
 - **Patch local : STOP niveau-sensible (2026-07-03)** (2 connections) — `extern/moira/NEOST_VENDOR.md`
-- **Pin d'origine — retrouvé le 2026-08-28 (chantier A35)** (2 connections) — `extern/moira/NEOST_VENDOR.md`
-- **Scc** (1 connections)
-- **scc** (1 connections) — `tests/scc_mie_ius_logic.cpp`
+- **setBusLock()** (1 connections) — `extern/moira/Moira/MoiraInterface.h`
+- **u16** (1 connections)
 - **ANDI/ORI/EORI #,SR/#,CCR et MOVE to CCR : double rechargement (2026-10-20)** (1 connections) — `extern/moira/NEOST_VENDOR.md`
 - **Bornes bus et trace d'instruction (2026-10-19)** (1 connections) — `extern/moira/NEOST_VENDOR.md`
 - **Contenu conservé** (1 connections) — `extern/moira/NEOST_VENDOR.md`
 - **DIVS : valeurs absolues sans comportement indéfini (2026-10-20)** (1 connections) — `extern/moira/NEOST_VENDOR.md`
-- *... and 8 more nodes in this community*
+- **DIVU/DIVS : cycles internes avant le préfetch (2026-10-20)** (1 connections) — `extern/moira/NEOST_VENDOR.md`
+- **En-têtes standard explicites (2026-11-09)** (1 connections) — `extern/moira/NEOST_VENDOR.md`
+- *... and 6 more nodes in this community*
 
 ## Relationships
 
-- [Community 16](Community_16.md) (3 shared connections)
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 9](Community_9.md) (2 shared connections)
-- [Community 186](Community_186.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 16](Community_16.md) (7 shared connections)
+- [Community 64](Community_64.md) (4 shared connections)
+- [Community 9](Community_9.md) (3 shared connections)
+- [Community 166](Community_166.md) (3 shared connections)
+- [Community 104](Community_104.md) (1 shared connections)
+- [Community 431](Community_431.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
-- [Community 166](Community_166.md) (1 shared connections)
-- [Community 152](Community_152.md) (1 shared connections)
+- [Community 302](Community_302.md) (1 shared connections)
+- [Community 112](Community_112.md) (1 shared connections)
+- [Community 121](Community_121.md) (1 shared connections)
 
 ## Source Files
 
+- `docs/FX68K_BENCH.md`
 - `extern/moira/Moira/Moira.h`
+- `extern/moira/Moira/MoiraInterface.h`
 - `extern/moira/NEOST_VENDOR.md`
-- `tests/scc_mie_ius_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 53 (87%)
-- INFERRED: 8 (13%)
+- EXTRACTED: 39 (71%)
+- INFERRED: 16 (29%)
 - AMBIGUOUS: 0 (0%)
 
 ---

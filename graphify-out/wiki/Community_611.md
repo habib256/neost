@@ -4,23 +4,24 @@
 
 ## Key Concepts
 
-- **scc_auto_enables_logic.cpp** (4 connections) — `tests/scc_auto_enables_logic.cpp`
-- **testSccAutoEnables()** (3 connections) — `tests/scc_auto_enables_logic.cpp`
-- **main()** (2 connections) — `tests/scc_auto_enables_logic.cpp`
+- **ikbd_monitor_machine_logic.cpp** (6 connections) — `tests/ikbd_monitor_machine_logic.cpp`
+- **testIkbdMonitorMachine()** (3 connections) — `tests/ikbd_monitor_machine_logic.cpp`
+- **main()** (2 connections) — `tests/ikbd_monitor_machine_logic.cpp`
 
 ## Relationships
 
+- [Community 4](Community_4.md) (2 shared connections)
 - [Community 102](Community_102.md) (2 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/scc_auto_enables_logic.cpp`
+- `tests/ikbd_monitor_machine_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (83%)
-- INFERRED: 1 (17%)
+- EXTRACTED: 7 (88%)
+- INFERRED: 1 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

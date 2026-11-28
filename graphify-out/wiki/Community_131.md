@@ -1,10 +1,11 @@
 # Community 131
 
-> 21 nodes
+> 28 nodes
 
 ## Key Concepts
 
 - **StrWriter_cpp.h** (15 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **DasmNumberFormat** (12 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **sprintx()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **sprintx_signed()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **u64** (6 connections)
@@ -15,6 +16,7 @@
 - **sprintd()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **sprintd_signed()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **binDigits()** (4 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **u8** (4 connections)
 - **uaeHex()** (3 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **uaeHexSigned()** (3 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **i64** (3 connections)
@@ -23,25 +25,32 @@
 - **uaeDigits()** (2 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **uaeHexExt()** (2 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **i32** (2 connections)
-- **Size** (1 connections)
-- **u32** (1 connections)
+- **.validate()** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **plainZero** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **prefix** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **radix** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
-- [Community 590](Community_590.md) (4 shared connections)
 - [Community 197](Community_197.md) (2 shared connections)
-- [Community 186](Community_186.md) (1 shared connections)
+- [Community 548](Community_548.md) (2 shared connections)
+- [Community 112](Community_112.md) (1 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
+- [Community 166](Community_166.md) (1 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
 - `extern/moira/Moira/FPU/FpuEnv.h`
+- `extern/moira/Moira/MoiraTypes.h`
 - `extern/moira/Moira/StrWriter_cpp.h`
 
 ## Audit Trail
 
-- EXTRACTED: 46 (96%)
-- INFERRED: 2 (4%)
+- EXTRACTED: 57 (97%)
+- INFERRED: 2 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

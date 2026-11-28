@@ -1,6 +1,6 @@
 # Community 197
 
-> 73 nodes
+> 74 nodes
 
 ## Key Concepts
 
@@ -29,32 +29,34 @@
 - **compare()** (7 connections) — `extern/moira/Moira/FPU/FpuEnv.cpp`
 - **pack()** (7 connections) — `extern/moira/Moira/FPU/FpuEnv.cpp`
 - **.lt()** (6 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
-- *... and 48 more nodes in this community*
+- *... and 49 more nodes in this community*
 
 ## Relationships
 
 - [Community 63](Community_63.md) (48 shared connections)
 - [Community 202](Community_202.md) (28 shared connections)
-- [Community 183](Community_183.md) (27 shared connections)
-- [Community 264](Community_264.md) (8 shared connections)
+- [Community 183](Community_183.md) (17 shared connections)
+- [Community 34](Community_34.md) (10 shared connections)
+- [Community 264](Community_264.md) (9 shared connections)
 - [Community 41](Community_41.md) (5 shared connections)
 - [Community 131](Community_131.md) (2 shared connections)
 - [Community 155](Community_155.md) (1 shared connections)
 - [Community 555](Community_555.md) (1 shared connections)
-- [Community 459](Community_459.md) (1 shared connections)
+- [Community 299](Community_299.md) (1 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
-- [Community 483](Community_483.md) (1 shared connections)
+- [Community 383](Community_383.md) (1 shared connections)
 
 ## Source Files
 
 - `extern/moira/Moira/FPU/FpuEnv.cpp`
 - `extern/moira/Moira/FPU/FpuEnv.h`
 - `extern/moira/Moira/FPU/MFloat80.h`
+- `extern/moira/Moira/FPU/Wide.h`
 
 ## Audit Trail
 
-- EXTRACTED: 263 (84%)
-- INFERRED: 49 (16%)
+- EXTRACTED: 265 (84%)
+- INFERRED: 50 (16%)
 - AMBIGUOUS: 0 (0%)
 
 ---

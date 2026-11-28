@@ -1,24 +1,28 @@
 # Community 595
 
-> 3 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **retro_vr_hand_joint_state** (3 connections) — `src/libretro/libretro.h`
-- **pose** (1 connections) — `src/libretro/libretro.h`
-- **radius** (1 connections) — `src/libretro/libretro.h`
+- **Snap** (7 connections) — `src/core/Rewind.hpp`
+- **MediaCopy** (1 connections)
+- **shared_ptr** (1 connections)
+- **disk** (1 connections) — `src/core/Rewind.hpp`
+- **state** (1 connections) — `src/core/Rewind.hpp`
+- **stxWrites** (1 connections) — `src/core/Rewind.hpp`
 
 ## Relationships
 
-- [Community 83](Community_83.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 298](Community_298.md) (1 shared connections)
 
 ## Source Files
 
-- `src/libretro/libretro.h`
+- `src/core/Rewind.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
+- EXTRACTED: 7 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

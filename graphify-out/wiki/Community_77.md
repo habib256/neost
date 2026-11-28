@@ -33,11 +33,10 @@
 
 ## Relationships
 
-- [Community 39](Community_39.md) (6 shared connections)
-- [Community 491](Community_491.md) (1 shared connections)
+- [Community 39](Community_39.md) (7 shared connections)
 - [Community 246](Community_246.md) (1 shared connections)
 - [Community 418](Community_418.md) (1 shared connections)
-- [Community 319](Community_319.md) (1 shared connections)
+- [Community 437](Community_437.md) (1 shared connections)
 - [Community 184](Community_184.md) (1 shared connections)
 - [Community 495](Community_495.md) (1 shared connections)
 - [Community 466](Community_466.md) (1 shared connections)

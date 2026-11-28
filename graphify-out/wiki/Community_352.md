@@ -1,6 +1,6 @@
 # Community 352
 
-> 20 nodes
+> 21 nodes
 
 ## Key Concepts
 
@@ -11,6 +11,7 @@
 - **.setAnalog()** (2 connections) — `src/io/StePads.hpp`
 - **Refermés** (2 connections) — `docs/HATARI_DIVERGENCES.md`
 - **Écarts voulus — ne pas réaligner** (2 connections) — `docs/HATARI_DIVERGENCES.md`
+- **7. IKBD / ACIA / MIDI (acia.c, ikbd.c, midi.c)** (2 connections) — `docs/HATARI_MAPPING.md`
 - **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 - **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 - **11. FPU 68881 — opérations et conversions (actualisé le 2026-10-18)** (1 connections) — `docs/HATARI_MAPPING.md`
@@ -31,12 +32,12 @@
 - [Community 175](Community_175.md) (1 shared connections)
 - [Community 106](Community_106.md) (1 shared connections)
 - [Community 397](Community_397.md) (1 shared connections)
-- [Community 36](Community_36.md) (1 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 491](Community_491.md) (1 shared connections)
+- [Community 218](Community_218.md) (1 shared connections)
 - [Community 508](Community_508.md) (1 shared connections)
-- [Community 449](Community_449.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
+- [Community 39](Community_39.md) (1 shared connections)
 - [Community 288](Community_288.md) (1 shared connections)
+- [Community 205](Community_205.md) (1 shared connections)
 
 ## Source Files
 
@@ -47,8 +48,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 24 (83%)
-- INFERRED: 5 (17%)
+- EXTRACTED: 24 (80%)
+- INFERRED: 6 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---

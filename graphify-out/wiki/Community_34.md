@@ -1,38 +1,55 @@
 # Community 34
 
-> 13 nodes
+> 28 nodes
 
 ## Key Concepts
 
-- **midi_compare.py** (14 connections) — `tools/midi_compare.py`
-- **compare()** (6 connections) — `tools/midi_compare.py`
-- **main()** (5 connections) — `tools/midi_compare.py`
-- **read_log()** (5 connections) — `tools/midi_compare.py`
-- **read_smf()** (4 connections) — `tools/midi_compare.py`
-- **to_smf()** (4 connections) — `tools/midi_compare.py`
-- **notes_of()** (3 connections) — `tools/midi_compare.py`
-- **linfit()** (2 connections) — `tools/midi_compare.py`
-- **rd_vlq()** (2 connections) — `tools/midi_compare.py`
-- **wr_vlq()** (2 connections) — `tools/midi_compare.py`
-- **[(t_on, canal, note, vel, durée)] dans l'ordre des note-on ; CC64 à part.** (1 connections) — `tools/midi_compare.py`
-- **Compare ce qu'un séquenceur ST a RÉELLEMENT émis (journal `neost-headless…** (1 connections) — `tools/midi_compare.py`
-- **[(secondes, octets du message)] — canal, SysEx complets, temps réel.** (1 connections) — `tools/midi_compare.py`
+- **u128** (25 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **Wide.h** (20 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **hi64()** (12 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **lo64()** (12 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **Division** (11 connections) — `extern/moira/Moira/FPU/FPU.cpp`
+- **mul128To256()** (9 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **.u128()** (8 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **u64** (7 connections)
+- **clz128()** (6 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **operator~()** (5 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **ulpPosition()** (5 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **mulHigh128()** (4 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **toDouble()** (4 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **.mul64()** (4 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **.divmod()** (3 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **ulpDistance()** (2 connections) — `extern/moira/Moira/FPU/Wide.h`
+- **i32** (1 connections)
+- **u64** (1 connections)
+- **divisor** (1 connections) — `extern/moira/Moira/FPU/FPU.cpp`
+- **quotient** (1 connections) — `extern/moira/Moira/FPU/FPU.cpp`
+- **rem** (1 connections) — `extern/moira/Moira/FPU/FPU.cpp`
+- **small** (1 connections) — `extern/moira/Moira/FPU/FPU.cpp`
+- **unit** (1 connections) — `extern/moira/Moira/FPU/FPU.cpp`
+- **u16** (1 connections)
+- **hi** (1 connections) — `extern/moira/Moira/FPU/Wide.h`
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
-- [Community 3](Community_3.md) (3 shared connections)
-- [Community 26](Community_26.md) (2 shared connections)
-- [Community 18](Community_18.md) (2 shared connections)
-- [Community 227](Community_227.md) (1 shared connections)
+- [Community 183](Community_183.md) (17 shared connections)
+- [Community 197](Community_197.md) (10 shared connections)
+- [Community 202](Community_202.md) (5 shared connections)
+- [Community 63](Community_63.md) (4 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
+- [Community 264](Community_264.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/midi_compare.py`
+- `extern/moira/Moira/FPU/FPU.cpp`
+- `extern/moira/Moira/FPU/Wide.h`
 
 ## Audit Trail
 
-- EXTRACTED: 29 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 77 (82%)
+- INFERRED: 17 (18%)
 - AMBIGUOUS: 0 (0%)
 
 ---

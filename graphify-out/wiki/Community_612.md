@@ -4,18 +4,18 @@
 
 ## Key Concepts
 
-- **scc_status_modes_logic.cpp** (4 connections) — `tests/scc_status_modes_logic.cpp`
-- **testSccStatusModes()** (3 connections) — `tests/scc_status_modes_logic.cpp`
-- **main()** (2 connections) — `tests/scc_status_modes_logic.cpp`
+- **mfp_gpip_composite_logic.cpp** (4 connections) — `tests/mfp_gpip_composite_logic.cpp`
+- **testMfpGpipComposite()** (3 connections) — `tests/mfp_gpip_composite_logic.cpp`
+- **main()** (2 connections) — `tests/mfp_gpip_composite_logic.cpp`
 
 ## Relationships
 
 - [Community 102](Community_102.md) (2 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/scc_status_modes_logic.cpp`
+- `tests/mfp_gpip_composite_logic.cpp`
 
 ## Audit Trail
 

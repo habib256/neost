@@ -1,52 +1,55 @@
 # Community 282
 
-> 24 nodes
+> 20 nodes
 
 ## Key Concepts
 
-- **MoiraDebugger.h** (14 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **SoftwareTraps** (8 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **Breakpoints** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **Catchpoints** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **Watchpoints** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **SoftwareTrap** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.create()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **Moira** (4 connections)
-- **u16** (4 connections)
-- **unordered_map** (4 connections)
-- **.resolve()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.isLineAInstr()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.setNeedsCheck()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.setNeedsCheck()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.setNeedsCheck()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.Breakpoints()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.Catchpoints()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.Debugger()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.isLineFInstr()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.Watchpoints()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **u16** (2 connections)
-- **instruction** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **traps** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **ostream** (1 connections)
+- **AvTracker** (14 connections) — `src/core/Pacing.hpp`
+- **.same()** (6 connections) — `src/core/Pacing.hpp`
+- **Av** (5 connections) — `src/core/Pacing.hpp`
+- **.fps()** (5 connections) — `src/core/Pacing.hpp`
+- **testAvTracker()** (5 connections) — `tests/libretro_frontier_logic.cpp`
+- **Change** (4 connections) — `src/core/Pacing.hpp`
+- **.onFrame()** (3 connections) — `src/core/Pacing.hpp`
+- **macOS arm64 — ◐ passe faite le 2026-09-01, le VISUEL reste** (3 connections) — `docs/HW_VALIDATION.md`
+- **announced_** (2 connections) — `src/core/Pacing.hpp`
+- **.reset()** (1 connections) — `src/core/Pacing.hpp`
+- **frameCycles** (1 connections) — `src/core/Pacing.hpp`
+- **height** (1 connections) — `src/core/Pacing.hpp`
+- **width** (1 connections) — `src/core/Pacing.hpp`
+- **armed_** (1 connections) — `src/core/Pacing.hpp`
+- **candidate_** (1 connections) — `src/core/Pacing.hpp`
+- **kStable** (1 connections) — `src/core/Pacing.hpp`
+- **streak_** (1 connections) — `src/core/Pacing.hpp`
+- **Geometry** (1 connections) — `src/core/Pacing.hpp`
+- **None** (1 connections) — `src/core/Pacing.hpp`
+- **Timing** (1 connections) — `src/core/Pacing.hpp`
 
 ## Relationships
 
-- [Community 152](Community_152.md) (10 shared connections)
-- [Community 134](Community_134.md) (8 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 141](Community_141.md) (1 shared connections)
-- [Community 57](Community_57.md) (1 shared connections)
-- [Community 109](Community_109.md) (1 shared connections)
+- [Community 239](Community_239.md) (1 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
+- [Community 283](Community_283.md) (1 shared connections)
+- [Community 299](Community_299.md) (1 shared connections)
+- [Community 23](Community_23.md) (1 shared connections)
+- [Community 162](Community_162.md) (1 shared connections)
+- [Community 230](Community_230.md) (1 shared connections)
+- [Community 478](Community_478.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 393](Community_393.md) (1 shared connections)
+- [Community 101](Community_101.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraDebugger.h`
+- `docs/HW_VALIDATION.md`
+- `src/core/Pacing.hpp`
+- `tests/libretro_frontier_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 54 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 24 (69%)
+- INFERRED: 11 (31%)
 - AMBIGUOUS: 0 (0%)
 
 ---

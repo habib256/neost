@@ -4,23 +4,24 @@
 
 ## Key Concepts
 
-- **scc_async_logic.cpp** (4 connections) — `tests/scc_async_logic.cpp`
-- **testSccAsync()** (3 connections) — `tests/scc_async_logic.cpp`
-- **main()** (2 connections) — `tests/scc_async_logic.cpp`
+- **bus_mmio_mirror_logic.cpp** (5 connections) — `tests/bus_mmio_mirror_logic.cpp`
+- **testBusMmioMirror()** (3 connections) — `tests/bus_mmio_mirror_logic.cpp`
+- **main()** (2 connections) — `tests/bus_mmio_mirror_logic.cpp`
 
 ## Relationships
 
 - [Community 102](Community_102.md) (2 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/scc_async_logic.cpp`
+- `tests/bus_mmio_mirror_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (83%)
-- INFERRED: 1 (17%)
+- EXTRACTED: 6 (86%)
+- INFERRED: 1 (14%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -4,9 +4,9 @@
 
 ## Key Concepts
 
-- **retro_led_interface** (3 connections) — `src/libretro/libretro.h`
-- **retro_set_led_state_t** (1 connections)
-- **set_led_state** (1 connections) — `src/libretro/libretro.h`
+- **retro_rumble_interface** (3 connections) — `src/libretro/libretro.h`
+- **retro_set_rumble_state_t** (1 connections)
+- **set_rumble_state** (1 connections) — `src/libretro/libretro.h`
 
 ## Relationships
 

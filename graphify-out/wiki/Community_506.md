@@ -1,34 +1,33 @@
 # Community 506
 
-> 9 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **write_floppy()** (6 connections) — `tools/run_libretro.py`
-- **case_autorun()** (5 connections) — `tools/run_libretro.py`
-- **case_tos_fallback()** (5 connections) — `tools/run_libretro.py`
-- **case_fast_floppy()** (3 connections) — `tools/run_libretro.py`
-- **frames_to_title()** (3 connections) — `tools/run_libretro.py`
-- **Disquette FAT12 720 Ko NON amorçable (cf. fat12_volume).** (1 connections) — `tools/run_libretro.py`
-- **Chargement accéléré : ChuChu Rocket (330 Ko) copié sur une disquette non…** (1 connections) — `tools/run_libretro.py`
-- **Disquette non amorçable à un seul programme : il démarre seul…** (1 connections) — `tools/run_libretro.py`
-- **Repli de TOS : une disquette qui devait démarrer seule (programme dans \\AUTO)…** (1 connections) — `tools/run_libretro.py`
+- **Log.cpp** (7 connections) — `src/util/Log.cpp`
+- **cstdarg** (5 connections)
+- **err()** (3 connections) — `src/util/Log.cpp`
+- **verr()** (3 connections) — `src/util/Log.cpp`
+- **va_list** (1 connections)
 
 ## Relationships
 
-- [Community 429](Community_429.md) (4 shared connections)
-- [Community 247](Community_247.md) (3 shared connections)
-- [Community 377](Community_377.md) (2 shared connections)
-- [Community 596](Community_596.md) (1 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 568](Community_568.md) (1 shared connections)
+- [Community 377](Community_377.md) (1 shared connections)
+- [Community 117](Community_117.md) (1 shared connections)
+- [Community 171](Community_171.md) (1 shared connections)
+- [Community 248](Community_248.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/run_libretro.py`
+- `src/util/Log.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 18 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 13 (93%)
+- INFERRED: 1 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

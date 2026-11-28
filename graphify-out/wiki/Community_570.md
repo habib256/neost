@@ -1,26 +1,28 @@
 # Community 570
 
-> 4 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **EM_JS()** (4 connections) — `src/core/EmuFiber.cpp`
-- **Module** (1 connections)
-- **neost_jspi_park** (1 connections)
-- **neost_jspi_release** (1 connections)
+- **.update()** (4 connections) — `src/gui/StScreenView.hpp`
+- **CI : les deux téléchargements du job Android n'avaient aucun filet (2026-09-02)** (2 connections) — `CHANGELOG.md`
+- **La 0.6.1 ne se publiait pas : un `apt-get install` sans `update` (2026-09-02)** (2 connections) — `CHANGELOG.md`
 
 ## Relationships
 
-- [Community 437](Community_437.md) (1 shared connections)
+- [Community 130](Community_130.md) (2 shared connections)
+- [Community 329](Community_329.md) (1 shared connections)
+- [Community 229](Community_229.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/EmuFiber.cpp`
+- `CHANGELOG.md`
+- `src/gui/StScreenView.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 3 (50%)
+- INFERRED: 3 (50%)
 - AMBIGUOUS: 0 (0%)
 
 ---

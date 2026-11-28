@@ -1,11 +1,12 @@
 # Community 284
 
-> 37 nodes
+> 38 nodes
 
 ## Key Concepts
 
 - **MMU030** (37 connections) — `extern/moira/Moira/MMU/MMU030.h`
 - **MMU030.cpp** (25 connections) — `extern/moira/Moira/MMU/MMU030.cpp`
+- **u32** (20 connections)
 - **u8** (11 connections)
 - **pageMask** (8 connections) — `extern/moira/Moira/MMU/MMU030.cpp`
 - **.translate()** (7 connections) — `extern/moira/Moira/MMU/MMU030.h`
@@ -28,16 +29,14 @@
 - **.atcFindUnused()** (3 connections) — `extern/moira/Moira/MMU/MMU030.h`
 - **.atcFlush()** (3 connections) — `extern/moira/Moira/MMU/MMU030.h`
 - **.MMU030()** (3 connections) — `extern/moira/Moira/MMU/MMU030.h`
-- **MmuWalkStop** (2 connections) — `extern/moira/Moira/MMU/MMU030.cpp`
-- *... and 12 more nodes in this community*
+- *... and 13 more nodes in this community*
 
 ## Relationships
 
-- [Community 306](Community_306.md) (28 shared connections)
+- [Community 306](Community_306.md) (22 shared connections)
 - [Community 469](Community_469.md) (3 shared connections)
-- [Community 287](Community_287.md) (2 shared connections)
-- [Community 141](Community_141.md) (1 shared connections)
-- [Community 186](Community_186.md) (1 shared connections)
+- [Community 287](Community_287.md) (3 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
 
 ## Source Files
 
@@ -46,7 +45,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 108 (99%)
+- EXTRACTED: 115 (99%)
 - INFERRED: 1 (1%)
 - AMBIGUOUS: 0 (0%)
 

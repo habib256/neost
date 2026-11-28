@@ -1,55 +1,32 @@
 # Community 419
 
-> 20 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **AvTracker** (14 connections) — `src/core/Pacing.hpp`
-- **.same()** (6 connections) — `src/core/Pacing.hpp`
-- **Av** (5 connections) — `src/core/Pacing.hpp`
-- **.fps()** (5 connections) — `src/core/Pacing.hpp`
-- **testAvTracker()** (5 connections) — `tests/libretro_frontier_logic.cpp`
-- **Change** (4 connections) — `src/core/Pacing.hpp`
-- **.onFrame()** (3 connections) — `src/core/Pacing.hpp`
-- **macOS arm64 — ◐ passe faite le 2026-09-01, le VISUEL reste** (3 connections) — `docs/HW_VALIDATION.md`
-- **announced_** (2 connections) — `src/core/Pacing.hpp`
-- **.reset()** (1 connections) — `src/core/Pacing.hpp`
-- **frameCycles** (1 connections) — `src/core/Pacing.hpp`
-- **height** (1 connections) — `src/core/Pacing.hpp`
-- **width** (1 connections) — `src/core/Pacing.hpp`
-- **armed_** (1 connections) — `src/core/Pacing.hpp`
-- **candidate_** (1 connections) — `src/core/Pacing.hpp`
-- **kStable** (1 connections) — `src/core/Pacing.hpp`
-- **streak_** (1 connections) — `src/core/Pacing.hpp`
-- **Geometry** (1 connections) — `src/core/Pacing.hpp`
-- **None** (1 connections) — `src/core/Pacing.hpp`
-- **Timing** (1 connections) — `src/core/Pacing.hpp`
+- **** (10 connections) — `src/io/StxImage.hpp`
+- **FLAG_CRC** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_FUZZY** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_LOST_DATA** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_RECORD_TYPE** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_RNF** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_VARIABLE_TIME** (1 connections) — `src/io/StxImage.hpp`
+- **TRACK_FLAG_IMAGE** (1 connections) — `src/io/StxImage.hpp`
+- **TRACK_FLAG_IMAGE_SYNC** (1 connections) — `src/io/StxImage.hpp`
+- **TRACK_FLAG_SECTOR_BLOCK** (1 connections) — `src/io/StxImage.hpp`
 
 ## Relationships
 
-- [Community 239](Community_239.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 503](Community_503.md) (1 shared connections)
-- [Community 430](Community_430.md) (1 shared connections)
-- [Community 304](Community_304.md) (1 shared connections)
-- [Community 162](Community_162.md) (1 shared connections)
-- [Community 230](Community_230.md) (1 shared connections)
-- [Community 321](Community_321.md) (1 shared connections)
-- [Community 294](Community_294.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
-- [Community 332](Community_332.md) (1 shared connections)
-- [Community 101](Community_101.md) (1 shared connections)
+- [Community 31](Community_31.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HW_VALIDATION.md`
-- `src/core/Pacing.hpp`
-- `tests/libretro_frontier_logic.cpp`
+- `src/io/StxImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 24 (69%)
-- INFERRED: 11 (31%)
+- EXTRACTED: 10 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

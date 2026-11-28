@@ -1,23 +1,26 @@
 # Community 431
 
-> 9 nodes
+> 12 nodes
 
 ## Key Concepts
 
 - **Banc différentiel Moira ↔ fx68k — le 68000 nu contre le RTL** (10 connections) — `docs/FX68K_BENCH.md`
+- **Migration vers Moira 6 : fautes de groupe 0** (4 connections) — `docs/FX68K_BENCH.md`
 - **État (2026-11-03)** (2 connections) — `docs/FX68K_BENCH.md`
 - **Autovecteur par VPA et E-clock (2026-11-04)** (1 connections) — `docs/FX68K_BENCH.md`
 - **Bus prêté à un DMA, BR/BG (2026-11-11)** (1 connections) — `docs/FX68K_BENCH.md`
 - **Ce qui manque au banc** (1 connections) — `docs/FX68K_BENCH.md`
 - **Comment** (1 connections) — `docs/FX68K_BENCH.md`
+- **Démarrage TOS : prédécrément et PC sur BERR** (1 connections) — `docs/FX68K_BENCH.md`
+- **Démonstrations STE démarrées sur ST : PC empilé sur BERR** (1 connections) — `docs/FX68K_BENCH.md`
+- **Epic, disque 2 seul : retour sur une adresse impaire** (1 connections) — `docs/FX68K_BENCH.md`
 - **La date limite d'IPL, confrontée dans NeoST (2026-11-04)** (1 connections) — `docs/FX68K_BENCH.md`
-- **Migration vers Moira 6 : fautes de groupe 0** (1 connections) — `docs/FX68K_BENCH.md`
 - **Pourquoi** (1 connections) — `docs/FX68K_BENCH.md`
 
 ## Relationships
 
 - [Community 232](Community_232.md) (1 shared connections)
-- [Community 16](Community_16.md) (1 shared connections)
+- [Community 182](Community_182.md) (1 shared connections)
 - [Community 30](Community_30.md) (1 shared connections)
 
 ## Source Files
@@ -26,8 +29,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 10 (91%)
-- INFERRED: 1 (9%)
+- EXTRACTED: 13 (93%)
+- INFERRED: 1 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,47 +1,37 @@
 # Community 415
 
-> 17 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **CompDiskCatalog** (19 connections) — `src/io/CompDisks.hpp`
-- **CompDiskInfo** (7 connections) — `src/io/CompDisks.hpp`
-- **Key** (4 connections) — `src/io/CompDisks.hpp`
-- **.size()** (4 connections) — `src/io/CompDisks.hpp`
-- **string** (3 connections)
-- **number** (3 connections) — `src/io/CompDisks.hpp`
-- **size_t** (2 connections)
-- **byNumber_** (1 connections) — `src/io/CompDisks.hpp`
-- **byStem_** (1 connections) — `src/io/CompDisks.hpp`
-- **entries_** (1 connections) — `src/io/CompDisks.hpp`
-- **fileKeys_** (1 connections) — `src/io/CompDisks.hpp`
-- **teamKeys_** (1 connections) — `src/io/CompDisks.hpp`
-- **games** (1 connections) — `src/io/CompDisks.hpp`
-- **name** (1 connections) — `src/io/CompDisks.hpp`
-- **team** (1 connections) — `src/io/CompDisks.hpp`
-- **unordered_map** (1 connections)
-- **letters** (1 connections) — `src/io/CompDisks.hpp`
+- **.gpipInput()** (13 connections) — `src/io/Mfp.hpp`
+- **.timerA_setLineInput()** (8 connections) — `src/io/Mfp.hpp`
+- **.gpipEdges()** (8 connections) — `src/io/Mfp.hpp`
+- **.gpipUpdateInterruptAt()** (7 connections) — `src/io/Mfp.hpp`
+- **.gpipIrqView()** (7 connections) — `src/io/Mfp.hpp`
+- **.gpipUpdateInterrupt()** (6 connections) — `src/io/Mfp.hpp`
+- **.setTbiLine()** (6 connections) — `src/io/Mfp.hpp`
+- **.countTimerAEvent()** (4 connections) — `src/io/Mfp.hpp`
+- **.setAciaLineKbdAt()** (3 connections) — `src/io/Mfp.hpp`
+- **.setAciaLineMidiAt()** (3 connections) — `src/io/Mfp.hpp`
 
 ## Relationships
 
-- [Community 303](Community_303.md) (4 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 1](Community_1.md) (1 shared connections)
-- [Community 11](Community_11.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 325](Community_325.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
-- [Community 444](Community_444.md) (1 shared connections)
-- [Community 101](Community_101.md) (1 shared connections)
+- [Community 215](Community_215.md) (13 shared connections)
+- [Community 6](Community_6.md) (10 shared connections)
+- [Community 221](Community_221.md) (8 shared connections)
+- [Community 392](Community_392.md) (3 shared connections)
+- [Community 275](Community_275.md) (2 shared connections)
+- [Community 205](Community_205.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/CompDisks.hpp`
+- `src/io/Mfp.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 29 (88%)
-- INFERRED: 4 (12%)
+- EXTRACTED: 24 (47%)
+- INFERRED: 27 (53%)
 - AMBIGUOUS: 0 (0%)
 
 ---

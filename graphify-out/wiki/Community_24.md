@@ -1,10 +1,9 @@
 # Community 24
 
-> 33 nodes
+> 41 nodes
 
 ## Key Concepts
 
-- **Audit Hatari, passes 1 à 4 : l'inventaire et ses premiers correctifs (2026-06-15)** (19 connections) — `CHANGELOG.md`
 - **Passes d'audit et chasses aux bugs** (18 connections) — `docs/IMPLEMENTED.md`
 - **.executeCommand()** (13 connections) — `src/io/Fdc.hpp`
 - **.nowCyc()** (13 connections) — `src/io/Fdc.hpp`
@@ -17,46 +16,49 @@
 - **.writeAcsi()** (10 connections) — `src/io/Fdc.hpp`
 - **.indexInit()** (9 connections) — `src/io/Fdc.hpp`
 - **.fdcSetIrq()** (9 connections) — `src/io/Fdc.hpp`
+- **dmaAddressMask()** (9 connections) — `src/io/Fdc.cpp`
 - **.setIntrqLine()** (7 connections) — `src/io/Fdc.hpp`
-- **.emitSound()** (7 connections) — `src/io/Fdc.hpp`
+- **Audit Hatari, 6ᵉ passe : chasse avant release (2026-07-12)** (7 connections) — `CHANGELOG.md`
 - **.clearHdcIrq()** (6 connections) — `src/io/Fdc.hpp`
 - **.dmaResetFifo()** (6 connections) — `src/io/Fdc.hpp`
+- **.mediaCopyBytes()** (6 connections) — `src/io/Fdc.hpp`
+- **Refermés** (6 connections) — `docs/HATARI_DIVERGENCES.md`
 - **.reset()** (5 connections) — `src/io/Fdc.hpp`
 - **.fdcToBusCycles()** (5 connections) — `src/io/Fdc.hpp`
 - **.indexIncrease()** (5 connections) — `src/io/Fdc.hpp`
 - **.fdcClearIrq()** (5 connections) — `src/io/Fdc.hpp`
 - **.dmaFixtureTransfer()** (5 connections) — `src/io/Fdc.hpp`
-- **.indexState()** (4 connections) — `src/io/Fdc.hpp`
-- **.applyFastFdc()** (4 connections) — `src/io/Fdc.hpp`
-- **.registerWait()** (4 connections) — `src/io/Fdc.hpp`
-- *... and 8 more nodes in this community*
+- **3. FDC WD1772, DMA, STX, IPF — `Fdc.cpp`, `StxImage.cpp`, `WrittenTrack.cpp`, `IpfImage.cpp` ↔ `fdc.c`, `floppies/stx.c`, `msa.c`, `dim.c`, `ipf.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
+- *... and 16 more nodes in this community*
 
 ## Relationships
 
-- [Community 149](Community_149.md) (31 shared connections)
+- [Community 149](Community_149.md) (38 shared connections)
 - [Community 12](Community_12.md) (30 shared connections)
-- [Community 95](Community_95.md) (18 shared connections)
-- [Community 121](Community_121.md) (6 shared connections)
-- [Community 412](Community_412.md) (4 shared connections)
-- [Community 88](Community_88.md) (3 shared connections)
+- [Community 95](Community_95.md) (19 shared connections)
+- [Community 406](Community_406.md) (6 shared connections)
+- [Community 88](Community_88.md) (4 shared connections)
 - [Community 218](Community_218.md) (3 shared connections)
-- [Community 470](Community_470.md) (3 shared connections)
-- [Community 36](Community_36.md) (2 shared connections)
+- [Community 397](Community_397.md) (2 shared connections)
 - [Community 396](Community_396.md) (2 shared connections)
-- [Community 417](Community_417.md) (1 shared connections)
-- [Community 113](Community_113.md) (1 shared connections)
+- [Community 449](Community_449.md) (2 shared connections)
+- [Community 298](Community_298.md) (1 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
+- `docs/HATARI_DIVERGENCES.md`
 - `docs/IMPLEMENTED.md`
+- `docs/MAME_DIVERGENCES.md`
 - `src/io/Fdc.cpp`
 - `src/io/Fdc.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 66 (36%)
-- INFERRED: 117 (64%)
+- EXTRACTED: 84 (43%)
+- INFERRED: 110 (57%)
 - AMBIGUOUS: 0 (0%)
 
 ---

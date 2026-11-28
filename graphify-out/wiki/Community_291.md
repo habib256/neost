@@ -24,7 +24,7 @@
 - [Community 160](Community_160.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
 - [Community 568](Community_568.md) (1 shared connections)
-- [Community 228](Community_228.md) (1 shared connections)
+- [Community 499](Community_499.md) (1 shared connections)
 - [Community 203](Community_203.md) (1 shared connections)
 - [Community 30](Community_30.md) (1 shared connections)
 

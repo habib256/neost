@@ -1,37 +1,28 @@
 # Community 507
 
-> 12 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **MoiraRegisters_cpp.h** (10 connections) — `extern/moira/Moira/MoiraRegisters_cpp.h`
-- **.getCacrMask()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **.setSupervisorFlags()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **Moira::setCACR()** (3 connections) — `extern/moira/Moira/MoiraRegisters_cpp.h`
-- **Moira::getCCR()** (2 connections) — `extern/moira/Moira/MoiraRegisters_cpp.h`
-- **Moira::setCAAR()** (2 connections) — `extern/moira/Moira/MoiraRegisters_cpp.h`
-- **Moira::setCCR()** (2 connections) — `extern/moira/Moira/MoiraRegisters_cpp.h`
-- **Moira::setMasterMode()** (2 connections) — `extern/moira/Moira/MoiraRegisters_cpp.h`
-- **Moira::setSupervisorMode()** (2 connections) — `extern/moira/Moira/MoiraRegisters_cpp.h`
-- **u32** (2 connections)
-- **u8** (2 connections)
-- **Moira::setSupervisorFlags()** (1 connections) — `extern/moira/Moira/MoiraRegisters_cpp.h`
+- **6. ACIA 6850, IKBD HD6301, MIDI — `Ikbd.cpp`, `MidiAcia.cpp` ↔ `acia.c`, `ikbd.c`, `midi.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Refermés** (2 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
-- [Community 16](Community_16.md) (3 shared connections)
-- [Community 64](Community_64.md) (2 shared connections)
-- [Community 186](Community_186.md) (1 shared connections)
+- [Community 397](Community_397.md) (1 shared connections)
+- [Community 39](Community_39.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/Moira.h`
-- `extern/moira/Moira/MoiraRegisters_cpp.h`
+- `docs/HATARI_DIVERGENCES.md`
 
 ## Audit Trail
 
-- EXTRACTED: 16 (80%)
-- INFERRED: 4 (20%)
+- EXTRACTED: 5 (83%)
+- INFERRED: 1 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

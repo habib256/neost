@@ -1,34 +1,34 @@
 # Community 447
 
-> 9 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **case_hard_disk_state()** (7 connections) — `tools/run_libretro.py`
-- **case_hard_disk()** (5 connections) — `tools/run_libretro.py`
-- **write_hard_disk()** (5 connections) — `tools/run_libretro.py`
-- **hd_writer_prg()** (3 connections) — `tools/run_libretro.py`
-- **disk_copy()** (1 connections) — `tools/run_libretro.py`
-- **Disque dur ACSI : secteur racine Atari (taille du disque à $1C2, table de…** (1 connections) — `tools/run_libretro.py`
-- **Image de disque dur (.hd) : montée en ACSI 0, EmuTOS lit sa partition et lance…** (1 connections) — `tools/run_libretro.py`
-- **C:\\AUTO : Rwabs écrit le secteur logique 1000 de C: (libre), fond vert, puis…** (1 connections) — `tools/run_libretro.py`
-- **Disque dur dans l'état : les écritures vont au calque (la copie privée n'est…** (1 connections) — `tools/run_libretro.py`
+- **1. MFP 68901 — `Mfp.cpp` ↔ `mfp.c`, `rs232.c`** (6 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Refermés** (4 connections) — `docs/HATARI_DIVERGENCES.md`
+- **.firingDue()** (3 connections) — `src/core/Scheduler.hpp`
+- **Écarts voulus — ne pas réaligner** (3 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts voulus — USART (`Mfp.cpp` ↔ `rs232.c`, MAME `mc68901.cpp`)** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
-- [Community 429](Community_429.md) (4 shared connections)
-- [Community 247](Community_247.md) (2 shared connections)
-- [Community 377](Community_377.md) (2 shared connections)
-- [Community 596](Community_596.md) (1 shared connections)
+- [Community 39](Community_39.md) (3 shared connections)
+- [Community 205](Community_205.md) (1 shared connections)
+- [Community 397](Community_397.md) (1 shared connections)
+- [Community 607](Community_607.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/run_libretro.py`
+- `docs/HATARI_DIVERGENCES.md`
+- `src/core/Scheduler.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 17 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 7 (54%)
+- INFERRED: 6 (46%)
 - AMBIGUOUS: 0 (0%)
 
 ---
