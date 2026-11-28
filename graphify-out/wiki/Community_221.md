@@ -1,48 +1,47 @@
 # Community 221
 
-> 23 nodes
+> 16 nodes
 
 ## Key Concepts
 
-- **write_prg()** (18 connections) — `tools/run_libretro.py`
-- **case_netplay_keyboard()** (5 connections) — `tools/run_libretro.py`
-- **case_blitter_megast_fallback()** (4 connections) — `tools/run_libretro.py`
-- **case_blitter_ste()** (4 connections) — `tools/run_libretro.py`
-- **case_fast_floppy_idle()** (4 connections) — `tools/run_libretro.py`
-- **case_midi_in()** (4 connections) — `tools/run_libretro.py`
-- **case_needs_ste()** (4 connections) — `tools/run_libretro.py`
-- **case_probe_kept()** (4 connections) — `tools/run_libretro.py`
-- **case_probe_restored()** (4 connections) — `tools/run_libretro.py`
-- **case_ram_auto()** (4 connections) — `tools/run_libretro.py`
-- **case_ram_probe_kept()** (4 connections) — `tools/run_libretro.py`
-- **colour0()** (1 connections) — `tools/run_libretro.py`
-- **Machine automatique : un programme qui lit le son DMA du STE sans gestionnaire…** (1 connections) — `tools/run_libretro.py`
-- **Machine automatique : un programme qui touche au blitter sans gestionnaire…** (1 connections) — `tools/run_libretro.py`
-- **Sans TOS pour STE dans le dossier système (EmuTOS 192 Ko seul), une faute du…** (1 connections) — `tools/run_libretro.py`
-- **Mémoire automatique : un programme écrit au-delà de 1 Mo ($180000, perdu) puis…** (1 connections) — `tools/run_libretro.py`
-- **Un programme qui écrit au-delà de la RAM sans planter (il sonde, et vit avec la…** (1 connections) — `tools/run_libretro.py`
-- **Option MIDI IN : un octet de l'entrée MIDI de RetroArch arrive au ST par…** (1 connections) — `tools/run_libretro.py`
-- **Un programme qui pose son gestionnaire de bus error et sonde le STE reste sur…** (1 connections) — `tools/run_libretro.py`
-- **Lecteur vide (moteur jamais coupé, faute d'index) : pas d'accélération. Une…** (1 connections) — `tools/run_libretro.py`
-- **Programme GEMDOS minimal : en-tête $601A, texte = `words`, sans relocation.** (1 connections) — `tools/run_libretro.py`
-- **Port 3 « clavier pour le netplay » : la touche tenue est relue chaque trame ;…** (1 connections) — `tools/run_libretro.py`
-- **Le motif de Wings of Death : poser un gestionnaire, sonder, remettre le vecteur…** (1 connections) — `tools/run_libretro.py`
+- **HayesModem.cpp** (24 connections) — `src/net/HayesModem.cpp`
+- **.sendStr()** (10 connections) — `src/net/HayesModem.hpp`
+- **.hangup()** (9 connections) — `src/net/HayesModem.hpp`
+- **.execute()** (8 connections) — `src/net/HayesModem.hpp`
+- **.onTx()** (8 connections) — `src/net/HayesModem.hpp`
+- **.poll()** (7 connections) — `src/net/HayesModem.hpp`
+- **.out()** (7 connections) — `src/net/HayesModem.hpp`
+- **mtrace()** (7 connections) — `src/net/HayesModem.cpp`
+- **.onPortA()** (6 connections) — `src/net/HayesModem.hpp`
+- **.cancelDial()** (6 connections) — `src/net/HayesModem.hpp`
+- **string** (6 connections)
+- **.resetProfile()** (5 connections) — `src/net/HayesModem.hpp`
+- **dial_** (5 connections) — `src/net/HayesModem.hpp`
+- **.flushPlus()** (4 connections) — `src/net/HayesModem.hpp`
+- **.setAllowedDomains()** (3 connections) — `src/net/HayesModem.hpp`
+- **Effets CRT : version GLSL choisie à l'exécution (débloque le Raspberry Pi) (2026-08-07)** (2 connections) — `CHANGELOG.md`
 
 ## Relationships
 
-- [Community 247](Community_247.md) (21 shared connections)
-- [Community 442](Community_442.md) (2 shared connections)
-- [Community 291](Community_291.md) (2 shared connections)
-- [Community 482](Community_482.md) (2 shared connections)
+- [Community 56](Community_56.md) (15 shared connections)
+- [Community 4](Community_4.md) (5 shared connections)
+- [Community 456](Community_456.md) (2 shared connections)
+- [Community 40](Community_40.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 301](Community_301.md) (1 shared connections)
+- [Community 449](Community_449.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/run_libretro.py`
+- `CHANGELOG.md`
+- `src/net/HayesModem.cpp`
+- `src/net/HayesModem.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 49 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 48 (67%)
+- INFERRED: 24 (33%)
 - AMBIGUOUS: 0 (0%)
 
 ---

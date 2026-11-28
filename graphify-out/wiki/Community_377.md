@@ -1,6 +1,6 @@
 # Community 377
 
-> 11 nodes
+> 10 nodes
 
 ## Key Concepts
 
@@ -8,7 +8,6 @@
 - **Bug hunt multi-agents (2026-07-29)** (10 connections) — `CHANGELOG.md`
 - **dmaAddressMask()** (9 connections) — `src/io/Fdc.cpp`
 - **.fifoPull()** (7 connections) — `src/io/Fdc.hpp`
-- **.mediaCopyBytes()** (6 connections) — `src/io/Fdc.hpp`
 - **FDC WD1772 et DMA** (5 connections) — `docs/MAME_DIVERGENCES.md`
 - **.billDmaCycles()** (4 connections) — `src/io/Fdc.hpp`
 - **.noteFifoFlush()** (4 connections) — `src/io/Fdc.hpp`
@@ -18,18 +17,18 @@
 
 ## Relationships
 
-- [Community 406](Community_406.md) (10 shared connections)
-- [Community 12](Community_12.md) (6 shared connections)
+- [Community 406](Community_406.md) (9 shared connections)
+- [Community 12](Community_12.md) (5 shared connections)
 - [Community 95](Community_95.md) (5 shared connections)
 - [Community 24](Community_24.md) (4 shared connections)
 - [Community 205](Community_205.md) (2 shared connections)
 - [Community 88](Community_88.md) (2 shared connections)
-- [Community 298](Community_298.md) (1 shared connections)
-- [Community 176](Community_176.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
 - [Community 15](Community_15.md) (1 shared connections)
-- [Community 149](Community_149.md) (1 shared connections)
+- [Community 204](Community_204.md) (1 shared connections)
 - [Community 60](Community_60.md) (1 shared connections)
+- [Community 480](Community_480.md) (1 shared connections)
+- [Community 607](Community_607.md) (1 shared connections)
 
 ## Source Files
 
@@ -40,8 +39,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 28 (55%)
-- INFERRED: 23 (45%)
+- EXTRACTED: 23 (50%)
+- INFERRED: 23 (50%)
 - AMBIGUOUS: 0 (0%)
 
 ---

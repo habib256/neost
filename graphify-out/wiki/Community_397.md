@@ -5,11 +5,11 @@
 ## Key Concepts
 
 - **Divergences NeoST ↔ Hatari — inventaire par sous-système** (20 connections) — `docs/HATARI_DIVERGENCES.md`
-- **1. MFP 68901 — `Mfp.cpp` ↔ `mfp.c`, `rs232.c`** (6 connections) — `docs/HATARI_DIVERGENCES.md`
 - **11. FPU MC68881 (Mega STE) — `Fpu.cpp`, `SoftFloatX80.hpp`, `SoftFloatFpsp.hpp`, `SoftFloatDecimal.hpp` ↔ `fpp.c`, `softfloat/`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
 - **6. ACIA 6850, IKBD HD6301, MIDI — `Ikbd.cpp`, `MidiAcia.cpp` ↔ `acia.c`, `ikbd.c`, `midi.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
 - **7. Bus, mémoire, bus error — `Bus.cpp` ↔ `ioMem*.c`, `cpu/memory.c`, `stMemory.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (3 connections) — `docs/HATARI_DIVERGENCES.md`
+- **8. Blitter — `Blitter.cpp` ↔ `blitter.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Refermés** (5 connections) — `docs/HATARI_DIVERGENCES.md`
 - **Refermés** (2 connections) — `docs/HATARI_DIVERGENCES.md`
 - **16. Extensions NeoST sans équivalent Hatari** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 - **Annexe — où sont passées les anciennes sections** (1 connections) — `docs/HATARI_DIVERGENCES.md`
@@ -26,21 +26,21 @@
 - **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 - **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 - **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — USART (`Mfp.cpp` ↔ `rs232.c`, MAME `mc68901.cpp`)** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
 - [Community 39](Community_39.md) (2 shared connections)
+- [Community 460](Community_460.md) (2 shared connections)
 - [Community 15](Community_15.md) (1 shared connections)
 - [Community 319](Community_319.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
-- [Community 189](Community_189.md) (1 shared connections)
+- [Community 549](Community_549.md) (1 shared connections)
+- [Community 487](Community_487.md) (1 shared connections)
 - [Community 507](Community_507.md) (1 shared connections)
-- [Community 486](Community_486.md) (1 shared connections)
-- [Community 321](Community_321.md) (1 shared connections)
 - [Community 352](Community_352.md) (1 shared connections)
-- [Community 485](Community_485.md) (1 shared connections)
-- [Community 506](Community_506.md) (1 shared connections)
+- [Community 508](Community_508.md) (1 shared connections)
+- [Community 526](Community_526.md) (1 shared connections)
 - [Community 88](Community_88.md) (1 shared connections)
 
 ## Source Files
@@ -49,8 +49,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 37 (92%)
-- INFERRED: 3 (8%)
+- EXTRACTED: 36 (88%)
+- INFERRED: 5 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

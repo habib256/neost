@@ -4,37 +4,30 @@
 
 ## Key Concepts
 
-- **.open()** (7 connections) — `src/audio/Mt32Synth.hpp`
-- **.report()** (6 connections) — `src/io/UsbDevice.hpp`
-- **loadRom()** (5 connections) — `src/audio/Mt32Synth.cpp`
-- **.pick()** (5 connections) — `tests/selftest_logic.cpp`
-- **freeRom()** (4 connections) — `src/audio/Mt32Synth.cpp`
-- **.close()** (3 connections) — `src/audio/Mt32Synth.hpp`
-- **ROMImage** (2 connections)
-- **string** (2 connections)
-- **path** (1 connections)
+- **write_floppy()** (6 connections) — `tools/run_libretro.py`
+- **case_autorun()** (5 connections) — `tools/run_libretro.py`
+- **case_tos_fallback()** (5 connections) — `tools/run_libretro.py`
+- **case_fast_floppy()** (3 connections) — `tools/run_libretro.py`
+- **frames_to_title()** (3 connections) — `tools/run_libretro.py`
+- **Disquette FAT12 720 Ko NON amorçable (cf. fat12_volume).** (1 connections) — `tools/run_libretro.py`
+- **Chargement accéléré : ChuChu Rocket (330 Ko) copié sur une disquette non…** (1 connections) — `tools/run_libretro.py`
+- **Disquette non amorçable à un seul programme : il démarre seul…** (1 connections) — `tools/run_libretro.py`
+- **Repli de TOS : une disquette qui devait démarrer seule (programme dans \\AUTO)…** (1 connections) — `tools/run_libretro.py`
 
 ## Relationships
 
-- [Community 117](Community_117.md) (6 shared connections)
-- [Community 315](Community_315.md) (3 shared connections)
-- [Community 299](Community_299.md) (2 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 22](Community_22.md) (1 shared connections)
-- [Community 48](Community_48.md) (1 shared connections)
-- [Community 145](Community_145.md) (1 shared connections)
+- [Community 247](Community_247.md) (7 shared connections)
+- [Community 124](Community_124.md) (2 shared connections)
+- [Community 292](Community_292.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/Mt32Synth.cpp`
-- `src/audio/Mt32Synth.hpp`
-- `src/io/UsbDevice.hpp`
-- `tests/selftest_logic.cpp`
+- `tools/run_libretro.py`
 
 ## Audit Trail
 
-- EXTRACTED: 20 (80%)
-- INFERRED: 5 (20%)
+- EXTRACTED: 18 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

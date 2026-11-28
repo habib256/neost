@@ -1,10 +1,10 @@
 # Community 6
 
-> 128 nodes
+> 129 nodes
 
 ## Key Concepts
 
-- **Mfp** (198 connections) — `src/io/Mfp.hpp`
+- **Mfp** (203 connections) — `src/io/Mfp.hpp`
 - **function** (5 connections)
 - **Interruptions (MFP 68901)** (4 connections) — `docs/IMPLEMENTED.md`
 - **.iack()** (3 connections) — `src/io/Mfp.hpp`
@@ -29,14 +29,15 @@
 - **.clockPhase64()** (1 connections) — `src/io/Mfp.hpp`
 - **.colorMonitor()** (1 connections) — `src/io/Mfp.hpp`
 - **.loopback()** (1 connections) — `src/io/Mfp.hpp`
-- *... and 103 more nodes in this community*
+- *... and 104 more nodes in this community*
 
 ## Relationships
 
-- [Community 215](Community_215.md) (59 shared connections)
-- [Community 392](Community_392.md) (15 shared connections)
-- [Community 539](Community_539.md) (4 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 215](Community_215.md) (53 shared connections)
+- [Community 593](Community_593.md) (14 shared connections)
+- [Community 296](Community_296.md) (13 shared connections)
+- [Community 39](Community_39.md) (2 shared connections)
+- [Community 565](Community_565.md) (1 shared connections)
 - [Community 444](Community_444.md) (1 shared connections)
 
 ## Source Files
@@ -46,7 +47,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 210 (98%)
+- EXTRACTED: 215 (98%)
 - INFERRED: 5 (2%)
 - AMBIGUOUS: 0 (0%)
 

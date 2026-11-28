@@ -1,13 +1,11 @@
 # Community 328
 
-> 24 nodes
+> 21 nodes
 
 ## Key Concepts
 
 - **GlueView** (27 connections) — `src/core/Shifter.hpp`
-- **Hypothèses ST dans le code — ce que le TT et le Falcon remettent en cause** (9 connections) — `docs/HYPOTHESES_ST.md`
-- **5. Vidéo, par classe** (4 connections) — `docs/HYPOTHESES_ST.md`
-- **Chiffrage** (2 connections) — `docs/HYPOTHESES_ST.md`
+- **VideoCounter::read()** (2 connections) — `src/core/VideoCounter.cpp`
 - **.blankLines()** (1 connections) — `src/core/Shifter.hpp`
 - **.catchUp()** (1 connections) — `src/core/Shifter.hpp`
 - **.frame()** (1 connections) — `src/core/Shifter.hpp`
@@ -27,32 +25,27 @@
 - **.traceSyncWrites()** (1 connections) — `src/core/Shifter.hpp`
 - **.vdeEnd()** (1 connections) — `src/core/Shifter.hpp`
 - **.vdeStart()** (1 connections) — `src/core/Shifter.hpp`
-- **6. Divers** (1 connections) — `docs/HYPOTHESES_ST.md`
 
 ## Relationships
 
-- [Community 396](Community_396.md) (3 shared connections)
-- [Community 270](Community_270.md) (2 shared connections)
-- [Community 565](Community_565.md) (1 shared connections)
 - [Community 258](Community_258.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 565](Community_565.md) (1 shared connections)
 - [Community 5](Community_5.md) (1 shared connections)
+- [Community 472](Community_472.md) (1 shared connections)
+- [Community 270](Community_270.md) (1 shared connections)
+- [Community 396](Community_396.md) (1 shared connections)
 - [Community 237](Community_237.md) (1 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 471](Community_471.md) (1 shared connections)
-- [Community 138](Community_138.md) (1 shared connections)
-- [Community 434](Community_434.md) (1 shared connections)
-- [Community 27](Community_27.md) (1 shared connections)
+- [Community 301](Community_301.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HYPOTHESES_ST.md`
 - `src/core/Shifter.hpp`
+- `src/core/VideoCounter.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 31 (79%)
-- INFERRED: 8 (21%)
+- EXTRACTED: 24 (86%)
+- INFERRED: 4 (14%)
 - AMBIGUOUS: 0 (0%)
 
 ---

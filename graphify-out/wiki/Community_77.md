@@ -1,10 +1,10 @@
 # Community 77
 
-> 33 nodes
+> 40 nodes
 
 ## Key Concepts
 
-- **Source** (46 connections) — `src/core/Scheduler.hpp`
+- **Source** (57 connections) — `src/core/Scheduler.hpp`
 - **ACSI_IRQ** (1 connections) — `src/core/Scheduler.hpp`
 - **BLITTER** (1 connections) — `src/core/Scheduler.hpp`
 - **DMASND** (1 connections) — `src/core/Scheduler.hpp`
@@ -29,15 +29,17 @@
 - **SCC_TX_B** (1 connections) — `src/core/Scheduler.hpp`
 - **SERIAL_RX** (1 connections) — `src/core/Scheduler.hpp`
 - **SERIAL_TX** (1 connections) — `src/core/Scheduler.hpp`
-- *... and 8 more nodes in this community*
+- *... and 15 more nodes in this community*
 
 ## Relationships
 
 - [Community 39](Community_39.md) (7 shared connections)
+- [Community 593](Community_593.md) (3 shared connections)
 - [Community 246](Community_246.md) (1 shared connections)
 - [Community 418](Community_418.md) (1 shared connections)
-- [Community 437](Community_437.md) (1 shared connections)
+- [Community 415](Community_415.md) (1 shared connections)
 - [Community 184](Community_184.md) (1 shared connections)
+- [Community 215](Community_215.md) (1 shared connections)
 - [Community 495](Community_495.md) (1 shared connections)
 - [Community 466](Community_466.md) (1 shared connections)
 - [Community 180](Community_180.md) (1 shared connections)
@@ -48,7 +50,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 46 (100%)
+- EXTRACTED: 57 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

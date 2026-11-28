@@ -402,22 +402,16 @@ public:
             || current.linesPerFrame != latched.linesPerFrame;
     }
 
-    // Accès au buffer décodé (ARGB8888) pour le frontend ou un dump.
-    const uint32_t* pixels() const { return frame_.data(); }
-    int width()  const { return curW_; }      // largeur du buffer (overscan inclus)
-    int height() const { return curH_; }      // hauteur du buffer (overscan inclus)
-    // Nombre de lignes ACTIVES (display-enable) à décoder : 200 (couleur) / 400 (mono).
-    // ≠ height() quand l'overscan ajoute des bordures haut/bas. La boucle de rendu de
-    // Machine itère sur activeHeight() ; renderLine(y) place la ligne active y à
-    // l'offset bordure-haut dans le buffer (cf. activeY_).
-    int activeHeight() const { return curAH_; }
-    // Largeur de l'écran ACTIF (sans les bordures) : 320 (low) / 640 (med/mono).
-    // Public au même titre qu'activeHeight() : le cadrage du frontend s'en sert pour
-    // garantir que le zoom ne rogne JAMAIS dans l'image (cf. main.cpp stContentRegion).
-    int activeWidth() const { return curW_ - (bordered() ? (kBorderLeftPx + kBorderRightPx) : 0); }
-    // Offset de l'écran actif dans le buffer (bordures overscan tout autour).
-    int activeLeft() const { return activeX_; }
-    int activeTop()  const { return activeY_; }
+    // Image présentée au frontend ou à un dump, en ARGB8888.
+    const uint32_t* pixels() const { return hasTtFrame() ? ttFrame_.data() : frame_.data(); }
+    int width()  const { return hasTtFrame() ? kTtMediumWidth : curW_; }
+    int height() const { return hasTtFrame() ? kTtMediumHeight : curH_; }
+    int activeHeight() const { return hasTtFrame() ? kTtMediumHeight : curAH_; }
+    int activeWidth() const { return hasTtFrame() ? kTtMediumWidth : rasterWidth(); }
+    int activeLeft() const { return hasTtFrame() ? 0 : activeX_; }
+    int activeTop()  const { return hasTtFrame() ? 0 : activeY_; }
+    // Lignes rendues par le chemin raster programmé par Machine.
+    int rasterLines() const { return curAH_; }
     // La trame COURANTE retire-t-elle une bordure (overscan démo : haut/bas via
     // glue_.vOverscan, gauche/droite via glue_.bordersTrick) ? Signal MATÉRIEL de la Glue,
     // STABLE — PAS une détection au pixel. Le zoom kiosk s'en sert : cadre FIXE sur la
@@ -444,22 +438,24 @@ public:
     // utiliser ces accesseurs (et non liveTop/liveHeight) pour éviter de lire l'état
     // de début de trame N+1 au lieu de fin de trame N.
     int snapLiveTop() const {
+        if (hasTtFrame()) return 0;
         return std::max(0, activeY_ + (glue_.snapStart - geometry().dispStartLine));
     }
     int snapLiveHeight() const {
+        if (hasTtFrame()) return kTtMediumHeight;
         const int lt = snapLiveTop();
         return std::min(curH_ - lt, (glue_.snapEnd + glue_.snapBlankLines) - glue_.snapStart);
     }
-    bool snapBordersOpen() const { return glue_.snapBordersTrick || glue_.snapVOverscan != 0; }
+    bool snapBordersOpen() const { return !hasTtFrame() && (glue_.snapBordersTrick || glue_.snapVOverscan != 0); }
     // Les DEUX MOITIÉS du signal ci-dessus, séparément. Le cadrage adaptatif en a
     // besoin : une bordure LATÉRALE retirée étend l'image en LARGEUR, une bordure
     // haute/basse en HAUTEUR — et les confondre élargit à 416 px une image qui n'en
     // occupe que 320 (cf. core/Framing.cpp, chantier Enchanted Land du 2026-09-02).
-    bool snapSideBordersOpen() const { return glue_.snapSideTrick; }
+    bool snapSideBordersOpen() const { return !hasTtFrame() && glue_.snapSideTrick; }
     // Nombre de lignes AFFICHÉES dont le DE déborde des cycles nominaux — la moitié
     // LATÉRALE du trick, en proportion et non en booléen (cf. Framing.cpp).
-    int  snapSideTrickLines() const { return glue_.snapSideTrickLines; }
-    bool snapVertBordersOpen() const { return glue_.snapVOverscan != 0; }
+    int  snapSideTrickLines() const { return hasTtFrame() ? 0 : glue_.snapSideTrickLines; }
+    bool snapVertBordersOpen() const { return !hasTtFrame() && glue_.snapVOverscan != 0; }
 
     // Fréquence verrouillée pour la trame. Une impulsion hi-res de bordure
     // ne transforme pas l'affichage couleur en écran mono dans le frontend.
@@ -831,6 +827,14 @@ private:
     static constexpr bool kBordersEnabled = true;
     bool bordered() const { return frameMode_ == Mode::Low && kBordersEnabled; }
 
+    int rasterWidth() const {
+        return curW_ - (bordered() ? kBorderLeftPx + kBorderRightPx : 0);
+    }
+    static constexpr int kTtMediumWidth = 640;
+    static constexpr int kTtMediumHeight = 480;
+    bool hasTtFrame() const { return !ttFrame_.empty(); }
+    void updateTtFrame();
+
     Bus&          bus_;
     int           curW_ = 0, curH_ = 0;     // dimensions du buffer (overscan inclus)
     int           curAH_ = 0;               // lignes actives à décoder (200/400)
@@ -838,6 +842,7 @@ private:
     Mode          frameMode_ = Mode::Low;   // résolution verrouillée pour la trame
     int           frameStartRes_ = 0;       // $FF8260 au début de la trame (peut différer de frameMode_)
     uint8_t       frameSync_ = 0x02;        // fréquence ($FF820A) verrouillée pour la trame
+    std::vector<uint32_t> ttFrame_;         // instantané de présentation TT, dérivé de la RAM
     std::vector<uint32_t> frame_;           // curW_*curH_ pixels ARGB
     std::function<int64_t()> beamClock_;    // cycles dans la trame (cf. setBeamClock)
     std::function<void()>    hblShorten_;   // V2 : signal d'impulsion hi-res (cf. setHblShorten)
@@ -1048,7 +1053,7 @@ public:
         // En 64 bits : ar.check évalue tout, même après un refus plus haut, et des valeurs
         // forgées feraient déborder la somme en int (comportement indéfini, UBSan).
         ar.check(curAH_ >= 0 && activeX_ >= 0 && activeY_ >= 0 &&
-                 int64_t(activeY_) + curAH_ <= curH_ && int64_t(activeX_) + activeWidth() <= curW_);
+                 int64_t(activeY_) + curAH_ <= curH_ && int64_t(activeX_) + rasterWidth() <= curW_);
         ar.check(!bordered() || !(steBorderFlag_ || newSteBorderFlag_) || activeX_ >= 16,
                  "Shifter::bordure gauche trop courte pour 336 px");
         // vc_.lineY est le curseur de ligne active, rattrapé par des boucles

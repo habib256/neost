@@ -1,25 +1,30 @@
 # Community 591
 
-> 3 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **Ffmt** (3 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Ffmt()** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **AndroidRoms.hpp** (9 connections) — `src/android/AndroidRoms.hpp`
+- **parseAndroidRomChoice()** (4 connections) — `src/android/AndroidRoms.hpp`
+- **androidRomIndex()** (3 connections) — `src/android/AndroidRoms.hpp`
+- **formatAndroidRomChoice()** (3 connections) — `src/android/AndroidRoms.hpp`
+- **string** (3 connections)
 
 ## Relationships
 
-- [Community 109](Community_109.md) (1 shared connections)
+- [Community 48](Community_48.md) (3 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 228](Community_228.md) (1 shared connections)
+- [Community 449](Community_449.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/StrWriter.h`
+- `src/android/AndroidRoms.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 13 (87%)
+- INFERRED: 2 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

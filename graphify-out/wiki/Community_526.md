@@ -1,28 +1,26 @@
 # Community 526
 
-> 6 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **retro_system_info** (7 connections) — `src/libretro/libretro.h`
-- **block_extract** (1 connections) — `src/libretro/libretro.h`
-- **library_name** (1 connections) — `src/libretro/libretro.h`
-- **library_version** (1 connections) — `src/libretro/libretro.h`
-- **need_fullpath** (1 connections) — `src/libretro/libretro.h`
-- **valid_extensions** (1 connections) — `src/libretro/libretro.h`
+- **15. E/S : imprimante, joypads, joysticks — `Machine.cpp`, `StePads.hpp`, `JoystickInput.hpp` ↔ `psg.c`, `printer.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Refermés** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
-- [Community 248](Community_248.md) (1 shared connections)
-- [Community 83](Community_83.md) (1 shared connections)
+- [Community 397](Community_397.md) (1 shared connections)
 
 ## Source Files
 
-- `src/libretro/libretro.h`
+- `docs/HATARI_DIVERGENCES.md`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (100%)
+- EXTRACTED: 5 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

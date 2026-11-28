@@ -95,6 +95,11 @@ optional hardware correctly present or absent per model. The Mega STE gets its 8
 period **Field Service diagnostic cartridge passes 12 of its 12 tests**, and that run is
 replayed on every full test pass.
 
+The experimental TT030 profile boots unmodified UK and German TOS 3.06 to
+the GEM desktop. It detects optional TT-RAM and displays the memory test
+and a desktop configured for TT-medium at 640 × 480.
+[Atari TT030 bring-up guide](docs/TT_BRINGUP.md)
+
 🐞 **A debugger that earns its keep.** Breakpoints, memory watchpoints, cycle-accurate
 single-stepping, symbols (`.sym` or straight out of a TOS executable), annotated
 disassembly, live hex and registers. All of it also available **headless and
@@ -302,6 +307,7 @@ French.
 | File | What's in it |
 |------|--------------|
 | [`DEV.md`](DEV.md) | Architecture, clock model, headless debugging, hardware gotchas, how to add a chip |
+| [Atari TT030 bring-up](docs/TT_BRINGUP.md) | Boot milestone, ROM and hardware references |
 | [`CHANGELOG.md`](CHANGELOG.md) | Release history and dated work |
 | [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) | What is implemented, chip by chip — "does NeoST do X?" |
 | [`docs/EXTENSIONS.md`](docs/EXTENSIONS.md) | Storage, network, MIDI and dongle hardware you can plug in |

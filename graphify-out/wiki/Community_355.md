@@ -24,8 +24,8 @@
 
 - [Community 232](Community_232.md) (1 shared connections)
 - [Community 434](Community_434.md) (1 shared connections)
-- [Community 99](Community_99.md) (1 shared connections)
-- [Community 470](Community_470.md) (1 shared connections)
+- [Community 51](Community_51.md) (1 shared connections)
+- [Community 444](Community_444.md) (1 shared connections)
 
 ## Source Files
 

@@ -1,46 +1,57 @@
 # Community 58
 
-> 20 nodes
+> 25 nodes
 
 ## Key Concepts
 
-- **Observe.hpp** (19 connections) — `src/headless/Observe.hpp`
-- **ProbeSet** (11 connections) — `src/headless/Observe.hpp`
-- **ProbeSpec** (10 connections) — `src/headless/Observe.hpp`
-- **probeFields()** (8 connections) — `src/headless/Observe.hpp`
-- **Machine** (6 connections)
-- **addProbe()** (5 connections) — `src/headless/Observe.hpp`
-- **emitProbeLine()** (5 connections) — `src/headless/Observe.hpp`
-- **parseProbeSpec()** (5 connections) — `src/headless/Observe.hpp`
-- **probeValue()** (5 connections) — `src/headless/Observe.hpp`
-- **ramHash()** (4 connections) — `src/headless/Observe.hpp`
-- **read8()** (4 connections) — `src/headless/Observe.hpp`
-- **screenHash()** (4 connections) — `src/headless/Observe.hpp`
-- **string** (4 connections)
-- **hashRam** (1 connections) — `src/headless/Observe.hpp`
-- **hashRamAddr** (1 connections) — `src/headless/Observe.hpp`
-- **hashRamLen** (1 connections) — `src/headless/Observe.hpp`
-- **probes** (1 connections) — `src/headless/Observe.hpp`
-- **addr** (1 connections) — `src/headless/Observe.hpp`
-- **len** (1 connections) — `src/headless/Observe.hpp`
-- **name** (1 connections) — `src/headless/Observe.hpp`
+- **drawSideWindows()** (15 connections) — `src/gui/AppLoop.cpp`
+- **drawJoystickWindow()** (7 connections) — `src/gui/DebugWindows.cpp`
+- **drawKeyboardWindow()** (7 connections) — `src/gui/KeyboardWindow.cpp`
+- **keyboardWindowReleaseAll()** (7 connections) — `src/gui/KeyboardWindow.cpp`
+- **applyCrtPreset()** (5 connections) — `src/gui/CrtUi.cpp`
+- **drawCrtControls()** (5 connections) — `src/gui/CrtUi.cpp`
+- **drawCpuState()** (5 connections) — `src/gui/DebugWindows.cpp`
+- **drawDebugger()** (5 connections) — `src/gui/DebugWindows.cpp`
+- **App** (5 connections)
+- **drawCrtSettings()** (4 connections) — `src/gui/CrtUi.cpp`
+- **drawBitmapExplorer()** (4 connections) — `src/gui/DebugWindows.cpp`
+- **drawHexViewer()** (4 connections) — `src/gui/DebugWindows.cpp`
+- **releaseSticky()** (4 connections) — `src/gui/KeyboardWindow.cpp`
+- **loadTexture()** (3 connections) — `src/gui/KeyboardWindow.cpp`
+- **Machine** (3 connections)
+- **drawJoyDirLed()** (2 connections) — `src/gui/DebugWindows.cpp`
+- **drawJoystickAxisBar()** (2 connections) — `src/gui/DebugWindows.cpp`
+- **parseBpAddr()** (2 connections) — `src/gui/DebugWindows.cpp`
+- **App** (2 connections)
+- **Machine** (2 connections)
+- **string** (2 connections)
+- **string** (1 connections)
+- **Bus** (1 connections)
+- **Cpu68k** (1 connections)
+- **GLFWwindow** (1 connections)
 
 ## Relationships
 
-- [Community 386](Community_386.md) (5 shared connections)
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 4](Community_4.md) (4 shared connections)
-- [Community 383](Community_383.md) (3 shared connections)
-- [Community 448](Community_448.md) (1 shared connections)
+- [Community 4](Community_4.md) (12 shared connections)
+- [Community 214](Community_214.md) (5 shared connections)
+- [Community 91](Community_91.md) (4 shared connections)
+- [Community 135](Community_135.md) (3 shared connections)
+- [Community 325](Community_325.md) (2 shared connections)
+- [Community 149](Community_149.md) (1 shared connections)
+- [Community 129](Community_129.md) (1 shared connections)
+- [Community 333](Community_333.md) (1 shared connections)
 
 ## Source Files
 
-- `src/headless/Observe.hpp`
+- `src/gui/AppLoop.cpp`
+- `src/gui/CrtUi.cpp`
+- `src/gui/DebugWindows.cpp`
+- `src/gui/KeyboardWindow.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 55 (96%)
-- INFERRED: 2 (4%)
+- EXTRACTED: 47 (73%)
+- INFERRED: 17 (27%)
 - AMBIGUOUS: 0 (0%)
 
 ---

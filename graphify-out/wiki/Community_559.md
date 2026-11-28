@@ -1,22 +1,22 @@
 # Community 559
 
-> 4 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/fdc_media_change_logic.cpp`
-- **.equal()** (2 connections) — `tests/fdc_media_change_logic.cpp`
-- **count** (1 connections) — `tests/fdc_media_change_logic.cpp`
-- **failures** (1 connections) — `tests/fdc_media_change_logic.cpp`
+- **ShadowMask** (5 connections) — `src/gui/CrtParams.h`
+- **Aperture** (1 connections) — `src/gui/CrtParams.h`
+- **Dot** (1 connections) — `src/gui/CrtParams.h`
+- **Off** (1 connections) — `src/gui/CrtParams.h`
+- **Triad** (1 connections) — `src/gui/CrtParams.h`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 415](Community_415.md) (1 shared connections)
+- [Community 129](Community_129.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/fdc_media_change_logic.cpp`
+- `src/gui/CrtParams.h`
 
 ## Audit Trail
 

@@ -626,7 +626,9 @@ static void testTosChoice() {
     checkBool("Mega STE + tos162uk → STE", neost::pickMachineForTos(MachineType::MegaSte, tos162uk) == MachineType::Ste, true);
     checkBool("Mega ST + tos206uk → Mega STE", neost::pickMachineForTos(MachineType::MegaSt, c[9]) == MachineType::MegaSte, true);
     checkBool("STE + tos206uk → STE (convient)", neost::pickMachineForTos(MachineType::Ste, c[9]) == MachineType::Ste, true);
-    checkBool("STE + TOS 3.06 (TT) → STE (refusé au chargement)", neost::pickMachineForTos(MachineType::Ste, c[10]) == MachineType::Ste, true);
+    checkBool("Choix de la ROM TOS 3.06 → TT", neost::pickMachineForTos(MachineType::Ste, c[10]) == MachineType::Tt, true);
+    checkBool("TOS 3.06 sur TT", neost::tosRunsMachine(c[10], MachineType::Tt), true);
+    checkBool("TOS 2.06 sur TT", neost::tosRunsMachine(c[9], MachineType::Tt), false);
 }
 
 // Image FAT12 720 Ko synthétique (BPB d'un 2 faces 9 secteurs, comme tools/make_floppy.py)
@@ -1021,6 +1023,122 @@ static void testTosImageLoad() {
               bus.loadTos(makeTos("t207.img", 256 * 1024, 0x0207, 0xE00000)), false);
     checkHex ("… la ROM précédente (2.06) reste en place", bus.tosVersion, 0x0206);
     checkInt ("… avec sa taille", long(bus.rom.size()), 256L * 1024);
+
+    // Sonde redistribuable : reset par la ROM, MOVEC du 68030, FMOVE du 68882
+    // et transfert long non aligné en TT-RAM, à travers l'adaptateur réel.
+    {
+        Machine tt(2u << 20, CpuCore::Moira, MachineType::Tt);
+        const auto path = makeTos("tt-probe.img", 512 * 1024, 0x0306, 0xE00000);
+        const uint16_t words[] = {
+            0x7000, 0x4E7B, 0x0801,         // MOVEQ #0,D0 ; MOVEC D0,VBR
+            0x702A, 0xF200, 0x4000,         // MOVEQ #42,D0 ; FMOVE.L D0,FP0
+            0xF201, 0x6000,                 // FMOVE.L FP0,D1
+            0x23C1, 0x0100, 0x0801,         // MOVE.L D1,$01000801
+            0x2439, 0x0100, 0x0801,         // MOVE.L $01000801,D2
+            0x23C2, 0x0000, 0x0900,         // MOVE.L D2,$900
+            0x60FE                          // BRA.S *
+        };
+        {
+            std::fstream image(path, std::ios::binary | std::ios::in | std::ios::out);
+            image.seekp(0x30);
+            for (const uint16_t word : words) {
+                image.put(static_cast<char>(word >> 8));
+                image.put(static_cast<char>(word));
+            }
+        }
+        checkBool("TT : TT-RAM absente au démarrage", tt.bus.busFault(0x01000801u), true);
+        checkBool("TT : extension Fast RAM 4 Mio", tt.setTtRamSize(4u << 20), true);
+        checkBool("TT : ROM de la sonde", tt.loadTos(path), true);
+        tt.reset();
+        tt.bus.write8(0x804, 0xA5);
+        tt.cpu.run(2000);
+        checkBool("TT : sonde 68030 + 68882 terminée", tt.cpu.halted(), false);
+        checkHex("TT : résultat du programme en ST-RAM", tt.bus.read32(0x900), 42);
+        checkHex("TT : résultat non aligné en TT-RAM", tt.bus.read8(0x01000804), 42);
+        checkHex("TT : la TT-RAM ne replie pas sur la ST-RAM", tt.bus.read8(0x804), 0xA5);
+        checkHex("TT : miroir haut de la ST-RAM", tt.bus.read8(0xFF000804), 0xA5);
+        checkBool("TT : pas de miroir au-delà de la Fast RAM", tt.bus.busFault(0x02000801u), true);
+
+        // [C] TOS 3.06 UK : CRP dans la page système, puis RTE en mode utilisateur.
+        const auto mmuPath = makeTos("tt-pmmu.img", 512 * 1024, 0x0306, 0xE00000);
+        {
+            std::fstream image(mmuPath, std::ios::binary | std::ios::in | std::ios::out);
+            auto writeWords = [&](std::streamoff offset, std::initializer_list<uint16_t> words) {
+                image.seekp(offset);
+                for (const uint16_t word : words) {
+                    image.put(static_cast<char>(word >> 8));
+                    image.put(static_cast<char>(word));
+                }
+            };
+            writeWords(0x30, {
+                0x2E7C, 0x001F, 0xF000,                 // MOVEA.L #$1FF000,A7
+                0x23FC, 0x00E0, 0x0200, 0x0000, 0x0008, // MOVE.L #$E00200,$8 (BERR)
+                0x23FC, 0x0000, 0x0001, 0x0000, 0x0700, // Descripteur identité à $700
+                0xF039, 0x4C00, 0x00E0, 0x0300,         // PMOVE $E00300,CRP
+                0xF039, 0x4000, 0x00E0, 0x0308,         // PMOVE $E00308,TC
+                0x23FC, 0x0000, 0x0001, 0x0000, 0x0700, // Efface U/M après l'amorçage
+                0x23FC, 0x00E0, 0x0240, 0x0000, 0x0084, // Vecteur TRAP #1
+                0x23FC, 0xAABB, 0xCCDD, 0x0000, 0x0940, // Valeur initiale
+                0x203C, 0x0000, 0x2100, 0x4E7B, 0x0002, // CACR : ED + WA
+                0x2039, 0x0000, 0x0940,                 // Charge l'entrée superviseur
+                0x4267,                                 // CLR.W -(A7) (format 0)
+                0x2F3C, 0x00E0, 0x0100,                 // MOVE.L #$E00100,-(A7)
+                0x3F3C, 0x0700,                         // MOVE.W #$0700,-(A7)
+                0x4E73                                  // RTE (FC utilisateur programme)
+            });
+            writeWords(0x100, {
+                0x23FC, 0x0123, 0x4567, 0x0000, 0x0910, // MOVE.L #$01234567,$910
+                0x33FC, 0x0020, 0x0000, 0x0942,         // Écriture mot utilisateur, tag miss
+                0x4E41,                                 // TRAP #1 (lecteur superviseur)
+                0x2039, 0x0000, 0x0700,                 // MOVE.L $700,D0 (doit fauter)
+                0x60FE
+            });
+            writeWords(0x240, {
+                0x2039, 0x0000, 0x0940,                 // MOVE.L $940,D0
+                0x23C0, 0x0000, 0x0960,                 // MOVE.L D0,$960
+                0x4E73
+            });
+            writeWords(0x200, {
+                0x302F, 0x000A,                         // MOVE.W 10(A7),D0 (SSW)
+                0x33C0, 0x0000, 0x0914,                 // MOVE.W D0,$914
+                0x202F, 0x0010,                         // MOVE.L 16(A7),D0 (adresse)
+                0x23C0, 0x0000, 0x0918,                 // MOVE.L D0,$918
+                0x60FE
+            });
+            writeWords(0x300, {0x8000, 0x0002, 0x0000, 0x0700, 0x80F0, 0x4445});
+        }
+        checkBool("TT : ROM de la sonde PMMU", tt.loadTos(mmuPath), true);
+        tt.reset();
+        tt.cpu.run(2000);
+        checkHex("TT : RTE exécute le programme utilisateur", tt.bus.read32(0x910), 0x01234567);
+        checkHex("TT : le parcours physique renseigne U et M", tt.bus.read32(0x700), 0x19);
+        checkHex("TT : lecture logicielle protégée en FC1", tt.bus.read16(0x914), 0x0141);
+        checkHex("TT : adresse de la faute utilisateur", tt.bus.read32(0x918), 0x700);
+        checkHex("TT : WA invalide l'entrée superviseur après écriture mot utilisateur",
+                 tt.bus.read32(0x960), 0xAABB0020);
+
+        // [C] TOS 3.06 UK, $E01630 : attente du bit Timer C du second MFP.
+        // Les décomptes et les registres pending des deux MC68901 sont indépendants.
+        tt.bus.write8(0xFFFFFA09, 0x20);
+        tt.bus.write8(0xFFFFFA89, 0x20);
+        tt.bus.write8(0xFFFFFA23, 9);
+        tt.bus.write8(0xFFFFFAA3, 1);
+        tt.bus.write8(0xFFFFFA1D, 0x10);
+        tt.bus.write8(0xFFFFFA9D, 0x10);
+        const auto start = tt.sched.now();
+        const auto second = tt.sched.rawCyclesUntil(Scheduler::TT_TIMER_C);
+        const auto primary = tt.sched.rawCyclesUntil(Scheduler::TIMER_C);
+        checkBool("TT : les deux Timer C ont des échéances distinctes", second > 0 && primary > second, true);
+        if (second > 0 && primary > second) {
+            tt.sched.runTo(start + second);
+            checkHex("TT : Timer C du second MFP en attente", tt.bus.read8(0xFFFFFA8D) & 0x20, 0x20);
+            checkHex("TT : Timer C principal encore actif", tt.bus.read8(0xFFFFFA0D) & 0x20, 0);
+            tt.mfpTt.reset();
+            tt.sched.runTo(start + primary);
+            checkHex("TT : Timer C principal après reset du second MFP", tt.bus.read8(0xFFFFFA0D) & 0x20, 0x20);
+            checkHex("TT : pending du second MFP remis à zéro", tt.bus.read8(0xFFFFFA8D) & 0x20, 0);
+        }
+    }
 
     // Cartouches.
     auto makeCart = [&](const char* name, std::size_t size, std::size_t magicAt) {

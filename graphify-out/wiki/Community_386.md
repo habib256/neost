@@ -1,60 +1,37 @@
 # Community 386
 
-> 21 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **main()** (52 connections) — `src/headless/main_headless.cpp`
-- **netusbeeSelfTest()** (8 connections) — `src/headless/main_headless.cpp`
-- **.check()** (7 connections) — `src/core/StateArchive.hpp`
-- **natSelfTest()** (7 connections) — `src/headless/main_headless.cpp`
-- **serialLoopbackSelfTest()** (6 connections) — `src/headless/main_headless.cpp`
-- **argInt()** (5 connections) — `src/headless/main_headless.cpp`
-- **stScancode()** (5 connections) — `src/headless/main_headless.cpp`
-- **usatanSelfTest()** (5 connections) — `src/headless/main_headless.cpp`
-- **Machine** (5 connections)
-- **argHex()** (4 connections) — `src/headless/main_headless.cpp`
-- **argU32()** (4 connections) — `src/headless/main_headless.cpp`
-- **badArg()** (4 connections) — `src/headless/main_headless.cpp`
-- **enecSelfTest()** (4 connections) — `src/headless/main_headless.cpp`
-- **.mfpPhaseForSeed()** (3 connections) — `src/core/Machine.hpp`
-- **argFrame()** (3 connections) — `src/headless/main_headless.cpp`
-- **writePpm()** (3 connections) — `src/headless/Observe.hpp`
-- **Chasse round 5 : le save-state acceptait une AUTRE ROM, et le harnais annonçait des écritures tronquées comme réussies (2026-09-02)** (3 connections) — `CHANGELOG.md`
-- **.count()** (2 connections) — `src/core/Symbols.hpp`
-- **usage()** (2 connections) — `src/headless/main_headless.cpp`
-- **portA** (2 connections) — `tests/psg_odd_write_logic.cpp`
-- **Headless : `--joy-at`, `--joy-script` et `--mouse-at` deviennent répétables (`OUTIL-1`) (2026-08-25)** (2 connections) — `CHANGELOG.md`
+- **Performance du cœur NeoST — profil, optimisations, recette de build** (7 connections) — `docs/PERFORMANCE.md`
+- **3. Les optimisations, et ce qu'elles paient** (6 connections) — `docs/PERFORMANCE.md`
+- **2. Le profil de départ (boot TOS 1.62, 300 trames)** (3 connections) — `docs/PERFORMANCE.md`
+- **3.2 Bus — cache du décodage MMU et chemin rapide en ligne** (3 connections) — `docs/PERFORMANCE.md`
+- **3.3 `busFaultN` — sortie anticipée pour la RAM ordinaire** (2 connections) — `docs/PERFORMANCE.md`
+- **5. La recette de build : PGO + LTO** (2 connections) — `docs/PERFORMANCE.md`
+- **1. Refaire le profil** (1 connections) — `docs/PERFORMANCE.md`
+- **4. Résultat des optimisations de code** (1 connections) — `docs/PERFORMANCE.md`
+- **6. Ce qui reste sur la table** (1 connections) — `docs/PERFORMANCE.md`
+- **⚠ Le piège du PGO, qui coûte le gain sans rien dire** (1 connections) — `docs/PERFORMANCE.md`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (13 shared connections)
-- [Community 298](Community_298.md) (8 shared connections)
-- [Community 58](Community_58.md) (5 shared connections)
-- [Community 51](Community_51.md) (5 shared connections)
-- [Community 160](Community_160.md) (4 shared connections)
-- [Community 119](Community_119.md) (4 shared connections)
-- [Community 434](Community_434.md) (3 shared connections)
-- [Community 27](Community_27.md) (3 shared connections)
-- [Community 99](Community_99.md) (3 shared connections)
-- [Community 138](Community_138.md) (2 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 130](Community_130.md) (2 shared connections)
+- [Community 319](Community_319.md) (2 shared connections)
+- [Community 39](Community_39.md) (2 shared connections)
+- [Community 203](Community_203.md) (2 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
+- [Community 9](Community_9.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/core/Machine.hpp`
-- `src/core/StateArchive.hpp`
-- `src/core/Symbols.hpp`
-- `src/headless/Observe.hpp`
-- `src/headless/main_headless.cpp`
-- `tests/psg_odd_write_logic.cpp`
+- `docs/PERFORMANCE.md`
 
 ## Audit Trail
 
-- EXTRACTED: 65 (63%)
-- INFERRED: 38 (37%)
+- EXTRACTED: 13 (72%)
+- INFERRED: 5 (28%)
 - AMBIGUOUS: 0 (0%)
 
 ---

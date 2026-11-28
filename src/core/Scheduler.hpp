@@ -77,8 +77,9 @@ public:
     // SERIAL_TX : fin de caractère émis par l’USART MFP.
     // IKBD_MONITOR : échantillonnage joystick périodique demandé par $17.
     // SCC_TX/RX : fin d'un caractère série, distincte du pulse Zero Count du BRG.
-    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_B_DELAY, TIMER_C, TIMER_D, MFP_IRQ, FDC, FDC_INDEX, DMASND, IKBD, IKBD_RX, IKBD_TX, MIDI_TX, MIDI_RX, SERIAL_RX, MICROWIRE, BLITTER, VC_RESTART, HBL, VBL, ACSI_IRQ, SCC_BRG_A, SCC_BRG_B, IKBD_MONITOR, SCC_TX_A, SCC_TX_B, SCC_RX_A, SCC_RX_B, IKBD_AUTOSEND, SERIAL_TX, TBI_EDGE, SRC_COUNT };
-    static_assert(SRC_COUNT <= 32, "Scheduler source mask is 32 bits");
+    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_B_DELAY, TIMER_C, TIMER_D, MFP_IRQ, FDC, FDC_INDEX, DMASND, IKBD, IKBD_RX, IKBD_TX, MIDI_TX, MIDI_RX, SERIAL_RX, MICROWIRE, BLITTER, VC_RESTART, HBL, VBL, ACSI_IRQ, SCC_BRG_A, SCC_BRG_B, IKBD_MONITOR, SCC_TX_A, SCC_TX_B, SCC_RX_A, SCC_RX_B, IKBD_AUTOSEND, SERIAL_TX, TBI_EDGE, TT_TIMER_A, TT_TIMER_B, TT_TIMER_C, TT_TIMER_D,
+                  TT_MFP_IRQ, TT_SERIAL_RX, TT_SERIAL_TX, SRC_COUNT };
+    static_assert(TT_TIMER_A == 32 && SRC_COUNT <= 64, "v69 has 32 scheduler sources");
 
     using Callback = std::function<void()>;
 
@@ -132,7 +133,7 @@ public:
         // Miroir binaire (cf. armed_). Le test explicite contre kInactive garde
         // l'invariant vrai même si un appelant planifie « à l'inactif » — l'ancien
         // code, qui relisait due_ à chaque balayage, y était insensible.
-        if (atCycle != kInactive) armed_ |= 1u << s; else armed_ &= ~(1u << s);
+        if (atCycle != kInactive) armed_ |= uint64_t{1} << s; else armed_ &= ~(uint64_t{1} << s);
         // Cache du plus proche événement dû (cf. nextDue_). Il est tenu EXACT, et pas
         // seulement minorant : un événement plus tôt l'avance ; un événement REPOUSSÉ
         // alors qu'il PORTAIT le minimum le fait reculer, et il faut alors rebalayer.
@@ -166,7 +167,7 @@ public:
     void cancel(Source s) {
         const bool wasMin = (due_[s] != kInactive && due_[s] == nextDue_);
         due_[s] = kInactive;
-        armed_ &= ~(1u << s);
+        armed_ &= ~(uint64_t{1} << s);
         if (wasMin) nextDue_ = scanNextDue();   // l'échéance minimale disparaît → recalcul
     }
 
@@ -226,22 +227,22 @@ public:
             explicit FiringGuard(int64_t& b) : f(b), prev(b) {}
             ~FiringGuard() { f = prev; }
         } firingGuard{firingDue_};
-        uint32_t fired = 0;                      // anti-livelock : 1 tir max par source
+        uint64_t fired = 0;                      // anti-livelock : 1 tir max par source
         bool any = false;
         for (;;) {
             int best = -1;
-            for (uint32_t m = armed_ & kMfpTimerMask; m; m &= m - 1) {
-                const int s = ctz32(m);
+            for (uint64_t m = armed_ & kMfpTimerMask; m; m &= m - 1) {
+                const int s = ctz64(m);
                 if (!((fired >> s) & 1u) && due_[s] <= cycle
                     && (best < 0 || due_[s] < due_[best])) best = s;
             }
             if (best < 0) break;
             const int64_t late = cycle - due_[best];
             if (late > timerMaxLate) timerMaxLate = late;
-            fired |= 1u << best;
+            fired |= uint64_t{1} << best;
             firingDue_ = due_[best];
             due_[best] = kInactive;
-            armed_ &= ~(1u << best);
+            armed_ &= ~(uint64_t{1} << best);
             any = true;
             if (cb_[best]) cb_[best]();
         }
@@ -391,8 +392,7 @@ public:
             explicit FiringGuard(int64_t& b) : f(b), prev(b) {}
             ~FiringGuard() { f = prev; }
         } firingGuard{firingDue_};
-        uint32_t fired = 0;
-        static_assert(SRC_COUNT <= 32, "masque fired sur 32 bits");
+        uint64_t fired = 0;
         // Bornes du lot (cf. setDispatchHooks). RAII : le lot se ferme même si un
         // callback sort par exception (bus error), et la profondeur rend l'appel unique
         // sous ré-entrance (addStolenCycles du blitter re-rentre dans runTo).
@@ -422,8 +422,8 @@ public:
             // ⚠ Le minimum se calcule sur armed_ ENTIER, pas sur `armed_ & ~fired` :
             // une source déjà tirée que son callback a replanifiée est bien la
             // prochaine échéance, même si elle ne peut plus tirer dans ce runTo.
-            for (uint32_t m = armed_; m; m &= m - 1) {
-                const int s = ctz32(m);
+            for (uint64_t m = armed_; m; m &= m - 1) {
+                const int s = ctz64(m);
                 const int64_t d = due_[s];
                 if (d < minAll) minAll = d;
                 if (!((fired >> s) & 1u) && d <= now_
@@ -436,10 +436,10 @@ public:
                 const int64_t late = now_ - due_[best];
                 if (late > timerMaxLate) timerMaxLate = late;
             }
-            fired |= 1u << best;
+            fired |= uint64_t{1} << best;
             firingDue_ = due_[best];             // échéance servie (pour replanif. anti-dérive)
             due_[best] = kInactive;              // consommé avant l'appel…
-            armed_ &= ~(1u << best);
+            armed_ &= ~(uint64_t{1} << best);
             if (cb_[best]) cb_[best]();           // …le callback peut replanifier
         }
         // (firingDue_ est restauré par firingGuard à la sortie : kInactive pour une
@@ -464,14 +464,18 @@ public:
     // Save-state : échéances par source + horloges. Les callbacks (cb_), la liveClock_
     // et l'endSlice_ sont re-liés à la construction de Machine → PAS sérialisés.
     void serialize(StateArchive& ar) {
-        ar(due_); ar(now_); ar(nextDue_); ar(runTarget_);
+        // L'état v69 ne couvre que les machines 68000. Le TT et ses sources
+        // restent hors archive tant que Machine refuse ses sauvegardes.
+        ar.raw(due_.data(), TT_TIMER_A * sizeof(due_[0]));
+        ar(now_); ar(nextDue_); ar(runTarget_);
         // armed_ est PUREMENT DÉRIVÉ de due_ : on le reconstruit au chargement plutôt
         // que de le sérialiser (un état ancien ou forgé ne peut donc pas désynchroniser
         // l'invariant, et le format de save-state ne change pas).
         if (ar.loading()) {
+            std::fill(due_.begin() + TT_TIMER_A, due_.end(), kInactive);
             armed_ = 0;
             for (int s = 0; s < SRC_COUNT; ++s)
-                if (due_[s] != kInactive) armed_ |= 1u << s;
+                if (due_[s] != kInactive) armed_ |= uint64_t{1} << s;
             // nextDue_ est lui aussi PUREMENT DÉRIVÉ de due_ : on le recalcule au lieu
             // de faire confiance à la valeur sérialisée. Le nouveau code (cache tenu
             // EXACT, cf. schedule) l'exige — un état sauvé par un build plus ancien, ou
@@ -502,25 +506,29 @@ public:
 
 private:
     static bool isMfpTimer(int s) {              // sources dont le retard dépend de la préemption
-        return s == TIMER_A || s == TIMER_B_DELAY || s == TIMER_C || s == TIMER_D;
+        return s == TIMER_A || s == TIMER_B_DELAY || s == TIMER_C || s == TIMER_D
+            || (s >= TT_TIMER_A && s <= TT_TIMER_D);
     }
     // Les quatre timers délai et le front DE de Timer B, pour les accès MFP.
-    static constexpr uint32_t kMfpTimerMask =
-        (1u << TIMER_A) | (1u << TIMER_B) | (1u << TIMER_B_DELAY) | (1u << TIMER_C) | (1u << TIMER_D);
+    static constexpr uint64_t kMfpTimerMask =
+        (uint64_t{1} << TIMER_A) | (uint64_t{1} << TIMER_B) | (uint64_t{1} << TIMER_B_DELAY)
+        | (uint64_t{1} << TIMER_C) | (uint64_t{1} << TIMER_D)
+        | (uint64_t{1} << TT_TIMER_A) | (uint64_t{1} << TT_TIMER_B)
+        | (uint64_t{1} << TT_TIMER_C) | (uint64_t{1} << TT_TIMER_D);
     // Scan complet du plus proche événement dû (-1 si aucun). N'est plus sur le chemin
     // chaud : runTo calcule désormais ce minimum au passage (cf. minAll). Il ne reste
     // appelé que par cancel() de l'échéance minimale et par le nextDue() public.
     int64_t scanNextDue() const {
         int64_t best = kInactive;
-        for (uint32_t m = armed_; m; m &= m - 1) {
-            const int64_t d = due_[ctz32(m)];
+        for (uint64_t m = armed_; m; m &= m - 1) {
+            const int64_t d = due_[ctz64(m)];
             if (best < 0 || d < best) best = d;
         }
         return best;
     }
     // Index du bit de poids faible. GCC/Clang uniquement (les deux seuls compilateurs
     // ciblés par NeoST) ; `m` est TOUJOURS non nul aux points d'appel.
-    static int ctz32(uint32_t m) { return __builtin_ctz(m); }
+    static int ctz64(uint64_t m) { return __builtin_ctzll(m); }
 
     // Contrôle de l'invariant armed_ ⟺ due_ (compilé hors NDEBUG uniquement) : c'est
     // le seul risque introduit par le masque — un site d'écriture de due_ ajouté plus
@@ -544,7 +552,7 @@ private:
     // balayant les 19 sources ; ici on ne visite que celles réellement armées (~6).
     // INVARIANT : (armed_ >> s) & 1  ⟺  due_[s] != kInactive. Vérifié en debug par
     // armedInvariant().
-    uint32_t armed_ = 0;
+    uint64_t armed_ = 0;
     std::array<Callback, SRC_COUNT> cb_{};
     int64_t now_ = 0;
     int64_t nextDue_ = kInactive;                // cache O(1) du plus proche dû (cf. syncTo)

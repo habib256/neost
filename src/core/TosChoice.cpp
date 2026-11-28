@@ -33,10 +33,12 @@ bool readTosInfo(const std::string& path, TosInfo& out) {
 }
 
 bool tosRunsMachine(const TosInfo& t, MachineType m) {
-    if (tosUnsupportedMachine(t.ver, t.emuTos, t.size)) return false;   // TT, Falcon
+    if (tosUnsupportedMachine(t.ver, t.emuTos, t.size, m)) return false;
     // EmuTOS de 512 Ko et plus : sert toutes les machines (cf. tosUnsupportedMachine).
-    if (t.emuTos && t.size >= 512u * 1024u) return true;
+    if (t.emuTos && t.size >= 512u * 1024u) return m != MachineType::Tt || t.size == 512u * 1024u;
     switch (m) {
+    case MachineType::Tt:
+        return !t.emuTos && (t.ver >> 8) == 3 && t.size == 512u * 1024u;
     case MachineType::St:
     case MachineType::MegaSt:
         // TOS 1.00-1.04, EmuTOS 192 Ko (se présente en 1.04).
@@ -58,6 +60,7 @@ int versionRank(MachineType m, uint16_t ver) {
     static const uint16_t kSte[]     = { 0x0162, 0x0106, 0x0206, 0x0205 };
     static const uint16_t kMegaSte[] = { 0x0206, 0x0205 };
     const uint16_t* t = kSt; int n = 3;
+    if (m == MachineType::Tt) return ver == 0x0306 ? 0 : 1;
     if (m == MachineType::Ste)          { t = kSte;     n = 4; }
     else if (m == MachineType::MegaSte) { t = kMegaSte; n = 2; }
     for (int i = 0; i < n; ++i) if (t[i] == ver) return i;
@@ -89,8 +92,10 @@ int pickTosForMachine(MachineType m, const TosInfo* cur, const std::vector<TosIn
 MachineType pickMachineForTos(MachineType cur, const TosInfo& t) {
     if (tosRunsMachine(t, cur)) return cur;
     using M = MachineType;
+    if (tosRunsMachine(t, M::Tt)) return M::Tt;
     M order[3];
     switch (cur) {
+    case M::Tt:      order[0] = M::St;      order[1] = M::Ste;     order[2] = M::MegaSte; break;
     case M::St:      order[0] = M::MegaSt;  order[1] = M::Ste;     order[2] = M::MegaSte; break;
     case M::MegaSt:  order[0] = M::St;      order[1] = M::MegaSte; order[2] = M::Ste;     break;
     case M::Ste:     order[0] = M::MegaSte; order[1] = M::St;      order[2] = M::MegaSt;  break;

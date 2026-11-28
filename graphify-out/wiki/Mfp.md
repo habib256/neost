@@ -1,6 +1,6 @@
 # Mfp
 
-> God node · 198 connections · `src/io/Mfp.hpp`
+> God node · 203 connections · `src/io/Mfp.hpp`
 
 **Community:** [Community 6](Community_6.md)
 
@@ -30,15 +30,15 @@
 - SRC_TIMERB `EXTRACTED`
 - iera `EXTRACTED`
 - ierb `EXTRACTED`
-- *…and 77 more `defines` connection(s) not listed (lowest-degree first to go)*
+- *…and 78 more `defines` connection(s) not listed (lowest-degree first to go)*
 
 ### method
 - .write8() `EXTRACTED`
 - .raiseAt() `EXTRACTED`
 - .gpipSetLine() `EXTRACTED`
 - .writeTimerCtrl() `EXTRACTED`
-- .gpipInput() `EXTRACTED`
 - .scheduleTimerAt() `EXTRACTED`
+- .gpipInput() `EXTRACTED`
 - .advanceSerialTx() `EXTRACTED`
 - .timerCtrl() `EXTRACTED`
 - .readTimerData() `EXTRACTED`
@@ -49,11 +49,11 @@
 - .timerA_setLineInput() `EXTRACTED`
 - .read8() `EXTRACTED`
 - .gpipEdges() `EXTRACTED`
+- .timerSource() `EXTRACTED`
 - .startSerialTx() `EXTRACTED`
 - .gpipIrqView() `EXTRACTED`
 - .gpipUpdateInterruptAt() `EXTRACTED`
-- .mfpSelfTest() `EXTRACTED`
-- *…and 76 more `method` connection(s) not listed (lowest-degree first to go)*
+- *…and 80 more `method` connection(s) not listed (lowest-degree first to go)*
 
 ### references
 - function `EXTRACTED`

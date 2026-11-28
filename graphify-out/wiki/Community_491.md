@@ -1,32 +1,49 @@
 # Community 491
 
-> 5 nodes
+> 15 nodes
 
 ## Key Concepts
 
-- **.parseSpec()** (7 connections) — `src/io/UsbDevice.hpp`
-- **.netUsbeeApply()** (5 connections) — `src/gui/App.hpp`
-- **.attach()** (4 connections) — `src/io/UsbDevice.hpp`
-- **Kind** (2 connections)
-- **string** (2 connections)
+- **.draw()** (11 connections) — `src/android/AndroidMenu.hpp`
+- **MediaScan.cpp** (10 connections) — `src/io/MediaScan.cpp`
+- **scanDiskImages()** (9 connections) — `src/io/MediaScan.cpp`
+- **actionRow()** (5 connections) — `src/android/AndroidMenu.cpp`
+- **areSiblingImages()** (5 connections) — `src/io/MediaScan.cpp`
+- **commonPrefixLenCI()** (5 connections) — `src/io/MediaScan.cpp`
+- **.refresh()** (4 connections) — `src/android/AndroidMenu.hpp`
+- **string** (4 connections)
+- **lowerOf()** (3 connections) — `src/android/AndroidMenu.cpp`
+- **lowerOf()** (3 connections) — `src/io/MediaScan.cpp`
+- **main()** (3 connections) — `tests/android_menu_preview.cpp`
+- **ImVec2** (1 connections)
+- **ImVec4** (1 connections)
+- **string** (1 connections)
+- **size_t** (1 connections)
 
 ## Relationships
 
-- [Community 214](Community_214.md) (4 shared connections)
-- [Community 315](Community_315.md) (2 shared connections)
-- [Community 22](Community_22.md) (2 shared connections)
-- [Community 1](Community_1.md) (1 shared connections)
-- [Community 386](Community_386.md) (1 shared connections)
+- [Community 4](Community_4.md) (9 shared connections)
+- [Community 92](Community_92.md) (2 shared connections)
+- [Community 99](Community_99.md) (2 shared connections)
+- [Community 51](Community_51.md) (2 shared connections)
+- [Community 565](Community_565.md) (2 shared connections)
+- [Community 188](Community_188.md) (1 shared connections)
+- [Community 422](Community_422.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 15](Community_15.md) (1 shared connections)
+- [Community 149](Community_149.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/App.hpp`
-- `src/io/UsbDevice.hpp`
+- `src/android/AndroidMenu.cpp`
+- `src/android/AndroidMenu.hpp`
+- `src/io/MediaScan.cpp`
+- `tests/android_menu_preview.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (93%)
-- INFERRED: 1 (7%)
+- EXTRACTED: 35 (80%)
+- INFERRED: 9 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---

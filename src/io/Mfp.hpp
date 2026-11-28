@@ -60,7 +60,7 @@ public:
 
     // Branche l'ordonnanceur : le MFP y date lui-même ses timers en mode délai
     // (Timer A/C/D) à partir de leurs registres prescaler/données.
-    void setScheduler(Scheduler* s) { sched_ = s; }
+    void setScheduler(Scheduler* s, bool secondTtMfp = false) { sched_ = s; secondTtMfp_ = secondTtMfp; }
     // Liaison vidéo non persistée : appelée avant changement AER3, pour servir
     // l'ancien front DE puis repositionner le prochain ([D] mfp.c:2742-2813 @ f0736b24).
     void setTimerBEdgeSink(std::function<void(bool)> sink) { timerBEdgeSink_ = std::move(sink); }
@@ -700,6 +700,11 @@ private:
     // Période MFP convertie en unités internes de 1/256 cycle CPU, sans flottant.
     int64_t timerPeriodSubCycles(int timer, bool fromCounter) const;
 
+    bool secondTtMfp_ = false;
+    Scheduler::Source timerSource(int timer) const;
+    Scheduler::Source irqSource() const { return secondTtMfp_ ? Scheduler::TT_MFP_IRQ : Scheduler::MFP_IRQ; }
+    Scheduler::Source rxSource() const { return secondTtMfp_ ? Scheduler::TT_SERIAL_RX : Scheduler::SERIAL_RX; }
+    Scheduler::Source txSource() const { return secondTtMfp_ ? Scheduler::TT_SERIAL_TX : Scheduler::SERIAL_TX; }
     Scheduler* sched_ = nullptr;    // pour dater les timers (mode délai)
     // Rapport CPU/MFP réduit et phase de la grille (cf. setClock). Défaut : 8 021 248 /
     // 2 457 600 = 31 333/9 600, front 0 au cycle CPU 0 — valeurs d'avant l'option.

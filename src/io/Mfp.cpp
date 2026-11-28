@@ -119,7 +119,7 @@ void Mfp::resetChip() {
     timer_[0x2D] &= uint8_t(~0x01);
     rxFull_ = rxOverrun_ = rxPendingOverrun_ = false;
     rxBreakLine_ = rxBreakAcked_ = rxBreakPending_ = false;
-    if (sched_) sched_->cancel(Scheduler::SERIAL_TX);
+    if (sched_) sched_->cancel(txSource());
     serialTxBusy_ = false; serialTxKind_ = 0;
     updateSerialConfig();
     // Signal IRQ daté : tout retombe (Current_Interrupt/IRQ/IRQ_Time/Pending_Time).
@@ -161,14 +161,11 @@ void Mfp::reset() {
     serialClockFactor_ = 128;
     serialBaud_ = 0; serialUcr_ = 0;      // suivi débit série remis (sinon serialBaud() rapporte l'avant-reset)
     if (sched_) {   // reset MACHINE : Hatari appelle CycInt_Reset() ([D] reset.c:76 @ f0736b24) avant MFP_Reset_All
-        sched_->cancel(Scheduler::TIMER_A);
-        sched_->cancel(Scheduler::TIMER_B);
-        sched_->cancel(Scheduler::TIMER_B_DELAY);
-        sched_->cancel(Scheduler::TIMER_C);
-        sched_->cancel(Scheduler::TIMER_D);
-        sched_->cancel(Scheduler::MFP_IRQ);
-        sched_->cancel(Scheduler::SERIAL_RX);
-        sched_->cancel(Scheduler::SERIAL_TX);
+        for (int timer = 0; timer < 4; ++timer) sched_->cancel(timerSource(timer));
+        if (!secondTtMfp_) sched_->cancel(Scheduler::TIMER_B);
+        sched_->cancel(irqSource());
+        sched_->cancel(rxSource());
+        sched_->cancel(txSource());
     }
     serialTxBusy_ = serialTxFull_ = serialTxUnderrun_ = serialTxEnd_ = false;
     serialTxByte_ = serialTxHolding_ = serialTxKind_ = 0;
@@ -220,7 +217,7 @@ void Mfp::scheduleSerialRx(bool continuation) {
     const int64_t total = numerator + serialRxRemainder_;
     serialRxCycle_ += total / divisor;
     serialRxRemainder_ = total % divisor;
-    sched_->schedule(Scheduler::SERIAL_RX, serialRxCycle_ + (serialRxRemainder_ != 0));
+    sched_->schedule(rxSource(), serialRxCycle_ + (serialRxRemainder_ != 0));
     serialRxArmed_ = true;
 }
 
@@ -335,7 +332,7 @@ void Mfp::scheduleSerialTxHalfBits(int halfBits, bool continuation) {
     const int64_t bit = clkCpuHz_ * 2 * serialClockFactor_;
     serialTxFrameClearCycle_ = serialTxCycle_ + (serialTxRemainder_ + bit + divisor - 1) / divisor;
     serialTxBusy_ = true;
-    sched_->schedule(Scheduler::SERIAL_TX, serialTxCycle_ + (serialTxRemainder_ != 0));
+    sched_->schedule(txSource(), serialTxCycle_ + (serialTxRemainder_ != 0));
 }
 
 // [B] MC68901 Fig. 6-4 p. 6-7 ; MC68HC901 § 7.3.2 : END immédiat si aucun caractère ne reste en vol.
@@ -513,10 +510,10 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
     // Les fins TX/BREAK déjà échues précèdent la modification MMIO.
     bool caughtUpTx = false;
     if (sched_) while (serialTxBusy_) {
-        const int64_t remaining = sched_->rawCyclesUntil(Scheduler::SERIAL_TX);
+        const int64_t remaining = sched_->rawCyclesUntil(txSource());
         if (remaining == INT64_MIN || remaining > 0) break;
         const int64_t when = sched_->liveNow() + remaining;
-        sched_->cancel(Scheduler::SERIAL_TX); advanceSerialTx(when);
+        sched_->cancel(txSource()); advanceSerialTx(when);
         caughtUpTx = true;
     }
     // Élire ces fronts à leur échéance, avant que updateTimers ne traite la
@@ -620,7 +617,7 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
         case 0x29: timer_[0x29] = v & 0xFE;                               // UCR, [B] Fig. 6-2 p. 6-3 : bit 0 lu à zéro
                    updateSerialConfig();
                    if (sched_ && serialTxKind_ == 1 && !(v & 0x18)) {
-                       sched_->cancel(Scheduler::SERIAL_TX);
+                       sched_->cancel(txSource());
                        serialTxBusy_ = false; serialTxKind_ = 0;
                    }
                    startSerialTx(false); break;   // UCR synchrone rend B inopérant ([B] MC68901 Fig. 6-4 p. 6-7 ; MC68HC901 § 7.3.2)
@@ -653,7 +650,7 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
                        serialTxEnd_ = false;
                        if (sched_ && serialTxKind_ == 1 && !((v & 8) && (timer_[0x29] & 0x18))) {
                            NEOST_F("mfp.end_of_break_stopbit");
-                           sched_->cancel(Scheduler::SERIAL_TX);
+                           sched_->cancel(txSource());
                            serialTxBusy_ = false; serialTxKind_ = 2;
                            if (loopback_ || internalSerialLoopback()) receiveSerialBreakEnd(writeEventTime());
                            // [F] Déduction du « end-of-break stop bit » ([B] MC68901 § 6.3 p. 6-6 le nomme,
@@ -766,6 +763,10 @@ static inline bool isPulseCtrl(int ctrl) { return ctrl > 8; }
 static constexpr Scheduler::Source kTimerSrc[4] = {
     Scheduler::TIMER_A, Scheduler::TIMER_B_DELAY, Scheduler::TIMER_C, Scheduler::TIMER_D };
 
+Scheduler::Source Mfp::timerSource(int timer) const {
+    return secondTtMfp_ ? static_cast<Scheduler::Source>(Scheduler::TT_TIMER_A + timer) : kTimerSrc[timer];
+}
+
 bool Mfp::timerPulseMode(int timer) const {
     return timer < 2 && isPulseCtrl(timerCtrl(timer));
 }
@@ -805,13 +806,13 @@ void Mfp::updateTbiTracking() {
 // [B] MK68901 (SGS-Thomson) p. 9 : un timer arrêté garde son compteur, le reste du prescaler est perdu.
 void Mfp::updatePulseGate(int timer, int64_t when) {
     if (!sched_ || !timerPulseMode(timer)) return;
-    const bool armed = sched_->rawCyclesUntil(kTimerSrc[timer]) != INT64_MIN;
+    const bool armed = sched_->rawCyclesUntil(timerSource(timer)) != INT64_MIN;
     if (pulseGateActive(timer)) {
         if (!armed) scheduleTimerAt(timer, when, /*fromCounter=*/true);
     } else if (armed) {
         storeStoppedCounter(timer, when);
         timerDueSub_[timer] = 0;
-        sched_->cancel(kTimerSrc[timer]);
+        sched_->cancel(timerSource(timer));
     }
 }
 
@@ -930,7 +931,7 @@ void Mfp::storeStoppedCounter(int timer, int64_t when) {
         // Hatari les deux chemins passent par le SEUL MFP_ReadTimer_AB/CD, celui-ci
         // avec TimerIsStopping — il n'y a donc pas deux arrondis à faire diverger.
         const int64_t dueSub = timerDueSub_[timer];
-        if (dueSub > 0 && sched_->rawCyclesUntil(kTimerSrc[timer]) != INT64_MIN) {
+        if (dueSub > 0 && sched_->rawCyclesUntil(timerSource(timer)) != INT64_MIN) {
             const int64_t remSub = dueSub - when * 256;
             // Même compte que readTimerData (liveTimerCount). L'ancien plancher
             // `max(1, …)` ne faisait que masquer le $00 de l'arrondi par défaut ; le
@@ -987,7 +988,7 @@ uint8_t Mfp::readTimerData(int timer) const {
         // CPU<<8, CYCINT_SHIFT), et `CycInt_FindCyclesRemaining` la soustrait telle
         // quelle de l'horloge live (cycInt.c) — c'est exactement ce qu'on fait ici.
         const int64_t dueSub = timerDueSub_[timer];
-        if (dueSub > 0 && sched_->rawCyclesUntil(kTimerSrc[timer]) != INT64_MIN) {
+        if (dueSub > 0 && sched_->rawCyclesUntil(timerSource(timer)) != INT64_MIN) {
             int64_t remSub = dueSub - sched_->liveNow() * 256;
             // Échéance passée mais pas encore dispatchée (lecture sous-instruction
             // entre l'expiration et la fin du bloc CPU) : le matériel a DÉJÀ
@@ -1079,7 +1080,7 @@ void Mfp::scheduleTimerAt(int timer, int64_t anchor, bool fromCounter) {
     // Timer B (timer==1) : seul le mode DÉLAI (TBCR 1-7) est daté ici ; en event-count
     // (TBCR=8) timerPeriodSubCycles renvoie 0 → on annule la source délai (le tic est
     // alors piloté par Machine via mfp.hblank()).
-    const Scheduler::Source src = kTimerSrc[timer];
+    const Scheduler::Source src = timerSource(timer);
     const int64_t periodSub = timerPeriodSubCycles(timer, fromCounter);
     if (periodSub <= 0 || (timerPulseMode(timer) && !pulseGateActive(timer))) {
         timerDueSub_[timer] = 0;
@@ -1580,7 +1581,7 @@ void Mfp::updateIrq(int64_t eventTime) {
     if (irq_) {
         const int64_t visibleAt = irqTime_ + kIrqDelayToCpu;
         const int64_t now = sched_->liveNow();
-        if (now < visibleAt) sched_->schedule(Scheduler::MFP_IRQ, visibleAt);
+        if (now < visibleAt) sched_->schedule(irqSource(), visibleAt);
         // Délai déjà écoulé (IRQ anti-datée servie en retard) : la prise doit se
         // faire À CETTE frontière d'instruction, pas une instruction plus tard
         // (bit1 NEOST_MFP_EXACT, ≙ MFP_ProcessIRQ : « clock − IRQ_Time ≥ 4 →
@@ -1589,9 +1590,9 @@ void Mfp::updateIrq(int64_t eventTime) {
         // il part dans le MÊME runTo ; depuis un accès MMIO mid-instruction, la
         // préemption coupe le bloc et il part à la frontière suivante — dans les
         // deux cas le commit de l'IPL a lieu à la première frontière éligible.
-        else if (g_mfpExact & 2) sched_->schedule(Scheduler::MFP_IRQ, now);
+        else if (g_mfpExact & 2) sched_->schedule(irqSource(), now);
     } else {
-        sched_->cancel(Scheduler::MFP_IRQ);
+        sched_->cancel(irqSource());
     }
 }
 

@@ -1,30 +1,32 @@
 # Community 477
 
-> 6 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **testGemdosDriveMapping()** (5 connections) — `tests/gemdos_drive_mapping_logic.cpp`
-- **Checks** (4 connections) — `tests/gemdos_drive_mapping_logic.cpp`
-- **.equal()** (2 connections) — `tests/gemdos_drive_mapping_logic.cpp`
-- **main()** (2 connections) — `tests/gemdos_drive_mapping_logic.cpp`
-- **count** (1 connections) — `tests/gemdos_drive_mapping_logic.cpp`
-- **failures** (1 connections) — `tests/gemdos_drive_mapping_logic.cpp`
+- **After** (9 connections) — `src/io/Fpu.hpp`
+- **.armIn()** (5 connections) — `src/io/Fpu.hpp`
+- **CtrlIn** (1 connections) — `src/io/Fpu.hpp`
+- **GenOp** (1 connections) — `src/io/Fpu.hpp`
+- **MovemIn** (1 connections) — `src/io/Fpu.hpp`
+- **MoveOutDone** (1 connections) — `src/io/Fpu.hpp`
+- **None** (1 connections) — `src/io/Fpu.hpp`
+- **RestoreIn** (1 connections) — `src/io/Fpu.hpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 177](Community_177.md) (1 shared connections)
-- [Community 48](Community_48.md) (1 shared connections)
+- [Community 482](Community_482.md) (2 shared connections)
+- [Community 20](Community_20.md) (2 shared connections)
+- [Community 253](Community_253.md) (2 shared connections)
 
 ## Source Files
 
-- `tests/gemdos_drive_mapping_logic.cpp`
+- `src/io/Fpu.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (90%)
-- INFERRED: 1 (10%)
+- EXTRACTED: 11 (85%)
+- INFERRED: 2 (15%)
 - AMBIGUOUS: 0 (0%)
 
 ---

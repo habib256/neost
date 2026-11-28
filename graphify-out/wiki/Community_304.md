@@ -1,41 +1,43 @@
 # Community 304
 
-> 17 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **Stream** (11 connections) — `tests/ipf_image_logic.cpp`
-- **sectorStream()** (11 connections) — `tests/ipf_image_logic.cpp`
-- **Kind** (9 connections) — `tests/ipf_image_logic.cpp`
-- **.elem()** (6 connections) — `tests/ipf_image_logic.cpp`
-- **.end()** (6 connections) — `tests/ipf_image_logic.cpp`
-- **.bytes()** (4 connections) — `tests/ipf_image_logic.cpp`
-- **.sync3()** (3 connections) — `tests/ipf_image_logic.cpp`
-- **.weak()** (3 connections) — `tests/ipf_image_logic.cpp`
-- **.fill()** (2 connections) — `tests/ipf_image_logic.cpp`
-- **BAD_DATA_CRC** (1 connections) — `tests/ipf_image_logic.cpp`
-- **BAD_ID_CRC** (1 connections) — `tests/ipf_image_logic.cpp`
-- **DELETED** (1 connections) — `tests/ipf_image_logic.cpp`
-- **NO_DAM** (1 connections) — `tests/ipf_image_logic.cpp`
-- **NORMAL** (1 connections) — `tests/ipf_image_logic.cpp`
-- **WEAK** (1 connections) — `tests/ipf_image_logic.cpp`
-- **cells** (1 connections) — `tests/ipf_image_logic.cpp`
-- **d** (1 connections) — `tests/ipf_image_logic.cpp`
+- **KeyZone** (14 connections) — `src/audio/MidiZones.hpp`
+- **.feed()** (9 connections) — `src/audio/MidiInHost.hpp`
+- **.pushForTest()** (7 connections) — `src/audio/MidiInHost.hpp`
+- **.deviceForTest()** (6 connections) — `src/audio/MidiInHost.hpp`
+- **.emitMessage()** (5 connections) — `src/audio/MidiInHost.hpp`
+- **.enqueue()** (3 connections) — `src/audio/MidiInHost.hpp`
+- **Device** (3 connections)
+- **size_t** (3 connections)
+- **.operator==()** (1 connections) — `src/audio/MidiZones.hpp`
+- **channel** (1 connections) — `src/audio/MidiZones.hpp`
+- **hi** (1 connections) — `src/audio/MidiZones.hpp`
+- **lo** (1 connections) — `src/audio/MidiZones.hpp`
+- **transpose** (1 connections) — `src/audio/MidiZones.hpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (10 shared connections)
-- [Community 163](Community_163.md) (4 shared connections)
-- [Community 172](Community_172.md) (1 shared connections)
+- [Community 223](Community_223.md) (7 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 220](Community_220.md) (5 shared connections)
+- [Community 185](Community_185.md) (2 shared connections)
+- [Community 286](Community_286.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 217](Community_217.md) (1 shared connections)
+- [Community 186](Community_186.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/ipf_image_logic.cpp`
+- `src/audio/MidiInHost.hpp`
+- `src/audio/MidiZones.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 38 (97%)
-- INFERRED: 1 (3%)
+- EXTRACTED: 32 (82%)
+- INFERRED: 7 (18%)
 - AMBIGUOUS: 0 (0%)
 
 ---

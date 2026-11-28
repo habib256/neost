@@ -49,6 +49,36 @@ branchement du DBcc expiré (`execDbcc`) ; lecture en plus de MOVEM après le de
 (`execMovemEaRg`) ; préfetch de la cible avant l'empilement de JSR (`execJsr`) ; ordre de la trame de groupe 0
 (`writeStackFrameAEBE`) ; 2 cycles de plus au reset. Une évolution de l'amont sur ces sites se compare au banc.
 
+## MC68030 : cycles physiques du parcours PMMU (2026-11-28)
+
+- `MMU/MMU030.cpp`, `Moira.h`, `Moira.cpp` : `getFC()` expose temporairement
+  le code superviseur données pour les lectures de descripteurs et les écritures
+  U/M. La source précédente est restaurée à la sortie du parcours, y compris sur
+  exception. Le parcours conserve le FC logique pour choisir la racine,
+  contrôler les droits et qualifier le cycle d'origine.
+- [B] Motorola, MC68030 User’s Manual, 3e éd., §9.5.2 : le parcours lit et met
+  à jour les descripteurs via des adresses physiques. [D] Hatari
+  `cpummu030.c:1234,1592 @ 36a8acf0` : ces accès sont superviseur pour la carte mémoire.
+  [C] TOS 3.06 UK place les descripteurs racine à `$700` et revient en mode
+  utilisateur vers `$E013AE` depuis le RTE en `$E13656`. La première prélecture
+  demande un descripteur en page système, protégée contre les cycles utilisateur.
+- La sonde TT dans `tests/selftest_logic.cpp` exécute le code utilisateur après RTE,
+  observe U et M dans le descripteur et vérifie qu'une lecture directe de `$700`
+  reste fautive avec FC1 et le SSW `$0141`.
+
+## MC68030 : écriture partielle et write allocation (2026-11-28)
+
+- `Cache/Cache.cpp`, `DCache::write` : avec WA actif, une écriture partielle
+  qui rate le tag invalide l'entrée du mot long touché en conservant le tag.
+  [B] Motorola, MC68030 User’s Manual, 3e éd., §6.1.2.1, décrit notamment
+  la cohérence d'une même adresse physique entre utilisateur et superviseur.
+- [C] TOS 3.06 UK écrit l'appel GEMDOS `$20` sur sa pile utilisateur
+  en `$E19766`. L'entrée superviseur périmée faisait lire `$E80E` au `TRAP #1`,
+  puis exécuter une adresse issue d'un index hors table.
+- La sonde TT dans `tests/selftest_logic.cpp` met en cache `$AABBCCDD` en
+  superviseur, écrit le mot bas `$0020` en utilisateur, puis vérifie que le
+  gestionnaire du `TRAP #1` lit `$AABB0020`.
+
 ## ANDI/ORI/EORI #,SR/#,CCR et MOVE to CCR : double rechargement (2026-10-20)
 
 - `MoiraExec_cpp.h`, `execAndisr` (ANDI/ORI/EORI #,SR), `execAndiccr`

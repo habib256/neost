@@ -1,26 +1,27 @@
 # Community 548
 
-> 4 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **Mode** (5 connections) — `src/core/Shifter.hpp`
-- **High** (1 connections) — `src/core/Shifter.hpp`
-- **Low** (1 connections) — `src/core/Shifter.hpp`
-- **Medium** (1 connections) — `src/core/Shifter.hpp`
+- **Options** (6 connections) — `src/net/NatBackend.hpp`
+- **string** (2 connections)
+- **allowDomains** (1 connections) — `src/net/NatBackend.hpp`
+- **allowHostLoopback** (1 connections) — `src/net/NatBackend.hpp`
+- **forwards** (1 connections) — `src/net/NatBackend.hpp`
+- **restricted** (1 connections) — `src/net/NatBackend.hpp`
 
 ## Relationships
 
-- [Community 205](Community_205.md) (1 shared connections)
-- [Community 5](Community_5.md) (1 shared connections)
+- [Community 40](Community_40.md) (2 shared connections)
 
 ## Source Files
 
-- `src/core/Shifter.hpp`
+- `src/net/NatBackend.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 7 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

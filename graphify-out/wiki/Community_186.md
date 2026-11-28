@@ -1,6 +1,6 @@
 # Community 186
 
-> 38 nodes
+> 39 nodes
 
 ## Key Concepts
 
@@ -17,6 +17,7 @@
 - **.ingest()** (5 connections) — `src/net/MidiRing.hpp`
 - **socketValid()** (5 connections) — `src/net/Socket.hpp`
 - **sockClose()** (4 connections) — `src/net/Socket.cpp`
+- **sockShutdown()** (4 connections) — `src/net/Socket.cpp`
 - **ingestChecks()** (4 connections) — `tests/midi_ring_logic.cpp`
 - **FujiNet retiré : NeoST n'émule plus que du matériel qui a existé (2026-08-22)** (4 connections) — `CHANGELOG.md`
 - **in** (4 connections)
@@ -28,22 +29,21 @@
 - **sockRecv()** (3 connections) — `src/net/Socket.cpp`
 - **sockSend()** (3 connections) — `src/net/Socket.cpp`
 - **main()** (3 connections) — `tests/midi_ring_logic.cpp`
-- **specChecks()** (3 connections) — `tests/midi_ring_logic.cpp`
-- *... and 13 more nodes in this community*
+- *... and 14 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (21 shared connections)
-- [Community 102](Community_102.md) (15 shared connections)
+- [Community 4](Community_4.md) (24 shared connections)
+- [Community 102](Community_102.md) (8 shared connections)
 - [Community 227](Community_227.md) (6 shared connections)
 - [Community 136](Community_136.md) (5 shared connections)
-- [Community 141](Community_141.md) (4 shared connections)
-- [Community 113](Community_113.md) (3 shared connections)
-- [Community 565](Community_565.md) (3 shared connections)
-- [Community 220](Community_220.md) (2 shared connections)
+- [Community 565](Community_565.md) (4 shared connections)
+- [Community 301](Community_301.md) (3 shared connections)
 - [Community 582](Community_582.md) (2 shared connections)
-- [Community 214](Community_214.md) (1 shared connections)
+- [Community 18](Community_18.md) (2 shared connections)
+- [Community 141](Community_141.md) (2 shared connections)
 - [Community 1](Community_1.md) (1 shared connections)
+- [Community 131](Community_131.md) (1 shared connections)
 - [Community 68](Community_68.md) (1 shared connections)
 
 ## Source Files
@@ -59,8 +59,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 126 (94%)
-- INFERRED: 8 (6%)
+- EXTRACTED: 126 (93%)
+- INFERRED: 9 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

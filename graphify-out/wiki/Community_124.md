@@ -1,34 +1,48 @@
 # Community 124
 
-> 9 nodes
+> 23 nodes
 
 ## Key Concepts
 
-- **.clearAllFileHandles()** (8 connections) — `src/io/GemdosHd.hpp`
-- **GemdosHd::GemdosHd()** (5 connections) — `src/io/GemdosHd.cpp`
-- **.unmount()** (4 connections) — `src/io/GemdosHd.hpp`
-- **.unforceFileHandle()** (4 connections) — `src/io/GemdosHd.hpp`
-- **.dropForcedTo()** (4 connections) — `src/io/GemdosHd.hpp`
-- **.clearInfOverride()** (3 connections) — `src/io/GemdosHd.hpp`
-- **setD0()** (2 connections) — `src/io/GemdosHd.cpp`
-- **Cpu68k** (2 connections)
-- **Bus** (1 connections)
+- **write_prg()** (18 connections) — `tools/run_libretro.py`
+- **case_netplay_keyboard()** (5 connections) — `tools/run_libretro.py`
+- **case_blitter_megast_fallback()** (4 connections) — `tools/run_libretro.py`
+- **case_blitter_ste()** (4 connections) — `tools/run_libretro.py`
+- **case_fast_floppy_idle()** (4 connections) — `tools/run_libretro.py`
+- **case_midi_in()** (4 connections) — `tools/run_libretro.py`
+- **case_needs_ste()** (4 connections) — `tools/run_libretro.py`
+- **case_probe_kept()** (4 connections) — `tools/run_libretro.py`
+- **case_probe_restored()** (4 connections) — `tools/run_libretro.py`
+- **case_ram_auto()** (4 connections) — `tools/run_libretro.py`
+- **case_ram_probe_kept()** (4 connections) — `tools/run_libretro.py`
+- **colour0()** (1 connections) — `tools/run_libretro.py`
+- **Machine automatique : un programme qui lit le son DMA du STE sans gestionnaire…** (1 connections) — `tools/run_libretro.py`
+- **Machine automatique : un programme qui touche au blitter sans gestionnaire…** (1 connections) — `tools/run_libretro.py`
+- **Sans TOS pour STE dans le dossier système (EmuTOS 192 Ko seul), une faute du…** (1 connections) — `tools/run_libretro.py`
+- **Mémoire automatique : un programme écrit au-delà de 1 Mo ($180000, perdu) puis…** (1 connections) — `tools/run_libretro.py`
+- **Un programme qui écrit au-delà de la RAM sans planter (il sonde, et vit avec la…** (1 connections) — `tools/run_libretro.py`
+- **Option MIDI IN : un octet de l'entrée MIDI de RetroArch arrive au ST par…** (1 connections) — `tools/run_libretro.py`
+- **Un programme qui pose son gestionnaire de bus error et sonde le STE reste sur…** (1 connections) — `tools/run_libretro.py`
+- **Lecteur vide (moteur jamais coupé, faute d'index) : pas d'accélération. Une…** (1 connections) — `tools/run_libretro.py`
+- **Programme GEMDOS minimal : en-tête $601A, texte = `words`, sans relocation.** (1 connections) — `tools/run_libretro.py`
+- **Port 3 « clavier pour le netplay » : la touche tenue est relue chaque trame ;…** (1 connections) — `tools/run_libretro.py`
+- **Le motif de Wings of Death : poser un gestionnaire, sonder, remettre le vecteur…** (1 connections) — `tools/run_libretro.py`
 
 ## Relationships
 
-- [Community 36](Community_36.md) (8 shared connections)
-- [Community 17](Community_17.md) (5 shared connections)
-- [Community 152](Community_152.md) (2 shared connections)
+- [Community 247](Community_247.md) (21 shared connections)
+- [Community 393](Community_393.md) (2 shared connections)
+- [Community 292](Community_292.md) (2 shared connections)
+- [Community 485](Community_485.md) (2 shared connections)
 
 ## Source Files
 
-- `src/io/GemdosHd.cpp`
-- `src/io/GemdosHd.hpp`
+- `tools/run_libretro.py`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (58%)
-- INFERRED: 10 (42%)
+- EXTRACTED: 49 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

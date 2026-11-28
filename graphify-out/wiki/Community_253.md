@@ -1,51 +1,48 @@
 # Community 253
 
-> 19 nodes
+> 16 nodes
 
 ## Key Concepts
 
-- **testBlitterRmw()** (10 connections) — `tests/blitter_rmw_logic.cpp`
-- **word** (6 connections) — `tools/gstmcu_bench.cpp`
-- **testFdcTiming()** (5 connections) — `tests/fdc_timing_logic.cpp`
-- **duration()** (5 connections) — `tests/ste_cmap_slot_logic.cpp`
-- **Checks** (4 connections) — `tests/blitter_rmw_logic.cpp`
-- **Checks** (4 connections) — `tests/fdc_timing_logic.cpp`
-- **.step()** (3 connections) — `tests/blitter_rmw_logic.cpp`
-- **.execute()** (3 connections) — `tests/fdc_timing_logic.cpp`
-- **testSteCmapSlot()** (3 connections) — `tests/ste_cmap_slot_logic.cpp`
-- **.equal()** (2 connections) — `tests/blitter_rmw_logic.cpp`
-- **main()** (2 connections) — `tests/blitter_rmw_logic.cpp`
-- **.copyToOperand()** (2 connections) — `tests/blitter_rmw_logic.cpp`
-- **.MegaSteRig()** (2 connections) — `tests/blitter_rmw_logic.cpp`
-- **.equal()** (2 connections) — `tests/fdc_timing_logic.cpp`
-- **main()** (2 connections) — `tests/fdc_timing_logic.cpp`
-- **count** (1 connections) — `tests/blitter_rmw_logic.cpp`
-- **failures** (1 connections) — `tests/blitter_rmw_logic.cpp`
-- **count** (1 connections) — `tests/fdc_timing_logic.cpp`
-- **failures** (1 connections) — `tests/fdc_timing_logic.cpp`
+- **Fpu.cpp** (36 connections) — `src/io/Fpu.cpp`
+- **.genOp()** (13 connections) — `src/io/Fpu.hpp`
+- **.completeInput()** (10 connections) — `src/io/Fpu.hpp`
+- **.decodeFmt()** (9 connections) — `src/io/Fpu.hpp`
+- **.setIdle()** (9 connections) — `src/io/Fpu.hpp`
+- **.sfStatus()** (7 connections) — `src/io/Fpu.hpp`
+- **.checkException()** (7 connections) — `src/io/Fpu.hpp`
+- **.write8()** (7 connections) — `src/io/Fpu.hpp`
+- **.sfFold()** (6 connections) — `src/io/Fpu.hpp`
+- **.read8()** (5 connections) — `src/io/Fpu.hpp`
+- **.restoreHeader()** (5 connections) — `src/io/Fpu.hpp`
+- **.dToExt()** (5 connections) — `src/io/Fpu.hpp`
+- **.condition()** (4 connections) — `src/io/Fpu.hpp`
+- **get32()** (4 connections) — `src/io/Fpu.cpp`
+- **.reset()** (3 connections) — `src/io/Fpu.hpp`
+- **get64()** (3 connections) — `src/io/Fpu.cpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (8 shared connections)
-- [Community 132](Community_132.md) (4 shared connections)
-- [Community 48](Community_48.md) (4 shared connections)
-- [Community 41](Community_41.md) (3 shared connections)
-- [Community 192](Community_192.md) (1 shared connections)
-- [Community 449](Community_449.md) (1 shared connections)
-- [Community 272](Community_272.md) (1 shared connections)
-- [Community 452](Community_452.md) (1 shared connections)
+- [Community 482](Community_482.md) (18 shared connections)
+- [Community 20](Community_20.md) (15 shared connections)
+- [Community 405](Community_405.md) (7 shared connections)
+- [Community 15](Community_15.md) (4 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 477](Community_477.md) (2 shared connections)
+- [Community 218](Community_218.md) (1 shared connections)
+- [Community 565](Community_565.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 297](Community_297.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/blitter_rmw_logic.cpp`
-- `tests/fdc_timing_logic.cpp`
-- `tests/ste_cmap_slot_logic.cpp`
-- `tools/gstmcu_bench.cpp`
+- `src/io/Fpu.cpp`
+- `src/io/Fpu.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 31 (76%)
-- INFERRED: 10 (24%)
+- EXTRACTED: 57 (61%)
+- INFERRED: 36 (39%)
 - AMBIGUOUS: 0 (0%)
 
 ---

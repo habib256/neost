@@ -40,7 +40,7 @@
 - [Community 451](Community_451.md) (3 shared connections)
 - [Community 57](Community_57.md) (2 shared connections)
 - [Community 63](Community_63.md) (2 shared connections)
-- [Community 497](Community_497.md) (1 shared connections)
+- [Community 529](Community_529.md) (1 shared connections)
 - [Community 112](Community_112.md) (1 shared connections)
 - [Community 109](Community_109.md) (1 shared connections)
 

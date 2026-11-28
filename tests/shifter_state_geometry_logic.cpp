@@ -48,6 +48,60 @@ int testShifterStateGeometry() {
         auto ar = StateArchive::loader(forged.data(), forged.size()); sh.serialize(ar);
         check(!ar.ok(), "geometry wider than the locked resolution is rejected");
     }
+    // Rendu TT-medium. Le motif encode cinq pixels connus et vérifie
+    // la banque non nulle, les quatre plans et le passage à la ligne suivante.
+    bus.machine = MachineType::Tt;
+    bus.ram.assign(2u << 20, 0);
+    sh.reset();
+    sh.write8(0xFF8201u, 1);
+    sh.write8(0xFF8203u, 0x20);
+    sh.write8(0xFF820Du, 0x5F);
+    const uint32_t base = 0x12058u;
+    check(sh.read8(0xFF820Du) == 0x58, "TT video base low byte is eight-byte aligned");
+    bus.ram[base] = 0x80;         // plan 0, pixel 0
+    bus.ram[base + 2] = 0x40;     // plan 1, pixel 1
+    bus.ram[base + 4] = 0x20;     // plan 2, pixel 2
+    bus.ram[base + 6] = 0x10;     // plan 3, pixel 3
+    bus.ram[base + 320] = 0x80;   // ligne 1, pixel 0
+    bus.ram[base + 320 * 480 - 7] = 1; // bit 0 du premier plan dans le dernier groupe
+    bus.write16(0xFF8262u, 0x0403);
+    bus.write16(0xFF8460u, 0x0FFF); // index 0 dans la banque 3
+    bus.write16(0xFF8462u, 0x0F00);
+    bus.write16(0xFF8464u, 0x00F0);
+    bus.write16(0xFF8468u, 0x000F);
+    bus.write16(0xFF8470u, 0x0123);
+    sh.renderFrame();
+    check(sh.width() == 640 && sh.height() == 480 &&
+          sh.activeLeft() == 0 && sh.activeTop() == 0 &&
+          sh.activeWidth() == 640 && sh.activeHeight() == 480,
+          "TT medium exposes an unbordered 640x480 image");
+    if (sh.width() == 640 && sh.height() == 480) {
+        const uint32_t* pixels = sh.pixels();
+        check(pixels[0] == 0xFFFF0000u && pixels[1] == 0xFF00FF00u &&
+              pixels[2] == 0xFF0000FFu && pixels[3] == 0xFF112233u &&
+              pixels[4] == 0xFFFFFFFFu,
+              "TT four planes, big-endian words and selected 0RGB palette");
+        check(pixels[640] == 0xFFFF0000u && pixels[640 * 480 - 1] == 0xFFFF0000u,
+              "TT line pitch and final planar word group");
+    }
+    sh.beginFrame();
+    check(sh.height() == 480 && sh.rasterLines() == 200,
+          "TT image survives the next scheduled raster");
+    sh.write8(0xFF8201u, 0x1F);
+    sh.write8(0xFF8203u, 0xFF);
+    sh.finishFrame();
+    check(sh.width() == 640 && sh.height() == 480 && sh.pixels()[0] == 0xFF000000u,
+          "TT incomplete screen span returns a black frame");
+    sh.write8(0xFF8201u, 0xC1);
+    sh.write8(0xFF8203u, 0x20);
+    sh.write8(0xFF820Du, 0x58);
+    sh.finishFrame();
+    check(sh.read8(0xFF8201u) == 0xC1 && sh.pixels()[0] == 0xFF000000u,
+          "TT out-of-range high address does not alias into ST RAM");
+    bus.write16(0xFF8262u, 0);
+    sh.renderFrame();
+    check(sh.height() != 480, "TT mode transition discards the previous image");
+
     std::printf("[shifter-state-geometry] %d checks, %d FAIL\n", checks, failures);
     return failures;
 }

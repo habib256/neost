@@ -4,42 +4,38 @@
 
 ## Key Concepts
 
-- **.onSlice()** (9 connections) — `src/core/Blitter.hpp`
-- **.runSlice()** (8 connections) — `src/core/Blitter.hpp`
-- **.readWord()** (6 connections) — `src/core/Blitter.hpp`
-- **.writeWord()** (6 connections) — `src/core/Blitter.hpp`
-- **.billCycles()** (5 connections) — `src/core/Blitter.hpp`
-- **.noteCpuBusAccess()** (5 connections) — `src/core/Blitter.hpp`
-- **.finishTransfer()** (5 connections) — `src/core/Blitter.hpp`
-- **.start()** (4 connections) — `src/core/Blitter.hpp`
-- **.armPreStartWindow()** (4 connections) — `src/core/Blitter.hpp`
-- **blitWordFault()** (4 connections) — `src/core/Blitter.cpp`
-- **accessObserver** (3 connections) — `src/core/Blitter.hpp`
-- **P2 — Blitter non-hog (`blitter.c:251,395`)** (3 connections) — `docs/CYCLE_ACCURACY.md`
-- **Cohérence BUSY / GPU_DONE dans NeoST** (3 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Bus** (1 connections)
+- **.gpipSetLine()** (16 connections) — `src/io/Mfp.hpp`
+- **.mfpSelfTest()** (6 connections) — `src/io/Mfp.hpp`
+- **.setXsintLine()** (3 connections) — `src/io/Mfp.hpp`
+- **.setAciaLineKbd()** (3 connections) — `src/io/Mfp.hpp`
+- **.setBlitterLine()** (3 connections) — `src/io/Mfp.hpp`
+- **.setMonitorButton()** (3 connections) — `src/io/Mfp.hpp`
+- **.setAciaLine()** (2 connections) — `src/io/Mfp.hpp`
+- **.setAciaLineMidi()** (2 connections) — `src/io/Mfp.hpp`
+- **.setBusyLine()** (2 connections) — `src/io/Mfp.hpp`
+- **.setRs232Cts()** (2 connections) — `src/io/Mfp.hpp`
+- **.setRs232Dcd()** (2 connections) — `src/io/Mfp.hpp`
+- **.setRs232Ri()** (2 connections) — `src/io/Mfp.hpp`
+- **.timerBStartOfLine()** (2 connections) — `src/io/Mfp.hpp`
+- **Page « Dongles » et adaptateurs de port : `PortDongle` (2026-08-23)** (2 connections) — `CHANGELOG.md`
 
 ## Relationships
 
-- [Community 37](Community_37.md) (11 shared connections)
-- [Community 102](Community_102.md) (10 shared connections)
-- [Community 218](Community_218.md) (1 shared connections)
-- [Community 445](Community_445.md) (1 shared connections)
-- [Community 189](Community_189.md) (1 shared connections)
-- [Community 317](Community_317.md) (1 shared connections)
-- [Community 411](Community_411.md) (1 shared connections)
+- [Community 6](Community_6.md) (13 shared connections)
+- [Community 215](Community_215.md) (5 shared connections)
+- [Community 39](Community_39.md) (2 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/CYCLE_ACCURACY.md`
-- `docs/HATARI_MEGASTE_AUDIT.md`
-- `src/core/Blitter.cpp`
-- `src/core/Blitter.hpp`
+- `CHANGELOG.md`
+- `src/io/Mfp.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 25 (54%)
-- INFERRED: 21 (46%)
+- EXTRACTED: 28 (78%)
+- INFERRED: 8 (22%)
 - AMBIGUOUS: 0 (0%)
 
 ---

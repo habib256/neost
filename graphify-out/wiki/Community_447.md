@@ -1,29 +1,28 @@
 # Community 447
 
-> 8 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **Z7_C_IFACE_DECL()** (8 connections) — `extern/lzma/7zTypes.h`
-- **ISeekInStream** (1 connections)
-- **IByteIn** (1 connections)
-- **IByteOut** (1 connections)
-- **ICompressProgress** (1 connections)
-- **ILookInStream** (1 connections)
-- **ISeqInStream** (1 connections)
-- **ISeqOutStream** (1 connections)
+- **setMouseCaptured()** (5 connections) — `src/web/main_web.cpp`
+- **onKey()** (4 connections) — `src/web/main_web.cpp`
+- **onPointerLockChange()** (4 connections) — `src/web/main_web.cpp`
+- **onMouseButton()** (3 connections) — `src/web/main_web.cpp`
+- **GLFWwindow** (3 connections)
+- **EM_BOOL** (1 connections)
+- **EmscriptenPointerlockChangeEvent** (1 connections)
 
 ## Relationships
 
-- [Community 245](Community_245.md) (1 shared connections)
+- [Community 68](Community_68.md) (5 shared connections)
 
 ## Source Files
 
-- `extern/lzma/7zTypes.h`
+- `src/web/main_web.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 8 (100%)
+- EXTRACTED: 13 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,10 +1,11 @@
 # Community 159
 
-> 16 nodes
+> 17 nodes
 
 ## Key Concepts
 
 - **Rig** (10 connections) — `tests/ikbd_irq_timing_logic.cpp`
+- **ikbd_irq_timing_logic.cpp** (7 connections) — `tests/ikbd_irq_timing_logic.cpp`
 - **testIkbdIrqTiming()** (5 connections) — `tests/ikbd_irq_timing_logic.cpp`
 - **Checks** (4 connections) — `tests/ikbd_irq_timing_logic.cpp`
 - **.equal()** (2 connections) — `tests/ikbd_irq_timing_logic.cpp`
@@ -23,8 +24,9 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (4 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
 - [Community 48](Community_48.md) (1 shared connections)
+- [Community 565](Community_565.md) (1 shared connections)
 
 ## Source Files
 
@@ -32,8 +34,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 19 (95%)
-- INFERRED: 1 (5%)
+- EXTRACTED: 22 (96%)
+- INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

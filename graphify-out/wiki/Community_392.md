@@ -1,51 +1,37 @@
 # Community 392
 
-> 17 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **Audit Hatari, 5ᵉ passe : statuts remis en phase, chantiers Super Hang-On et Rick Dangerous (2026-07-07, complétée le 2026-07-08)** (25 connections) — `CHANGELOG.md`
-- **.gpipSetLine()** (16 connections) — `src/io/Mfp.hpp`
-- **.mfpSelfTest()** (6 connections) — `src/io/Mfp.hpp`
-- **.gpipUpdateInterrupt()** (6 connections) — `src/io/Mfp.hpp`
-- **.setXsintLine()** (3 connections) — `src/io/Mfp.hpp`
-- **.setAciaLineKbd()** (3 connections) — `src/io/Mfp.hpp`
-- **.setBlitterLine()** (3 connections) — `src/io/Mfp.hpp`
-- **.setFdcLine()** (3 connections) — `src/io/Mfp.hpp`
-- **.setMonitorButton()** (3 connections) — `src/io/Mfp.hpp`
-- **.setAciaLine()** (2 connections) — `src/io/Mfp.hpp`
-- **.setAciaLineMidi()** (2 connections) — `src/io/Mfp.hpp`
-- **.setBusyLine()** (2 connections) — `src/io/Mfp.hpp`
-- **.setRs232Cts()** (2 connections) — `src/io/Mfp.hpp`
-- **.setRs232Dcd()** (2 connections) — `src/io/Mfp.hpp`
-- **.setRs232Ri()** (2 connections) — `src/io/Mfp.hpp`
-- **.timerBStartOfLine()** (2 connections) — `src/io/Mfp.hpp`
-- **Page « Dongles » et adaptateurs de port : `PortDongle` (2026-08-23)** (2 connections) — `CHANGELOG.md`
+- **Parser** (15 connections) — `src/audio/MidiMessageParser.hpp`
+- **.reset()** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **size_t** (1 connections)
+- **data_** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **got_** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **inSysex_** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **kMaxSysex** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **needed_** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **status_** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **sysex_** (1 connections) — `src/audio/MidiMessageParser.hpp`
 
 ## Relationships
 
-- [Community 6](Community_6.md) (15 shared connections)
-- [Community 215](Community_215.md) (11 shared connections)
-- [Community 446](Community_446.md) (3 shared connections)
-- [Community 39](Community_39.md) (3 shared connections)
-- [Community 130](Community_130.md) (2 shared connections)
-- [Community 27](Community_27.md) (2 shared connections)
-- [Community 60](Community_60.md) (2 shared connections)
-- [Community 396](Community_396.md) (2 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
-- [Community 203](Community_203.md) (1 shared connections)
-- [Community 434](Community_434.md) (1 shared connections)
-- [Community 319](Community_319.md) (1 shared connections)
+- [Community 44](Community_44.md) (1 shared connections)
+- [Community 185](Community_185.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 42](Community_42.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/io/Mfp.hpp`
+- `src/audio/MidiMessageParser.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 32 (49%)
-- INFERRED: 33 (51%)
+- EXTRACTED: 14 (93%)
+- INFERRED: 1 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

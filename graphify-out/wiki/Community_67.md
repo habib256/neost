@@ -1,19 +1,21 @@
 # Community 67
 
-> 28 nodes
+> 30 nodes
 
 ## Key Concepts
 
 - **.runFrame()** (21 connections) — `src/core/Machine.hpp`
 - **Cas tranchés — diagnostics de terrain** (21 connections) — `docs/CASE_STUDIES.md`
 - **Vroom STE : vérifier la conduite et l'arrêt audio (2026-11-05)** (6 connections) — `docs/CASE_STUDIES.md`
-- **A34 — un seul modèle d'exécution, et les 83 verrous du cœur sont enfin classés (2026-08-28)** (4 connections) — `CHANGELOG.md`
-- **TOS 2.06 : la VBL écrase le contexte sur la pile temporaire (2026-11-04)** (3 connections) — `docs/CASE_STUDIES.md`
+- **Chasse aux P3 ; format d'état v67 (2026-11-12)** (5 connections) — `CHANGELOG.md`
+- **Modèle d'horloge (`Machine::runFrame`)** (5 connections) — `DEV.md`
+- **busHzExact()** (3 connections) — `src/core/Pacing.hpp`
+- **cpuHzInt()** (3 connections) — `src/core/Pacing.hpp`
+- **.lastRunFrames()** (2 connections) — `src/core/Machine.hpp`
 - **Blit HOG : la trame continue, l'hôte reprend la main (2026-11-11)** (2 connections) — `CHANGELOG.md`
 - **Blit HOG long sur le web et Android (2026-11-12)** (2 connections) — `CHANGELOG.md`
 - **Chantiers de la chasse aux bugs fermés ; format d'état v61 (2026-11-11)** (2 connections) — `CHANGELOG.md`
 - **Les bandes de Super Hang-On : UNE trame de transitoire faisait sauter le cadre pendant 0,6 s (2026-09-02)** (2 connections) — `CHANGELOG.md`
-- **shforstv : ligne suivante invalidée** (2 connections) — `docs/CASE_STUDIES.md`
 - **shforstv STE : réveil STOP après une HBL préarmée (2026-11-15)** (2 connections) — `docs/CASE_STUDIES.md`
 - **Switchblade : une VBL du TOS acquitte le READ TRACK du chargeur (2026-11-04)** (2 connections) — `docs/CASE_STUDIES.md`
 - **Vroom sous TOS 2.06 : la VBL désélectionne le lecteur pendant le chargement (2026-11-04)** (2 connections) — `docs/CASE_STUDIES.md`
@@ -27,35 +29,35 @@
 - **Infinite Live : comparaison temporelle du scroll** (1 connections) — `docs/CASE_STUDIES.md`
 - **Le réflexe qui tranche le plus de cas : la RAM (puis la ROM)** (1 connections) — `docs/CASE_STUDIES.md`
 - **Lemmings : aligner le menu sur son entrée effective (2026-11-04)** (1 connections) — `docs/CASE_STUDIES.md`
-- **Lethal Xcess STE : la bordure haute calibrée sur la gigue du MFP (2026-11-10)** (1 connections) — `docs/CASE_STUDIES.md`
-- **Magic Pockets STX sur STE : retour à gauche sensible à l’alignement (2026-11-10)** (1 connections) — `docs/CASE_STUDIES.md`
-- *... and 3 more nodes in this community*
+- *... and 5 more nodes in this community*
 
 ## Relationships
 
-- [Community 160](Community_160.md) (5 shared connections)
+- [Community 160](Community_160.md) (7 shared connections)
 - [Community 130](Community_130.md) (5 shared connections)
+- [Community 10](Community_10.md) (2 shared connections)
+- [Community 9](Community_9.md) (2 shared connections)
+- [Community 444](Community_444.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 26](Community_26.md) (2 shared connections)
 - [Community 88](Community_88.md) (2 shared connections)
-- [Community 10](Community_10.md) (1 shared connections)
 - [Community 175](Community_175.md) (1 shared connections)
 - [Community 378](Community_378.md) (1 shared connections)
-- [Community 522](Community_522.md) (1 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
 - [Community 317](Community_317.md) (1 shared connections)
 - [Community 446](Community_446.md) (1 shared connections)
-- [Community 189](Community_189.md) (1 shared connections)
-- [Community 119](Community_119.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
+- `DEV.md`
 - `docs/CASE_STUDIES.md`
 - `src/core/Machine.hpp`
+- `src/core/Pacing.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 30 (53%)
-- INFERRED: 27 (47%)
+- EXTRACTED: 35 (54%)
+- INFERRED: 30 (46%)
 - AMBIGUOUS: 0 (0%)
 
 ---

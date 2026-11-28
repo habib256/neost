@@ -162,6 +162,7 @@ protected:
     u8 fcl {2};
     
     // Source of the function code pins
+    static constexpr u8 FC_SOURCE_TABLE_SEARCH = 3;
     u8 fcSource {};
     
     // Controls exact timing of instructions running in loop mode (68010 only)

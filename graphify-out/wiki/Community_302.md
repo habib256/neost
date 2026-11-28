@@ -4,36 +4,41 @@
 
 ## Key Concepts
 
-- **InterruptRig** (10 connections) — `tests/scc_mie_ius_logic.cpp`
-- **testSccMieIus()** (10 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.master()** (5 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.write()** (5 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.control()** (4 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.receive()** (4 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.InterruptRig()** (3 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.pop()** (3 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.read()** (3 connections) — `tests/scc_mie_ius_logic.cpp`
-- **main()** (2 connections) — `tests/scc_mie_ius_logic.cpp`
-- **Pin d'origine — retrouvé le 2026-08-28 (chantier A35)** (2 connections) — `extern/moira/NEOST_VENDOR.md`
-- **Scc** (1 connections)
-- **scc** (1 connections) — `tests/scc_mie_ius_logic.cpp`
+- **.installSchedulerCallbacks()** (11 connections) — `src/core/Machine.hpp`
+- **.armTbiEdge()** (6 connections) — `src/core/Machine.hpp`
+- **.retargetTimerB()** (6 connections) — `src/core/Machine.hpp`
+- **.timerBEdgeCycle()** (5 connections) — `src/core/Machine.hpp`
+- **.tbiLevelAt()** (5 connections) — `src/core/Machine.hpp`
+- **.onTbiPulseMode()** (5 connections) — `src/core/Machine.hpp`
+- **.onTimerB()** (5 connections) — `src/core/Machine.hpp`
+- **.onTbiEdge()** (4 connections) — `src/core/Machine.hpp`
+- **machineIsMega()** (4 connections) — `src/core/MachineType.hpp`
+- **.onRender()** (3 connections) — `src/core/Machine.hpp`
+- **.claimsRtc()** (3 connections) — `src/core/Bus.hpp`
+- **.timerBPosLine()** (2 connections) — `src/core/Machine.hpp`
+- **Fidélité matérielle, suite : capacité ACSI et verrou RX SCC (2026-10-19)** (2 connections) — `CHANGELOG.md`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 48](Community_48.md) (1 shared connections)
-- [Community 182](Community_182.md) (1 shared connections)
+- [Community 160](Community_160.md) (11 shared connections)
+- [Community 10](Community_10.md) (10 shared connections)
+- [Community 434](Community_434.md) (2 shared connections)
+- [Community 14](Community_14.md) (1 shared connections)
+- [Community 449](Community_449.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/NEOST_VENDOR.md`
-- `tests/scc_mie_ius_logic.cpp`
+- `CHANGELOG.md`
+- `src/core/Bus.hpp`
+- `src/core/Machine.hpp`
+- `src/core/MachineType.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 28 (93%)
-- INFERRED: 2 (7%)
+- EXTRACTED: 23 (52%)
+- INFERRED: 21 (48%)
 - AMBIGUOUS: 0 (0%)
 
 ---

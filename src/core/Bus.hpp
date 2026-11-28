@@ -89,14 +89,29 @@ class StateArchive;
 
 class Bus {
 public:
-    explicit Bus(std::size_t ramBytes = 512u * 1024u);
+    explicit Bus(std::size_t ramBytes = 512u * 1024u, MachineType profile = MachineType::Ste);
+
+    static constexpr uint32_t kTtRamBase = 0x01000000u;
+    uint32_t addressMask() const { return machine == MachineType::Tt ? 0xFFFFFFFFu : stmap::ADDR_MASK; }
+    // [B] Atari TT030 Hardware Reference Manual, juin 1990, §V :
+    // « ST Compatible Image » est décodée aux bases $00000000 et $FF000000.
+    uint32_t normalizeAddress(uint32_t addr) const {
+        if (machine != MachineType::Tt || addr >= 0xFF000000u) return addr & stmap::ADDR_MASK;
+        return addr;
+    }
+    void resetTtIo();
+    uint16_t ttVideoMode() const { return uint16_t((ttIo_[0] << 8) | ttIo_[1]); }
+    uint16_t ttVideoPalette(uint8_t index) const {
+        const std::size_t off = std::size_t(index) * 2;
+        return uint16_t((ttPalette_[off] << 8) | ttPalette_[off + 1]);
+    }
 
     // Save-state : pour l'instant la RAM (le gros bloc). ROM/cartouche NON sérialisées
     // (rechargées depuis leurs fichiers). L'état MMIO complet du Bus viendra ensuite.
     void serialize(StateArchive& ar);
 
     // Charge une image TOS ; romBase lue dans l'en-tête (os_base, offset 8), la taille
-    // en repli (tosImageBase). Refuse (false) les TOS du TT/Falcon (tosUnsupportedMachine).
+    // en repli (tosImageBase). Refuse une ROM incompatible avec le profil actif.
     bool loadTos(const std::string& path);
 
     // Charge une image de cartouche (port $FA0000, 128 Ko max ; .STC = 4 octets
@@ -121,7 +136,7 @@ public:
     //  que le cas ultra-majoritaire — RAM ordinaire en traduction identité — pour
     //  qu'il s'inline chez l'appelant (Moira, blitter, DMA). Cf. mmuFastLimit().
     uint8_t read8(uint32_t addr) {
-        addr &= stmap::ADDR_MASK;
+        addr = normalizeAddress(addr);
         // $0-$7 : la GLUE y sert la ROM à TOUTE lecture CPU (cf. read8Slow, rvec) —
         // exclus du chemin rapide, la copie RAM n'est pas ce que lit le 68000.
         if (addr < mmuFastLimit() && addr >= 8) return ram[addr];
@@ -134,7 +149,7 @@ public:
         return read8Slow(addr);
     }
     void write8(uint32_t addr, uint8_t v) {
-        addr &= stmap::ADDR_MASK;
+        addr = normalizeAddress(addr);
         // (pas de garde overlay : write8 n'en a jamais eu — l'overlay est une
         //  redirection de LECTURE, l'écriture va bien en RAM.)
         // DEBUG (NEOST_WATCH=hex, cf. Machine.cpp) : trace datée des écritures dans
@@ -150,8 +165,8 @@ public:
     // ⚠ ioAccessWidth_ n'est PAS posé ici : il n'est consulté que par les
     // gestionnaires MMIO et par la zone RAM « void », deux chemins que ce raccourci
     // ne peut pas atteindre par construction.
-    uint16_t read16(uint32_t addr) {
-        addr &= stmap::ADDR_MASK;
+    uint16_t read16(uint32_t address) {
+        const uint32_t addr = normalizeAddress(address);
         if (addr + 1 < mmuFastLimit() && addr >= 8)       // $0-$7 : ROM, cf. read8
             return uint16_t((ram[addr] << 8) | ram[addr + 1]);
         const uint32_t off = addr - romBase;             // cf. read8 : non signé
@@ -161,7 +176,7 @@ public:
         // AVANT l'addition ; le second gère le mot à cheval sur la fin de ROM.
         if (off < rom.size() && off + 1 < rom.size())
             return uint16_t((rom[off] << 8) | rom[off + 1]);
-        return read16Slow(addr);
+        return read16Slow(address);
     }
     uint32_t read32(uint32_t addr);
     void     write16(uint32_t addr, uint16_t v);
@@ -238,6 +253,9 @@ public:
     // DTACK → bus error. Écart assumé avec Hatari (1 Mo), aligné sur le matériel —
     // cf. docs/HATARI_DIVERGENCES.md. Mega STE inchangé (pas de netlist).
     uint32_t romWindowSize() const {
+        // [B] Atari TT030 Hardware Reference Manual §V : $E00000–$EFFFFF
+        // décodés, même si les puces physiques ne fournissent que 512 Kio.
+        if (machine == MachineType::Tt) return 0x100000u;
         if (romBase != stmap::ROM_E00000) return 0x30000u;
         return machine == MachineType::Ste ? 0xC0000u : 0x100000u;
     }
@@ -294,6 +312,7 @@ public:
     //  espace IO, étage 3 = busFault(), dont la toute première ligne renvoie false
     //  pour tout `addr < $400000`). On court-circuite donc l'appel hors ligne.
     bool busFaultN(uint32_t addr, unsigned n, bool write) const {
+        if (machine == MachineType::Tt) return busFaultNSlow(addr, n, write);
         addr &= stmap::ADDR_MASK;
         if (addr >= stmap::VECTORS_END && addr < 0x400000) return false;
         // LECTURE en ROM TOS : jamais fautive sur toute la fenêtre décodée (étage 3
@@ -344,6 +363,7 @@ public:
     Shifter* shifter = nullptr;
     YM2149*  psg     = nullptr;
     MmuGlue* glue    = nullptr;
+    Mfp* mfpTt = nullptr;
     Mfp*     mfp     = nullptr;   // contrôleur d'interruptions 68901
     Ikbd*    ikbd    = nullptr;   // ACIA clavier
     Fdc*     fdc     = nullptr;   // contrôleur disquette + DMA
@@ -444,6 +464,7 @@ public:
     // Données brutes exposées au débogueur (visualiseur hexa ImGui). Pas de
     // getters : l'accès direct est l'objet même de la "boîte à hack".
     std::vector<uint8_t> ram;
+    std::vector<uint8_t> ttRam;
     std::vector<uint8_t> rom;
     std::vector<uint8_t> cart;        // ROM cartouche ($FA0000) — vide si absente
     uint32_t romBase = stmap::ROM_E00000;
@@ -578,6 +599,7 @@ private:
     bool claimsDmaSnd  (uint32_t) const { return dmasnd && machineHasDmaSound(machine); }
     bool claimsBlitter (uint32_t) const { return blitter && machineHasBlitter(machine); }
     bool claimsMfp     (uint32_t) const { return mfp != nullptr; }
+    bool claimsMfpTt   (uint32_t) const { return mfpTt != nullptr; }
     bool claimsIkbd    (uint32_t) const { return ikbd != nullptr; }
     bool claimsMidi    (uint32_t) const { return midi != nullptr; }
     // RTC RP5C15 : registres sur adresses IMPAIRES uniquement — une adresse paire
@@ -586,10 +608,16 @@ private:
     bool claimsStePads (uint32_t) const { return machineIsSte(machine); }
     bool claimsMsteCtrl(uint32_t) const { return machine == MachineType::MegaSte; }
     bool claimsFpu     (uint32_t) const { return machine == MachineType::MegaSte && fpu.present; }
-    bool claimsScu     (uint32_t) const { return machine == MachineType::MegaSte; }
-    bool claimsScc     (uint32_t) const { return machine == MachineType::MegaSte && scc; }
+    bool claimsScu     (uint32_t) const { return machine == MachineType::MegaSte || machine == MachineType::Tt; }
+    bool claimsScc     (uint32_t) const { return (machine == MachineType::MegaSte || machine == MachineType::Tt) && scc; }
 
     // Handlers : les CORPS des anciennes branches, déplacés tels quels.
+    static int ttIoLatch(uint32_t addr);
+    void syncTtPaletteToSt(unsigned index);
+    // Registres TT accessibles au boot : mode vidéo, SCSI, DMA et horloge.
+    // Les latches SCSI/DMA n’exécutent aucun transfert.
+    std::array<uint8_t, 512> ttPalette_{};
+    std::array<uint8_t, 64> ttIo_{};
     uint8_t rdShifter(uint32_t a);  void wrShifter(uint32_t a, uint8_t v);
     uint8_t rdPsg    (uint32_t a);  void wrPsg    (uint32_t a, uint8_t v);
     uint8_t rdFdc    (uint32_t a);  void wrFdc    (uint32_t a, uint8_t v);
@@ -664,6 +692,7 @@ private:
         return glue ? glue->memConfig_ : memConfigForBytes(ram.size());
     }
     uint32_t mmuFastLimit() const {
+        if (machine == MachineType::Tt) return static_cast<uint32_t>(ram.size());
         const uint8_t conf = mmuConfNow();
         if (conf != mmuCacheConf_ || ram.size() != mmuCacheRam_ || machine != mmuCacheMachine_)
             rebuildMmuCache(conf);

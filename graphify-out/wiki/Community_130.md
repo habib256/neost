@@ -1,15 +1,13 @@
 # Community 130
 
-> 283 nodes
+> 281 nodes
 
 ## Key Concepts
 
 - **Changelog — NeoST** (393 connections) — `CHANGELOG.md`
 - **2026-11-25 — Libretro : archives, options en français, netplay au clavier** (2 connections) — `CHANGELOG.md`
 - **2026-11-26 — GUI et borne : disquettes en archive** (2 connections) — `CHANGELOG.md`
-- **2026-11-27 — Fuzz du chargement des états (A44) ; le web ne recrée plus hors de ses dossiers** (2 connections) — `CHANGELOG.md`
 - **Bug hunt passes 1-3 + CI de release (2026-07-31)** (2 connections) — `CHANGELOG.md`
-- **Paquet Android : premier APK qui tourne (2026-08-11)** (2 connections) — `CHANGELOG.md`
 - **Porte d'échange élargie : parcours, collection, Mega STE à 16 MHz (2026-11-10)** (2 connections) — `CHANGELOG.md`
 - **0.5.1 — Windows, et le vrai paquet Pi 400 (2026-08-10)** (1 connections) — `CHANGELOG.md`
 - **0.5.2 — la 0.5.1, mais réellement livrée (2026-08-10)** (1 connections) — `CHANGELOG.md`
@@ -29,22 +27,24 @@
 - **2026-11-18 — Haute résolution sur moniteur couleur : trame noire** (1 connections) — `CHANGELOG.md`
 - **2026-11-18 — Icône : le logo de la page web** (1 connections) — `CHANGELOG.md`
 - **2026-11-18 — Plein écran : le retrait gauche standard sortait 4 px à gauche** (1 connections) — `CHANGELOG.md`
-- *... and 258 more nodes in this community*
+- **2026-11-18 — Web : huit démos, chacune dans sa configuration** (1 connections) — `CHANGELOG.md`
+- **2026-11-18 — Web : save-states, TOS déposé, capture d'écran** (1 connections) — `CHANGELOG.md`
+- *... and 256 more nodes in this community*
 
 ## Relationships
 
-- [Community 101](Community_101.md) (6 shared connections)
-- [Community 39](Community_39.md) (6 shared connections)
+- [Community 39](Community_39.md) (7 shared connections)
+- [Community 101](Community_101.md) (5 shared connections)
 - [Community 434](Community_434.md) (5 shared connections)
+- [Community 472](Community_472.md) (5 shared connections)
 - [Community 67](Community_67.md) (5 shared connections)
 - [Community 68](Community_68.md) (4 shared connections)
-- [Community 214](Community_214.md) (4 shared connections)
+- [Community 88](Community_88.md) (4 shared connections)
+- [Community 160](Community_160.md) (4 shared connections)
 - [Community 152](Community_152.md) (3 shared connections)
-- [Community 88](Community_88.md) (3 shared connections)
-- [Community 396](Community_396.md) (3 shared connections)
-- [Community 160](Community_160.md) (3 shared connections)
+- [Community 42](Community_42.md) (3 shared connections)
+- [Community 333](Community_333.md) (3 shared connections)
 - [Community 48](Community_48.md) (2 shared connections)
-- [Community 406](Community_406.md) (2 shared connections)
 
 ## Source Files
 
@@ -52,8 +52,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 393 (98%)
-- INFERRED: 6 (2%)
+- EXTRACTED: 393 (99%)
+- INFERRED: 4 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

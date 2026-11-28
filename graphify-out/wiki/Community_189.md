@@ -1,46 +1,57 @@
 # Community 189
 
-> 12 nodes
+> 20 nodes
 
 ## Key Concepts
 
-- **.controlWritten()** (6 connections) — `src/core/Blitter.hpp`
-- **regWriteMask()** (6 connections) — `src/core/Blitter.cpp`
-- **.writeRegisters()** (5 connections) — `src/core/Blitter.hpp`
-- **8. Blitter — `Blitter.cpp` ↔ `blitter.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Refermés** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **.write8()** (4 connections) — `src/core/Blitter.hpp`
-- **.write16()** (4 connections) — `src/core/Blitter.hpp`
-- **.write32()** (4 connections) — `src/core/Blitter.hpp`
-- **Blitter** (4 connections) — `docs/IMPLEMENTED.md`
-- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **parseRamBytes()** (11 connections) — `src/core/MachineType.hpp`
+- **.loadTos()** (9 connections) — `src/core/Bus.hpp`
+- **size_t** (9 connections)
+- **ramLabel()** (8 connections) — `src/core/MachineType.hpp`
+- **tosUnsupportedMachine()** (8 connections) — `src/core/MachineType.hpp`
+- **tosHeaderIsEmuTos()** (7 connections) — `src/core/MachineType.hpp`
+- **tosHeaderVersion()** (7 connections) — `src/core/MachineType.hpp`
+- **testRamDisplay()** (6 connections) — `tests/selftest_logic.cpp`
+- **ramDisplayName()** (5 connections) — `src/core/MachineType.hpp`
+- **readTosInfo()** (5 connections) — `src/core/TosChoice.cpp`
+- **machineSummary()** (5 connections) — `src/gui/MachineSummary.hpp`
+- **.seedResetVectors()** (4 connections) — `src/core/Bus.hpp`
+- **tosImageBase()** (4 connections) — `src/core/MachineType.hpp`
+- **.loadCart()** (3 connections) — `src/core/Bus.hpp`
+- **parseMachine()** (3 connections) — `src/core/MachineType.hpp`
+- **string** (3 connections)
+- **string** (2 connections)
+- **string** (1 connections)
+- **Machine** (1 connections)
+- **string** (1 connections)
 
 ## Relationships
 
-- [Community 102](Community_102.md) (6 shared connections)
-- [Community 37](Community_37.md) (6 shared connections)
-- [Community 471](Community_471.md) (1 shared connections)
-- [Community 397](Community_397.md) (1 shared connections)
-- [Community 296](Community_296.md) (1 shared connections)
-- [Community 386](Community_386.md) (1 shared connections)
-- [Community 39](Community_39.md) (1 shared connections)
-- [Community 444](Community_444.md) (1 shared connections)
-- [Community 27](Community_27.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
+- [Community 4](Community_4.md) (9 shared connections)
+- [Community 325](Community_325.md) (5 shared connections)
+- [Community 149](Community_149.md) (5 shared connections)
+- [Community 449](Community_449.md) (4 shared connections)
+- [Community 203](Community_203.md) (4 shared connections)
+- [Community 48](Community_48.md) (4 shared connections)
+- [Community 607](Community_607.md) (3 shared connections)
+- [Community 14](Community_14.md) (3 shared connections)
+- [Community 135](Community_135.md) (2 shared connections)
+- [Community 298](Community_298.md) (2 shared connections)
+- [Community 68](Community_68.md) (2 shared connections)
+- [Community 319](Community_319.md) (2 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
-- `docs/IMPLEMENTED.md`
-- `src/core/Blitter.cpp`
-- `src/core/Blitter.hpp`
+- `src/core/Bus.hpp`
+- `src/core/MachineType.hpp`
+- `src/core/TosChoice.cpp`
+- `src/gui/MachineSummary.hpp`
+- `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 19 (58%)
-- INFERRED: 14 (42%)
+- EXTRACTED: 38 (51%)
+- INFERRED: 37 (49%)
 - AMBIGUOUS: 0 (0%)
 
 ---

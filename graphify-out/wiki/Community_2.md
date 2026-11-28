@@ -1,6 +1,6 @@
 # Community 2
 
-> 147 nodes
+> 148 nodes
 
 ## Key Concepts
 
@@ -20,6 +20,7 @@
 - **Moira::dasmDivl()** (8 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
 - **Moira::dasmMoves()** (8 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
 - **Moira::dasmMull()** (8 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **.read16Dasm()** (8 connections) — `src/core/Cpu68k.cpp`
 - **.isValidExt()** (7 connections) — `extern/moira/Moira/Moira.h`
 - **Moira::dasmAbcdEa()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
 - **Moira::dasmAbcdRg()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
@@ -28,32 +29,34 @@
 - **Moira::dasmAddiEa()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
 - **Moira::dasmAddiRg()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
 - **Moira::dasmAddqAn()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmAddqDn()** (7 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- *... and 122 more nodes in this community*
+- *... and 123 more nodes in this community*
 
 ## Relationships
 
 - [Community 0](Community_0.md) (128 shared connections)
 - [Community 167](Community_167.md) (15 shared connections)
 - [Community 155](Community_155.md) (9 shared connections)
-- [Community 16](Community_16.md) (5 shared connections)
+- [Community 16](Community_16.md) (4 shared connections)
 - [Community 9](Community_9.md) (3 shared connections)
 - [Community 57](Community_57.md) (2 shared connections)
 - [Community 109](Community_109.md) (2 shared connections)
 - [Community 32](Community_32.md) (2 shared connections)
+- [Community 64](Community_64.md) (2 shared connections)
 - [Community 414](Community_414.md) (1 shared connections)
-- [Community 131](Community_131.md) (1 shared connections)
+- [Community 301](Community_301.md) (1 shared connections)
+- [Community 23](Community_23.md) (1 shared connections)
 
 ## Source Files
 
 - `extern/moira/Moira/Moira.h`
 - `extern/moira/Moira/MoiraDasm_cpp.h`
 - `extern/moira/Moira/StrWriter.h`
+- `src/core/Cpu68k.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 954 (99%)
-- INFERRED: 13 (1%)
+- EXTRACTED: 957 (98%)
+- INFERRED: 15 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

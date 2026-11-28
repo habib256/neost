@@ -1,37 +1,28 @@
 # Community 522
 
-> 4 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **Chasse aux P3 ; format d'état v67 (2026-11-12)** (5 connections) — `CHANGELOG.md`
-- **Modèle d'horloge (`Machine::runFrame`)** (5 connections) — `DEV.md`
-- **busHzExact()** (3 connections) — `src/core/Pacing.hpp`
-- **.lastRunFrames()** (2 connections) — `src/core/Machine.hpp`
+- **Atari TT030 — jalon d’amorçage** (5 connections) — `docs/TT_BRINGUP.md`
+- **TT_BRINGUP.md** (3 connections) — `docs/TT_BRINGUP.md`
+- **Affichage TT-medium** (1 connections) — `docs/TT_BRINGUP.md`
+- **Relevé d’amorçage** (1 connections) — `docs/TT_BRINGUP.md`
+- **ROM et trace** (1 connections) — `docs/TT_BRINGUP.md`
+- **Sources** (1 connections) — `docs/TT_BRINGUP.md`
 
 ## Relationships
 
-- [Community 10](Community_10.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 435](Community_435.md) (1 shared connections)
-- [Community 160](Community_160.md) (1 shared connections)
-- [Community 26](Community_26.md) (1 shared connections)
-- [Community 203](Community_203.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
-- [Community 68](Community_68.md) (1 shared connections)
+- [Community 232](Community_232.md) (2 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `DEV.md`
-- `src/core/Machine.hpp`
-- `src/core/Pacing.hpp`
+- `docs/TT_BRINGUP.md`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (33%)
-- INFERRED: 8 (67%)
+- EXTRACTED: 7 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

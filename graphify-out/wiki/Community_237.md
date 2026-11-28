@@ -7,12 +7,12 @@
 - **TODO — NeoST** (12 connections) — `TODO.md`
 - **3. 🔬 Fidélité au silicium, hors cœur — par puce** (8 connections) — `TODO.md`
 - **10. 🚀 Le TT et le Falcon** (5 connections) — `TODO.md`
-- **7. 📦 Livraison et interface** (5 connections) — `TODO.md`
 - **4. 🕹️ Logithèque — ce qui doit tourner comme sur la machine** (3 connections) — `TODO.md`
 - **5. 🪜 Harnais et preuve** (3 connections) — `TODO.md`
 - **6. 🔌 Extensions — matériel réel, OFF par défaut** (3 connections) — `TODO.md`
 - **9. 🔁 Validation du port et questions du 68000** (3 connections) — `TODO.md`
 - **3.2 MFP 68901** (2 connections) — `TODO.md`
+- **8. 🧱 Dette d'architecture et de documentation** (2 connections) — `TODO.md`
 - **Le cap** (2 connections) — `TODO.md`
 - **Règles de tenue de ce fichier** (2 connections) — `TODO.md`
 - **1. 🎯 Plan de travail** (1 connections) — `TODO.md`
@@ -38,13 +38,10 @@
 - [Community 270](Community_270.md) (1 shared connections)
 - [Community 396](Community_396.md) (1 shared connections)
 - [Community 39](Community_39.md) (1 shared connections)
-- [Community 149](Community_149.md) (1 shared connections)
-- [Community 435](Community_435.md) (1 shared connections)
-- [Community 214](Community_214.md) (1 shared connections)
-- [Community 428](Community_428.md) (1 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
 - [Community 30](Community_30.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
-- [Community 160](Community_160.md) (1 shared connections)
+- [Community 149](Community_149.md) (1 shared connections)
 
 ## Source Files
 
@@ -52,8 +49,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 29 (76%)
-- INFERRED: 9 (24%)
+- EXTRACTED: 29 (83%)
+- INFERRED: 6 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

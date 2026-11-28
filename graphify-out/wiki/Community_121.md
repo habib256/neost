@@ -1,6 +1,6 @@
 # Community 121
 
-> 52 nodes
+> 51 nodes
 
 ## Key Concepts
 
@@ -29,29 +29,29 @@
 - **.eval()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **.eval()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **.remove()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- *... and 27 more nodes in this community*
+- *... and 26 more nodes in this community*
 
 ## Relationships
 
 - [Community 134](Community_134.md) (23 shared connections)
-- [Community 492](Community_492.md) (12 shared connections)
-- [Community 565](Community_565.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 119](Community_119.md) (1 shared connections)
-- [Community 57](Community_57.md) (1 shared connections)
+- [Community 492](Community_492.md) (10 shared connections)
+- [Community 391](Community_391.md) (2 shared connections)
+- [Community 301](Community_301.md) (2 shared connections)
+- [Community 444](Community_444.md) (1 shared connections)
 - [Community 182](Community_182.md) (1 shared connections)
-- [Community 166](Community_166.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
 
 ## Source Files
 
 - `extern/moira/Moira/MoiraDebugger.cpp`
 - `extern/moira/Moira/MoiraDebugger.h`
-- `extern/moira/NEOST_VENDOR.md`
 
 ## Audit Trail
 
-- EXTRACTED: 157 (92%)
-- INFERRED: 13 (8%)
+- EXTRACTED: 156 (93%)
+- INFERRED: 12 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---
