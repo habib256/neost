@@ -1,6 +1,6 @@
 # Community 207
 
-> 74 nodes
+> 76 nodes
 
 ## Key Concepts
 
@@ -11,6 +11,7 @@
 - **run_megaste_bus_oracle.py** (16 connections) — `tools/run_megaste_bus_oracle.py`
 - **build()** (14 connections) — `tools/run_megaste_blitter_checks.py`
 - **build_extended()** (14 connections) — `tools/timing_extended.py`
+- **parse()** (12 connections) — `tools/trace_diff.py`
 - **analyze_megaste_blitter_gap.py** (12 connections) — `tools/analyze_megaste_blitter_gap.py`
 - **run_hwtst_loop.py** (12 connections) — `tools/run_hwtst_loop.py`
 - **timing_extended.py** (12 connections) — `tools/timing_extended.py`
@@ -28,23 +29,22 @@
 - **main()** (7 connections) — `tools/run_megaste_bus_oracle.py`
 - **main()** (7 connections) — `tools/run_timing_oracle.py`
 - **sha()** (7 connections) — `tools/run_timing_oracle.py`
-- **.branch()** (7 connections) — `tools/timing_extended.py`
-- *... and 49 more nodes in this community*
+- *... and 51 more nodes in this community*
 
 ## Relationships
 
-- [Community 100](Community_100.md) (22 shared connections)
-- [Community 173](Community_173.md) (15 shared connections)
-- [Community 582](Community_582.md) (11 shared connections)
-- [Community 151](Community_151.md) (9 shared connections)
+- [Community 151](Community_151.md) (17 shared connections)
+- [Community 173](Community_173.md) (12 shared connections)
+- [Community 100](Community_100.md) (12 shared connections)
+- [Community 412](Community_412.md) (10 shared connections)
+- [Community 582](Community_582.md) (9 shared connections)
 - [Community 3](Community_3.md) (8 shared connections)
 - [Community 146](Community_146.md) (8 shared connections)
 - [Community 26](Community_26.md) (8 shared connections)
+- [Community 8](Community_8.md) (5 shared connections)
 - [Community 18](Community_18.md) (5 shared connections)
-- [Community 8](Community_8.md) (3 shared connections)
-- [Community 247](Community_247.md) (3 shared connections)
 - [Community 504](Community_504.md) (2 shared connections)
-- [Community 200](Community_200.md) (1 shared connections)
+- [Community 283](Community_283.md) (1 shared connections)
 
 ## Source Files
 
@@ -56,11 +56,12 @@
 - `tools/run_timing_oracle.py`
 - `tools/test_timing_oracle.py`
 - `tools/timing_extended.py`
+- `tools/trace_diff.py`
 
 ## Audit Trail
 
-- EXTRACTED: 243 (86%)
-- INFERRED: 39 (14%)
+- EXTRACTED: 252 (87%)
+- INFERRED: 38 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

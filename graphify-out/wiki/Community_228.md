@@ -1,6 +1,6 @@
 # Community 228
 
-> 39 nodes
+> 37 nodes
 
 ## Key Concepts
 
@@ -17,8 +17,6 @@
 - **readSmallFile()** (5 connections) — `src/android/main_android.cpp`
 - **switchRom()** (5 connections) — `src/android/main_android.cpp`
 - **Machine** (5 connections)
-- **7. 📦 Livraison et interface** (5 connections) — `TODO.md`
-- **Cœur libretro** (5 connections) — `TODO.md`
 - **injectClick()** (4 connections) — `src/android/main_android.cpp`
 - **readPad()** (4 connections) — `src/android/main_android.cpp`
 - **saveRomChoice()** (4 connections) — `src/android/main_android.cpp`
@@ -29,32 +27,33 @@
 - **positionalForSdl()** (3 connections) — `src/android/main_android.cpp`
 - **produceAudioFrame()** (3 connections) — `src/android/main_android.cpp`
 - **audioCallback()** (2 connections) — `src/android/main_android.cpp`
-- *... and 14 more nodes in this community*
+- **cancelPendingInput()** (2 connections) — `src/android/main_android.cpp`
+- **drawScreen()** (2 connections) — `src/android/main_android.cpp`
+- *... and 12 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (9 shared connections)
+- [Community 102](Community_102.md) (9 shared connections)
+- [Community 4](Community_4.md) (8 shared connections)
 - [Community 298](Community_298.md) (6 shared connections)
-- [Community 611](Community_611.md) (6 shared connections)
 - [Community 114](Community_114.md) (5 shared connections)
 - [Community 51](Community_51.md) (3 shared connections)
 - [Community 99](Community_99.md) (2 shared connections)
 - [Community 499](Community_499.md) (2 shared connections)
 - [Community 430](Community_430.md) (2 shared connections)
-- [Community 449](Community_449.md) (2 shared connections)
-- [Community 138](Community_138.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 472](Community_472.md) (1 shared connections)
+- [Community 434](Community_434.md) (1 shared connections)
+- [Community 149](Community_149.md) (1 shared connections)
+- [Community 214](Community_214.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
 
 ## Source Files
 
-- `TODO.md`
 - `src/android/main_android.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 114 (87%)
-- INFERRED: 17 (13%)
+- EXTRACTED: 112 (91%)
+- INFERRED: 11 (9%)
 - AMBIGUOUS: 0 (0%)
 
 ---

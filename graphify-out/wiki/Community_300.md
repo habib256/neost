@@ -1,6 +1,6 @@
 # Community 300
 
-> 12 nodes
+> 13 nodes
 
 ## Key Concepts
 
@@ -9,6 +9,7 @@
 - **resolve()** (8 connections) — `src/util/ConfigPath.cpp`
 - **userConfigDir()** (6 connections) — `src/util/ConfigPath.cpp`
 - **profilesDirFor()** (4 connections) — `src/util/ConfigPath.cpp`
+- **system_error** (4 connections)
 - **string** (3 connections)
 - **systemProbe()** (2 connections) — `src/util/ConfigPath.cpp`
 - **dirWritable** (2 connections) — `src/util/ConfigPath.hpp`
@@ -24,8 +25,10 @@
 - [Community 102](Community_102.md) (2 shared connections)
 - [Community 48](Community_48.md) (1 shared connections)
 - [Community 386](Community_386.md) (1 shared connections)
+- [Community 565](Community_565.md) (1 shared connections)
 - [Community 449](Community_449.md) (1 shared connections)
-- [Community 186](Community_186.md) (1 shared connections)
+- [Community 248](Community_248.md) (1 shared connections)
+- [Community 56](Community_56.md) (1 shared connections)
 
 ## Source Files
 
@@ -34,8 +37,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 25 (83%)
-- INFERRED: 5 (17%)
+- EXTRACTED: 28 (85%)
+- INFERRED: 5 (15%)
 - AMBIGUOUS: 0 (0%)
 
 ---

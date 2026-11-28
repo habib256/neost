@@ -1,38 +1,41 @@
 # Community 364
 
-> 11 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **run_selftests.py** (14 connections) — `tools/run_selftests.py`
-- **run_one()** (7 connections) — `tools/run_selftests.py`
-- **ensure_rom_asset()** (5 connections) — `tools/run_selftests.py`
-- **run_timed()** (5 connections) — `tools/run_selftests.py`
-- **is_untracked()** (4 connections) — `tools/run_selftests.py`
-- **main()** (4 connections) — `tools/run_selftests.py`
-- **rom_is_free()** (3 connections) — `tools/run_selftests.py`
-- **load_manifest()** (2 connections) — `tools/run_selftests.py`
-- **parse_verdicts()** (2 connections) — `tools/run_selftests.py`
-- **Vrai si git ne versionne PAS `path` (étalon gitignoré). Sans git (archive…** (1 connections) — `tools/run_selftests.py`
-- **EmuTOS (`roms/etos*.img`) est livré avec le dépôt : son absence est une casse.…** (1 connections) — `tools/run_selftests.py`
+- **Piloter NeoST depuis l'extérieur (exploration d'états, fuzzing, Go-Explore)** (13 connections) — `docs/OPENDST.md`
+- **10. Outils — `memdiff`, `explore`** (3 connections) — `docs/OPENDST.md`
+- **1. Le contrat de déterminisme** (2 connections) — `docs/OPENDST.md`
+- **2. Ce que ça vaut, mesuré** (2 connections) — `docs/OPENDST.md`
+- **3. Injecter les entrées** (2 connections) — `docs/OPENDST.md`
+- **Scripts joystick — `--joy-script N "SCRIPT"`, `--joy-script-file N FICHIER`** (2 connections) — `docs/OPENDST.md`
+- **11. Rapporter une divergence** (1 connections) — `docs/OPENDST.md`
+- **4. Observer — `--probe`, `--probe-every`, `--hash-ram`** (1 connections) — `docs/OPENDST.md`
+- **6. La boucle d'exploration, en ligne de commande** (1 connections) — `docs/OPENDST.md`
+- **7. Recette vérifiée — Rick Dangerous jusqu'en jeu** (1 connections) — `docs/OPENDST.md`
+- **9. Oracle différentiel — `tools/opendst_oracle.py`** (1 connections) — `docs/OPENDST.md`
+- **Client d'exemple — `tools/opendst_explore.py`** (1 connections) — `docs/OPENDST.md`
+- **Trouver les variables du jeu — `tools/opendst_memdiff.py`** (1 connections) — `docs/OPENDST.md`
 
 ## Relationships
 
-- [Community 100](Community_100.md) (5 shared connections)
-- [Community 26](Community_26.md) (2 shared connections)
-- [Community 582](Community_582.md) (2 shared connections)
-- [Community 20](Community_20.md) (1 shared connections)
-- [Community 18](Community_18.md) (1 shared connections)
-- [Community 146](Community_146.md) (1 shared connections)
+- [Community 434](Community_434.md) (1 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
+- [Community 530](Community_530.md) (1 shared connections)
+- [Community 499](Community_499.md) (1 shared connections)
+- [Community 203](Community_203.md) (1 shared connections)
+- [Community 30](Community_30.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/run_selftests.py`
+- `docs/OPENDST.md`
 
 ## Audit Trail
 
-- EXTRACTED: 29 (97%)
-- INFERRED: 1 (3%)
+- EXTRACTED: 16 (84%)
+- INFERRED: 3 (16%)
 - AMBIGUOUS: 0 (0%)
 
 ---

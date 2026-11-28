@@ -4,23 +4,25 @@
 
 ## Key Concepts
 
-- **EM_JS()** (4 connections) — `src/core/EmuFiber.cpp`
-- **Module** (1 connections)
-- **neost_jspi_park** (1 connections)
-- **neost_jspi_release** (1 connections)
+- **.checkPendingInterrupts()** (5 connections) — `src/io/Mfp.hpp`
+- **.updateIrq()** (4 connections) — `src/io/Mfp.hpp`
+- **.earliestEligible()** (4 connections) — `src/io/Mfp.hpp`
+- **.highestInService()** (4 connections) — `src/io/Mfp.hpp`
 
 ## Relationships
 
-- [Community 288](Community_288.md) (1 shared connections)
+- [Community 215](Community_215.md) (4 shared connections)
+- [Community 6](Community_6.md) (4 shared connections)
+- [Community 27](Community_27.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/EmuFiber.cpp`
+- `src/io/Mfp.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 8 (62%)
+- INFERRED: 5 (38%)
 - AMBIGUOUS: 0 (0%)
 
 ---

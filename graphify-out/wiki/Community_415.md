@@ -1,29 +1,37 @@
 # Community 415
 
-> 7 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **Port** (8 connections) — `src/io/PortDevices.hpp`
-- **CartButton** (1 connections) — `src/io/PortDevices.hpp`
-- **Count** (1 connections) — `src/io/PortDevices.hpp`
-- **Joy0** (1 connections) — `src/io/PortDevices.hpp`
-- **Joy1** (1 connections) — `src/io/PortDevices.hpp`
-- **Printer** (1 connections) — `src/io/PortDevices.hpp`
-- **Rs232** (1 connections) — `src/io/PortDevices.hpp`
+- **testFdcMediaChange()** (15 connections) — `tests/fdc_media_change_logic.cpp`
+- **.reg()** (6 connections) — `tests/fdc_media_change_logic.cpp`
+- **.read()** (5 connections) — `tests/fdc_media_change_logic.cpp`
+- **.data()** (4 connections) — `tests/fdc_media_change_logic.cpp`
+- **.mode()** (4 connections) — `tests/fdc_media_change_logic.cpp`
+- **.armIndex()** (3 connections) — `tests/fdc_media_change_logic.cpp`
+- **.finish()** (3 connections) — `tests/fdc_media_change_logic.cpp`
+- **.irq()** (3 connections) — `tests/fdc_media_change_logic.cpp`
+- **.select()** (3 connections) — `tests/fdc_media_change_logic.cpp`
+- **main()** (2 connections) — `tests/fdc_media_change_logic.cpp`
 
 ## Relationships
 
-- [Community 51](Community_51.md) (2 shared connections)
+- [Community 46](Community_46.md) (9 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 559](Community_559.md) (1 shared connections)
+- [Community 394](Community_394.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/PortDevices.hpp`
+- `tests/fdc_media_change_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 8 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 30 (94%)
+- INFERRED: 2 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,6 +1,6 @@
 # Community 12
 
-> 100 nodes
+> 102 nodes
 
 ## Key Concepts
 
@@ -20,6 +20,8 @@
 - **.acsiOverlayBytes()** (2 connections) — `src/io/Fdc.hpp`
 - **.acsiWriteOverlays()** (2 connections) — `src/io/Fdc.hpp`
 - **.attachUltraSatan()** (2 connections) — `src/io/Fdc.hpp`
+- **.floppyCommandActive()** (2 connections) — `src/io/Fdc.hpp`
+- **.inserted()** (2 connections) — `src/io/Fdc.hpp`
 - **.mountAcsi()** (2 connections) — `src/io/Fdc.hpp`
 - **.setMediaRecreateFilter()** (2 connections) — `src/io/Fdc.hpp`
 - **.setScheduler()** (2 connections) — `src/io/Fdc.hpp`
@@ -27,19 +29,17 @@
 - **mediaResolver_** (2 connections) — `src/io/Fdc.hpp`
 - **Overlay** (2 connections)
 - **Scheduler** (2 connections)
-- **.acsiActive()** (1 connections) — `src/io/Fdc.hpp`
-- **.acsiAnyImage()** (1 connections) — `src/io/Fdc.hpp`
-- *... and 75 more nodes in this community*
+- *... and 77 more nodes in this community*
 
 ## Relationships
 
-- [Community 406](Community_406.md) (40 shared connections)
-- [Community 24](Community_24.md) (31 shared connections)
-- [Community 95](Community_95.md) (30 shared connections)
-- [Community 149](Community_149.md) (13 shared connections)
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 611](Community_611.md) (3 shared connections)
-- [Community 78](Community_78.md) (2 shared connections)
+- [Community 24](Community_24.md) (30 shared connections)
+- [Community 406](Community_406.md) (28 shared connections)
+- [Community 149](Community_149.md) (25 shared connections)
+- [Community 95](Community_95.md) (24 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
+- [Community 377](Community_377.md) (6 shared connections)
+- [Community 78](Community_78.md) (3 shared connections)
 - [Community 103](Community_103.md) (1 shared connections)
 
 ## Source Files
@@ -48,7 +48,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 234 (100%)
+- EXTRACTED: 236 (100%)
 - INFERRED: 1 (0%)
 - AMBIGUOUS: 0 (0%)
 

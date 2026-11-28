@@ -1,6 +1,6 @@
 # Community 383
 
-> 28 nodes
+> 27 nodes
 
 ## Key Concepts
 
@@ -10,7 +10,6 @@
 - **Slot** (8 connections) — `src/headless/Server.cpp`
 - **parseHexU32()** (7 connections) — `src/util/JoyScript.hpp`
 - **parse()** (6 connections) — `src/util/JoyScript.hpp`
-- **Server.hpp** (6 connections) — `src/headless/Server.hpp`
 - **arity()** (5 connections) — `src/headless/Server.cpp`
 - **string** (5 connections)
 - **reply()** (4 connections) — `src/headless/Server.cpp`
@@ -29,27 +28,25 @@
 - **joy0** (1 connections) — `src/headless/Server.cpp`
 - **joy1** (1 connections) — `src/headless/Server.cpp`
 - **joyKnown** (1 connections) — `src/headless/Server.cpp`
-- *... and 3 more nodes in this community*
+- **used** (1 connections) — `src/headless/Server.cpp`
+- *... and 2 more nodes in this community*
 
 ## Relationships
 
-- [Community 611](Community_611.md) (7 shared connections)
-- [Community 4](Community_4.md) (6 shared connections)
-- [Community 58](Community_58.md) (4 shared connections)
-- [Community 186](Community_186.md) (4 shared connections)
+- [Community 102](Community_102.md) (8 shared connections)
+- [Community 4](Community_4.md) (7 shared connections)
+- [Community 58](Community_58.md) (3 shared connections)
 - [Community 48](Community_48.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 448](Community_448.md) (1 shared connections)
+- [Community 565](Community_565.md) (2 shared connections)
 
 ## Source Files
 
 - `src/headless/Server.cpp`
-- `src/headless/Server.hpp`
 - `src/util/JoyScript.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 70 (97%)
+- EXTRACTED: 65 (97%)
 - INFERRED: 2 (3%)
 - AMBIGUOUS: 0 (0%)
 

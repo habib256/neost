@@ -1,33 +1,25 @@
 # Community 591
 
-> 6 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **MouseMode** (7 connections) — `src/io/Ikbd.hpp`
-- **Relecture adversariale pré-release (2026-08-01)** (4 connections) — `CHANGELOG.md`
-- **ABS** (1 connections) — `src/io/Ikbd.hpp`
-- **CURSOR** (1 connections) — `src/io/Ikbd.hpp`
-- **OFF** (1 connections) — `src/io/Ikbd.hpp`
-- **REL** (1 connections) — `src/io/Ikbd.hpp`
+- **Ffmt** (3 connections) — `extern/moira/Moira/StrWriter.h`
+- **.Ffmt()** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
 
 ## Relationships
 
-- [Community 47](Community_47.md) (1 shared connections)
-- [Community 7](Community_7.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
-- [Community 406](Community_406.md) (1 shared connections)
+- [Community 109](Community_109.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/io/Ikbd.hpp`
+- `extern/moira/Moira/StrWriter.h`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (70%)
-- INFERRED: 3 (30%)
+- EXTRACTED: 3 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

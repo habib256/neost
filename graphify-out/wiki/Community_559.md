@@ -1,33 +1,27 @@
 # Community 559
 
-> 8 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **.customWriteDispatch()** (8 connections) — `src/io/Ikbd.hpp`
-- **.exitExeMode()** (6 connections) — `src/io/Ikbd.hpp`
-- **.froggiesWrite()** (5 connections) — `src/io/Ikbd.hpp`
-- **.audioSculptureRead()** (5 connections) — `src/io/Ikbd.hpp`
-- **.chaosWrite()** (4 connections) — `src/io/Ikbd.hpp`
-- **.checkPressedKey()** (3 connections) — `src/io/Ikbd.hpp`
-- **.dragonnelsWrite()** (3 connections) — `src/io/Ikbd.hpp`
-- **.audioSculptureWrite()** (3 connections) — `src/io/Ikbd.hpp`
+- **Checks** (4 connections) — `tests/fdc_media_change_logic.cpp`
+- **.equal()** (2 connections) — `tests/fdc_media_change_logic.cpp`
+- **count** (1 connections) — `tests/fdc_media_change_logic.cpp`
+- **failures** (1 connections) — `tests/fdc_media_change_logic.cpp`
 
 ## Relationships
 
-- [Community 171](Community_171.md) (10 shared connections)
-- [Community 7](Community_7.md) (8 shared connections)
-- [Community 47](Community_47.md) (2 shared connections)
-- [Community 508](Community_508.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 415](Community_415.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Ikbd.hpp`
+- `tests/fdc_media_change_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 16 (55%)
-- INFERRED: 13 (45%)
+- EXTRACTED: 5 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,28 +1,26 @@
 # Community 529
 
-> 6 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **CPpmd7_Context_** (7 connections) — `extern/lzma/Ppmd7.h`
-- **CPpmd7_Context_Ref** (1 connections)
-- **NumStats** (1 connections) — `extern/lzma/Ppmd7.h`
-- **Suffix** (1 connections) — `extern/lzma/Ppmd7.h`
-- **Union2** (1 connections) — `extern/lzma/Ppmd7.h`
-- **Union4** (1 connections) — `extern/lzma/Ppmd7.h`
+- **5. Son (YM2149, DMA STE, Microwire/LMC1992) — `YM2149.cpp`, `DmaSound.cpp` ↔ `psg.c`, `sound.c`, `dmaSnd.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
-- [Community 222](Community_222.md) (1 shared connections)
-- [Community 357](Community_357.md) (1 shared connections)
+- [Community 446](Community_446.md) (1 shared connections)
+- [Community 397](Community_397.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/lzma/Ppmd7.h`
+- `docs/HATARI_DIVERGENCES.md`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (100%)
+- EXTRACTED: 5 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

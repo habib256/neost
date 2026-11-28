@@ -4,18 +4,17 @@
 
 ## Key Concepts
 
-- **Porte d'échange du cœur 68000 (Moira de NeoST → Moira officiel)** (3 connections) — `docs/CPU_SWAP_GATE.md`
-- **La porte** (2 connections) — `docs/CPU_SWAP_GATE.md`
-- **Ce que la porte ne couvre pas, à rejouer à part** (1 connections) — `docs/CPU_SWAP_GATE.md`
+- **CacheLatch** (4 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **addr** (1 connections) — `extern/moira/Moira/Cache/Cache.h`
+- **data** (1 connections) — `extern/moira/Moira/Cache/Cache.h`
 
 ## Relationships
 
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
+- [Community 391](Community_391.md) (2 shared connections)
 
 ## Source Files
 
-- `docs/CPU_SWAP_GATE.md`
+- `extern/moira/Moira/Cache/Cache.h`
 
 ## Audit Trail
 

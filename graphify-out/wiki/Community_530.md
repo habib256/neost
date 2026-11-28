@@ -1,31 +1,31 @@
 # Community 530
 
-> 6 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **Av** (9 connections) — `extern/moira/Moira/StrWriter.h`
-- **Mode** (2 connections)
-- **ext1** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **I** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **M** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **S** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **5. Le mode serveur — `--server`** (5 connections) — `docs/OPENDST.md`
+- **Spécification du protocole (pour écrire un client)** (4 connections) — `docs/OPENDST.md`
+- **.ram()** (2 connections) — `tools/libretro_frontend.py`
+- **Paralléliser** (1 connections) — `docs/OPENDST.md`
 
 ## Relationships
 
-- [Community 109](Community_109.md) (2 shared connections)
-- [Community 0](Community_0.md) (1 shared connections)
-- [Community 497](Community_497.md) (1 shared connections)
-- [Community 169](Community_169.md) (1 shared connections)
+- [Community 391](Community_391.md) (2 shared connections)
+- [Community 200](Community_200.md) (1 shared connections)
+- [Community 364](Community_364.md) (1 shared connections)
+- [Community 406](Community_406.md) (1 shared connections)
+- [Community 611](Community_611.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/StrWriter.h`
+- `docs/OPENDST.md`
+- `tools/libretro_frontend.py`
 
 ## Audit Trail
 
-- EXTRACTED: 10 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 4 (44%)
+- INFERRED: 5 (56%)
 - AMBIGUOUS: 0 (0%)
 
 ---

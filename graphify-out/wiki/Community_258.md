@@ -24,11 +24,10 @@
 
 ## Relationships
 
+- [Community 396](Community_396.md) (2 shared connections)
 - [Community 328](Community_328.md) (1 shared connections)
-- [Community 396](Community_396.md) (1 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
-- [Community 596](Community_596.md) (1 shared connections)
+- [Community 205](Community_205.md) (1 shared connections)
 - [Community 5](Community_5.md) (1 shared connections)
 
 ## Source Files

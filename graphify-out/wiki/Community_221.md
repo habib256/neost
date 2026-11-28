@@ -1,57 +1,48 @@
 # Community 221
 
-> 28 nodes
+> 23 nodes
 
 ## Key Concepts
 
-- **.writeTimerCtrl()** (14 connections) — `src/io/Mfp.hpp`
-- **.gpipInput()** (13 connections) — `src/io/Mfp.hpp`
-- **.scheduleTimerAt()** (12 connections) — `src/io/Mfp.hpp`
-- **.timerCtrl()** (11 connections) — `src/io/Mfp.hpp`
-- **.readTimerData()** (10 connections) — `src/io/Mfp.hpp`
-- **.timerPulseMode()** (9 connections) — `src/io/Mfp.hpp`
-- **.updatePulseGate()** (9 connections) — `src/io/Mfp.hpp`
-- **.timerPeriodSubCycles()** (9 connections) — `src/io/Mfp.hpp`
-- **.storeStoppedCounter()** (9 connections) — `src/io/Mfp.hpp`
-- **.timerA_setLineInput()** (8 connections) — `src/io/Mfp.hpp`
-- **.gpipEdges()** (8 connections) — `src/io/Mfp.hpp`
-- **.gpipUpdateInterruptAt()** (7 connections) — `src/io/Mfp.hpp`
-- **.gpipIrqView()** (7 connections) — `src/io/Mfp.hpp`
-- **.pulseGateActive()** (6 connections) — `src/io/Mfp.hpp`
-- **.updateTbiTracking()** (6 connections) — `src/io/Mfp.hpp`
-- **.setTbiLine()** (6 connections) — `src/io/Mfp.hpp`
-- **delayCtrl()** (5 connections) — `src/io/Mfp.cpp`
-- **Le poll de timer MFP passe à 0 px de l'oracle — et la divergence qu'on croyait tenir n'existait plus (2026-09-02)** (5 connections) — `CHANGELOG.md`
-- **.scheduleTimer()** (4 connections) — `src/io/Mfp.hpp`
-- **.countTimerAEvent()** (4 connections) — `src/io/Mfp.hpp`
-- **.liveTimerCount()** (4 connections) — `src/io/Mfp.hpp`
-- **.firstEdgeSubAtOrAfter()** (3 connections) — `src/io/Mfp.hpp`
-- **.timerPeriodCycles()** (3 connections) — `src/io/Mfp.hpp`
-- **isPulseCtrl()** (3 connections) — `src/io/Mfp.cpp`
-- **.setAciaLineKbdAt()** (3 connections) — `src/io/Mfp.hpp`
-- *... and 3 more nodes in this community*
+- **write_prg()** (18 connections) — `tools/run_libretro.py`
+- **case_netplay_keyboard()** (5 connections) — `tools/run_libretro.py`
+- **case_blitter_megast_fallback()** (4 connections) — `tools/run_libretro.py`
+- **case_blitter_ste()** (4 connections) — `tools/run_libretro.py`
+- **case_fast_floppy_idle()** (4 connections) — `tools/run_libretro.py`
+- **case_midi_in()** (4 connections) — `tools/run_libretro.py`
+- **case_needs_ste()** (4 connections) — `tools/run_libretro.py`
+- **case_probe_kept()** (4 connections) — `tools/run_libretro.py`
+- **case_probe_restored()** (4 connections) — `tools/run_libretro.py`
+- **case_ram_auto()** (4 connections) — `tools/run_libretro.py`
+- **case_ram_probe_kept()** (4 connections) — `tools/run_libretro.py`
+- **colour0()** (1 connections) — `tools/run_libretro.py`
+- **Machine automatique : un programme qui lit le son DMA du STE sans gestionnaire…** (1 connections) — `tools/run_libretro.py`
+- **Machine automatique : un programme qui touche au blitter sans gestionnaire…** (1 connections) — `tools/run_libretro.py`
+- **Sans TOS pour STE dans le dossier système (EmuTOS 192 Ko seul), une faute du…** (1 connections) — `tools/run_libretro.py`
+- **Mémoire automatique : un programme écrit au-delà de 1 Mo ($180000, perdu) puis…** (1 connections) — `tools/run_libretro.py`
+- **Un programme qui écrit au-delà de la RAM sans planter (il sonde, et vit avec la…** (1 connections) — `tools/run_libretro.py`
+- **Option MIDI IN : un octet de l'entrée MIDI de RetroArch arrive au ST par…** (1 connections) — `tools/run_libretro.py`
+- **Un programme qui pose son gestionnaire de bus error et sonde le STE reste sur…** (1 connections) — `tools/run_libretro.py`
+- **Lecteur vide (moteur jamais coupé, faute d'index) : pas d'accélération. Une…** (1 connections) — `tools/run_libretro.py`
+- **Programme GEMDOS minimal : en-tête $601A, texte = `words`, sans relocation.** (1 connections) — `tools/run_libretro.py`
+- **Port 3 « clavier pour le netplay » : la touche tenue est relue chaque trame ;…** (1 connections) — `tools/run_libretro.py`
+- **Le motif de Wings of Death : poser un gestionnaire, sonder, remettre le vecteur…** (1 connections) — `tools/run_libretro.py`
 
 ## Relationships
 
-- [Community 215](Community_215.md) (36 shared connections)
-- [Community 6](Community_6.md) (24 shared connections)
-- [Community 392](Community_392.md) (6 shared connections)
-- [Community 434](Community_434.md) (2 shared connections)
-- [Community 275](Community_275.md) (2 shared connections)
-- [Community 130](Community_130.md) (2 shared connections)
-- [Community 321](Community_321.md) (2 shared connections)
-- [Community 377](Community_377.md) (1 shared connections)
+- [Community 247](Community_247.md) (21 shared connections)
+- [Community 442](Community_442.md) (2 shared connections)
+- [Community 291](Community_291.md) (2 shared connections)
+- [Community 482](Community_482.md) (2 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/io/Mfp.cpp`
-- `src/io/Mfp.hpp`
+- `tools/run_libretro.py`
 
 ## Audit Trail
 
-- EXTRACTED: 60 (46%)
-- INFERRED: 71 (54%)
+- EXTRACTED: 49 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

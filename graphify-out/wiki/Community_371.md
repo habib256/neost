@@ -29,12 +29,10 @@
 - [Community 89](Community_89.md) (18 shared connections)
 - [Community 474](Community_474.md) (7 shared connections)
 - [Community 462](Community_462.md) (5 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 611](Community_611.md) (2 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
 - [Community 386](Community_386.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 91](Community_91.md) (1 shared connections)
-- [Community 186](Community_186.md) (1 shared connections)
+- [Community 565](Community_565.md) (1 shared connections)
 - [Community 481](Community_481.md) (1 shared connections)
 
 ## Source Files

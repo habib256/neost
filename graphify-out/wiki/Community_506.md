@@ -4,31 +4,24 @@
 
 ## Key Concepts
 
-- **WrittenTrack.hpp** (7 connections) — `src/io/WrittenTrack.hpp`
-- **parse()** (5 connections) — `src/io/WrittenTrack.cpp`
-- **WrittenTrack.cpp** (4 connections) — `src/io/WrittenTrack.cpp`
-- **crc16()** (2 connections) — `src/io/WrittenTrack.cpp`
-- **Sector** (1 connections)
+- **15. E/S : imprimante, joypads, joysticks — `Machine.cpp`, `StePads.hpp`, `JoystickInput.hpp` ↔ `psg.c`, `printer.c`** (5 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Faux positifs** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Refermés** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts ouverts** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Écarts voulus — ne pas réaligner** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
-- [Community 611](Community_611.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 51](Community_51.md) (1 shared connections)
-- [Community 406](Community_406.md) (1 shared connections)
-- [Community 31](Community_31.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 436](Community_436.md) (1 shared connections)
+- [Community 397](Community_397.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/WrittenTrack.cpp`
-- `src/io/WrittenTrack.hpp`
+- `docs/HATARI_DIVERGENCES.md`
 
 ## Audit Trail
 
-- EXTRACTED: 13 (93%)
-- INFERRED: 1 (7%)
+- EXTRACTED: 5 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

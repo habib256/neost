@@ -515,6 +515,31 @@
     {"id": "rainbow_islands_4mb", "note": "Version Ocean en deux STX, qui exige 4 Mo (remarque du mainteneur, 2026-11-11) : titre, disque B à 7000, ESPACE, écran Taito, entrée en jeu au joystick. Accord Hatari à 9000 et 13000 ; la partie dérive ensuite (1,36 % à 11000, 2,43 % à 15000), non jugée.", "disk": "disks/stx/rainbow_islands_ocean_software_a.STX", "machine": "st", "rom": "roms/tos102uk.img", "mem": 4, "keys": [900, 1200, 1600, 2000, 2500, 3200, 4000, 5500, 7200, 8000, 9000], "swaps": [[7000, "disks/stx/rainbow_islands_ocean_software_b.STX"]], "joy_at": 9500, "joy": "F*16 .*24 U*120 [UR]*30 U*60 [UL]*30 U*60 [UF]*30 .*30 D*20 .*20 [RF]*16 .*24 L*30 .*10 R*30 .*10", "joy_repeat": 30, "frames": [9000, 13000], "scene_hashes": {"9000": "9a329eb8b423f5b34029ea3d5662dbf4372f409c984ed02ea72ecc1643d9141b", "13000": "df8f5f92bc45c7b45214c134bd7fab74b39db2e35160f49b09ec9e102924bb10"}, "window": 30, "step": 1, "max_diff": 0.5},
     {"id": "pacemaker_ste", "note": "Démo Paradox (version 1 Mo), STE/TOS 1.62 : logo, générique, scrollers de texte. Quatre scènes distinctes, sans entrée après le lancement. Le 2026-11-28, le parent 4bccff0f et Moira 6 rendent les mêmes images ; Hatari les reproduit à +8 trames. À la trame 12000, le générique diffère du tag 0.6.5 de sept pixels sur la ligne 268.", "disk": "disks/st/demos/Pacemaker 1MB.msa", "machine": "ste", "rom": "roms/tos162uk.img", "mem": 1, "keys": [1500, 3000, 4500], "frames": [6000, 8000, 10000, 12000], "scene_hashes": {"6000": "e89eb28aedb280818e5d5b4682cf285727fb473343ff530e5cac1f2dd574b00b", "8000": "fb1d36ed8ba081f63cc62ea194347b56dd234ef4978006bb69e4d861858eae99", "10000": "bbdf019af9e79fb28df8850e078347da3cf4efc443beed70796020c58225e011", "12000": "e55c6530b1d51f15941453528009a08124bcd3902f59782ff99119513d693ff8"}, "offset": 8, "window": 12, "step": 1, "max_diff": 0.5},
     {"id": "obsession_ste", "note": "Flipper Obsession (Unique Development Sweden), démo v1.1 sur STE/TOS 1.62, lancée du bureau (lecteur A puis OBSESS.PRG) : logo, puis table qui défile et texte défilant en mode démonstration. Accord Hatari à décalage nul de 8000 à 12000 (2026-11-11).", "disk": "disks/st/demos/Obsession Demo v1.1.msa", "machine": "ste", "rom": "roms/tos162uk.img", "mem": 1, "keys": [5000, 7000], "mouse": [[2000, "LLLLLLLLLLLLLLLLUUUUUUUUUU....1.1"], [2300, "RRRRRRRRRRDDDDDDDD....1.1"]], "frames": [8000, 10000, 12000], "scene_hashes": {"8000": "cbbf95cf483c5129bf2a62b4a0a5108f0ee3cd92dc387126aaac30642ce8309b", "10000": "f7a31780ee7e9f988c3dddcfa68f11944734db6d7caac7cea69b3201e05463fa", "12000": "38f346e4763eca1ed93c9fe2da2028fbf90660a37fc1aba0d51b4e1c028ba10f"}, "window": 12, "step": 1, "max_diff": 0.5},
+    {
+      "id": "obsession_ste_first_ball",
+      "note": "Aquatic Adventure passe par la bille 1 (8990), le batteur gauche (9030), le droit (9080), le ressort armé (9160), la bille lancée (9230), le bonus (9680) et la bille 2 (9870). Les trajectoires divergent après le tir. À la bille 2, NeoST affiche 125 880 points et Hatari 15 430.",
+      "disk": "disks/st/demos/Obsession Demo v1.1.msa",
+      "machine": "ste",
+      "rom": "roms/tos162uk.img",
+      "mem": 1,
+      "keys": [5000, 7000, 8950],
+      "key_hold": 60,
+      "scancodes": [[9010, 42], [9060, 54], [9140, 80], [9465, 54]],
+      "mouse": [[2000, "LLLLLLLLLLLLLLLLUUUUUUUUUU....1.1"], [2300, "RRRRRRRRRRDDDDDDDD....1.1"]],
+      "frames": [8990, 9030, 9080, 9160, 9230, 9680, 9870],
+      "window": 12,
+      "step": 1,
+      "max_diff": 0.5,
+      "scene_hashes": {
+        "8990": "7ac2d8695798a1596058551732f2aab86b83625a04ab648f2b298ac3df773fe1",
+        "9030": "2181d86c5cdab45e863e251d7aa3cf64d7d4e7082736ef69a1ef321581c60c95",
+        "9080": "fb15f9097cf1ad77dc2d32100632f0469b3b363e755e76ed71e4b12bc6c43eaf",
+        "9160": "a0be86bf079acc0c477c8041780494bc94ccfc7d26cf68c7621669f685f1a573",
+        "9230": "6ddd9cbf064d9b75acd01039dd718579ffef96c6db56325baabe6c8de7923a99",
+        "9680": "b14a08d8d1bcf37f725a9e6ad7bd8421e03964fb7493013fbbf20814f3c4986b",
+        "9870": "2c8ffc88219181a47a1704c9e5ebb455e8e5bc6a46f38c31f31a276b5f6123fb"
+      }
+    },
     {"id": "extase_st", "note": "Extase (Virgin) sur ST/TOS 1.02 : écran titre puis tableau animé (visage, circuits qui clignotent), sans entrée après ESPACE. Accord Hatari à décalage constant de 12 trames, trois scènes distinctes (2026-11-11).", "disk": "disks/st/Extase (1990)(Virgin)[cr Replicants].st", "machine": "st", "rom": "roms/tos102uk.img", "mem": 1, "keys": [900, 1600, 2500], "frames": [4000, 7000, 10000], "scene_hashes": {"4000": "3c0a114b1621beb12f0c14873a4da845dfdeb193801aa955e757d5079b488d2d", "7000": "0e7fd78c1f903abd8fadcfee1671f18ff06e5ee93e64680fafe20b7e6dc4b94e", "10000": "224f983d20989f36870bec7fed1728c6f5616175cb4591ab01c4375395e6e89f"}, "offset": 12, "window": 12, "step": 1, "max_diff": 0.5}
   ]
 }

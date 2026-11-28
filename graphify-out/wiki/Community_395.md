@@ -1,25 +1,37 @@
 # Community 395
 
-> 3 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **An** (3 connections) — `extern/moira/Moira/StrWriter.h`
-- **.An()** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **Parser** (15 connections) — `src/audio/MidiMessageParser.hpp`
+- **.reset()** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **size_t** (1 connections)
+- **data_** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **got_** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **inSysex_** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **kMaxSysex** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **needed_** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **status_** (1 connections) — `src/audio/MidiMessageParser.hpp`
+- **sysex_** (1 connections) — `src/audio/MidiMessageParser.hpp`
 
 ## Relationships
 
-- [Community 109](Community_109.md) (1 shared connections)
+- [Community 44](Community_44.md) (1 shared connections)
+- [Community 185](Community_185.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 42](Community_42.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/StrWriter.h`
+- `src/audio/MidiMessageParser.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 14 (93%)
+- INFERRED: 1 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

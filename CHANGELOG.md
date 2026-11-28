@@ -1,5 +1,40 @@
 # Changelog — NeoST
 
+## 2026-11-28 — Porte CPU, conservation de la référence après un échec
+
+- `cpu_swap_gate.py --record` remplace la référence en une opération après validation.
+  Une erreur du headless ou une campagne sans empreinte préserve le fichier précédent.
+  Les médias absents restent consignés quand au moins un scénario réussit.
+- `--check` signale aussi les erreurs d'enregistrement des anciennes références pour les
+  scénarios sélectionnés. Avec `rtl_low_pal` en erreur et `mste/bus/byte_off` réussi,
+  l'ancienne porte annonçait un accord sur la seule sonde Mega STE.
+
+## 2026-11-28 — Obsession STE : localiser la divergence après le tir
+
+- [D] Comparaison au même numéro de trame avec Hatari `36a8acf0`. Avec le
+  relâchement nominal, les trames 9233 à 9235 sont identiques. À 9236, l'écart
+  se limite à un voyant en haut de la table (0,02 %). À 9290, NeoST affiche
+  0 point et Hatari 5 000. Avancer ou retarder d'une trame le seul
+  relâchement dans Hatari fait diverger les images dès le départ du tir.
+- `make_ref_traces.py --only obsession_ste_launch` reprend les entrées du
+  parcours et aligne les deux traces à l'entrée de la VBL (`$35DC0`).
+  Les registres diffèrent déjà à l'entrée. Le flux concorde sur 1 015
+  instructions, puis Hatari entre dans le gestionnaire HBL un NOP
+  plus tôt dans la séquence observée (IRQ de niveau 2, vecteur `$1A`
+  dans la trace NeoST). Le lien avec la trajectoire reste ouvert.
+
+## 2026-11-27 — Obsession STE : première bille jouée
+
+- Le parcours `obsession_ste_first_ball` rejoue la démo v1.1 sur STE, TOS 1.62 UK,
+  1 Mio, depuis le bureau GEM jusqu'à la bille suivante. Espace lance la partie,
+  les deux touches Maj lèvent les batteurs, puis Flèche bas arme le lance-bille.
+  Les empreintes RGB gardent les scènes observées dans NeoST. Le scénario entre
+  dans la porte d'échange du 68000.
+- [D] Hatari `36a8acf0` atteint les sept scènes, dont cinq identiques au pixel.
+  L'écart atteint 0,35 % au bonus. La trajectoire diverge après le tir et le
+  score à la bille 2 vaut 125 880 dans NeoST et 15 430 dans Hatari. La cause
+  de l'écart reste ouverte.
+
 ## 2026-11-27 — Fuzz du chargement des états (A44) ; le web ne recrée plus hors de ses dossiers
 
 - **`neost-fuzz-state`**, au palier `fast` (150 itérations par étage, ~2 s) et dans les builds de

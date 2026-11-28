@@ -38,10 +38,11 @@
 - [Community 183](Community_183.md) (7 shared connections)
 - [Community 4](Community_4.md) (3 shared connections)
 - [Community 202](Community_202.md) (2 shared connections)
-- [Community 16](Community_16.md) (2 shared connections)
 - [Community 57](Community_57.md) (2 shared connections)
-- [Community 611](Community_611.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
 - [Community 287](Community_287.md) (1 shared connections)
+- [Community 492](Community_492.md) (1 shared connections)
 - [Community 496](Community_496.md) (1 shared connections)
 - [Community 297](Community_297.md) (1 shared connections)
 

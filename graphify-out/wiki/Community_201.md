@@ -1,6 +1,6 @@
 # Community 201
 
-> 33 nodes
+> 34 nodes
 
 ## Key Concepts
 
@@ -8,7 +8,6 @@
 - **testStxAbsentTrack()** (24 connections) — `tests/stx_absent_track_logic.cpp`
 - **.finish()** (8 connections) — `tests/stx_absent_track_logic.cpp`
 - **.reg()** (8 connections) — `tests/stx_absent_track_logic.cpp`
-- **hatariCompatibleExtraBlocks()** (7 connections) — `tests/stx_absent_track_logic.cpp`
 - **.data()** (7 connections) — `tests/stx_absent_track_logic.cpp`
 - **.dma()** (7 connections) — `tests/stx_absent_track_logic.cpp`
 - **.writeSector()** (7 connections) — `tests/stx_absent_track_logic.cpp`
@@ -18,6 +17,8 @@
 - **Checks** (4 connections) — `tests/stx_absent_track_logic.cpp`
 - **.seek()** (4 connections) — `tests/stx_absent_track_logic.cpp`
 - **.seekVerify()** (4 connections) — `tests/stx_absent_track_logic.cpp`
+- **sectorIs()** (4 connections) — `tests/stx_absent_track_logic.cpp`
+- **.tracksCount()** (2 connections) — `src/io/StxImage.hpp`
 - **.equal()** (2 connections) — `tests/stx_absent_track_logic.cpp`
 - **main()** (2 connections) — `tests/stx_absent_track_logic.cpp`
 - **.irq()** (2 connections) — `tests/stx_absent_track_logic.cpp`
@@ -28,28 +29,25 @@
 - **failures** (1 connections) — `tests/stx_absent_track_logic.cpp`
 - **Bus** (1 connections)
 - **Fdc** (1 connections)
-- **Mfp** (1 connections)
-- *... and 8 more nodes in this community*
+- *... and 9 more nodes in this community*
 
 ## Relationships
 
 - [Community 102](Community_102.md) (8 shared connections)
-- [Community 31](Community_31.md) (5 shared connections)
-- [Community 611](Community_611.md) (2 shared connections)
+- [Community 31](Community_31.md) (6 shared connections)
 - [Community 41](Community_41.md) (2 shared connections)
-- [Community 304](Community_304.md) (1 shared connections)
 - [Community 48](Community_48.md) (1 shared connections)
 - [Community 145](Community_145.md) (1 shared connections)
-- [Community 172](Community_172.md) (1 shared connections)
 
 ## Source Files
 
+- `src/io/StxImage.hpp`
 - `tests/stx_absent_track_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 76 (90%)
-- INFERRED: 8 (10%)
+- EXTRACTED: 76 (93%)
+- INFERRED: 6 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

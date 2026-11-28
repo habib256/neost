@@ -1,6 +1,6 @@
 # Community 41
 
-> 97 nodes
+> 96 nodes
 
 ## Key Concepts
 
@@ -8,8 +8,8 @@
 - **.loader()** (103 connections) — `src/core/StateArchive.hpp`
 - **.eq()** (44 connections) — `extern/moira/Moira/FPU/FpuEnv.h`
 - **testMfpClock()** (7 connections) — `tests/mfp_clock_logic.cpp`
-- **testMfpInternalLoopback()** (7 connections) — `tests/mfp_internal_loopback_logic.cpp`
 - **testMfpTurnaround()** (7 connections) — `tests/mfp_turnaround_logic.cpp`
+- **testMmioFidelity()** (7 connections) — `tests/mmio_fidelity_logic.cpp`
 - **testDmaSoundMmioState()** (6 connections) — `tests/dmasound_mmio_state_logic.cpp`
 - **testIkbdTxControl()** (6 connections) — `tests/ikbd_tx_control_logic.cpp`
 - **testIkbdTxPhase()** (6 connections) — `tests/ikbd_tx_phase_logic.cpp`
@@ -29,13 +29,12 @@
 - **testMmuMapping()** (6 connections) — `tests/mmu_logic.cpp`
 - **testRtcBank()** (6 connections) — `tests/rtc_bank_logic.cpp`
 - **testRtcTimer()** (6 connections) — `tests/rtc_timer_logic.cpp`
-- *... and 72 more nodes in this community*
+- *... and 71 more nodes in this community*
 
 ## Relationships
 
-- [Community 611](Community_611.md) (77 shared connections)
-- [Community 48](Community_48.md) (57 shared connections)
-- [Community 102](Community_102.md) (12 shared connections)
+- [Community 102](Community_102.md) (87 shared connections)
+- [Community 48](Community_48.md) (55 shared connections)
 - [Community 197](Community_197.md) (5 shared connections)
 - [Community 160](Community_160.md) (5 shared connections)
 - [Community 116](Community_116.md) (4 shared connections)
@@ -45,6 +44,7 @@
 - [Community 234](Community_234.md) (3 shared connections)
 - [Community 191](Community_191.md) (3 shared connections)
 - [Community 246](Community_246.md) (3 shared connections)
+- [Community 158](Community_158.md) (3 shared connections)
 
 ## Source Files
 
@@ -60,7 +60,6 @@
 - `tests/mfp_break_rx_logic.cpp`
 - `tests/mfp_clock_logic.cpp`
 - `tests/mfp_gpip_lines_logic.cpp`
-- `tests/mfp_internal_loopback_logic.cpp`
 - `tests/mfp_rx_enable_logic.cpp`
 - `tests/mfp_rx_format_logic.cpp`
 - `tests/mfp_rx_timing_logic.cpp`
@@ -68,11 +67,12 @@
 - `tests/mfp_turnaround_logic.cpp`
 - `tests/mfp_tx_logic.cpp`
 - `tests/mfp_underrun_clear_logic.cpp`
+- `tests/mfp_underrun_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 360 (80%)
-- INFERRED: 89 (20%)
+- EXTRACTED: 354 (80%)
+- INFERRED: 91 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---

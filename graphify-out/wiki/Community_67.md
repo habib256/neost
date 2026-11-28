@@ -1,18 +1,14 @@
 # Community 67
 
-> 35 nodes
+> 28 nodes
 
 ## Key Concepts
 
 - **.runFrame()** (21 connections) — `src/core/Machine.hpp`
 - **Cas tranchés — diagnostics de terrain** (21 connections) — `docs/CASE_STUDIES.md`
-- **Ce qui est implémenté — par sous-système** (18 connections) — `docs/IMPLEMENTED.md`
 - **Vroom STE : vérifier la conduite et l'arrêt audio (2026-11-05)** (6 connections) — `docs/CASE_STUDIES.md`
-- **Blitter** (4 connections) — `docs/IMPLEMENTED.md`
-- **Validé** (4 connections) — `docs/IMPLEMENTED.md`
+- **A34 — un seul modèle d'exécution, et les 83 verrous du cœur sont enfin classés (2026-08-28)** (4 connections) — `CHANGELOG.md`
 - **TOS 2.06 : la VBL écrase le contexte sur la pile temporaire (2026-11-04)** (3 connections) — `docs/CASE_STUDIES.md`
-- **FPU MC68881** (3 connections) — `docs/IMPLEMENTED.md`
-- **Ports, cartouches et clés** (3 connections) — `docs/IMPLEMENTED.md`
 - **Blit HOG : la trame continue, l'hôte reprend la main (2026-11-11)** (2 connections) — `CHANGELOG.md`
 - **Blit HOG long sur le web et Android (2026-11-12)** (2 connections) — `CHANGELOG.md`
 - **Chantiers de la chasse aux bugs fermés ; format d'état v61 (2026-11-11)** (2 connections) — `CHANGELOG.md`
@@ -29,34 +25,37 @@
 - **Fuzion CD Menus 77, 78, 84 : la priorité fixe du MFP suffit (2026-11-10)** (1 connections) — `docs/CASE_STUDIES.md`
 - **Ika : affichage du bus CPU** (1 connections) — `docs/CASE_STUDIES.md`
 - **Infinite Live : comparaison temporelle du scroll** (1 connections) — `docs/CASE_STUDIES.md`
-- *... and 10 more nodes in this community*
+- **Le réflexe qui tranche le plus de cas : la RAM (puis la ROM)** (1 connections) — `docs/CASE_STUDIES.md`
+- **Lemmings : aligner le menu sur son entrée effective (2026-11-04)** (1 connections) — `docs/CASE_STUDIES.md`
+- **Lethal Xcess STE : la bordure haute calibrée sur la gigue du MFP (2026-11-10)** (1 connections) — `docs/CASE_STUDIES.md`
+- **Magic Pockets STX sur STE : retour à gauche sensible à l’alignement (2026-11-10)** (1 connections) — `docs/CASE_STUDIES.md`
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
 - [Community 160](Community_160.md) (5 shared connections)
-- [Community 88](Community_88.md) (5 shared connections)
-- [Community 130](Community_130.md) (4 shared connections)
-- [Community 446](Community_446.md) (3 shared connections)
-- [Community 484](Community_484.md) (2 shared connections)
-- [Community 470](Community_470.md) (2 shared connections)
-- [Community 232](Community_232.md) (2 shared connections)
-- [Community 27](Community_27.md) (2 shared connections)
+- [Community 130](Community_130.md) (5 shared connections)
+- [Community 88](Community_88.md) (2 shared connections)
 - [Community 10](Community_10.md) (1 shared connections)
-- [Community 321](Community_321.md) (1 shared connections)
 - [Community 175](Community_175.md) (1 shared connections)
+- [Community 378](Community_378.md) (1 shared connections)
+- [Community 522](Community_522.md) (1 shared connections)
 - [Community 9](Community_9.md) (1 shared connections)
+- [Community 317](Community_317.md) (1 shared connections)
+- [Community 446](Community_446.md) (1 shared connections)
+- [Community 189](Community_189.md) (1 shared connections)
+- [Community 119](Community_119.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
 - `docs/CASE_STUDIES.md`
-- `docs/IMPLEMENTED.md`
 - `src/core/Machine.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 49 (60%)
-- INFERRED: 32 (40%)
+- EXTRACTED: 30 (53%)
+- INFERRED: 27 (47%)
 - AMBIGUOUS: 0 (0%)
 
 ---

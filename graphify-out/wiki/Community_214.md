@@ -1,64 +1,73 @@
 # Community 214
 
-> 81 nodes
+> 162 nodes
 
 ## Key Concepts
 
 - **AppLoop.cpp** (106 connections) — `src/gui/AppLoop.cpp`
+- **App.cpp** (60 connections) — `src/gui/App.cpp`
 - **Frame** (58 connections) — `src/gui/AppLoop.cpp`
 - **App** (46 connections)
 - **saveConfig()** (39 connections) — `src/gui/App.cpp`
 - **appLoop()** (26 connections) — `src/gui/AppLoop.cpp`
+- **appInit()** (23 connections) — `src/gui/AppInit.cpp`
+- **KioskMenu.cpp** (19 connections) — `src/gui/KioskMenu.cpp`
+- **A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30)** (19 connections) — `CHANGELOG.md`
+- **runKioskMenu()** (17 connections) — `src/gui/AppLoop.cpp`
+- **KioskNav** (16 connections) — `src/gui/AppLoop.cpp`
+- **.applyConfig()** (15 connections) — `src/gui/App.hpp`
 - **drawDesktopChrome()** (15 connections) — `src/gui/AppLoop.cpp`
+- **drawSideWindows()** (15 connections) — `src/gui/AppLoop.cpp`
+- **string** (15 connections)
+- **consumeProfileRequests()** (14 connections) — `src/gui/AppLoop.cpp`
+- **resolveData()** (13 connections) — `src/gui/App.cpp`
 - **consumeConfigRequests()** (13 connections) — `src/gui/AppLoop.cpp`
 - **drawMenuBar()** (12 connections) — `src/gui/AppLoop.cpp`
+- **autoDongleSync()** (11 connections) — `src/gui/App.cpp`
+- **kioskScanDisks()** (10 connections) — `src/gui/KioskMenu.cpp`
+- **machineName()** (9 connections) — `src/core/MachineType.hpp`
+- **consumeApplyRequests()** (9 connections) — `src/gui/AppLoop.cpp`
 - **drawStatusBar()** (9 connections) — `src/gui/AppLoop.cpp`
-- **consumeDongleRequests()** (8 connections) — `src/gui/AppLoop.cpp`
-- **consumeMediaRequests()** (8 connections) — `src/gui/AppLoop.cpp`
-- **handleDrops()** (8 connections) — `src/gui/AppLoop.cpp`
-- **consumeUsbNatRequests()** (7 connections) — `src/gui/AppLoop.cpp`
-- **drawOverlays()** (7 connections) — `src/gui/AppLoop.cpp`
-- **loadQuickState()** (7 connections) — `src/gui/AppLoop.cpp`
-- **pollMidiDevices()** (7 connections) — `src/gui/AppLoop.cpp`
-- **machineForcedByTos()** (7 connections) — `src/gui/ConfigWindow.cpp`
-- **applyRequests()** (6 connections) — `src/gui/AppLoop.cpp`
-- **consumeSessionRequests()** (6 connections) — `src/gui/AppLoop.cpp`
-- **drawToolbar()** (6 connections) — `src/gui/AppLoop.cpp`
-- **saveQuickState()** (6 connections) — `src/gui/AppLoop.cpp`
-- **appShutdown()** (5 connections) — `src/gui/AppLoop.cpp`
-- **beginDraw()** (5 connections) — `src/gui/AppLoop.cpp`
-- **consumeMachineRequests()** (5 connections) — `src/gui/AppLoop.cpp`
-- **consumeMixMidiRequests()** (5 connections) — `src/gui/AppLoop.cpp`
-- *... and 56 more nodes in this community*
+- **joyResolveRoles()** (9 connections) — `src/gui/JoyMap.cpp`
+- *... and 137 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (45 shared connections)
-- [Community 138](Community_138.md) (27 shared connections)
-- [Community 223](Community_223.md) (26 shared connections)
-- [Community 101](Community_101.md) (9 shared connections)
-- [Community 204](Community_204.md) (7 shared connections)
-- [Community 325](Community_325.md) (7 shared connections)
-- [Community 102](Community_102.md) (5 shared connections)
-- [Community 21](Community_21.md) (4 shared connections)
-- [Community 281](Community_281.md) (4 shared connections)
-- [Community 42](Community_42.md) (4 shared connections)
-- [Community 449](Community_449.md) (4 shared connections)
-- [Community 91](Community_91.md) (3 shared connections)
+- [Community 4](Community_4.md) (68 shared connections)
+- [Community 325](Community_325.md) (29 shared connections)
+- [Community 102](Community_102.md) (21 shared connections)
+- [Community 101](Community_101.md) (18 shared connections)
+- [Community 91](Community_91.md) (12 shared connections)
+- [Community 1](Community_1.md) (8 shared connections)
+- [Community 333](Community_333.md) (8 shared connections)
+- [Community 434](Community_434.md) (7 shared connections)
+- [Community 138](Community_138.md) (7 shared connections)
+- [Community 51](Community_51.md) (7 shared connections)
+- [Community 21](Community_21.md) (6 shared connections)
+- [Community 99](Community_99.md) (6 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
+- `src/android/AndroidMenu.cpp`
+- `src/core/MachineType.hpp`
 - `src/gui/App.cpp`
+- `src/gui/App.hpp`
+- `src/gui/AppConfig.hpp`
+- `src/gui/AppInit.cpp`
 - `src/gui/AppLoop.cpp`
 - `src/gui/ConfigWindow.cpp`
-- `src/gui/StScreenView.cpp`
+- `src/gui/JoyMap.cpp`
+- `src/gui/KioskMenu.cpp`
+- `src/gui/NavRepeat.hpp`
+- `src/io/SoftFloatX80.hpp`
 - `src/main.cpp`
+- `src/util/MouseScale.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 290 (81%)
-- INFERRED: 69 (19%)
+- EXTRACTED: 496 (75%)
+- INFERRED: 168 (25%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,37 +1,40 @@
 # Community 301
 
-> 12 nodes
+> 14 nodes
 
 ## Key Concepts
 
-- **check_hog_park.py** (10 connections) — `tools/check_hog_park.py`
-- **hog_prg()** (8 connections) — `tools/check_hog_park.py`
-- **main()** (7 connections) — `tools/check_hog_park.py`
-- **run()** (5 connections) — `tools/check_hog_park.py`
-- **hashes()** (2 connections) — `tools/check_hog_park.py`
-- **Path** (2 connections)
-- **mvb()** (1 connections) — `tools/check_hog_park.py`
-- **mvl()** (1 connections) — `tools/check_hog_park.py`
-- **mvw()** (1 connections) — `tools/check_hog_park.py`
-- **check()** (1 connections) — `tools/check_hog_park.py`
-- **CompletedProcess** (1 connections)
-- **PRG superviseur : blit HOG xcount×ycount mots, puis compteur en $600.** (1 connections) — `tools/check_hog_park.py`
+- **MidiTimecode.hpp** (18 connections) — `src/audio/MidiTimecode.hpp`
+- **Timecode** (9 connections) — `src/audio/MidiTimecode.hpp`
+- **locate()** (7 connections) — `src/audio/MidiTimecode.hpp`
+- **advance()** (5 connections) — `src/audio/MidiTimecode.hpp`
+- **fromFrames()** (4 connections) — `src/audio/MidiTimecode.hpp`
+- **fullFrame()** (4 connections) — `src/audio/MidiTimecode.hpp`
+- **quarterFrameData()** (4 connections) — `src/audio/MidiTimecode.hpp`
+- **realFps()** (4 connections) — `src/audio/MidiTimecode.hpp`
+- **.qfCycle()** (3 connections) — `src/audio/MidiTimecode.hpp`
+- **rateCode()** (3 connections) — `src/audio/MidiTimecode.hpp`
+- **.operator==()** (1 connections) — `src/audio/MidiTimecode.hpp`
+- **f** (1 connections) — `src/audio/MidiTimecode.hpp`
+- **h** (1 connections) — `src/audio/MidiTimecode.hpp`
+- **m** (1 connections) — `src/audio/MidiTimecode.hpp`
 
 ## Relationships
 
-- [Community 100](Community_100.md) (5 shared connections)
-- [Community 3](Community_3.md) (2 shared connections)
-- [Community 582](Community_582.md) (2 shared connections)
-- [Community 146](Community_146.md) (1 shared connections)
+- [Community 105](Community_105.md) (8 shared connections)
+- [Community 4](Community_4.md) (5 shared connections)
+- [Community 135](Community_135.md) (2 shared connections)
+- [Community 10](Community_10.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/check_hog_park.py`
+- `src/audio/MidiTimecode.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 25 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 39 (95%)
+- INFERRED: 2 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

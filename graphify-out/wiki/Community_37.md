@@ -1,11 +1,16 @@
 # Community 37
 
-> 25 nodes
+> 30 nodes
 
 ## Key Concepts
 
 - **Blitter** (44 connections) — `src/core/Blitter.hpp`
+- **.clearPreStartWindow()** (5 connections) — `src/core/Blitter.hpp`
+- **.pauseTransfer()** (4 connections) — `src/core/Blitter.hpp`
 - **Bus** (3 connections) — `src/core/Blitter.hpp`
+- **.reset()** (3 connections) — `src/core/Blitter.hpp`
+- **.read8()** (2 connections) — `src/core/Blitter.hpp`
+- **.notePreStartCpuAccess()** (2 connections) — `src/core/Blitter.hpp`
 - **.Blitter()** (2 connections) — `src/core/Blitter.hpp`
 - **.serialize()** (2 connections) — `src/core/Blitter.hpp`
 - **.setScheduler()** (2 connections) — `src/core/Blitter.hpp`
@@ -24,18 +29,13 @@
 - **nfsrInt_** (1 connections) — `src/core/Blitter.hpp`
 - **reg_** (1 connections) — `src/core/Blitter.hpp`
 - **sched_** (1 connections) — `src/core/Blitter.hpp`
-- **sliceBus_** (1 connections) — `src/core/Blitter.hpp`
-- **xReset_** (1 connections) — `src/core/Blitter.hpp`
-- **yLatch_** (1 connections) — `src/core/Blitter.hpp`
-- **function** (1 connections)
-- **StateArchive** (1 connections)
+- *... and 5 more nodes in this community*
 
 ## Relationships
 
-- [Community 189](Community_189.md) (14 shared connections)
-- [Community 296](Community_296.md) (5 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 378](Community_378.md) (1 shared connections)
+- [Community 296](Community_296.md) (11 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
+- [Community 189](Community_189.md) (6 shared connections)
 
 ## Source Files
 
@@ -43,8 +43,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 48 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 53 (93%)
+- INFERRED: 4 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -4,34 +4,34 @@
 
 ## Key Concepts
 
-- **isize** (13 connections)
-- **.guardNr()** (9 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.dumpLogBuffer()** (7 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.disassembleRange()** (7 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.isDisabled()** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.disassembleRecorded()** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.isEnabled()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.ignore()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.loggedInstructions()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **string** (4 connections)
-- **ostream** (2 connections)
-- **pair** (1 connections)
+- **run_server_equiv.py** (13 connections) — `tools/run_server_equiv.py`
+- **main()** (6 connections) — `tools/run_server_equiv.py`
+- **EmulatorFailed** (5 connections) — `tools/run_server_equiv.py`
+- **run_bin()** (5 connections) — `tools/run_server_equiv.py`
+- **run_cli()** (5 connections) — `tools/run_server_equiv.py`
+- **run_server()** (4 connections) — `tools/run_server_equiv.py`
+- **check()** (2 connections) — `tools/run_server_equiv.py`
+- **md5()** (2 connections) — `tools/run_server_equiv.py`
+- **Exception** (1 connections)
+- **Session serveur : rend la liste des réponses.** (1 connections) — `tools/run_server_equiv.py`
+- **Le binaire est sorti ≠ 0 : le message du binaire DOIT remonter, sinon le…** (1 connections) — `tools/run_server_equiv.py`
+- **Boucle --frames : la référence.** (1 connections) — `tools/run_server_equiv.py`
 
 ## Relationships
 
-- [Community 121](Community_121.md) (13 shared connections)
-- [Community 152](Community_152.md) (8 shared connections)
-- [Community 134](Community_134.md) (5 shared connections)
-- [Community 593](Community_593.md) (1 shared connections)
+- [Community 582](Community_582.md) (2 shared connections)
+- [Community 100](Community_100.md) (2 shared connections)
+- [Community 207](Community_207.md) (1 shared connections)
+- [Community 26](Community_26.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraDebugger.h`
+- `tools/run_server_equiv.py`
 
 ## Audit Trail
 
-- EXTRACTED: 40 (87%)
-- INFERRED: 6 (13%)
+- EXTRACTED: 26 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

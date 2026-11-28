@@ -1,61 +1,62 @@
 # Community 215
 
-> 39 nodes
+> 59 nodes
 
 ## Key Concepts
 
 - **Mfp.cpp** (69 connections) — `src/io/Mfp.cpp`
 - **.write8()** (23 connections) — `src/io/Mfp.hpp`
 - **.raiseAt()** (16 connections) — `src/io/Mfp.hpp`
+- **.writeTimerCtrl()** (14 connections) — `src/io/Mfp.hpp`
+- **.gpipInput()** (13 connections) — `src/io/Mfp.hpp`
+- **.scheduleTimerAt()** (12 connections) — `src/io/Mfp.hpp`
 - **.advanceSerialTx()** (12 connections) — `src/io/Mfp.hpp`
+- **.timerCtrl()** (11 connections) — `src/io/Mfp.hpp`
+- **.readTimerData()** (10 connections) — `src/io/Mfp.hpp`
+- **.timerPulseMode()** (9 connections) — `src/io/Mfp.hpp`
+- **.updatePulseGate()** (9 connections) — `src/io/Mfp.hpp`
+- **.timerPeriodSubCycles()** (9 connections) — `src/io/Mfp.hpp`
+- **.storeStoppedCounter()** (9 connections) — `src/io/Mfp.hpp`
+- **.timerA_setLineInput()** (8 connections) — `src/io/Mfp.hpp`
+- **.gpipEdges()** (8 connections) — `src/io/Mfp.hpp`
 - **.read8()** (8 connections) — `src/io/Mfp.hpp`
+- **.gpipUpdateInterruptAt()** (7 connections) — `src/io/Mfp.hpp`
 - **.startSerialTx()** (7 connections) — `src/io/Mfp.hpp`
+- **.gpipIrqView()** (7 connections) — `src/io/Mfp.hpp`
+- **.pulseGateActive()** (6 connections) — `src/io/Mfp.hpp`
+- **.updateTbiTracking()** (6 connections) — `src/io/Mfp.hpp`
+- **.setTbiLine()** (6 connections) — `src/io/Mfp.hpp`
 - **.onTimerExpire()** (5 connections) — `src/io/Mfp.hpp`
-- **.checkPendingInterrupts()** (5 connections) — `src/io/Mfp.hpp`
+- **.flushIrqUpdate()** (5 connections) — `src/io/Mfp.hpp`
 - **.receiveSerialBreakEnd()** (5 connections) — `src/io/Mfp.hpp`
-- **.clearSerialBreak()** (5 connections) — `src/io/Mfp.hpp`
-- **.finishSerialTx()** (5 connections) — `src/io/Mfp.hpp`
-- **.writeEventTime()** (5 connections) — `src/io/Mfp.hpp`
-- **.hblankAt()** (4 connections) — `src/io/Mfp.hpp`
-- **.updateIrq()** (4 connections) — `src/io/Mfp.hpp`
-- **.earliestEligible()** (4 connections) — `src/io/Mfp.hpp`
-- **.highestInService()** (4 connections) — `src/io/Mfp.hpp`
-- **.scheduleSerialRx()** (4 connections) — `src/io/Mfp.hpp`
-- **.onSerialRxEvent()** (4 connections) — `src/io/Mfp.hpp`
-- **.receiveSerialBreak()** (4 connections) — `src/io/Mfp.hpp`
-- **.scheduleSerialTxHalfBits()** (4 connections) — `src/io/Mfp.hpp`
-- **.mmioWriteEnd()** (4 connections) — `src/io/Mfp.hpp`
-- **.updateTimers()** (4 connections) — `src/io/Mfp.hpp`
-- **.updateSerialConfig()** (4 connections) — `src/io/Mfp.hpp`
-- **.resetChip()** (4 connections) — `src/io/Mfp.hpp`
-- **.internalSerialLoopback()** (4 connections) — `src/io/Mfp.hpp`
-- *... and 14 more nodes in this community*
+- *... and 34 more nodes in this community*
 
 ## Relationships
 
-- [Community 6](Community_6.md) (37 shared connections)
-- [Community 221](Community_221.md) (36 shared connections)
-- [Community 392](Community_392.md) (6 shared connections)
+- [Community 6](Community_6.md) (59 shared connections)
+- [Community 392](Community_392.md) (11 shared connections)
+- [Community 39](Community_39.md) (4 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 539](Community_539.md) (4 shared connections)
+- [Community 275](Community_275.md) (2 shared connections)
 - [Community 27](Community_27.md) (2 shared connections)
-- [Community 611](Community_611.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 321](Community_321.md) (1 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 565](Community_565.md) (2 shared connections)
+- [Community 130](Community_130.md) (2 shared connections)
 - [Community 41](Community_41.md) (1 shared connections)
-- [Community 91](Community_91.md) (1 shared connections)
-- [Community 565](Community_565.md) (1 shared connections)
-- [Community 186](Community_186.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 434](Community_434.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
+- `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
 - `src/io/Mfp.cpp`
 - `src/io/Mfp.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 108 (62%)
-- INFERRED: 65 (38%)
+- EXTRACTED: 137 (54%)
+- INFERRED: 119 (46%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,42 +1,46 @@
 # Community 281
 
-> 15 nodes
+> 18 nodes
 
 ## Key Concepts
 
-- **DockLayout.cpp** (14 connections) — `src/gui/DockLayout.cpp`
-- **renderDockSpace()** (5 connections) — `src/gui/DockLayout.cpp`
-- **WinSettings_WriteAll()** (4 connections) — `src/gui/DockLayout.cpp`
-- **ImGuiContext** (4 connections)
-- **ImGuiSettingsHandler** (4 connections)
-- **DockLayout.hpp** (4 connections) — `src/gui/DockLayout.hpp`
-- **applyDockLayout()** (3 connections) — `src/gui/DockLayout.cpp`
-- **registerWindowSettings()** (3 connections) — `src/gui/DockLayout.cpp`
-- **WinSettings_ApplyAll()** (3 connections) — `src/gui/DockLayout.cpp`
-- **WinSettings_ReadLine()** (3 connections) — `src/gui/DockLayout.cpp`
-- **WinSettings_ReadOpen()** (3 connections) — `src/gui/DockLayout.cpp`
-- **App** (3 connections)
-- **imgui_internal** (3 connections)
-- **App** (1 connections) — `src/gui/DockLayout.hpp`
-- **ImGuiTextBuffer** (1 connections)
+- **run_fx68k_bench.py** (22 connections) — `tools/run_fx68k_bench.py`
+- **main()** (14 connections) — `tools/run_fx68k_bench.py`
+- **ipl_sweep()** (7 connections) — `tools/run_fx68k_bench.py`
+- **compare()** (5 connections) — `tools/run_fx68k_bench.py`
+- **run_one()** (5 connections) — `tools/run_fx68k_bench.py`
+- **build_fx68k()** (4 connections) — `tools/run_fx68k_bench.py`
+- **parse()** (4 connections) — `tools/run_fx68k_bench.py`
+- **first_frame_write()** (3 connections) — `tools/run_fx68k_bench.py`
+- **cut()** (2 connections) — `tools/run_fx68k_bench.py`
+- **fmt()** (2 connections) — `tools/run_fx68k_bench.py`
+- **need_rebuild()** (2 connections) — `tools/run_fx68k_bench.py`
+- **signature()** (2 connections) — `tools/run_fx68k_bench.py`
+- **skip()** (2 connections) — `tools/run_fx68k_bench.py`
+- **variants()** (2 connections) — `tools/run_fx68k_bench.py`
+- **Path** (2 connections)
+- **Même suite d'accès, puis mêmes INTERVALLES entre accès consécutifs. Comparer…** (1 connections) — `tools/run_fx68k_bench.py`
+- **(PC empilé, date de la 1re écriture de trame), la date étant relative au 1er…** (1 connections) — `tools/run_fx68k_bench.py`
+- **Pour chaque instant T de montée de la broche : quelle frontière prend l'IRQ,…** (1 connections) — `tools/run_fx68k_bench.py`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (5 shared connections)
-- [Community 214](Community_214.md) (4 shared connections)
-- [Community 138](Community_138.md) (1 shared connections)
-- [Community 91](Community_91.md) (1 shared connections)
-- [Community 611](Community_611.md) (1 shared connections)
+- [Community 107](Community_107.md) (4 shared connections)
+- [Community 100](Community_100.md) (3 shared connections)
+- [Community 26](Community_26.md) (3 shared connections)
+- [Community 412](Community_412.md) (2 shared connections)
+- [Community 173](Community_173.md) (2 shared connections)
+- [Community 582](Community_582.md) (2 shared connections)
+- [Community 146](Community_146.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/DockLayout.cpp`
-- `src/gui/DockLayout.hpp`
+- `tools/run_fx68k_bench.py`
 
 ## Audit Trail
 
-- EXTRACTED: 32 (91%)
-- INFERRED: 3 (9%)
+- EXTRACTED: 49 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

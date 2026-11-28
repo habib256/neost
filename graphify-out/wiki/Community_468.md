@@ -1,40 +1,32 @@
 # Community 468
 
-> 13 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **StateArchive** (14 connections) — `src/core/StateArchive.hpp`
-- **.raw()** (5 connections) — `src/core/StateArchive.hpp`
-- **podVec()** (4 connections) — `src/core/StateArchive.hpp`
-- **.vec()** (3 connections) — `src/core/StateArchive.hpp`
-- **arr()** (2 connections) — `src/core/StateArchive.hpp`
-- **operator()()** (2 connections) — `src/core/StateArchive.hpp`
-- **.fail()** (2 connections) — `src/core/StateArchive.hpp`
-- **.loading()** (1 connections) — `src/core/StateArchive.hpp`
-- **.ok()** (1 connections) — `src/core/StateArchive.hpp`
-- **.saveSize()** (1 connections) — `src/core/StateArchive.hpp`
-- **in_** (1 connections) — `src/core/StateArchive.hpp`
-- **inEnd_** (1 connections) — `src/core/StateArchive.hpp`
-- **out_** (1 connections) — `src/core/StateArchive.hpp`
+- **make_vblank_test.py** (8 connections) — `tools/make_vblank_test.py`
+- **w()** (5 connections) — `tools/make_vblank_test.py`
+- **bra()** (4 connections) — `tools/make_vblank_test.py`
+- **delay()** (4 connections) — `tools/make_vblank_test.py`
+- **relative()** (3 connections) — `tools/make_vblank_test.py`
+- **label()** (2 connections) — `tools/make_vblank_test.py`
+- **Disquette libre : retrait bas PAL et VBlank, ancrés par VBL/STOP. on :…** (1 connections) — `tools/make_vblank_test.py`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 611](Community_611.md) (3 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 386](Community_386.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
-- [Community 298](Community_298.md) (1 shared connections)
+- [Community 3](Community_3.md) (2 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
+- [Community 9](Community_9.md) (1 shared connections)
+- [Community 582](Community_582.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/StateArchive.hpp`
+- `tools/make_vblank_test.py`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (92%)
-- INFERRED: 2 (8%)
+- EXTRACTED: 14 (88%)
+- INFERRED: 2 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

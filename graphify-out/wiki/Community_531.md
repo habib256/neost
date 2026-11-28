@@ -1,28 +1,28 @@
 # Community 531
 
-> 6 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **Pending** (6 connections) — `src/audio/MidiOutHost.hpp`
-- **time_point** (2 connections)
-- **b** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **len** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **msg** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **when** (1 connections) — `src/audio/MidiOutHost.hpp`
+- **TrackRev** (6 connections) — `src/io/IpfImage.hpp`
+- **bytes** (1 connections) — `src/io/IpfImage.hpp`
+- **cylinder** (1 connections) — `src/io/IpfImage.hpp`
+- **head** (1 connections) — `src/io/IpfImage.hpp`
 
 ## Relationships
 
-- [Community 42](Community_42.md) (2 shared connections)
+- [Community 143](Community_143.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 163](Community_163.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/MidiOutHost.hpp`
+- `src/io/IpfImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 5 (83%)
+- INFERRED: 1 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

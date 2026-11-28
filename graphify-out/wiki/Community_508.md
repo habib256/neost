@@ -1,6 +1,6 @@
 # Community 508
 
-> 7 nodes
+> 8 nodes
 
 ## Key Concepts
 
@@ -11,25 +11,27 @@
 - **.commonBoot()** (4 connections) — `src/io/Ikbd.hpp`
 - **.armCommonBootForTest()** (3 connections) — `src/io/Ikbd.hpp`
 - **size_t** (2 connections)
+- **7. IKBD / ACIA / MIDI (acia.c, ikbd.c, midi.c)** (2 connections) — `docs/HATARI_MAPPING.md`
 
 ## Relationships
 
 - [Community 171](Community_171.md) (7 shared connections)
 - [Community 7](Community_7.md) (4 shared connections)
 - [Community 47](Community_47.md) (2 shared connections)
-- [Community 559](Community_559.md) (1 shared connections)
 - [Community 38](Community_38.md) (1 shared connections)
-- [Community 377](Community_377.md) (1 shared connections)
+- [Community 292](Community_292.md) (1 shared connections)
+- [Community 352](Community_352.md) (1 shared connections)
 
 ## Source Files
 
+- `docs/HATARI_MAPPING.md`
 - `src/io/Ikbd.cpp`
 - `src/io/Ikbd.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 20 (87%)
-- INFERRED: 3 (13%)
+- EXTRACTED: 21 (88%)
+- INFERRED: 3 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

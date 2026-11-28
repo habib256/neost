@@ -24,6 +24,15 @@
    "frames": 2,
    "hatari_from": 5399,
    "align_pc": "6776A"
+  },
+  {
+   "id": "obsession_ste_launch",
+   "replay": "obsession_ste_first_ball",
+   "note": "Aquatic Adventure après le tir. Images identiques aux trames 9233 à 9235. Premier écart local à 9236 sur un voyant. Ancre commune à l'entrée de la VBL.",
+   "neost_from": 9233,
+   "frames": 7,
+   "hatari_from": 9233,
+   "align_pc": "35DC0"
   }
  ]
 }

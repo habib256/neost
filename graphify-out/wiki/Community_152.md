@@ -1,43 +1,63 @@
 # Community 152
 
-> 16 nodes
+> 29 nodes
 
 ## Key Concepts
 
-- **Guards** (41 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **isize** (8 connections)
-- **.setEnable()** (7 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.setEnableAll()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.toggle()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.disable()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.enable()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.isSet()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.disableAll()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.elements()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.enableAll()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.removeAll()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.setNeedsCheck()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **capacity** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **count** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **hit** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **string** (28 connections)
+- **Audit Hatari, 7ᵉ à 9ᵉ passes : chasses après le gain de performance (2026-08-06)** (14 connections) — `CHANGELOG.md`
+- **.initDrives()** (13 connections) — `src/io/GemdosHd.hpp`
+- **.setDirectory()** (8 connections) — `src/io/GemdosHd.hpp`
+- **.closeFileHandle()** (8 connections) — `src/io/GemdosHd.hpp`
+- **A39 — le disque dur GEMDOS passe son premier audit, et reçoit son premier test (2026-08-28)** (8 connections) — `CHANGELOG.md`
+- **.setExtraAttr()** (6 connections) — `src/io/GemdosHd.hpp`
+- **makeAbsoluteName()** (6 connections) — `src/io/GemdosHd.cpp`
+- **physicalCanon()** (6 connections) — `src/io/GemdosHd.cpp`
+- **stat** (6 connections) — `src/libretro/libretro.h`
+- **.hostRamPtr()** (5 connections) — `src/core/Bus.hpp`
+- **.extraAttrOf()** (5 connections) — `src/io/GemdosHd.hpp`
+- **dirExists()** (5 connections) — `src/io/GemdosHd.cpp`
+- **.renameHostEntry()** (4 connections) — `src/io/GemdosHd.hpp`
+- **.openByOther()** (4 connections) — `src/io/GemdosHd.hpp`
+- **cleanFileName()** (4 connections) — `src/io/GemdosHd.cpp`
+- **hostDriveFolderExists()** (4 connections) — `src/io/GemdosHd.cpp`
+- **hostFileReadOnly()** (4 connections) — `src/io/GemdosHd.cpp`
+- **Retours 0.5.2 : HD GEMDOS sous Windows, disquette livrée (2026-08-16)** (4 connections) — `CHANGELOG.md`
+- **.addRemainingPath()** (3 connections) — `src/io/GemdosHd.hpp`
+- **.installSystemCart()** (3 connections) — `src/io/GemdosHd.hpp`
+- **.markDeleted()** (3 connections) — `src/io/GemdosHd.hpp`
+- **convertAttribute()** (3 connections) — `src/io/GemdosHd.cpp`
+- **.clampToSandbox()** (3 connections) — `src/io/GemdosHd.hpp`
+- **hostAttrRead()** (3 connections) — `src/io/GemdosHd.cpp`
+- *... and 4 more nodes in this community*
 
 ## Relationships
 
-- [Community 121](Community_121.md) (10 shared connections)
-- [Community 593](Community_593.md) (9 shared connections)
-- [Community 368](Community_368.md) (8 shared connections)
-- [Community 134](Community_134.md) (5 shared connections)
-- [Community 492](Community_492.md) (1 shared connections)
-- [Community 470](Community_470.md) (1 shared connections)
+- [Community 36](Community_36.md) (29 shared connections)
+- [Community 17](Community_17.md) (13 shared connections)
+- [Community 218](Community_218.md) (8 shared connections)
+- [Community 130](Community_130.md) (3 shared connections)
+- [Community 88](Community_88.md) (3 shared connections)
+- [Community 124](Community_124.md) (2 shared connections)
+- [Community 607](Community_607.md) (1 shared connections)
+- [Community 14](Community_14.md) (1 shared connections)
+- [Community 319](Community_319.md) (1 shared connections)
+- [Community 138](Community_138.md) (1 shared connections)
+- [Community 175](Community_175.md) (1 shared connections)
+- [Community 450](Community_450.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraDebugger.h`
+- `CHANGELOG.md`
+- `src/core/Bus.hpp`
+- `src/io/GemdosHd.cpp`
+- `src/io/GemdosHd.hpp`
+- `src/libretro/libretro.h`
 
 ## Audit Trail
 
-- EXTRACTED: 58 (97%)
-- INFERRED: 2 (3%)
+- EXTRACTED: 78 (64%)
+- INFERRED: 43 (36%)
 - AMBIGUOUS: 0 (0%)
 
 ---

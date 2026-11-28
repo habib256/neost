@@ -1,6 +1,6 @@
 # Community 14
 
-> 97 nodes
+> 98 nodes
 
 ## Key Concepts
 
@@ -29,22 +29,22 @@
 - **.megaSteCacheEnabled()** (2 connections) — `src/core/Bus.hpp`
 - **.megaSteReset()** (2 connections) — `src/core/Bus.hpp`
 - **.missingIoFaults()** (2 connections) — `src/core/Bus.hpp`
-- *... and 72 more nodes in this community*
+- *... and 73 more nodes in this community*
 
 ## Relationships
 
-- [Community 607](Community_607.md) (39 shared connections)
-- [Community 102](Community_102.md) (16 shared connections)
-- [Community 203](Community_203.md) (14 shared connections)
-- [Community 480](Community_480.md) (10 shared connections)
-- [Community 319](Community_319.md) (9 shared connections)
-- [Community 429](Community_429.md) (8 shared connections)
-- [Community 449](Community_449.md) (4 shared connections)
+- [Community 607](Community_607.md) (40 shared connections)
+- [Community 102](Community_102.md) (17 shared connections)
+- [Community 203](Community_203.md) (13 shared connections)
+- [Community 429](Community_429.md) (10 shared connections)
+- [Community 319](Community_319.md) (7 shared connections)
+- [Community 138](Community_138.md) (5 shared connections)
 - [Community 244](Community_244.md) (4 shared connections)
+- [Community 471](Community_471.md) (4 shared connections)
+- [Community 480](Community_480.md) (4 shared connections)
 - [Community 149](Community_149.md) (4 shared connections)
-- [Community 471](Community_471.md) (3 shared connections)
+- [Community 434](Community_434.md) (2 shared connections)
 - [Community 484](Community_484.md) (1 shared connections)
-- [Community 611](Community_611.md) (1 shared connections)
 
 ## Source Files
 
@@ -52,8 +52,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 217 (98%)
-- INFERRED: 5 (2%)
+- EXTRACTED: 217 (97%)
+- INFERRED: 6 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

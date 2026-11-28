@@ -1,32 +1,41 @@
 # Community 444
 
-> 6 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **drawStKiosk()** (8 connections) — `src/gui/StScreenView.cpp`
-- **crtApply()** (6 connections) — `src/gui/StScreenView.cpp`
-- **drawStScreen()** (5 connections) — `src/gui/StScreenView.cpp`
-- **App** (3 connections)
-- **GlScreen** (3 connections)
-- **GLuint** (1 connections)
+- **Ce qui est implémenté — par sous-système** (18 connections) — `docs/IMPLEMENTED.md`
+- **Validé** (4 connections) — `docs/IMPLEMENTED.md`
+- **Bus, bus error & cartouches de diagnostic** (3 connections) — `docs/IMPLEMENTED.md`
+- **FPU MC68881** (3 connections) — `docs/IMPLEMENTED.md`
+- **Ports, cartouches et clés** (3 connections) — `docs/IMPLEMENTED.md`
+- **Rechargement du compteur pendant VSYNC (2026-11-15)** (1 connections) — `docs/IMPLEMENTED.md`
+- **Réseau — extensions NeoST (INACTIVES par défaut, cf. `docs/EXTENSIONS.md`)** (1 connections) — `docs/IMPLEMENTED.md`
+- **Réveil STOP avec HBL préarmée (2026-11-15)** (1 connections) — `docs/IMPLEMENTED.md`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 214](Community_214.md) (2 shared connections)
-- [Community 329](Community_329.md) (1 shared connections)
-- [Community 68](Community_68.md) (1 shared connections)
-- [Community 160](Community_160.md) (1 shared connections)
+- [Community 160](Community_160.md) (2 shared connections)
+- [Community 64](Community_64.md) (1 shared connections)
+- [Community 203](Community_203.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
+- [Community 149](Community_149.md) (1 shared connections)
+- [Community 218](Community_218.md) (1 shared connections)
+- [Community 446](Community_446.md) (1 shared connections)
+- [Community 39](Community_39.md) (1 shared connections)
+- [Community 189](Community_189.md) (1 shared connections)
+- [Community 138](Community_138.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/StScreenView.cpp`
+- `docs/IMPLEMENTED.md`
 
 ## Audit Trail
 
-- EXTRACTED: 13 (76%)
-- INFERRED: 4 (24%)
+- EXTRACTED: 20 (74%)
+- INFERRED: 7 (26%)
 - AMBIGUOUS: 0 (0%)
 
 ---
