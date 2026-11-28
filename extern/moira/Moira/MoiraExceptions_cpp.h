@@ -395,11 +395,17 @@ Moira::execAddressError(StackFrame frame, int delay)
     // Write stack frame
     if constexpr (C == Core::C68000) {
 
-        // [D] fx68k @ 0602ee46, sondes exceptions : le premier mot est
-        // daté comme avec l'attente à la fin de la trame. Le cycle sans
-        // strobe précédant l'erreur d'adresse n'est pas modélisé ici.
-        writeStackFrameAEBE<C>(frame);
-        SYNC(2);
+        if constexpr (compat == Compatibility::DEFAULT) {
+            // [D] fx68k @ 0602ee46, sondes exceptions : le premier mot est
+            // daté comme avec l'attente à la fin de la trame. Le cycle sans
+            // strobe précédant l'erreur d'adresse n'est pas modélisé ici.
+            writeStackFrameAEBE<C>(frame);
+            SYNC(2);
+        } else {
+            // Laisser aux bancs de compatibilité le timing amont.
+            SYNC(2);
+            writeStackFrameAEBE<C>(frame);
+        }
 
     } else if constexpr (C == Core::C68010) {
 

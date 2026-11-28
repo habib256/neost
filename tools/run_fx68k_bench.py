@@ -4,9 +4,9 @@
 #  comparaison cycle bus par cycle bus.
 #
 #  POURQUOI. Le 68000 est le cœur de tout le reste : chaque datation vidéo, MFP ou
-#  blitter de NeoST est posée sur l'horloge de Moira. Jusqu'ici Moira n'était confronté
-#  qu'à Hatari (grade D, autre émulateur, `run_timing_oracle.py`) et aux totaux de
-#  Musashi (`run_moira_runner.sh`). fx68k est un RTL cycle-exact dérivé du microcode
+#  blitter de NeoST est posée sur l'horloge de Moira. `run_timing_oracle.py` compare
+#  les programmes à Hatari. `run_moira_runner.sh` rejoue les suites officielles,
+#  dont le corpus MAME du 68000. fx68k est un RTL cycle-exact dérivé du microcode
 #  (bloc « fort » de l'échelon `rtl`, docs/REFERENCE_LADDER.md) : ce banc relève sur les
 #  deux cœurs la date de chaque accès bus, la prise d'IPL et les séquences d'exception,
 #  sur une RAM plate sans état d'attente — le cœur seul, pas la carte mère. Un écart

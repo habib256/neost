@@ -13,9 +13,10 @@ cycle-exact, accès bus par accès bus.** Posé le 2026-11-03. Instrument : `too
 ## Pourquoi
 
 Le 68000 porte tout le reste : chaque datation vidéo, MFP ou blitter de NeoST est posée sur
-l'horloge de Moira. Jusqu'ici Moira n'était confronté qu'à Hatari (grade D, autre
-émulateur, `run_timing_oracle.py`) et aux totaux de cycles de la table de Musashi
-(`run_moira_runner.sh`). fx68k (Jorge Cwik, épingle `0602ee46`) est un RTL dérivé du microcode,
+l'horloge de Moira. `run_timing_oracle.py` compare les programmes à Hatari (grade D).
+`run_moira_runner.sh` rejoue les suites officielles, dont le corpus d'instructions
+individuelles du 68000 enregistré sous MAME. fx68k (Jorge Cwik, épingle `0602ee46`)
+est un RTL dérivé du microcode,
 « cycle exact » selon son auteur, bloc **fort** de l'échelon `rtl`. Le simuler sous Verilator
 donne, pour la première fois, la **position** de chaque cycle bus, la prise d'IPL et les
 séquences d'exception, sur le même programme que Moira.

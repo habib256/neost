@@ -637,9 +637,10 @@ public:
         ar.check(iplDeferred >= -1 && iplDeferred <= 7, "Moira::iplDeferred hors [-1,7]");
         // v55 : retenue d'IRQ après STOP (fenêtre de 4 cycles, cf. Moira.h).
         { moira::i64 g = stopGraceUntil; ar(g); stopGraceUntil = g; }
-        ar.check(stopGraceUntil == -1 || (stopGraceUntil >= 0 && (stopGraceUntil <= getClock() || stopGraceUntil - 4 <= getClock())),
+        ar.check(stopGraceUntil == -1 || (stopGraceUntil >= 0 && stopGraceUntil - 4 <= getClock()),
                  "Moira::stopGraceUntil hors domaine");
         ar(fcl); ar(readBuffer);
+        ar.check(fcl <= 3, "Moira::fcl hors [0,3]");
         // v60 — les drapeaux de Moira mêlent l'état du 68000 (STOPPED, HALTED…) et celui
         // du DÉBOGUEUR HÔTE (CHECK_BP/WP/CP, LOGGING), qui n'appartient pas à la machine :
         //  · restaurés, ils désarmaient en silence les watchpoints de la session
@@ -648,24 +649,20 @@ public:
         //    selon qu'un point d'arrêt était posé — empreinte cpu d'archHash faussée
         //    (docs/CPU_SWAP_GATE.md).
         // On écrit donc les bits hôte à 0, et au chargement la session garde les siens.
-        {
-            constexpr int kHostFlags = moira::State::CHECK_BP | moira::State::CHECK_WP
-                                     | moira::State::CHECK_CP | moira::State::LOGGING;
-            const int host = flags & kHostFlags;
-            auto f = flags;
-            f &= ~kHostFlags;
-            ar(f);
-            flags = (f & ~kHostFlags) | host;
-        }
-        // LOOPING (mode loop 68010) n'est JAMAIS posé sur un 68000 : forgé dans un
-        // .state (CRC recalculé), il fait prendre à execute() la branche
-        // `(this->*loop[queue.ird])` dont l'assert de garde saute en Release —
-        // pointeur-membre NUL pour la quasi-totalité des opcodes → SIGSEGV.
-        // Même classe de durcissement que g_cur->cpuMul / enums IKBD (passes 8-9).
+        constexpr int hostFlags = moira::State::CHECK_BP | moira::State::CHECK_WP
+                                | moira::State::CHECK_CP | moira::State::LOGGING;
+        const int host = flags & hostFlags;
+        int saved = flags & ~hostFlags;
+        ar(saved);
+        flags = (saved & ~hostFlags) | host;
         constexpr int cpuFlags = moira::State::HALTED | moira::State::STOPPED | moira::State::TRACING
                                | moira::State::TRACE_EXC | moira::State::CHECK_IRQ;
-        ar.check(!(flags & ~(cpuFlags | moira::State::CHECK_BP | moira::State::CHECK_WP
-                             | moira::State::CHECK_CP | moira::State::LOGGING)), "Moira::flags hors modèle 68000");
+        ar.check(!(flags & ~(cpuFlags | hostFlags)), "Moira::flags hors modèle 68000");
+        // Les sauvegardes se prennent entre instructions. Moira vérifie ces
+        // trois relations avant le prochain dispatch (Moira::execute).
+        ar.check(reg.pc == reg.pc0 + 2, "Moira::PC incohérent avec la prélecture");
+        ar.check(bool(flags & moira::State::TRACING) == reg.sr.t1, "Moira::trace incohérente");
+        ar.check(!irqDeliverable() || (flags & moira::State::CHECK_IRQ), "Moira::IRQ non signalée");
     }
 
     // Lecture du vecteur de reset (SSP/PC) via l'overlay ROM : jamais de bus error.
@@ -784,7 +781,7 @@ public:
     // STOP au cycle COURANT — il ne faut PAS téléporter l'horloge au prochain
     // événement (le vrai 68000, niveau-sensible, sert l'IRQ immédiatement ; cas
     // mesuré : « stop #$2100 » avec HBL pendante — raster Super Hang-On).
-    bool irqDeliverable() const { return reg.ipl > reg.sr.ipl || reg.ipl == 7; }
+    bool irqDeliverable() const { return reg.ipl > reg.sr.ipl || (reg.ipl == 7 && !nmiTaken); }
 
     // CPU en attente STOP ? (fenêtre de commit HBL/VBL : le réveil STOP est
     // niveau-sensible et immédiat — la fenêtre d'échantillonnage ne s'y applique pas).
